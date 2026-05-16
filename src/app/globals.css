@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   WAVIVI design tokens
+   Dark-first. A warm "heat" accent for the vibe system, a cool accent for
+   travel/discovery surfaces, and a glow accent for highlights.
+--------------------------------------------------------------------------- */
+:root {
+  --background: #0b0b14;
+  --surface: #14141f;
+  --surface-elevated: #1d1d2b;
+  --foreground: #f3f3f7;
+  --muted: #9a9aae;
+  --border: #2a2a3c;
+
+  --accent-heat: #ff5d73;
+  --accent-cool: #19c3a8;
+  --accent-glow: #7c5cff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-heat: var(--accent-heat);
+  --color-cool: var(--accent-cool);
+  --color-glow: var(--accent-glow);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
