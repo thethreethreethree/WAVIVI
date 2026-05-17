@@ -17,12 +17,26 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur">
       <nav className="mx-auto flex h-14 max-w-2xl items-center justify-between px-6">
-        <Link
-          href="/"
-          className="font-mono text-sm font-semibold uppercase tracking-[0.2em] text-foreground"
-        >
-          {siteConfig.name}
-        </Link>
+        <div className="flex items-center gap-5">
+          <Link
+            href="/"
+            className="font-mono text-sm font-semibold uppercase tracking-[0.2em] text-foreground"
+          >
+            {siteConfig.name}
+          </Link>
+          <Link
+            href="/map"
+            className="text-sm font-medium text-muted transition-colors hover:text-foreground"
+          >
+            Live map
+          </Link>
+          <Link
+            href="/discover"
+            className="text-sm font-medium text-muted transition-colors hover:text-foreground"
+          >
+            Discover
+          </Link>
+        </div>
 
         {user ? (
           <Link

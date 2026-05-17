@@ -12,9 +12,9 @@ export interface Phase {
 
 export const phases: Phase[] = [
   { id: 1, goal: "Foundation & Architecture", status: "done" },
-  { id: 2, goal: "Authentication & Profiles", status: "in-progress" },
-  { id: 3, goal: "Live Map System", status: "planned" },
-  { id: 4, goal: "Traveler Discovery", status: "planned" },
+  { id: 2, goal: "Authentication & Profiles", status: "done" },
+  { id: 3, goal: "Live Map System", status: "done" },
+  { id: 4, goal: "Traveler Discovery", status: "in-progress" },
   { id: 5, goal: "Group Chat Ecosystem", status: "planned" },
   { id: 6, goal: "Events & Meetups", status: "planned" },
   { id: 7, goal: "Vibe/Heat System", status: "planned" },
