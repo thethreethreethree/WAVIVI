@@ -36,6 +36,24 @@ export async function SiteHeader() {
           >
             Discover
           </Link>
+          <Link
+            href="/chat"
+            className="text-sm font-medium text-muted transition-colors hover:text-foreground"
+          >
+            Chat
+          </Link>
+          <Link
+            href="/events"
+            className="text-sm font-medium text-muted transition-colors hover:text-foreground"
+          >
+            Events
+          </Link>
+          <Link
+            href="/vibe"
+            className="text-sm font-medium text-muted transition-colors hover:text-foreground"
+          >
+            Vibe
+          </Link>
         </div>
 
         {user ? (

@@ -1,0 +1,88 @@
+import type { VibeSpot } from "@/lib/vibe/types";
+
+/**
+ * Mock vibe readings. Phase 7 placeholder — scores will later be computed
+ * from real traveler activity, check-ins, events, and chat volume.
+ */
+export const mockVibeSpots: VibeSpot[] = [
+  {
+    id: "bangkok",
+    name: "Khao San Road",
+    place: "Bangkok, Thailand",
+    coords: [100.4977, 13.7587],
+    vibeScore: 92,
+    trend: "rising",
+    travelerCount: 248,
+    tags: ["nightlife", "street food", "buzzing"],
+  },
+  {
+    id: "berlin",
+    name: "RAW-Gelände",
+    place: "Berlin, Germany",
+    coords: [13.4536, 52.5075],
+    vibeScore: 84,
+    trend: "rising",
+    travelerCount: 176,
+    tags: ["techno", "late night", "art"],
+  },
+  {
+    id: "lisbon",
+    name: "Bairro Alto",
+    place: "Lisbon, Portugal",
+    coords: [-9.1459, 38.7139],
+    vibeScore: 71,
+    trend: "steady",
+    travelerCount: 132,
+    tags: ["bars", "live music", "social"],
+  },
+  {
+    id: "rio",
+    name: "Copacabana Beach",
+    place: "Rio de Janeiro, Brazil",
+    coords: [-43.1822, -22.9711],
+    vibeScore: 66,
+    trend: "rising",
+    travelerCount: 119,
+    tags: ["beach", "sunset", "relaxed"],
+  },
+  {
+    id: "tokyo",
+    name: "Shibuya Crossing",
+    place: "Tokyo, Japan",
+    coords: [139.7005, 35.6595],
+    vibeScore: 58,
+    trend: "steady",
+    travelerCount: 94,
+    tags: ["city lights", "shopping", "energetic"],
+  },
+  {
+    id: "capetown",
+    name: "Camps Bay",
+    place: "Cape Town, South Africa",
+    coords: [18.3776, -33.9508],
+    vibeScore: 43,
+    trend: "cooling",
+    travelerCount: 51,
+    tags: ["sundowners", "scenic", "chill"],
+  },
+  {
+    id: "cdmx",
+    name: "Roma Norte",
+    place: "Mexico City, Mexico",
+    coords: [-99.1626, 19.4189],
+    vibeScore: 38,
+    trend: "rising",
+    travelerCount: 47,
+    tags: ["cafés", "creative", "easygoing"],
+  },
+  {
+    id: "sydney",
+    name: "Bondi Beach",
+    place: "Sydney, Australia",
+    coords: [151.2744, -33.8908],
+    vibeScore: 24,
+    trend: "cooling",
+    travelerCount: 22,
+    tags: ["quiet", "morning surf", "calm"],
+  },
+];
