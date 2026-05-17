@@ -54,6 +54,12 @@ export async function SiteHeader() {
           >
             Vibe
           </Link>
+          <Link
+            href="/for-you"
+            className="text-sm font-medium text-muted transition-colors hover:text-foreground"
+          >
+            For you
+          </Link>
         </div>
 
         {user ? (

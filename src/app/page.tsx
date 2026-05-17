@@ -52,7 +52,7 @@ export default function Home() {
         </section>
 
         <footer className="mt-12 text-xs text-muted">
-          Phase 7 — Vibe/Heat System · Next.js · Supabase · Mapbox
+          Phase 8 — AI Recommendation Layer · Next.js · Supabase · Mapbox
         </footer>
       </div>
     </main>
