@@ -297,6 +297,30 @@ h3 {
 .vm-leaflet {
   background: #aadaff;
 }
+/* Slight watercolor wash over the basemap — softens the tiles into a
+   painted, paper-like canvas that matches the app's watercolor identity. */
+.vm-leaflet .leaflet-tile {
+  filter: saturate(1.16) contrast(0.92) brightness(1.04) sepia(0.1)
+    blur(0.4px);
+}
+/* Paper-grain + warm parchment glaze laid over the whole map. */
+.vm-leaflet .leaflet-tile-pane::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 400;
+  background:
+    radial-gradient(
+      120% 90% at 50% 0%,
+      rgba(255, 222, 180, 0.18),
+      transparent 70%
+    ),
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  background-size: auto, 180px 180px;
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
 
 /* ===========================================================================
    Travejor Webapp — bright, fun, adventurous, sporty identity
