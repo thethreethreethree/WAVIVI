@@ -25,7 +25,7 @@ export default function Home() {
     <>
       <AppTopBar />
 
-      <section className="relative flex flex-col items-center overflow-hidden px-6 pb-6 pt-2">
+      <section className="relative flex flex-col items-center overflow-hidden px-6 pb-6 pt-10">
         {/* Watercolor splash washes in the corners */}
         <span
           className="watercolor-wash pointer-events-none absolute -left-16 -top-8 h-56 w-56 rounded-full"

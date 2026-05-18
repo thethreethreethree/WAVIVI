@@ -148,15 +148,15 @@ export function VibeMap() {
         zoom: DEFAULT_ZOOM,
         zoomControl: true,
       });
-      // Stamen Watercolor — a hand-painted map base that matches Travejor's
-      // artsy, travel-journal aesthetic. Keyless on localhost; for production
-      // register the deploy domain on a free Stadia Maps account.
+      // CARTO Voyager (no labels) — the warm canvas with blue water and green
+      // land, minus text labels for a cleaner, lower-detail watercolor look.
       L.tileLayer(
-        "https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg",
+        "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png",
         {
-          maxZoom: 16,
+          maxZoom: 19,
+          subdomains: "abcd",
           attribution:
-            '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://stamen.com/">Stamen Design</a> &copy; <a href="https://openstreetmap.org/">OpenStreetMap</a>',
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         },
       ).addTo(map);
       mapRef.current = map;
@@ -220,7 +220,7 @@ export function VibeMap() {
         bounds.extend([userPosRef.current.lat, userPosRef.current.lng]);
       }
       if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15 });
+        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 12 });
       } else {
         map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
       }
@@ -269,7 +269,7 @@ export function VibeMap() {
             haversineKm({ lat, lng }, { lat: spot.lat, lng: spot.lng }) <= 5,
         );
         setNearby(within.length);
-        map.setView([lat, lng], 14, { animate: true });
+        map.setView([lat, lng], 12, { animate: true });
       },
       (err) => {
         setNearby(null);
@@ -288,7 +288,7 @@ export function VibeMap() {
   return (
     <div className="flex flex-1 flex-col">
       {/* Top bar — mirrors the YumYumPo Vibe Map layout */}
-      <div className="z-20 flex flex-col gap-2.5 border-b border-border bg-surface px-4 pb-3 pt-4 shadow-sm">
+      <div className="z-20 flex flex-col gap-2.5 border-b border-border bg-white px-4 pb-3 pt-4 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-xl font-bold tracking-tight">
             Vibe Map
@@ -300,7 +300,7 @@ export function VibeMap() {
             <button
               type="button"
               onClick={locate}
-              className="rounded-full bg-glow px-3 py-1.5 text-xs font-bold text-white transition-transform active:scale-95"
+              className="rounded-full bg-[#ffd000] px-3 py-1.5 text-xs font-extrabold text-[#111] transition-transform active:scale-95"
             >
               📍 {located ? "Re-center" : "What's near me"}
             </button>
@@ -346,16 +346,16 @@ export function VibeMap() {
               key={v.id}
               type="button"
               onClick={() => setActive(v.id)}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+              className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors ${
                 active === v.id
-                  ? "bg-foreground text-background"
-                  : "bg-surface text-muted ring-1 ring-border"
+                  ? "bg-[#111] text-[#ffd000]"
+                  : "bg-white text-muted ring-[1.5px] ring-border"
               }`}
             >
               {v.label}
               <span
-                className={`rounded-full px-1.5 text-[10px] ${
-                  active === v.id ? "bg-background/25" : "bg-border"
+                className={`rounded-full px-1.5 text-[10px] font-extrabold ${
+                  active === v.id ? "bg-[#ffd000]/25" : "bg-border"
                 }`}
               >
                 {counts[v.id] ?? 0}

@@ -110,6 +110,8 @@ h3 {
 /* ---------------------------------------------------------------------------
    Vibe Map — Leaflet markers, popups, and overlays.
 --------------------------------------------------------------------------- */
+/* Markers — watercolor style, matching the rest of the app: organic painted
+   edge (#wc-edge filter), soft washes, hand-drawn white ring. */
 .vm-marker {
   width: 100%;
   height: 100%;
@@ -117,58 +119,72 @@ h3 {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  border: 3px solid #fff;
+  border: 3px solid #fdf9f0;
   background: var(--accent-glow);
   color: #fff;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   line-height: 1;
   box-shadow: 0 5px 13px -4px rgba(120, 78, 30, 0.55);
   cursor: pointer;
   transition: transform 0.18s ease;
+  filter: url("#wc-edge-soft");
 }
 .vm-marker:hover {
   transform: scale(1.14);
 }
+/* Soft, painterly vibe washes rather than flat neon fills. */
 .vm-marker.buzzing {
-  background: #ef5a3c;
+  background: #ec6a4a;
 }
 .vm-marker.social {
-  background: var(--accent-glow);
+  background: #f0883e;
 }
 .vm-marker.nightlife {
-  background: #5a4fc4;
+  background: #6056a8;
 }
 .vm-marker.chill {
-  background: var(--accent-cool);
+  background: #5fae7e;
 }
 .vm-marker.event {
-  background: #9170ee;
+  background: #9a76d8;
 }
-/* Premium — layered watercolor glow rings, like a painted halo. */
+/* Prominence tiers — painted halo rings that scale with reputation. */
 .vm-marker.tier-premium {
   border-width: 4px;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   box-shadow:
-    0 0 0 4px rgba(255, 255, 255, 0.92),
-    0 0 0 9px rgba(247, 148, 29, 0.4),
-    0 0 0 15px rgba(247, 148, 29, 0.16),
+    0 0 0 4px rgba(253, 249, 240, 0.9),
+    0 0 0 9px rgba(247, 148, 29, 0.34),
+    0 0 0 14px rgba(247, 148, 29, 0.14),
     0 8px 20px -6px rgba(120, 78, 30, 0.55);
   animation: vmBob 3.4s ease-in-out infinite;
 }
 .vm-marker.tier-prominent {
   font-size: 1rem;
   box-shadow:
-    0 0 0 3px rgba(255, 255, 255, 0.85),
+    0 0 0 3px rgba(253, 249, 240, 0.85),
     0 6px 16px -5px rgba(120, 78, 30, 0.5);
   animation: vmBob 4.6s ease-in-out infinite;
 }
 .vm-marker.tier-standard {
   border-width: 2px;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
+  box-shadow: 0 3px 9px -2px rgba(120, 78, 30, 0.45);
+  animation: vmBob 6s ease-in-out infinite;
 }
 @keyframes vmBob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-3px); }
+}
+@keyframes vmPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(255, 208, 0, 0.45), 0 8px 22px rgba(0, 0, 0, 0.45);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(255, 208, 0, 0.18), 0 10px 26px rgba(0, 0, 0, 0.5);
+    transform: translateY(-4px);
+  }
 }
 
 .vm-user-marker {
@@ -182,18 +198,19 @@ h3 {
   border-radius: 50%;
   background: var(--accent-glow);
   color: #fff;
-  border: 3px solid #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  border: 3px solid #fdf9f0;
+  box-shadow: 0 4px 12px rgba(120, 78, 30, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2;
+  filter: url("#wc-edge-soft");
 }
 .vm-user-pulse {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: rgba(247, 148, 29, 0.45);
+  background: rgba(255, 208, 0, 0.45);
   animation: vmUserPulse 1.8s ease-out infinite;
   z-index: 1;
 }
@@ -278,7 +295,7 @@ h3 {
 }
 
 .vm-leaflet {
-  background: #eef2ec;
+  background: #aadaff;
 }
 
 /* ===========================================================================
