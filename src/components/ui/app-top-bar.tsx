@@ -1,19 +1,20 @@
+import Image from "next/image";
 import Link from "next/link";
 
-import { siteConfig } from "@/config/site";
-
-/** Home-screen top bar — wordmark plus notification and group-chat shortcuts. */
+/** Home-screen top bar — Travejor logo plus notification and group-chat shortcuts. */
 export function AppTopBar() {
   return (
     <header className="flex items-center justify-between px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
-      <span className="flex items-center gap-2">
-        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="#f7941d" aria-hidden>
-          <path d="M2 12l19-9-9 19-2-8-8-2z" />
-        </svg>
-        <span className="text-base font-bold uppercase tracking-[0.18em]">
-          {siteConfig.name}
-        </span>
-      </span>
+      <Link href="/" aria-label="Travejor home" className="flex items-center">
+        <Image
+          src="/travejor-logo.png"
+          alt="Travejor"
+          width={180}
+          height={180}
+          priority
+          className="h-18 w-auto"
+        />
+      </Link>
 
       <div className="flex items-center gap-2">
         <Link
