@@ -420,6 +420,12 @@ export function VibeMap() {
           aria-hidden
         />
 
+        {/* Map attribution — required by OpenStreetMap + CARTO, styled
+            in the app's handwritten voice. */}
+        <span className="pointer-events-none absolute bottom-3.5 right-4 z-[600] text-[9px] font-semibold tracking-wide text-foreground/45">
+          Map data © OpenStreetMap, © CARTO
+        </span>
+
         {loading && (
           <div className="absolute inset-0 z-[600] flex items-center justify-center bg-surface font-bold tracking-wide text-glow">
             Loading map…
