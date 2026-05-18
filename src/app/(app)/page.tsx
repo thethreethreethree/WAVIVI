@@ -53,7 +53,7 @@ export default function Home() {
           </span>
         ))}
 
-        <p className="wc-underline relative mb-7 text-center text-base font-semibold text-foreground">
+        <p className="wc-underline relative mb-7 text-center text-lg font-semibold text-foreground">
           Meet. Vibe. Move.
         </p>
         <div className="relative w-full">
