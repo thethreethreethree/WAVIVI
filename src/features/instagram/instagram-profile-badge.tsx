@@ -9,9 +9,9 @@ export function InstagramProfileBadge({
   identity: InstagramIdentity;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-surface p-3.5 shadow-card ring-1 ring-border">
+    <div className="wc-frame flex items-center gap-3 rounded-2xl p-3.5">
       <span
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white"
+        className="wc-edge flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white"
         style={{
           background:
             "linear-gradient(135deg,#f7941d,#e8462f 55%,#a855f7)",

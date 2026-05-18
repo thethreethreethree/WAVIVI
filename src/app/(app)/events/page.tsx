@@ -65,11 +65,8 @@ export default function EventsPage() {
 
       <ul className="mt-4 flex flex-col gap-4 pb-8">
         {travejorEvents.map((event) => (
-          <li
-            key={event.id}
-            className="overflow-hidden rounded-2xl bg-surface shadow-sm ring-1 ring-border"
-          >
-            <div className="relative h-40 w-full">
+          <li key={event.id} className="wc-frame rounded-2xl p-2.5">
+            <div className="wc-edge relative h-40 w-full overflow-hidden rounded-xl">
               <Image
                 src={event.image}
                 alt={event.title}
@@ -78,7 +75,7 @@ export default function EventsPage() {
                 className="object-cover"
               />
             </div>
-            <div className="p-4">
+            <div className="p-2.5 pt-3">
               <h3 className="font-bold">{event.title}</h3>
               <p className="mt-1 flex items-center gap-1 text-xs text-glow">
                 📍 {event.area}

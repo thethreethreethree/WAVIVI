@@ -57,38 +57,46 @@ export function BottomNav() {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
   const susenActive = pathname.startsWith("/susen");
 
+  const iconSvg = (t: Tab) => (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="wc-edge-soft relative h-[1.15rem] w-[1.15rem]"
+    >
+      {t.icon}
+    </svg>
+  );
+
   const tab = (t: Tab) => {
     const active = isActive(t.href);
     return (
       <li key={t.href}>
-        <Link
-          href={t.href}
-          aria-current={active ? "page" : undefined}
-          className={`relative flex items-center gap-1.5 rounded-full px-3 py-2.5 transition-all ${
-            active ? "text-white" : "text-muted active:scale-95"
-          }`}
-        >
-          {active && (
+        {active ? (
+          <Link
+            href={t.href}
+            aria-current="page"
+            className="relative flex items-center gap-1.5 rounded-full px-3 py-2.5 text-white"
+          >
             <span
               className="wc-edge absolute inset-0 rounded-full bg-sunset"
               aria-hidden
             />
-          )}
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="relative h-[1.15rem] w-[1.15rem]"
-          >
-            {t.icon}
-          </svg>
-          {active && (
+            {iconSvg(t)}
             <span className="relative text-xs font-bold">{t.label}</span>
-          )}
-        </Link>
+          </Link>
+        ) : (
+          <Link
+            href={t.href}
+            aria-label={t.label}
+            className="wc-frame flex h-10 w-10 items-center justify-center rounded-full text-glow/75 transition-transform active:scale-95"
+          >
+            {iconSvg(t)}
+          </Link>
+        )}
       </li>
     );
   };

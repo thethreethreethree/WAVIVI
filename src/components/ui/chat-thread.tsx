@@ -100,7 +100,7 @@ export function ChatThread({
           m.susen ? (
             <div
               key={m.id}
-              className="flex items-start gap-2 rounded-2xl border border-glow/30 bg-glow/5 p-3"
+              className="wc-frame flex items-start gap-2 rounded-2xl p-3"
             >
               <SusenAvatar className="h-7 w-7" />
               <div className="min-w-0">
@@ -119,10 +119,10 @@ export function ChatThread({
                 </span>
               )}
               <div
-                className={`max-w-[78%] rounded-2xl px-3.5 py-2 text-sm ${
+                className={`wc-frame max-w-[78%] px-3.5 py-2 text-sm ${
                   m.own
-                    ? "rounded-tr-sm bg-glow text-white"
-                    : "rounded-tl-sm bg-surface-elevated text-foreground"
+                    ? "wc-frame-sunset rounded-2xl rounded-tr-sm text-white"
+                    : "rounded-2xl rounded-tl-sm text-foreground"
                 }`}
               >
                 {m.body}

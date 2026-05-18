@@ -54,8 +54,8 @@ export default function SusenPage() {
           <span className="block font-bold leading-tight">{SUSEN.name}</span>
           <span className="block text-xs text-muted">{SUSEN.tagline}</span>
         </span>
-        <span className="ml-auto rounded-full bg-cool/15 px-2 py-0.5 text-[10px] font-semibold text-cool">
-          Online
+        <span className="wc-frame ml-auto rounded-full px-2.5 py-1 text-[10px] font-bold text-cool">
+          ● Online
         </span>
       </header>
 
@@ -69,10 +69,10 @@ export default function SusenPage() {
           >
             {turn.role === "susen" && <SusenAvatar className="h-7 w-7" />}
             <div
-              className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm ${
+              className={`wc-frame max-w-[80%] px-3.5 py-2.5 text-sm ${
                 turn.role === "user"
-                  ? "rounded-br-sm bg-sunset text-white"
-                  : "rounded-bl-sm bg-surface-elevated text-foreground ring-1 ring-border"
+                  ? "wc-frame-sunset rounded-2xl rounded-br-sm text-white"
+                  : "rounded-2xl rounded-bl-sm text-foreground"
               }`}
             >
               {turn.text}
@@ -83,7 +83,7 @@ export default function SusenPage() {
         {thinking && (
           <div className="flex items-end gap-2">
             <SusenAvatar className="h-7 w-7" />
-            <div className="flex gap-1 rounded-2xl rounded-bl-sm bg-surface-elevated px-3.5 py-3 ring-1 ring-border">
+            <div className="wc-frame flex gap-1 rounded-2xl rounded-bl-sm px-3.5 py-3">
               {[0, 1, 2].map((d) => (
                 <motion.span
                   key={d}
@@ -103,13 +103,13 @@ export default function SusenPage() {
       </div>
 
       {/* Quick prompts */}
-      <div className="flex gap-2 overflow-x-auto px-5 pb-2">
+      <div className="flex gap-2 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {SUSEN_QUICK_PROMPTS.map((p) => (
           <button
             key={p}
             type="button"
             onClick={() => send(p)}
-            className="shrink-0 rounded-full border border-glow/40 bg-glow/5 px-3 py-1.5 text-xs font-medium text-glow"
+            className="wc-frame wc-frame-ghost shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold text-glow"
           >
             {p}
           </button>
@@ -127,13 +127,13 @@ export default function SusenPage() {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Ask Susen anything…"
-          className="flex-1 rounded-full border border-border bg-surface px-4 py-2.5
-                     text-sm outline-none placeholder:text-muted focus-visible:border-glow"
+          className="wc-frame flex-1 rounded-full bg-transparent px-4 py-2.5
+                     text-sm outline-none placeholder:text-muted"
         />
         <button
           type="submit"
           disabled={!draft.trim() || thinking}
-          className="bg-sunset rounded-full px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+          className="wc-frame wc-frame-sunset rounded-full px-4 py-2.5 text-sm font-bold text-white disabled:opacity-40"
         >
           Send
         </button>

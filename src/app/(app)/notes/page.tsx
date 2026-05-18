@@ -19,7 +19,7 @@ export default function NotesPage() {
         {travelerNotes.map((note) => (
           <li
             key={note.id}
-            className="rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-border"
+            className="wc-frame rounded-2xl p-4"
           >
             <div className="flex items-center gap-2">
               <span className="relative h-7 w-7 overflow-hidden rounded-full">

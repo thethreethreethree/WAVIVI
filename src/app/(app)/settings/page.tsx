@@ -87,7 +87,7 @@ export default function SettingsPage() {
           <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted">
             Appearance
           </h2>
-          <div className="flex items-center gap-3 rounded-2xl bg-surface px-4 py-3.5 shadow-card ring-1 ring-border">
+          <div className="wc-frame flex items-center gap-3 rounded-2xl px-4 py-3.5">
             <span className="flex-1 text-sm font-medium">
               Night traveler mode
             </span>
@@ -100,7 +100,7 @@ export default function SettingsPage() {
             <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted">
               {section.title}
             </h2>
-            <ul className="overflow-hidden rounded-2xl bg-surface shadow-sm ring-1 ring-border">
+            <ul className="wc-frame rounded-2xl">
               {section.rows.map((row, i) => {
                 const inner = (
                   <div

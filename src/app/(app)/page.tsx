@@ -69,7 +69,7 @@ export default function Home() {
             See all
           </Link>
         </div>
-        <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1">
+        <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {forYou.map((place) => (
             <Link
               key={place.id}

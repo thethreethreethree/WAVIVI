@@ -94,7 +94,7 @@ export default async function PlaceDetailPage({
         </div>
 
         {/* Folded-in WAVIVI vibe reading */}
-        <div className="rounded-2xl bg-surface-elevated p-4 shadow-sm ring-1 ring-border">
+        <div className="wc-frame rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold">Live vibe</p>
             <span className={`text-sm font-bold ${vibe.cls}`}>

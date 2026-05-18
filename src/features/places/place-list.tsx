@@ -62,9 +62,9 @@ export function PlaceList({ kind }: { kind: PlaceKind }) {
           <li key={place.id}>
             <Link
               href={`/place/${place.id}`}
-              className="flex gap-3 rounded-2xl bg-surface p-3 shadow-sm ring-1 ring-border"
+              className="wc-frame flex gap-3 rounded-2xl p-3"
             >
-              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl">
+              <div className="wc-edge relative h-20 w-20 shrink-0 overflow-hidden rounded-xl">
                 <Image
                   src={place.image}
                   alt={place.name}

@@ -40,7 +40,7 @@ export function ScreenHeader({
           accent ? "text-glow" : "text-foreground"
         }`}
       >
-        {title}
+        <span className="wc-underline">{title}</span>
       </h1>
       {action}
     </header>

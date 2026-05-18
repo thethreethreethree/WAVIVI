@@ -60,7 +60,7 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
           <Link
             key={m.id}
             href={`/u/${m.username}`}
-            className="w-36 shrink-0 rounded-2xl bg-surface-elevated p-3 text-center shadow-sm ring-1 ring-border"
+            className="wc-frame w-36 shrink-0 rounded-2xl p-3 text-center"
           >
             <div className="relative mx-auto h-16 w-16">
               <Image
@@ -82,7 +82,7 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
         ))}
       </div>
 
-      <div className="mt-5 rounded-2xl bg-surface-elevated p-4 text-center shadow-sm ring-1 ring-border">
+      <div className="wc-frame mt-5 rounded-2xl p-4 text-center">
         <p className="text-sm font-medium">
           {group.travelerCount} travelers are already here, sharing spots,
           laughs, and plans.

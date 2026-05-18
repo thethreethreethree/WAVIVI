@@ -22,7 +22,7 @@ export function InstagramShowcase({ posts }: { posts: InstagramPost[] }) {
           href={post.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="group relative aspect-square overflow-hidden rounded-xl ring-1 ring-border"
+          className="wc-edge group relative aspect-square overflow-hidden rounded-xl"
         >
           <Image
             src={post.image}

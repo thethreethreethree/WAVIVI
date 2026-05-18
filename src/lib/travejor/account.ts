@@ -59,6 +59,36 @@ export function flagFor(country: string): string {
   return countryFlags[country] ?? "🏳️";
 }
 
+/** Country → ISO 3166-1 alpha-2 code, for flag imagery. */
+export const countryCodes: Record<string, string> = {
+  USA: "us",
+  UK: "gb",
+  France: "fr",
+  Italy: "it",
+  Spain: "es",
+  Portugal: "pt",
+  Greece: "gr",
+  Morocco: "ma",
+  Japan: "jp",
+  Thailand: "th",
+  Vietnam: "vn",
+  Indonesia: "id",
+  Laos: "la",
+  Philippines: "ph",
+  "Sri Lanka": "lk",
+  Iceland: "is",
+  Brazil: "br",
+  Peru: "pe",
+  Mexico: "mx",
+  Australia: "au",
+};
+
+/** Round flag image URL for a country (flagcdn — free, no key). */
+export function flagImage(country: string): string {
+  const code = countryCodes[country] ?? "un";
+  return `https://flagcdn.com/w160/${code}.png`;
+}
+
 export const travelerNotes: TravelerNote[] = [
   {
     id: "tn1",

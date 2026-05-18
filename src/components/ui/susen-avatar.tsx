@@ -6,7 +6,7 @@ export function SusenAvatar({
 }) {
   return (
     <span
-      className={`relative flex shrink-0 items-center justify-center ${className}`}
+      className={`relative flex shrink-0 items-center justify-center rounded-full ${className}`}
     >
       {/* Painted orange orb with an organic edge */}
       <span

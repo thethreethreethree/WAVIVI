@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
+import { CountryFlags } from "@/components/ui/country-flags";
 import {
   InstagramFeed,
   InstagramProfileBadge,
   InstagramShowcase,
 } from "@/features/instagram";
-import { account, flagFor } from "@/lib/travejor/account";
+import { account } from "@/lib/travejor/account";
 
 export const metadata: Metadata = { title: "My Profile" };
 
@@ -27,13 +28,13 @@ export default function MyProfilePage() {
       </header>
 
       <div className="flex flex-col items-center px-5">
-        <span className="relative h-24 w-24">
+        <span className="wc-edge relative h-24 w-24">
           <Image
             src={account.avatar}
             alt={account.name}
             fill
             sizes="96px"
-            className="rounded-full object-cover ring-2 ring-glow"
+            className="rounded-full object-cover ring-[3px] ring-glow"
           />
         </span>
         <h2 className="mt-3 text-xl font-bold">{account.name}</h2>
@@ -42,13 +43,13 @@ export default function MyProfilePage() {
         <div className="mt-4 flex gap-2">
           <Link
             href="/profile/edit"
-            className="rounded-full border border-glow px-5 py-2 text-sm font-semibold text-glow"
+            className="wc-frame wc-frame-ghost rounded-full px-5 py-2 text-sm font-semibold text-glow"
           >
             Edit Profile
           </Link>
           <Link
             href="/settings"
-            className="rounded-full bg-glow px-5 py-2 text-sm font-semibold text-white"
+            className="wc-frame wc-frame-sunset rounded-full px-5 py-2 text-sm font-semibold text-white"
           >
             Settings
           </Link>
@@ -56,16 +57,13 @@ export default function MyProfilePage() {
       </div>
 
       {/* Stats */}
-      <div className="mt-5 grid grid-cols-3 gap-2 px-5">
+      <div className="mt-6 grid grid-cols-3 gap-2.5 px-5">
         {[
           { label: "Countries", value: account.stats.countries },
           { label: "Connections", value: account.stats.connections },
           { label: "Notes", value: account.stats.notes },
         ].map((s) => (
-          <div
-            key={s.label}
-            className="rounded-2xl bg-surface-elevated py-3 text-center shadow-sm ring-1 ring-border"
-          >
+          <div key={s.label} className="wc-frame rounded-2xl py-3 text-center">
             <p className="text-lg font-bold text-glow">{s.value}</p>
             <p className="text-xs text-muted">{s.label}</p>
           </div>
@@ -75,16 +73,8 @@ export default function MyProfilePage() {
       {/* Countries visited */}
       <section className="mt-6 px-5">
         <h3 className="text-sm font-bold">Countries Visited</h3>
-        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-          {account.countriesVisited.map((country) => (
-            <span
-              key={country}
-              title={country}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-lg shadow-sm ring-1 ring-glow/40"
-            >
-              {flagFor(country)}
-            </span>
-          ))}
+        <div className="mt-3">
+          <CountryFlags countries={account.countriesVisited} />
         </div>
       </section>
 

@@ -36,7 +36,7 @@ export default function MeetPage() {
         {travelGroups.map((group) => (
           <li
             key={group.id}
-            className="rounded-2xl bg-surface-elevated p-4 shadow-sm ring-1 ring-border"
+            className="wc-frame rounded-2xl p-4"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">

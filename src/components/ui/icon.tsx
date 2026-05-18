@@ -157,7 +157,7 @@ export function Icon({
       strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={className}
+      className={`wc-edge-soft ${className}`}
       aria-hidden
     >
       {PATHS[name]}

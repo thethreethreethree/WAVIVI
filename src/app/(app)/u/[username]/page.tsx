@@ -4,12 +4,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AddFriendButton } from "@/components/ui/add-friend-button";
+import { CountryFlags } from "@/components/ui/country-flags";
 import {
   InstagramFeed,
   InstagramProfileBadge,
   InstagramShowcase,
 } from "@/features/instagram";
-import { flagFor, travelerNotes } from "@/lib/travejor/account";
+import { travelerNotes } from "@/lib/travejor/account";
 import { getMember } from "@/lib/travejor/members";
 
 type Params = Promise<{ username: string }>;
@@ -97,15 +98,8 @@ export default async function UserProfilePage({
       {/* Countries traveled */}
       <section className="mt-6 px-5">
         <h3 className="text-sm font-bold">Countries Traveled</h3>
-        <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
-          {member.countries.map((c) => (
-            <div key={c} className="flex shrink-0 flex-col items-center gap-1">
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-elevated text-lg shadow-sm ring-1 ring-glow/40">
-                {flagFor(c)}
-              </span>
-              <span className="text-[10px] text-muted">{c}</span>
-            </div>
-          ))}
+        <div className="mt-3">
+          <CountryFlags countries={member.countries} showLabels />
         </div>
       </section>
 
@@ -148,7 +142,7 @@ export default async function UserProfilePage({
           {travelerNotes.slice(0, 2).map((note) => (
             <div
               key={note.id}
-              className="flex items-start gap-2 rounded-2xl bg-surface p-3 shadow-sm ring-1 ring-border"
+              className="wc-frame flex items-start gap-2 rounded-2xl p-3"
             >
               <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full">
                 <Image

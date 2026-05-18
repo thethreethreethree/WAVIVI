@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import {
-  Bricolage_Grotesque,
+  Fredoka,
   Geist,
   Geist_Mono,
+  Kalam,
+  Permanent_Marker,
   Space_Grotesk,
 } from "next/font/google";
 
@@ -20,10 +22,25 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const display = Bricolage_Grotesque({
+// Friendly, rounded display face — the webapp headline voice.
+const display = Fredoka({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
+});
+
+// Handwritten body face — the mobile app's travel-journal voice.
+const hand = Kalam({
+  variable: "--font-hand",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
+// Bold marker face — masculine, journal-headline lettering.
+const marker = Permanent_Marker({
+  variable: "--font-marker",
+  subsets: ["latin"],
+  weight: "400",
 });
 
 // YumYumPo brand typeface — used on the partner handoff screen.
@@ -88,7 +105,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${display.variable} ${yumyumpo.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${display.variable} ${hand.variable} ${marker.variable} ${yumyumpo.variable} h-full antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />

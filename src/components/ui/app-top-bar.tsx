@@ -10,7 +10,7 @@ export function AppTopBar() {
         <svg viewBox="0 0 24 24" className="h-6 w-6" fill="#f7941d" aria-hidden>
           <path d="M2 12l19-9-9 19-2-8-8-2z" />
         </svg>
-        <span className="font-mono text-sm font-semibold uppercase tracking-[0.2em]">
+        <span className="text-base font-bold uppercase tracking-[0.18em]">
           {siteConfig.name}
         </span>
       </span>

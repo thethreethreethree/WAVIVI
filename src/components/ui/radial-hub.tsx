@@ -42,9 +42,9 @@ export function RadialHub() {
       {/* Centre hub → live map */}
       <motion.div
         className="absolute left-1/2 top-1/2 z-10 h-[42%] w-[42%] -translate-x-1/2 -translate-y-1/2"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 200, damping: 18 }}
+        initial={{ scale: 0.42, opacity: 0, filter: "blur(14px)" }}
+        animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
+        transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
       >
         <Link
           href="/map"
@@ -84,13 +84,12 @@ export function RadialHub() {
           key={item.href}
           style={{ left: `${item.x}%`, top: `${item.y}%` }}
           className="absolute flex w-[84px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
+          initial={{ scale: 0.35, opacity: 0, filter: "blur(11px)" }}
+          animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
           transition={{
-            type: "spring",
-            stiffness: 260,
-            damping: 20,
-            delay: 0.15 + i * 0.08,
+            duration: 0.7,
+            delay: 0.28 + i * 0.13,
+            ease: [0.22, 1, 0.36, 1],
           }}
         >
           <Link

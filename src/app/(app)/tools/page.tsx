@@ -59,7 +59,7 @@ export default function ToolsPage() {
             href="/map"
             className="flex flex-col items-center gap-2"
           >
-            <span className="flex h-[68px] w-[68px] items-center justify-center rounded-full bg-surface-elevated text-glow shadow-sm ring-1 ring-border">
+            <span className="wc-frame wc-frame-orange flex h-[68px] w-[68px] items-center justify-center rounded-full text-glow">
               <Icon name={service.icon} className="h-7 w-7" />
             </span>
             <span className="text-center text-xs font-medium">

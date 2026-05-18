@@ -46,7 +46,7 @@ export default async function GroupMembersPage({
           <Link
             key={m.id}
             href={`/u/${m.username}`}
-            className="flex flex-col items-center rounded-2xl bg-surface-elevated p-5 text-center shadow-sm ring-1 ring-border"
+            className="wc-frame flex flex-col items-center rounded-2xl p-5 text-center"
           >
             <div className="relative h-20 w-20">
               <Image

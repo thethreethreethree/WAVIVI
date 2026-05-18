@@ -80,7 +80,7 @@ export default async function EventDetailPage({
         </p>
 
         {/* Real-time attendance */}
-        <div className="rounded-2xl bg-surface-elevated p-4 shadow-sm ring-1 ring-border">
+        <div className="wc-frame rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold">Who&apos;s going</p>
             <span className="text-xs text-muted">

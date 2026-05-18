@@ -21,6 +21,15 @@ const VIBES: { id: VibeCategory | "all"; label: string }[] = [
   { id: "event", label: "Events" },
 ];
 
+/** Glyph shown inside each marker, by vibe. */
+const VIBE_GLYPH: Record<string, string> = {
+  buzzing: "🔥",
+  social: "🥂",
+  nightlife: "🌙",
+  chill: "🌿",
+  event: "🎉",
+};
+
 const KIND_LABEL: Record<string, string> = {
   group: "Group chat",
   event: "Event",
@@ -139,13 +148,15 @@ export function VibeMap() {
         zoom: DEFAULT_ZOOM,
         zoomControl: true,
       });
+      // Stamen Watercolor — a hand-painted map base that matches Travejor's
+      // artsy, travel-journal aesthetic. Keyless on localhost; for production
+      // register the deploy domain on a free Stadia Maps account.
       L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+        "https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg",
         {
-          maxZoom: 19,
-          subdomains: "abcd",
+          maxZoom: 16,
           attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://stamen.com/">Stamen Design</a> &copy; <a href="https://openstreetmap.org/">OpenStreetMap</a>',
         },
       ).addTo(map);
       mapRef.current = map;
@@ -159,7 +170,7 @@ export function VibeMap() {
         const size = tier === "premium" ? 46 : tier === "prominent" ? 36 : 26;
         const icon = L.divIcon({
           className: "",
-          html: `<div class="vm-marker ${spot.vibe} tier-${tier}" title="${escapeHtml(spot.name)}"></div>`,
+          html: `<div class="vm-marker ${spot.vibe} tier-${tier}" title="${escapeHtml(spot.name)}">${VIBE_GLYPH[spot.vibe] ?? ""}</div>`,
           iconSize: [size, size],
           iconAnchor: [size / 2, size / 2],
           popupAnchor: [0, -size / 2],
