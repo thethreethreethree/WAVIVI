@@ -53,13 +53,16 @@ export default function ToolsPage() {
 
       {/* Services grid */}
       <div className="mt-6 grid grid-cols-3 gap-x-3 gap-y-7 pb-8">
-        {services.map((service) => (
+        {services.map((service, i) => (
           <Link
             key={service.id}
             href="/map"
-            className="flex flex-col items-center gap-2"
+            className="group flex flex-col items-center gap-2"
           >
-            <span className="wc-frame wc-frame-orange flex h-[68px] w-[68px] items-center justify-center rounded-full text-glow">
+            <span
+              className="wc-stop-motion wc-frame wc-frame-orange flex h-[68px] w-[68px] items-center justify-center rounded-full text-glow"
+              style={{ animationDelay: `${-i * 0.17}s` }}
+            >
               <Icon name={service.icon} className="h-7 w-7" />
             </span>
             <span className="text-center text-xs font-medium">

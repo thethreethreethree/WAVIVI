@@ -104,12 +104,13 @@ export default function SusenPage() {
 
       {/* Quick prompts */}
       <div className="flex gap-2 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {SUSEN_QUICK_PROMPTS.map((p) => (
+        {SUSEN_QUICK_PROMPTS.map((p, i) => (
           <button
             key={p}
             type="button"
             onClick={() => send(p)}
-            className="wc-frame wc-frame-ghost shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold text-glow"
+            style={{ animationDelay: `${-i * 0.19}s` }}
+            className="wc-stop-motion wc-frame wc-frame-ghost shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold text-glow"
           >
             {p}
           </button>

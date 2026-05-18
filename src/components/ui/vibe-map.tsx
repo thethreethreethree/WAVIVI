@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -92,6 +92,7 @@ function escapeHtml(s: string): string {
  * Layout and behaviour mirror YumYumPo's Vibe Map; styled in Travejor's brand.
  */
 export function VibeMap() {
+  const router = useRouter();
   const [active, setActive] = useState<VibeCategory | "all">("all");
   const [region, setRegion] = useState("bangkok");
   const [loading, setLoading] = useState(true);
@@ -304,12 +305,25 @@ export function VibeMap() {
             >
               📍 {located ? "Re-center" : "What's near me"}
             </button>
-            <Link
-              href="/"
-              className="rounded-full bg-surface-elevated px-3 py-1.5 text-xs font-bold text-foreground ring-1 ring-border"
+            <button
+              type="button"
+              onClick={() => router.back()}
+              aria-label="Go back"
+              className="wc-frame wc-frame-orange relative flex h-9 w-9 items-center justify-center rounded-full text-glow transition-transform active:scale-90"
             >
-              ‹ Home
-            </Link>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+                aria-hidden
+              >
+                <path d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
           </div>
         </div>
 

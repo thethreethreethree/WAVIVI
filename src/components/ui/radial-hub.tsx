@@ -94,16 +94,22 @@ export function RadialHub() {
         >
           <Link
             href={item.href}
-            className="group relative h-[66px] w-[66px] transition-transform hover:scale-110 active:scale-95"
+            className="group relative block h-[66px] w-[66px] transition-transform hover:scale-110 active:scale-95"
           >
-            {/* Painted cream circle with an organic orange ring */}
+            {/* Stop-motion jitter — jumps between hand-posed frames */}
             <span
-              className="wc-edge wc-soft absolute inset-0 rounded-full border-[3px] border-glow/70 bg-surface"
-              aria-hidden
-            />
-            {/* Crisp icon */}
-            <span className="relative flex h-full w-full items-center justify-center text-glow">
-              <Icon name={item.icon} className="h-7 w-7" />
+              className="wc-stop-motion absolute inset-0 block"
+              style={{ animationDelay: `${-i * 0.23}s` }}
+            >
+              {/* Painted cream circle with an organic orange ring */}
+              <span
+                className="wc-edge wc-soft absolute inset-0 rounded-full border-[3px] border-glow/70 bg-surface"
+                aria-hidden
+              />
+              {/* Crisp icon */}
+              <span className="relative flex h-full w-full items-center justify-center text-glow">
+                <Icon name={item.icon} className="h-7 w-7" />
+              </span>
             </span>
           </Link>
           <span className="text-center text-[12px] font-semibold text-foreground">
