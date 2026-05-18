@@ -8,13 +8,13 @@ find events, and feel the vibe of every place. Installable PWA.
 - Next.js 16 (App Router) · React 19 · TypeScript
 - Tailwind CSS v4
 - Supabase (Postgres · Auth · Realtime · Storage)
-- Mapbox GL JS
+- Leaflet (keyless CARTO tiles) for the Vibe Map
 
 ## Getting started
 
 ```bash
 npm install
-cp .env.example .env.local   # then fill in Supabase + Mapbox keys
+cp .env.example .env.local   # then fill in Supabase keys
 npm run dev
 ```
 

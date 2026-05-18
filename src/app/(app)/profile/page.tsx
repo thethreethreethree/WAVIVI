@@ -1,18 +1,29 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { CountryFlags } from "@/components/ui/country-flags";
-import {
-  InstagramFeed,
-  InstagramProfileBadge,
-  InstagramShowcase,
-} from "@/features/instagram";
-import { account } from "@/lib/travejor/account";
+import { getCurrentProfile } from "@/lib/profiles";
 
 export const metadata: Metadata = { title: "My Profile" };
 
-export default function MyProfilePage() {
+/** Human label for each traveler status. */
+const STATUS_LABEL: Record<string, string> = {
+  exploring: "Exploring",
+  local: "Local",
+  transit: "In transit",
+  offline: "Offline",
+};
+
+export default async function MyProfilePage() {
+  const profile = await getCurrentProfile();
+
+  // Not signed in (or no profile row) — send them to log in.
+  if (!profile) redirect("/login");
+
+  const initial = profile.display_name.trim().charAt(0).toUpperCase() || "?";
+
   return (
     <div className="flex flex-1 flex-col">
       <header className="flex items-center px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
@@ -29,18 +40,32 @@ export default function MyProfilePage() {
 
       <div className="flex flex-col items-center px-5">
         <span className="wc-frame relative h-24 w-24 rounded-full p-1">
-          <span className="relative block h-full w-full overflow-hidden rounded-full">
-            <Image
-              src={account.avatar}
-              alt={account.name}
-              fill
-              sizes="96px"
-              className="object-cover"
-            />
+          <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-surface-elevated">
+            {profile.avatar_url ? (
+              <Image
+                src={profile.avatar_url}
+                alt={profile.display_name}
+                fill
+                sizes="96px"
+                className="object-cover"
+              />
+            ) : (
+              <span className="text-3xl font-bold text-glow">{initial}</span>
+            )}
           </span>
         </span>
-        <h2 className="mt-3 text-xl font-bold">{account.name}</h2>
-        <p className="mt-0.5 text-sm text-muted">@{account.username}</p>
+        <h2 className="mt-3 text-xl font-bold">{profile.display_name}</h2>
+        <p className="mt-0.5 text-sm text-muted">@{profile.username}</p>
+
+        <span className="wc-frame wc-frame-ghost mt-2 rounded-full px-3 py-1 text-xs font-semibold text-glow">
+          {STATUS_LABEL[profile.traveler_status] ?? "Exploring"}
+        </span>
+
+        {profile.bio && (
+          <p className="mt-3 max-w-sm text-center text-sm text-muted">
+            {profile.bio}
+          </p>
+        )}
 
         <div className="mt-4 flex gap-2">
           <Link
@@ -58,66 +83,15 @@ export default function MyProfilePage() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="mt-6 grid grid-cols-3 gap-2.5 px-5">
-        {[
-          { label: "Countries", value: account.stats.countries },
-          { label: "Connections", value: account.stats.connections },
-          { label: "Notes", value: account.stats.notes },
-        ].map((s) => (
-          <div key={s.label} className="wc-frame rounded-2xl py-3 text-center">
-            <p className="text-lg font-bold text-glow">{s.value}</p>
-            <p className="text-xs text-muted">{s.label}</p>
+      {/* Home country */}
+      {profile.home_country && (
+        <section className="mt-6 px-5">
+          <h3 className="text-sm font-bold">Home Country</h3>
+          <div className="mt-3">
+            <CountryFlags countries={[profile.home_country]} showLabels />
           </div>
-        ))}
-      </div>
-
-      {/* Countries visited */}
-      <section className="mt-6 px-5">
-        <h3 className="text-sm font-bold">Countries Visited</h3>
-        <div className="mt-3">
-          <CountryFlags countries={account.countriesVisited} />
-        </div>
-      </section>
-
-      {/* Travel Identity — Instagram social layer */}
-      <section className="mt-6 px-5">
-        <h3 className="text-sm font-bold">Travel Identity</h3>
-        <div className="mt-3 flex flex-col gap-3">
-          <InstagramProfileBadge identity={account.instagram} />
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <p className="text-xs font-semibold text-muted">
-                Featured Travel Moments
-              </p>
-              <Link
-                href="/profile/edit#travel-posts"
-                className="text-xs font-medium text-glow"
-              >
-                Customize
-              </Link>
-            </div>
-            <InstagramShowcase posts={account.instagram.posts} />
-          </div>
-        </div>
-      </section>
-
-      {/* Travel Feed — sourced from Instagram */}
-      <section className="mt-6 px-5 pb-8">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-bold">Travel Feed</h3>
-          <Link
-            href="/profile/edit#travel-posts"
-            className="text-xs font-medium text-glow"
-          >
-            Customize
-          </Link>
-        </div>
-        <InstagramFeed
-          posts={account.instagram.posts}
-          username={account.instagram.username}
-        />
-      </section>
+        </section>
+      )}
     </div>
   );
 }

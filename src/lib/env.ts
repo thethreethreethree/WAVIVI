@@ -16,7 +16,6 @@ function required(name: string, value: string | undefined): string {
 export const publicEnv = {
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
-  mapboxToken: process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "",
 };
 
 /** Server-only secrets. Throws if accessed without being configured. */
@@ -29,8 +28,10 @@ export const serverEnv = {
   },
 };
 
-/** True when all public env values are present. */
+/**
+ * True when Supabase is configured — the app then runs against the real
+ * backend instead of mock data. The map uses keyless Leaflet/CARTO tiles,
+ * so a Mapbox token is not required here.
+ */
 export const isConfigured =
-  publicEnv.supabaseUrl !== "" &&
-  publicEnv.supabaseAnonKey !== "" &&
-  publicEnv.mapboxToken !== "";
+  publicEnv.supabaseUrl !== "" && publicEnv.supabaseAnonKey !== "";
