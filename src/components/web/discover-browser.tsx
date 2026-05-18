@@ -139,45 +139,62 @@ export function DiscoverBrowser({
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0">
-          <Image
-            src={photo("travejor-discover-hero", 1600, 700)}
-            alt=""
-            fill
-            priority
-            className="scale-105 object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0c0b10] via-[#0c0b10]/80 to-[#0c0b10]/45" />
-        </div>
-        <div className="relative mx-auto max-w-6xl px-5 py-20 md:py-28">
-          <span className="font-mono text-xs font-bold uppercase tracking-[0.32em] text-glow">
-            ✦ Travejor Directory
-          </span>
-          <h1 className="mt-4 max-w-3xl text-4xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">
-            Discover stays, experiences &amp; events{" "}
-            <span className="text-sunset gradient-animate">
-              worth the trip.
-            </span>
-          </h1>
-          <p className="mt-4 max-w-xl text-base text-white/75">
-            The social layer of travel — verified spots, linked straight into
-            the app where the travelers are.
-          </p>
-          <div className="mt-7 max-w-xl">
-            <div className="glass-strong flex items-center gap-2 rounded-full p-1.5 pl-5">
-              <span className="text-muted" aria-hidden>
-                🔍
+      <section className="relative">
+        <div className="mx-auto max-w-6xl px-5 py-12 md:py-20">
+          <div className="grid items-center gap-10 md:grid-cols-[1.05fr_0.95fr]">
+            <div>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-glow/12 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-glow">
+                ✦ Travejor Directory
               </span>
-              <input
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setVisible(PAGE);
-                }}
-                placeholder="Search by name or destination…"
-                className="w-full bg-transparent py-2.5 text-sm text-foreground outline-none placeholder:text-muted"
-              />
+              <h1 className="mt-4 text-4xl font-extrabold leading-[1.04] tracking-tight md:text-[3.4rem]">
+                Discover stays, experiences &amp;{" "}
+                <span className="text-sunset gradient-animate">
+                  events worth the trip.
+                </span>
+              </h1>
+              <p className="mt-4 max-w-md text-base text-muted">
+                The social layer of travel — verified spots, linked straight
+                into the app where the travelers are.
+              </p>
+              <div className="mt-6 max-w-md">
+                <div className="flex items-center gap-2 rounded-full border-2 border-border bg-surface p-1.5 pl-5 shadow-card">
+                  <span className="text-muted" aria-hidden>
+                    🔍
+                  </span>
+                  <input
+                    value={query}
+                    onChange={(e) => {
+                      setQuery(e.target.value);
+                      setVisible(PAGE);
+                    }}
+                    placeholder="Search by name or destination…"
+                    className="w-full bg-transparent py-2.5 text-sm text-foreground outline-none placeholder:text-muted"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Photo with playful floating pills */}
+            <div className="relative mx-auto w-full max-w-sm md:max-w-none">
+              <div className="relative aspect-[5/6] w-full overflow-hidden rounded-[2rem] shadow-card md:rotate-2">
+                <Image
+                  src={photo("travejor-discover-hero", 900, 1100)}
+                  alt=""
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 90vw, 460px"
+                  className="object-cover"
+                />
+              </div>
+              <div className="glass absolute -bottom-4 -left-4 rounded-2xl px-4 py-3">
+                <p className="text-lg font-extrabold text-glow">2,400+</p>
+                <p className="text-[11px] font-semibold text-muted">
+                  travelers exploring now
+                </p>
+              </div>
+              <div className="glass absolute -right-3 top-6 rounded-full px-3.5 py-1.5 text-xs font-extrabold">
+                🌍 60+ cities
+              </div>
             </div>
           </div>
         </div>

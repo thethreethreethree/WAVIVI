@@ -75,7 +75,7 @@ export function WebHeader() {
       </div>
 
       {open && (
-        <div className="glass-strong border-t border-white/5 md:hidden">
+        <div className="glass-strong border-t border-border md:hidden">
           <div className="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-3">
             {NAV.map((n) => (
               <Link

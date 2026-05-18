@@ -45,34 +45,39 @@ export default function ListWithTravejorPage() {
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0">
-          <Image
-            src={photo("partner-hero", 1600, 700)}
-            alt=""
-            fill
-            priority
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 to-black/45" />
-        </div>
-        <div className="relative mx-auto max-w-6xl px-5 py-24">
-          <span className="font-mono text-xs font-bold uppercase tracking-[0.3em] text-glow">
-            Travejor for Partners
-          </span>
-          <h1 className="mt-3 max-w-2xl text-4xl font-bold leading-tight tracking-tight text-white md:text-5xl">
-            List your stay, experience, or event on Travejor.
-          </h1>
-          <p className="mt-4 max-w-xl text-white/85">
-            Get in front of travelers the moment they arrive — and let your
-            business become part of their trip.
-          </p>
-          <a
-            href="#apply"
-            className="mt-7 inline-block rounded-full bg-sunset px-6 py-3 text-sm font-bold text-white"
-          >
-            List your business
-          </a>
+      <section className="bg-sunset relative overflow-hidden">
+        <div className="grid-overlay pointer-events-none absolute inset-0 opacity-40" />
+        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-5 py-16 md:grid-cols-[1.1fr_0.9fr] md:py-20">
+          <div className="text-white">
+            <span className="inline-flex rounded-full bg-white/20 px-3 py-1 text-xs font-extrabold uppercase tracking-wider">
+              Travejor for Partners
+            </span>
+            <h1 className="mt-4 text-4xl font-extrabold leading-[1.05] tracking-tight md:text-5xl">
+              List your stay, experience, or event on Travejor.
+            </h1>
+            <p className="mt-4 max-w-xl text-white/90">
+              Get in front of travelers the moment they arrive — and let your
+              business become part of their trip.
+            </p>
+            <a
+              href="#apply"
+              className="mt-7 inline-block rounded-full bg-foreground px-6 py-3 text-sm font-bold text-background transition-transform hover:scale-105"
+            >
+              List your business
+            </a>
+          </div>
+          <div className="relative mx-auto hidden w-full max-w-sm md:block">
+            <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] shadow-card md:-rotate-2">
+              <Image
+                src={photo("partner-hero", 800, 1000)}
+                alt=""
+                fill
+                priority
+                sizes="380px"
+                className="object-cover"
+              />
+            </div>
+          </div>
         </div>
       </section>
 

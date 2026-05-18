@@ -29,7 +29,7 @@ const COLUMNS = [
 /** Cinematic dark footer for the Travejor partner webapp. */
 export function WebFooter() {
   return (
-    <footer className="relative mt-10 border-t border-white/8">
+    <footer className="relative mt-10 border-t border-border">
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-8 px-5 py-12 md:grid-cols-4">
         <div className="col-span-2 md:col-span-1">
           <div className="flex items-center gap-2">
@@ -68,7 +68,7 @@ export function WebFooter() {
           </div>
         ))}
       </div>
-      <div className="border-t border-white/8">
+      <div className="border-t border-border">
         <p className="mx-auto max-w-6xl px-5 py-5 text-xs text-muted">
           © {new Date().getFullYear()} Travejor — Meet. Vibe. Move.
         </p>

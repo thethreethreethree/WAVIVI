@@ -263,57 +263,57 @@ h3 {
 }
 
 /* ===========================================================================
-   Travejor Webapp — cinematic dark identity
-   Scoped under `.travejor-web` so the mobile app's light theme is untouched.
+   Travejor Webapp — bright, fun, adventurous, sporty identity
+   Scoped under `.travejor-web` so the mobile app's theme is untouched.
    Components consume token-backed colours, so re-theming is just variables.
 =========================================================================== */
 .travejor-web {
-  --background: #0c0b10;
-  --surface: #17151d;
-  --surface-elevated: #201d28;
-  --foreground: #f6f3ee;
-  --muted: #9b94a6;
-  --border: #2b2835;
+  --background: #f6f2e9;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --foreground: #1c1814;
+  --muted: #7d756a;
+  --border: #e8e1d3;
 
-  --accent-heat: #ff6b4a;   /* neon coral */
-  --accent-cool: #1fd0b0;   /* ocean teal */
-  --accent-glow: #ff9d2e;   /* vibrant travel orange */
-  --accent-purple: #a274ff; /* nightlife purple */
-  --accent-gold: #ffc861;   /* warm gold */
+  --accent-heat: #ff5a3c;   /* coral pop */
+  --accent-cool: #0fb59f;   /* sporty teal */
+  --accent-glow: #f7941d;   /* vibrant travel orange */
+  --accent-purple: #6c5cff; /* electric accent */
+  --accent-gold: #ffb020;   /* warm gold */
 
-  --gradient-sunset: linear-gradient(135deg, #ff7a18 0%, #ff9d2e 48%, #ffc861 100%);
-  --shadow-card: 0 18px 48px -20px rgba(0, 0, 0, 0.8);
+  --gradient-sunset: linear-gradient(135deg, #ff6a1a 0%, #f7941d 50%, #ffc24b 100%);
+  --shadow-card: 0 16px 40px -20px rgba(28, 24, 20, 0.3);
 
   color: var(--foreground);
   background: var(--background);
 }
 
-/* Glass surface — layered, blurred, faintly glowing. */
+/* Frosted white surface — clean, bright, tactile. */
 .glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 30px -18px rgba(28, 24, 20, 0.25);
 }
 .glass-strong {
-  background: rgba(20, 18, 26, 0.72);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(28, 24, 20, 0.06);
 }
 
-/* Soft glow ring on hover — tactile, premium cards. */
+/* Energetic lift + glow on hover — sporty, tactile cards. */
 .glow-hover {
   transition:
-    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.35s ease,
-    border-color 0.35s ease;
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s ease;
 }
 .glow-hover:hover {
   transform: translateY(-6px);
   box-shadow:
-    0 0 0 1px rgba(255, 157, 46, 0.35),
-    0 22px 60px -24px rgba(255, 122, 24, 0.55);
+    0 0 0 2px rgba(247, 148, 29, 0.4),
+    0 24px 44px -22px rgba(255, 106, 26, 0.45);
 }
 
 /* Animated sunset gradient — for hero accents and CTAs. */
@@ -326,16 +326,29 @@ h3 {
   50% { background-position: 100% 50%; }
 }
 
-/* Low-opacity grid + atmosphere overlay. */
+/* Faint adventure-map grid texture. */
 .grid-overlay {
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    linear-gradient(rgba(28, 24, 20, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(28, 24, 20, 0.028) 1px, transparent 1px);
   background-size: 56px 56px;
 }
 
-/* Floating drift for atmospheric orbs. */
+/* Floating drift for watercolor washes. */
 @keyframes drift {
   0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(18px, -26px) scale(1.08); }
+  50% { transform: translate(20px, -28px) scale(1.1); }
+}
+
+/* Watercolor paper grain — subtle fibrous texture over the bright washes. */
+.paper-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.4;
+  mix-blend-mode: multiply;
+}
+
+/* Watercolor wash — soft pigment blob with an organic, bleeding edge. */
+.watercolor-wash {
+  mix-blend-mode: multiply;
+  filter: blur(70px);
 }

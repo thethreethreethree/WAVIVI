@@ -10,9 +10,10 @@ export default function WebSiteLayout({
 }) {
   return (
     <div className="travejor-web relative flex min-h-dvh flex-col">
-      {/* Atmospheric background */}
+      {/* Watercolor backdrop — drifting washes + paper grain */}
       <GlowOrbs />
       <div className="grid-overlay pointer-events-none absolute inset-0" aria-hidden />
+      <div className="paper-grain pointer-events-none absolute inset-0" aria-hidden />
 
       <div className="relative flex min-h-dvh flex-col">
         <WebHeader />

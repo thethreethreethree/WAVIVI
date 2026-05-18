@@ -1,7 +1,8 @@
-interface Orb {
+interface Wash {
   color: string;
   size: number;
   delay: string;
+  opacity: number;
   top?: string;
   left?: string;
   right?: string;
@@ -9,14 +10,17 @@ interface Orb {
 }
 
 /**
- * Atmospheric glow orbs — soft blurred light layers behind webapp content.
- * Pure CSS (no JS), GPU-friendly, drifts slowly for a "living" feel.
+ * Watercolor washes — soft, bubbly pigment blobs that drift behind the
+ * webapp. Multiply blending lets overlaps mix like real watercolor, giving
+ * the bright UI a friendly, painterly, adventurous feel.
  */
 export function GlowOrbs() {
-  const orbs: Orb[] = [
-    { color: "#ff7a18", size: 460, delay: "0s", top: "-8%", left: "-6%" },
-    { color: "#a274ff", size: 520, delay: "-3s", top: "32%", right: "-12%" },
-    { color: "#1fd0b0", size: 420, delay: "-6s", bottom: "-14%", left: "18%" },
+  const washes: Wash[] = [
+    { color: "#ffb020", size: 460, delay: "0s", opacity: 0.5, top: "-12%", left: "-8%" },
+    { color: "#0fb59f", size: 520, delay: "-4s", opacity: 0.42, top: "20%", right: "-14%" },
+    { color: "#ff5a3c", size: 400, delay: "-8s", opacity: 0.4, bottom: "-10%", left: "12%" },
+    { color: "#f7941d", size: 360, delay: "-6s", opacity: 0.4, top: "48%", left: "30%" },
+    { color: "#6c5cff", size: 320, delay: "-11s", opacity: 0.32, bottom: "8%", right: "16%" },
   ];
 
   return (
@@ -24,21 +28,21 @@ export function GlowOrbs() {
       className="pointer-events-none absolute inset-0 overflow-hidden"
       aria-hidden
     >
-      {orbs.map((o, i) => (
+      {washes.map((w, i) => (
         <span
           key={i}
-          className="absolute rounded-full blur-[110px]"
+          className="watercolor-wash absolute rounded-full"
           style={{
-            background: o.color,
-            opacity: 0.22,
-            width: o.size,
-            height: o.size,
-            top: o.top,
-            left: o.left,
-            right: o.right,
-            bottom: o.bottom,
-            animation: "drift 18s ease-in-out infinite",
-            animationDelay: o.delay,
+            background: w.color,
+            opacity: w.opacity,
+            width: w.size,
+            height: w.size,
+            top: w.top,
+            left: w.left,
+            right: w.right,
+            bottom: w.bottom,
+            animation: "drift 22s ease-in-out infinite",
+            animationDelay: w.delay,
           }}
         />
       ))}
