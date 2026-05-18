@@ -65,7 +65,7 @@ export function BottomNav() {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="wc-edge-soft relative h-[1.15rem] w-[1.15rem]"
+      className="wc-edge-soft relative h-[1.5rem] w-[1.5rem]"
     >
       {t.icon}
     </svg>
@@ -79,20 +79,20 @@ export function BottomNav() {
           <Link
             href={t.href}
             aria-current="page"
-            className="relative flex items-center gap-1.5 rounded-full px-3 py-2.5 text-white"
+            className="relative flex items-center gap-2 rounded-full px-4 py-3.5 text-white"
           >
             <span
               className="wc-edge absolute inset-0 rounded-full bg-sunset"
               aria-hidden
             />
             {iconSvg(t)}
-            <span className="relative text-xs font-bold">{t.label}</span>
+            <span className="relative text-sm font-bold">{t.label}</span>
           </Link>
         ) : (
           <Link
             href={t.href}
             aria-label={t.label}
-            className="wc-frame flex h-10 w-10 items-center justify-center rounded-full text-glow/75 transition-transform active:scale-95"
+            className="wc-frame flex h-13 w-13 items-center justify-center rounded-full text-glow/75 transition-transform active:scale-95"
           >
             {iconSvg(t)}
           </Link>
@@ -104,13 +104,13 @@ export function BottomNav() {
   return (
     <nav className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2">
       <ul
-        className="flex items-center gap-1 rounded-full border border-border
-                   bg-surface/95 p-1.5 shadow-card backdrop-blur"
+        className="flex items-center gap-2.5 rounded-full border border-border
+                   bg-surface/95 p-2.5 shadow-card backdrop-blur"
       >
         {TABS.slice(0, 2).map(tab)}
 
         {/* Susen — elevated centre action */}
-        <li className="-mt-7 mx-0.5">
+        <li className="-mt-9 mx-1">
           <Link
             href="/susen"
             aria-label="Ask Susen"
@@ -120,12 +120,12 @@ export function BottomNav() {
             }`}
           >
             <SusenAvatar
-              className={`h-14 w-14 shadow-card ring-4 ring-surface ${
+              className={`h-17 w-17 shadow-card ring-4 ring-surface ${
                 susenActive ? "ring-glow/40" : ""
               }`}
             />
             <span
-              className={`mt-0.5 text-[10px] font-bold ${
+              className={`mt-0.5 text-[11px] font-bold ${
                 susenActive ? "text-glow" : "text-muted"
               }`}
             >

@@ -10,7 +10,7 @@ export default function AppLayout({
 }) {
   return (
     <div className="font-hand-app bg-border/40 font-[family-name:var(--font-hand)]">
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-hidden bg-background pb-[5.5rem] shadow-sm">
+      <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-hidden bg-background pb-[6.75rem] shadow-sm">
         <div
           className="paper-grain pointer-events-none absolute inset-0 z-0"
           aria-hidden
