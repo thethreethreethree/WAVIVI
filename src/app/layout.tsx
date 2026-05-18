@@ -1,7 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import {
+  Bricolage_Grotesque,
+  Geist,
+  Geist_Mono,
+  Space_Grotesk,
+} from "next/font/google";
 
-import { SiteHeader } from "@/components/ui/site-header";
 import { siteConfig } from "@/config/site";
 
 import "./globals.css";
@@ -16,7 +20,24 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const display = Bricolage_Grotesque({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+});
+
+// YumYumPo brand typeface — used on the partner handoff screen.
+const yumyumpo = Space_Grotesk({
+  variable: "--font-yumyumpo",
+  subsets: ["latin"],
+  weight: ["500", "700"],
+});
+
+/** Applies the saved/system theme before paint to avoid a flash. */
+const themeScript = `(function(){try{var t=localStorage.getItem('wavivi-theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.classList.add('dark');}catch(e){}})();`;
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.url),
   title: {
     default: `${siteConfig.name} — ${siteConfig.tagline}`,
     template: `%s · ${siteConfig.name}`,
@@ -24,10 +45,30 @@ export const metadata: Metadata = {
   description: siteConfig.description,
   applicationName: siteConfig.name,
   manifest: "/manifest.webmanifest",
+  keywords: [
+    "travel",
+    "social map",
+    "meet travelers",
+    "group chat",
+    "events",
+    "nomad",
+  ],
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: siteConfig.name,
+  },
+  openGraph: {
+    type: "website",
+    siteName: siteConfig.name,
+    title: `${siteConfig.name} — ${siteConfig.tagline}`,
+    description: siteConfig.description,
+    url: siteConfig.url,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${siteConfig.name} — ${siteConfig.tagline}`,
+    description: siteConfig.description,
   },
 };
 
@@ -46,12 +87,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} ${display.variable} ${yumyumpo.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <SiteHeader />
-        {children}
-      </body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className="min-h-full">{children}</body>
     </html>
   );
 }

@@ -1,21 +1,42 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   WAVIVI design tokens
-   Dark-first. A warm "heat" accent for the vibe system, a cool accent for
-   travel/discovery surfaces, and a glow accent for highlights.
+   WAVIVI / Travejor design system
+   Light + dark ("night traveler") themes. Components consume token-backed
+   colours, so toggling the `.dark` class on <html> re-themes the whole app.
 --------------------------------------------------------------------------- */
 :root {
-  --background: #0b0b14;
-  --surface: #14141f;
-  --surface-elevated: #1d1d2b;
-  --foreground: #f3f3f7;
-  --muted: #9a9aae;
-  --border: #2a2a3c;
+  --background: #fbf9f5;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --foreground: #181613;
+  --muted: #8a847b;
+  --border: #ece6dc;
 
-  --accent-heat: #ff5d73;
-  --accent-cool: #19c3a8;
-  --accent-glow: #7c5cff;
+  --accent-heat: #ef5d3c;  /* warnings / destructive */
+  --accent-cool: #12a07a;  /* verified / positive */
+  --accent-glow: #f7941d;  /* PRIMARY — Travejor orange */
+
+  --gradient-sunset: linear-gradient(135deg, #ff7a18 0%, #f7941d 52%, #ffb347 100%);
+  --shadow-card: 0 6px 22px -12px rgba(24, 22, 19, 0.28);
+  --hub-core: #1b1916;
+}
+
+.dark {
+  --background: #131110;
+  --surface: #1e1b18;
+  --surface-elevated: #272320;
+  --foreground: #f4efe6;
+  --muted: #9a938a;
+  --border: #322d27;
+
+  --accent-heat: #ff7a5c;
+  --accent-cool: #2bc79a;
+  --accent-glow: #ff9d2e;
+
+  --gradient-sunset: linear-gradient(135deg, #ff8a2b 0%, #ff9d2e 52%, #ffc06b 100%);
+  --shadow-card: 0 8px 26px -12px rgba(0, 0, 0, 0.7);
+  --hub-core: #060504;
 }
 
 @theme inline {
@@ -30,6 +51,7 @@
   --color-glow: var(--accent-glow);
 
   --font-sans: var(--font-geist-sans);
+  --font-display: var(--font-display);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -38,4 +60,204 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Display typeface — bold, characterful headings. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Shared helpers */
+.bg-sunset {
+  background-image: var(--gradient-sunset);
+}
+.text-sunset {
+  background-image: var(--gradient-sunset);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Vibe Map — Leaflet markers, popups, and overlays.
+--------------------------------------------------------------------------- */
+.vm-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: var(--accent-glow);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.vm-marker:hover {
+  transform: scale(1.12);
+}
+.vm-marker.buzzing {
+  background: #ef4444;
+}
+.vm-marker.social {
+  background: var(--accent-glow);
+}
+.vm-marker.nightlife {
+  background: #312e81;
+  color: #ffd27a;
+}
+.vm-marker.chill {
+  background: var(--accent-cool);
+}
+.vm-marker.event {
+  background: #a855f7;
+}
+.vm-marker.tier-premium {
+  border-width: 4px;
+  box-shadow: 0 0 0 3px rgba(247, 148, 29, 0.5), 0 8px 22px rgba(0, 0, 0, 0.45);
+  animation: vmPulse 2.4s ease-in-out infinite;
+}
+.vm-marker.tier-prominent {
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.4);
+  animation: vmBob 4.5s ease-in-out infinite;
+}
+.vm-marker.tier-standard {
+  border-width: 2px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+@keyframes vmBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes vmPulse {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.vm-user-marker {
+  position: relative;
+  width: 44px;
+  height: 44px;
+}
+.vm-user-pin {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: var(--accent-glow);
+  color: #fff;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+.vm-user-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(247, 148, 29, 0.45);
+  animation: vmUserPulse 1.8s ease-out infinite;
+  z-index: 1;
+}
+@keyframes vmUserPulse {
+  0% { transform: scale(0.5); opacity: 0.85; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+/* Leaflet popup — themed card */
+.leaflet-popup-content-wrapper {
+  border-radius: 16px !important;
+  padding: 0 !important;
+  background: var(--surface) !important;
+  color: var(--foreground) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+.leaflet-popup-tip {
+  background: var(--surface) !important;
+}
+.leaflet-popup-content {
+  margin: 0 !important;
+  width: 232px !important;
+}
+.leaflet-container a.leaflet-popup-close-button {
+  color: var(--muted) !important;
+}
+.vm-pop-img {
+  width: 100%;
+  height: 116px;
+  object-fit: cover;
+  border-radius: 16px 16px 0 0;
+}
+.vm-pop-body {
+  padding: 11px 13px 13px;
+}
+.vm-pop-name {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+  font-size: 0.96rem;
+}
+.vm-pop-meta {
+  font-size: 0.73rem;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.vm-pop-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+.vm-pop-tag {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-glow) 14%, transparent);
+  color: var(--accent-glow);
+}
+.vm-pop-dist {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-top: 9px;
+  padding: 6px 9px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent-glow) 9%, transparent);
+}
+.vm-pop-btn {
+  display: block;
+  margin-top: 10px;
+  padding: 8px;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 0.76rem;
+  font-weight: 800;
+  background-image: var(--gradient-sunset);
+  color: #fff;
+  text-decoration: none;
+}
+
+.vm-leaflet {
+  background: var(--surface-elevated);
+}
+.dark .vm-leaflet .leaflet-tile {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
 }

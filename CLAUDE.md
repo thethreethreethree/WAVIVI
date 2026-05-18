@@ -47,5 +47,7 @@ src/
 
 ## Roadmap
 
-Build order is tracked in `src/config/phases.ts`. Phase 1 (Foundation &
-Architecture) is complete; Phase 2 is Authentication & Profiles.
+Build order is tracked in `src/config/phases.ts`. All 12 phases are
+feature-complete against mock data. Remaining production work: wire up a live
+Supabase project (auth, profiles, realtime chat) and add a Mapbox token, then
+swap the rule-based recommendation engine for a real AI call when desired.
