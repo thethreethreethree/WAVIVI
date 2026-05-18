@@ -291,12 +291,17 @@ export function VibeMap() {
 
   return (
     <div className="flex flex-1 flex-col">
-      {/* Top bar — mirrors the YumYumPo Vibe Map layout */}
-      <div className="z-20 flex flex-col gap-2.5 border-b border-border bg-white px-4 pb-3 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))] shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-xl font-bold tracking-tight">
+      {/* Top bar — watercolor sunset orange, matching the app's brand */}
+      <div className="bg-sunset relative z-20 flex flex-col gap-2.5 overflow-hidden px-4 pb-3 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))] shadow-card">
+        {/* Coarse paper grain texture over the whole bar */}
+        <span
+          className="paper-grain-coarse pointer-events-none absolute inset-0"
+          aria-hidden
+        />
+        <div className="relative flex items-center justify-between gap-3">
+          <h1 className="text-xl font-bold tracking-tight text-white">
             Vibe Map
-            <span className="ml-2 align-middle text-xs font-medium text-muted">
+            <span className="ml-2 align-middle text-xs font-medium text-white/80">
               Where the vibe is right now
             </span>
           </h1>
@@ -304,9 +309,15 @@ export function VibeMap() {
             <button
               type="button"
               onClick={locate}
-              className="rounded-full bg-[#ffd000] px-3 py-1.5 text-xs font-extrabold text-[#111] transition-transform active:scale-95"
+              className="relative rounded-full px-3.5 py-2 text-xs font-extrabold text-white transition-transform active:scale-95"
             >
-              📍 {located ? "Re-center" : "What's near me"}
+              <span
+                className="wc-edge absolute inset-0 rounded-full border-2 border-white bg-glow"
+                aria-hidden
+              />
+              <span className="relative">
+                📍 {located ? "Re-center" : "What's near me"}
+              </span>
             </button>
             <button
               type="button"
@@ -331,10 +342,10 @@ export function VibeMap() {
         </div>
 
         {/* Region row */}
-        <div className="flex items-center gap-2.5">
+        <div className="relative flex items-center gap-2.5">
           <label
             htmlFor="vm-region"
-            className="shrink-0 text-xs font-bold text-foreground"
+            className="shrink-0 text-xs font-bold text-white"
           >
             📍 Region
           </label>
@@ -351,13 +362,13 @@ export function VibeMap() {
               </option>
             ))}
           </select>
-          <span className="shrink-0 text-[11px] font-semibold text-muted">
+          <span className="shrink-0 text-[11px] font-semibold text-white/80">
             {visibleCount} shown
           </span>
         </div>
 
         {/* Vibe filter chips */}
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="relative -mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {VIBES.map((v) => (
             <button
               key={v.id}
