@@ -142,32 +142,43 @@ export function DiscoverBrowser({
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
           <Image
-            src={photo("travejor-discover-hero", 1600, 600)}
+            src={photo("travejor-discover-hero", 1600, 700)}
             alt=""
             fill
             priority
-            className="object-cover"
+            className="scale-105 object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/55 to-black/35" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0c0b10] via-[#0c0b10]/80 to-[#0c0b10]/45" />
         </div>
-        <div className="relative mx-auto max-w-6xl px-5 py-16 md:py-20">
-          <span className="font-mono text-xs font-bold uppercase tracking-[0.3em] text-glow">
-            Travejor Directory
+        <div className="relative mx-auto max-w-6xl px-5 py-20 md:py-28">
+          <span className="font-mono text-xs font-bold uppercase tracking-[0.32em] text-glow">
+            ✦ Travejor Directory
           </span>
-          <h1 className="mt-3 max-w-2xl text-3xl font-bold leading-tight tracking-tight text-white md:text-4xl">
-            Discover stays, experiences, and events worth the trip.
+          <h1 className="mt-4 max-w-3xl text-4xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">
+            Discover stays, experiences &amp; events{" "}
+            <span className="text-sunset gradient-animate">
+              worth the trip.
+            </span>
           </h1>
-          <div className="mt-6 max-w-xl">
-            <input
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setVisible(PAGE);
-              }}
-              placeholder="Search by name or destination…"
-              className="w-full rounded-full border border-white/20 bg-white/95 px-5 py-3
-                         text-sm text-foreground outline-none placeholder:text-muted"
-            />
+          <p className="mt-4 max-w-xl text-base text-white/75">
+            The social layer of travel — verified spots, linked straight into
+            the app where the travelers are.
+          </p>
+          <div className="mt-7 max-w-xl">
+            <div className="glass-strong flex items-center gap-2 rounded-full p-1.5 pl-5">
+              <span className="text-muted" aria-hidden>
+                🔍
+              </span>
+              <input
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setVisible(PAGE);
+                }}
+                placeholder="Search by name or destination…"
+                className="w-full bg-transparent py-2.5 text-sm text-foreground outline-none placeholder:text-muted"
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -185,7 +196,7 @@ export function DiscoverBrowser({
         <div className="lg:grid lg:grid-cols-[260px_1fr] lg:gap-8">
           {/* Sidebar */}
           <aside
-            className={`${filtersOpen ? "block" : "hidden"} mb-6 rounded-2xl border border-border bg-surface p-5 lg:mb-0 lg:block lg:self-start`}
+            className={`${filtersOpen ? "block" : "hidden"} glass mb-6 rounded-2xl p-5 lg:mb-0 lg:block lg:self-start`}
           >
             <h2 className="mb-4 text-lg font-bold">Filters</h2>
             {filters}
@@ -215,7 +226,7 @@ export function DiscoverBrowser({
                     <button
                       type="button"
                       onClick={() => setVisible((v) => v + PAGE)}
-                      className="rounded-full border border-border bg-surface px-6 py-3 text-sm font-bold transition-colors hover:border-glow"
+                      className="glass glow-hover rounded-full px-7 py-3 text-sm font-bold"
                     >
                       Load more
                     </button>

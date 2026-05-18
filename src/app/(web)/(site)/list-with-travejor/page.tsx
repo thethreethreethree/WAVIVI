@@ -85,7 +85,7 @@ export default function ListWithTravejorPage() {
           {PARTNER_TYPES.map((p) => (
             <div
               key={p.title}
-              className="rounded-2xl bg-surface p-6 shadow-card ring-1 ring-border"
+              className="glass glow-hover rounded-2xl p-6"
             >
               <span className="text-3xl">{p.emoji}</span>
               <h3 className="mt-3 text-lg font-bold">{p.title}</h3>
@@ -103,10 +103,7 @@ export default function ListWithTravejorPage() {
           </h2>
           <div className="mt-6 grid gap-5 sm:grid-cols-2">
             {BENEFITS.map((b) => (
-              <div
-                key={b.title}
-                className="rounded-2xl bg-background p-5 ring-1 ring-border"
-              >
+              <div key={b.title} className="glass rounded-2xl p-5">
                 <h3 className="font-bold text-glow">{b.title}</h3>
                 <p className="mt-1 text-sm text-muted">{b.body}</p>
               </div>

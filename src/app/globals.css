@@ -261,3 +261,81 @@ h3 {
 .dark .vm-leaflet .leaflet-tile {
   filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
 }
+
+/* ===========================================================================
+   Travejor Webapp — cinematic dark identity
+   Scoped under `.travejor-web` so the mobile app's light theme is untouched.
+   Components consume token-backed colours, so re-theming is just variables.
+=========================================================================== */
+.travejor-web {
+  --background: #0c0b10;
+  --surface: #17151d;
+  --surface-elevated: #201d28;
+  --foreground: #f6f3ee;
+  --muted: #9b94a6;
+  --border: #2b2835;
+
+  --accent-heat: #ff6b4a;   /* neon coral */
+  --accent-cool: #1fd0b0;   /* ocean teal */
+  --accent-glow: #ff9d2e;   /* vibrant travel orange */
+  --accent-purple: #a274ff; /* nightlife purple */
+  --accent-gold: #ffc861;   /* warm gold */
+
+  --gradient-sunset: linear-gradient(135deg, #ff7a18 0%, #ff9d2e 48%, #ffc861 100%);
+  --shadow-card: 0 18px 48px -20px rgba(0, 0, 0, 0.8);
+
+  color: var(--foreground);
+  background: var(--background);
+}
+
+/* Glass surface — layered, blurred, faintly glowing. */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+.glass-strong {
+  background: rgba(20, 18, 26, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Soft glow ring on hover — tactile, premium cards. */
+.glow-hover {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s ease,
+    border-color 0.35s ease;
+}
+.glow-hover:hover {
+  transform: translateY(-6px);
+  box-shadow:
+    0 0 0 1px rgba(255, 157, 46, 0.35),
+    0 22px 60px -24px rgba(255, 122, 24, 0.55);
+}
+
+/* Animated sunset gradient — for hero accents and CTAs. */
+.gradient-animate {
+  background-size: 220% 220%;
+  animation: gradientShift 9s ease infinite;
+}
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Low-opacity grid + atmosphere overlay. */
+.grid-overlay {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+/* Floating drift for atmospheric orbs. */
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(18px, -26px) scale(1.08); }
+}

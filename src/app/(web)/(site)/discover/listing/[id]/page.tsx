@@ -52,7 +52,7 @@ export default async function ListingDetailPage({
         </nav>
         <button
           type="button"
-          className="rounded-full border border-border bg-surface px-3.5 py-1.5 text-xs font-bold text-muted"
+          className="glass rounded-full px-3.5 py-1.5 text-xs font-bold text-foreground"
         >
           ↗ Share
         </button>
@@ -121,7 +121,7 @@ export default async function ListingDetailPage({
               {listing.highlights.map((h) => (
                 <li
                   key={h}
-                  className="flex items-center gap-2 rounded-xl bg-surface px-3.5 py-2.5 text-sm ring-1 ring-border"
+                  className="glass flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm"
                 >
                   <span className="text-cool">✓</span>
                   {h}
@@ -152,14 +152,8 @@ export default async function ListingDetailPage({
 
           <section>
             <h2 className="text-lg font-bold">Location</h2>
-            <div
-              className="mt-3 flex h-44 items-center justify-center rounded-2xl ring-1 ring-border"
-              style={{
-                background:
-                  "linear-gradient(150deg,#eef3ee,#e7ece9 40%,#f3ede4),repeating-linear-gradient(0deg,transparent,transparent 30px,rgba(0,0,0,0.04) 31px),repeating-linear-gradient(90deg,transparent,transparent 30px,rgba(0,0,0,0.04) 31px)",
-              }}
-            >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-glow text-white shadow-md">
+            <div className="grid-overlay glass mt-3 flex h-44 items-center justify-center rounded-2xl">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-sunset text-white shadow-[0_0_0_8px_rgba(255,122,24,0.18)]">
                 📍
               </span>
             </div>
@@ -167,7 +161,7 @@ export default async function ListingDetailPage({
               <p className="text-sm text-muted">{listing.location}</p>
               <button
                 type="button"
-                className="rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background"
+                className="glass rounded-full px-4 py-2 text-xs font-bold text-foreground"
               >
                 Get Directions
               </button>
@@ -177,7 +171,7 @@ export default async function ListingDetailPage({
 
         {/* Sidebar */}
         <aside className="lg:sticky lg:top-24 lg:self-start">
-          <div className="rounded-2xl bg-surface p-5 shadow-card ring-1 ring-border">
+          <div className="glass-strong rounded-2xl p-5 shadow-card">
             <p className="text-sm font-semibold">Plan it with Travejor</p>
             <p className="mt-1 text-xs text-muted">
               See live traveler activity, vibe, and who&apos;s going — right
