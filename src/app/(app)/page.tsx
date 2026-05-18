@@ -26,18 +26,26 @@ export default function Home() {
       <AppTopBar />
 
       <section className="relative flex flex-col items-center overflow-hidden px-6 pb-6 pt-2">
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(circle at 50% 38%, rgba(247,148,29,0.12), transparent 62%)",
-          }}
+        {/* Watercolor splash washes in the corners */}
+        <span
+          className="watercolor-wash pointer-events-none absolute -left-16 -top-8 h-56 w-56 rounded-full"
+          style={{ background: "#ff9d6b", opacity: 0.4 }}
+          aria-hidden
+        />
+        <span
+          className="watercolor-wash pointer-events-none absolute -right-20 top-1/3 h-60 w-60 rounded-full"
+          style={{ background: "#ffb9a0", opacity: 0.38 }}
+          aria-hidden
+        />
+        <span
+          className="watercolor-wash pointer-events-none absolute -bottom-10 left-1/4 h-44 w-44 rounded-full"
+          style={{ background: "#f7c98f", opacity: 0.34 }}
           aria-hidden
         />
         {PINS.map((pin, i) => (
           <span
             key={i}
-            className="pointer-events-none absolute text-lg opacity-25"
+            className="pointer-events-none absolute text-base opacity-30"
             style={{ top: pin.top, left: pin.left }}
             aria-hidden
           >
@@ -45,7 +53,7 @@ export default function Home() {
           </span>
         ))}
 
-        <p className="relative mb-4 text-center text-sm text-muted">
+        <p className="wc-underline relative mb-7 text-center text-base font-semibold text-foreground">
           Meet. Vibe. Move.
         </p>
         <div className="relative w-full">
@@ -68,7 +76,7 @@ export default function Home() {
               href={`/place/${place.id}`}
               className="w-36 shrink-0"
             >
-              <div className="relative h-24 w-36 overflow-hidden rounded-xl">
+              <div className="wc-soft relative h-24 w-36 overflow-hidden rounded-2xl ring-1 ring-border">
                 <Image
                   src={place.image}
                   alt={place.name}

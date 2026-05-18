@@ -24,8 +24,8 @@ const HUB_LINKS: HubLink[] = [
 const RING_RADIUS = 39;
 
 /**
- * The "Where to Next?" radial hub — Travejor's signature home control.
- * Animated entrance, a pulsing sunset glow, and five primary destinations.
+ * The "Where to Next?" radial hub — Travejor's signature home control,
+ * painted in a watercolor style: organic edges, soft washes, warm glow.
  */
 export function RadialHub() {
   const items = HUB_LINKS.map((link, i) => {
@@ -39,15 +39,6 @@ export function RadialHub() {
 
   return (
     <div className="relative mx-auto aspect-square w-full max-w-[360px]">
-      {/* Pulsing sunset glow */}
-      <motion.div
-        className="absolute left-1/2 top-1/2 -z-10 h-[55%] w-[55%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-sunset blur-2xl"
-        initial={{ opacity: 0.18, scale: 0.9 }}
-        animate={{ opacity: [0.18, 0.34, 0.18], scale: [0.9, 1.05, 0.9] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-        aria-hidden
-      />
-
       {/* Centre hub → live map */}
       <motion.div
         className="absolute left-1/2 top-1/2 z-10 h-[42%] w-[42%] -translate-x-1/2 -translate-y-1/2"
@@ -57,19 +48,32 @@ export function RadialHub() {
       >
         <Link
           href="/map"
-          className="flex h-full w-full flex-col items-center justify-center
-                     gap-1.5 rounded-full text-center shadow-xl ring-[3px]
-                     ring-glow/40 transition-transform hover:scale-105
-                     active:scale-95"
-          style={{ background: "var(--hub-core)" }}
+          className="group relative block h-full w-full transition-transform hover:scale-105 active:scale-95"
         >
-          <svg viewBox="0 0 24 24" className="h-10 w-10" fill="#f7941d" aria-hidden>
-            <path d="M2 12l19-9-9 19-2-8-8-2z" />
-          </svg>
-          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-white">
-            Where to
-            <br />
-            next?
+          {/* Soft watercolor glow */}
+          <span
+            className="absolute -inset-3 rounded-full bg-glow/30 blur-xl"
+            aria-hidden
+          />
+          {/* Painted orange blob with an organic edge */}
+          <span
+            className="wc-edge absolute inset-0 rounded-full bg-sunset"
+            aria-hidden
+          />
+          {/* Paper texture inside the blob */}
+          <span className="absolute inset-0 overflow-hidden rounded-full" aria-hidden>
+            <span className="paper-grain absolute inset-0" />
+          </span>
+          {/* Crisp content */}
+          <span className="relative flex h-full w-full flex-col items-center justify-center gap-1.5">
+            <svg viewBox="0 0 24 24" className="h-9 w-9" fill="#fff" aria-hidden>
+              <path d="M2 12l19-9-9 19-2-8-8-2z" />
+            </svg>
+            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-white">
+              Where to
+              <br />
+              next?
+            </span>
           </span>
         </Link>
       </motion.div>
@@ -79,7 +83,7 @@ export function RadialHub() {
         <motion.div
           key={item.href}
           style={{ left: `${item.x}%`, top: `${item.y}%` }}
-          className="absolute w-[80px] -translate-x-1/2 -translate-y-1/2"
+          className="absolute flex w-[84px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5"
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{
@@ -91,20 +95,21 @@ export function RadialHub() {
         >
           <Link
             href={item.href}
-            className="flex flex-col items-center gap-1"
+            className="group relative h-[66px] w-[66px] transition-transform hover:scale-110 active:scale-95"
           >
+            {/* Painted cream circle with an organic orange ring */}
             <span
-              className="flex h-[64px] w-[64px] items-center justify-center
-                         rounded-full border-2 border-glow bg-surface text-glow
-                         shadow-card transition-transform hover:scale-110
-                         active:scale-95"
-            >
+              className="wc-edge wc-soft absolute inset-0 rounded-full border-[3px] border-glow/70 bg-surface"
+              aria-hidden
+            />
+            {/* Crisp icon */}
+            <span className="relative flex h-full w-full items-center justify-center text-glow">
               <Icon name={item.icon} className="h-7 w-7" />
             </span>
-            <span className="text-center text-[11px] font-semibold text-foreground">
-              {item.label}
-            </span>
           </Link>
+          <span className="text-center text-[12px] font-semibold text-foreground">
+            {item.label}
+          </span>
         </motion.div>
       ))}
     </div>

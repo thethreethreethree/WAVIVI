@@ -11,9 +11,7 @@ import {
 
 import "leaflet/dist/leaflet.css";
 
-/* ── Vibe categories ──────────────────────────────────────────
-   Ported from YumYumPo's Vibe Map — same structure, retuned from
-   restaurant moods to traveler social-energy categories. */
+/* ── Vibe categories — same structure as YumYumPo's Vibe Map. ──── */
 const VIBES: { id: VibeCategory | "all"; label: string }[] = [
   { id: "all", label: "All" },
   { id: "buzzing", label: "Buzzing" },
@@ -33,7 +31,6 @@ const KIND_LABEL: Record<string, string> = {
 const DEFAULT_CENTER: [number, number] = [13.7563, 100.4977];
 const DEFAULT_ZOOM = 6;
 
-/* ── Region grouping — primary = text before the comma. ───────── */
 function regionPrimary(loc: string): string {
   return loc.split(",")[0].trim();
 }
@@ -41,7 +38,6 @@ function regionKey(loc: string): string {
   return regionPrimary(loc).toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }
 
-/* ── Distance helpers ─────────────────────────────────────────── */
 function haversineKm(
   a: { lat: number; lng: number },
   b: { lat: number; lng: number },
@@ -83,32 +79,30 @@ function escapeHtml(s: string): string {
 }
 
 /**
- * Travejor Vibe Map — a faithful port of YumYumPo's Leaflet vibe map,
- * rewired to surface live traveler social density instead of restaurants.
+ * Travejor Vibe Map — Leaflet map of live traveler social density.
+ * Layout and behaviour mirror YumYumPo's Vibe Map; styled in Travejor's brand.
  */
 export function VibeMap() {
   const [active, setActive] = useState<VibeCategory | "all">("all");
-  // Open on the busiest region so the map lands somewhere alive.
   const [region, setRegion] = useState("bangkok");
   const [loading, setLoading] = useState(true);
   const [located, setLocated] = useState(false);
   const [nearby, setNearby] = useState<number | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  // Imperative Leaflet state kept in refs.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const leafletRef = useRef<any>(null);
   const markersRef = useRef<
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    { marker: any; spot: VibeSpot; tier: string }[]
+    { marker: any; spot: VibeSpot }[]
   >([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userMarkerRef = useRef<any>(null);
   const userPosRef = useRef<{ lat: number; lng: number } | null>(null);
   const applyRef = useRef<() => void>(() => {});
 
-  /** Regions derived from the dataset (static — no geocoding needed). */
   const regions = useMemo(() => {
     const map = new Map<string, { key: string; label: string; count: number }>();
     for (const s of vibeSpots) {
@@ -136,10 +130,11 @@ export function VibeMap() {
     let cancelled = false;
     (async () => {
       const L = (await import("leaflet")).default;
-      if (cancelled) return;
+      const el = document.getElementById("vm-map");
+      if (cancelled || !el || mapRef.current) return;
       leafletRef.current = L;
 
-      const map = L.map("vm-map", {
+      const map = L.map(el, {
         center: DEFAULT_CENTER,
         zoom: DEFAULT_ZOOM,
         zoomControl: true,
@@ -155,12 +150,9 @@ export function VibeMap() {
       ).addTo(map);
       mapRef.current = map;
 
-      // Build markers.
-      const scored = vibeSpots.map((spot) => ({
-        spot,
-        score: prominence(spot),
-      }));
-      scored.sort((a, b) => a.score - b.score);
+      const scored = vibeSpots
+        .map((spot) => ({ spot, score: prominence(spot) }))
+        .sort((a, b) => a.score - b.score);
 
       for (const { spot, score } of scored) {
         const tier = tierOf(score);
@@ -178,17 +170,20 @@ export function VibeMap() {
             tier === "premium" ? 1000 : tier === "prominent" ? 400 : 0,
         });
         marker.bindPopup(buildPopup(spot, null), { autoPan: true });
-        markersRef.current.push({ marker, spot, tier });
+        markersRef.current.push({ marker, spot });
       }
 
       setLoading(false);
       applyRef.current();
+      // Leaflet needs a nudge once the flex container has its final size.
+      setTimeout(() => map.invalidateSize(), 150);
     })();
 
     return () => {
       cancelled = true;
       mapRef.current?.remove();
       mapRef.current = null;
+      markersRef.current = [];
     };
   }, []);
 
@@ -214,7 +209,7 @@ export function VibeMap() {
         bounds.extend([userPosRef.current.lat, userPosRef.current.lng]);
       }
       if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15 });
       } else {
         map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
       }
@@ -226,7 +221,12 @@ export function VibeMap() {
   function locate() {
     const L = leafletRef.current;
     const map = mapRef.current;
-    if (!L || !map || !navigator.geolocation) return;
+    if (!L || !map) return;
+    if (!navigator.geolocation) {
+      setNotice("Location isn't available on this device.");
+      return;
+    }
+    setNotice("Finding your location…");
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -234,6 +234,7 @@ export function VibeMap() {
         const lng = pos.coords.longitude;
         userPosRef.current = { lat, lng };
         setLocated(true);
+        setNotice(null);
 
         userMarkerRef.current?.remove();
         const icon = L.divIcon({
@@ -248,64 +249,72 @@ export function VibeMap() {
           interactive: false,
         }).addTo(map);
 
-        // Re-bind popups so distances reflect the new origin.
         for (const { marker, spot } of markersRef.current) {
           marker.bindPopup(buildPopup(spot, { lat, lng }), { autoPan: true });
         }
 
-        const within = markersRef.current.filter(({ spot }) => {
-          const vibeOk = active === "all" || spot.vibe === active;
-          const regionOk =
-            region === "all" || regionKey(spot.location) === region;
-          return (
-            vibeOk &&
-            regionOk &&
-            haversineKm({ lat, lng }, { lat: spot.lat, lng: spot.lng }) <= 5
-          );
-        });
+        const within = markersRef.current.filter(
+          ({ spot }) =>
+            haversineKm({ lat, lng }, { lat: spot.lat, lng: spot.lng }) <= 5,
+        );
         setNearby(within.length);
         map.setView([lat, lng], 14, { animate: true });
       },
-      () => setNearby(null),
+      (err) => {
+        setNearby(null);
+        setNotice(
+          err.code === err.PERMISSION_DENIED
+            ? "Location permission denied — enable it to see what's near you."
+            : "Couldn't get your location. Try again.",
+        );
+      },
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
     );
   }
 
-  const visibleCount =
-    active === "all" ? counts.all : (counts[active] ?? 0);
+  const visibleCount = active === "all" ? counts.all : (counts[active] ?? 0);
 
   return (
     <div className="flex flex-1 flex-col">
-      {/* Top bar */}
-      <div className="border-b border-border bg-surface px-4 pb-2.5 pt-4">
+      {/* Top bar — mirrors the YumYumPo Vibe Map layout */}
+      <div className="z-20 flex flex-col gap-2.5 border-b border-border bg-surface px-4 pb-3 pt-4 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-xl font-bold tracking-tight">
             Vibe Map
-            <span className="ml-2 text-xs font-medium text-muted">
+            <span className="ml-2 align-middle text-xs font-medium text-muted">
               Where the vibe is right now
             </span>
           </h1>
-          <Link
-            href="/"
-            className="flex items-center gap-1 rounded-full bg-surface-elevated px-3 py-1.5 text-xs font-bold ring-1 ring-border"
-          >
-            ‹ Home
-          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={locate}
+              className="rounded-full bg-glow px-3 py-1.5 text-xs font-bold text-white transition-transform active:scale-95"
+            >
+              📍 {located ? "Re-center" : "What's near me"}
+            </button>
+            <Link
+              href="/"
+              className="rounded-full bg-surface-elevated px-3 py-1.5 text-xs font-bold text-foreground ring-1 ring-border"
+            >
+              ‹ Home
+            </Link>
+          </div>
         </div>
 
-        <div className="mt-2.5 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={locate}
-            className="bg-sunset shrink-0 rounded-full px-3 py-1.5 text-xs font-bold text-white"
+        {/* Region row */}
+        <div className="flex items-center gap-2.5">
+          <label
+            htmlFor="vm-region"
+            className="shrink-0 text-xs font-bold text-foreground"
           >
-            {located ? "Re-center" : "What's near me"}
-          </button>
+            📍 Region
+          </label>
           <select
+            id="vm-region"
             value={region}
             onChange={(e) => setRegion(e.target.value)}
-            aria-label="Region"
-            className="min-w-0 flex-1 rounded-xl border border-border bg-surface-elevated px-3 py-1.5 text-xs font-bold outline-none"
+            className="min-w-0 flex-1 rounded-xl border border-border bg-surface-elevated px-3 py-1.5 text-xs font-bold text-foreground outline-none focus-visible:border-glow"
           >
             <option value="all">All regions ({vibeSpots.length})</option>
             {regions.map((r) => (
@@ -314,9 +323,13 @@ export function VibeMap() {
               </option>
             ))}
           </select>
+          <span className="shrink-0 text-[11px] font-semibold text-muted">
+            {visibleCount} shown
+          </span>
         </div>
 
-        <div className="mt-2.5 flex gap-2 overflow-x-auto pb-0.5">
+        {/* Vibe filter chips */}
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {VIBES.map((v) => (
             <button
               key={v.id}
@@ -331,7 +344,7 @@ export function VibeMap() {
               {v.label}
               <span
                 className={`rounded-full px-1.5 text-[10px] ${
-                  active === v.id ? "bg-background/20" : "bg-border"
+                  active === v.id ? "bg-background/25" : "bg-border"
                 }`}
               >
                 {counts[v.id] ?? 0}
@@ -346,30 +359,36 @@ export function VibeMap() {
         <div id="vm-map" className="vm-leaflet absolute inset-0" />
 
         {loading && (
-          <div className="absolute inset-0 z-[500] flex items-center justify-center bg-foreground/80 font-bold tracking-wide text-glow">
+          <div className="absolute inset-0 z-[600] flex items-center justify-center bg-surface font-bold tracking-wide text-glow">
             Loading map…
           </div>
         )}
 
+        {notice && (
+          <div className="absolute inset-x-4 top-4 z-[600] mx-auto max-w-sm rounded-xl bg-foreground/92 px-4 py-2.5 text-center text-xs font-semibold text-background">
+            {notice}
+          </div>
+        )}
+
         {visibleCount === 0 && !loading && (
-          <div className="absolute inset-x-4 bottom-4 z-[500] mx-auto max-w-sm rounded-xl bg-foreground/90 px-4 py-3 text-center text-sm text-background">
+          <div className="absolute inset-x-4 bottom-24 z-[600] mx-auto max-w-sm rounded-xl bg-foreground/90 px-4 py-3 text-center text-sm text-background">
             No spots match this filter yet. Try &ldquo;All&rdquo;.
           </div>
         )}
 
         {nearby !== null && (
-          <div className="absolute left-1/2 top-4 z-[500] flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-sunset px-4 py-2.5 text-sm font-bold text-white shadow-card">
+          <div className="absolute left-1/2 top-4 z-[600] flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-glow px-4 py-2.5 text-sm font-bold text-white shadow-lg">
             <span>📍</span>
             <span>
               {nearby
-                ? `${nearby} ${nearby === 1 ? "spot" : "spots"} within a 5 km radius`
-                : "Nothing within 5 km — try zooming out"}
+                ? `${nearby} ${nearby === 1 ? "spot" : "spots"} within 5 km`
+                : "Nothing within 5 km — zoom out"}
             </span>
             <button
               type="button"
               onClick={() => setNearby(null)}
               aria-label="Dismiss"
-              className="flex h-5 w-5 items-center justify-center rounded-full bg-black/15"
+              className="flex h-5 w-5 items-center justify-center rounded-full bg-black/20"
             >
               ×
             </button>

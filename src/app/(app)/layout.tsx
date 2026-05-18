@@ -10,8 +10,14 @@ export default function AppLayout({
 }) {
   return (
     <div className="bg-border/40">
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background pb-[5.5rem] shadow-sm">
-        <PageTransition>{children}</PageTransition>
+      <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-hidden bg-background pb-[5.5rem] shadow-sm">
+        <div
+          className="paper-grain pointer-events-none absolute inset-0 z-0"
+          aria-hidden
+        />
+        <div className="relative z-10 flex flex-1 flex-col">
+          <PageTransition>{children}</PageTransition>
+        </div>
       </div>
       <BottomNav />
       <ServiceWorkerRegister />

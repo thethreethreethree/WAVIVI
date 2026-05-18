@@ -93,7 +93,39 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {/* Watercolor edge filters — referenced via `filter: url(#wc-edge)`. */}
+        <svg
+          aria-hidden
+          width="0"
+          height="0"
+          style={{ position: "absolute" }}
+        >
+          <defs>
+            <filter id="wc-edge">
+              <feTurbulence
+                type="fractalNoise"
+                baseFrequency="0.016"
+                numOctaves="3"
+                seed="8"
+                result="n"
+              />
+              <feDisplacementMap in="SourceGraphic" in2="n" scale="13" />
+            </filter>
+            <filter id="wc-edge-soft">
+              <feTurbulence
+                type="fractalNoise"
+                baseFrequency="0.022"
+                numOctaves="2"
+                seed="4"
+                result="n"
+              />
+              <feDisplacementMap in="SourceGraphic" in2="n" scale="6" />
+            </filter>
+          </defs>
+        </svg>
+        {children}
+      </body>
     </html>
   );
 }

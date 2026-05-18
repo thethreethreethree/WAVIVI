@@ -6,12 +6,13 @@
    colours, so toggling the `.dark` class on <html> re-themes the whole app.
 --------------------------------------------------------------------------- */
 :root {
-  --background: #fbf9f5;
-  --surface: #ffffff;
+  /* Warm watercolor-paper palette. */
+  --background: #f4ecdd;
+  --surface: #fdf9f0;
   --surface-elevated: #ffffff;
-  --foreground: #181613;
-  --muted: #8a847b;
-  --border: #ece6dc;
+  --foreground: #2c2318;
+  --muted: #948b7c;
+  --border: #e6dac3;
 
   --accent-heat: #ef5d3c;  /* warnings / destructive */
   --accent-cool: #12a07a;  /* verified / positive */
@@ -351,4 +352,53 @@ h3 {
 .watercolor-wash {
   mix-blend-mode: multiply;
   filter: blur(70px);
+}
+
+/* ===========================================================================
+   Watercolor identity — organic edges, paper texture, brush strokes.
+   Used across the mobile app and webapp for a hand-painted feel.
+=========================================================================== */
+
+/* Organic, hand-painted edge via an SVG displacement filter
+   (defs live in the root layout). Apply to a background layer, not text. */
+.wc-edge {
+  filter: url(#wc-edge);
+}
+.wc-edge-soft {
+  filter: url(#wc-edge-soft);
+}
+
+/* Warm paper grain — covers app + webapp surfaces. */
+.paper-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+}
+
+/* Brush-stroke underline — a painted accent beneath a heading. */
+.wc-underline {
+  position: relative;
+  display: inline-block;
+}
+.wc-underline::after {
+  content: "";
+  position: absolute;
+  left: 2%;
+  right: 2%;
+  bottom: -0.34em;
+  height: 0.32em;
+  background: var(--accent-glow);
+  border-radius: 60% 40% 55% 45% / 100% 100% 60% 60%;
+  filter: url(#wc-edge-soft);
+  opacity: 0.9;
+}
+
+/* Soft painterly card shadow — diffuse, warm, no hard edges. */
+.wc-soft {
+  box-shadow: 0 10px 26px -14px rgba(120, 78, 30, 0.4);
 }
