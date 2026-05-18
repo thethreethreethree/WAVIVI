@@ -353,7 +353,7 @@ export function VibeMap() {
             id="vm-region"
             value={region}
             onChange={(e) => setRegion(e.target.value)}
-            className="min-w-0 flex-1 rounded-xl border border-border bg-surface-elevated px-3 py-1.5 text-xs font-bold text-foreground outline-none focus-visible:border-glow"
+            className="wc-frame min-w-0 flex-1 rounded-xl bg-transparent px-3 py-1.5 text-xs font-bold text-foreground outline-none focus-visible:border-glow"
           >
             <option value="all">All regions ({vibeSpots.length})</option>
             {regions.map((r) => (
@@ -377,7 +377,7 @@ export function VibeMap() {
               className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors ${
                 active === v.id
                   ? "bg-[#111] text-[#ffd000]"
-                  : "bg-white text-muted ring-[1.5px] ring-border"
+                  : "wc-frame text-muted"
               }`}
             >
               {v.label}

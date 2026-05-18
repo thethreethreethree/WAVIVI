@@ -64,14 +64,16 @@ export function PlaceList({ kind }: { kind: PlaceKind }) {
               href={`/place/${place.id}`}
               className="wc-frame flex gap-3 rounded-2xl p-3"
             >
-              <div className="wc-edge relative h-20 w-20 shrink-0 overflow-hidden rounded-xl">
-                <Image
-                  src={place.image}
-                  alt={place.name}
-                  fill
-                  sizes="80px"
-                  className="object-cover"
-                />
+              <div className="wc-frame relative h-20 w-20 shrink-0 rounded-xl p-1.5">
+                <span className="relative block h-full w-full overflow-hidden rounded-lg">
+                  <Image
+                    src={place.image}
+                    alt={place.name}
+                    fill
+                    sizes="80px"
+                    className="object-cover"
+                  />
+                </span>
               </div>
               <div className="flex min-w-0 flex-1 flex-col">
                 <p className="truncate font-bold">{place.name}</p>

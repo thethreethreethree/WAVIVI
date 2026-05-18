@@ -28,14 +28,16 @@ export default function MyProfilePage() {
       </header>
 
       <div className="flex flex-col items-center px-5">
-        <span className="wc-edge relative h-24 w-24">
-          <Image
-            src={account.avatar}
-            alt={account.name}
-            fill
-            sizes="96px"
-            className="rounded-full object-cover ring-[3px] ring-glow"
-          />
+        <span className="wc-frame relative h-24 w-24 rounded-full p-1">
+          <span className="relative block h-full w-full overflow-hidden rounded-full">
+            <Image
+              src={account.avatar}
+              alt={account.name}
+              fill
+              sizes="96px"
+              className="object-cover"
+            />
+          </span>
         </span>
         <h2 className="mt-3 text-xl font-bold">{account.name}</h2>
         <p className="mt-0.5 text-sm text-muted">@{account.username}</p>

@@ -40,16 +40,18 @@ export default async function PlaceDetailPage({
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="relative h-60 w-full">
-        <Image
-          src={place.image}
-          alt={place.name}
-          fill
-          sizes="448px"
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+      <div className="wc-frame relative h-60 w-full rounded-2xl p-2">
+        <span className="relative block h-full w-full overflow-hidden rounded-xl">
+          <Image
+            src={place.image}
+            alt={place.name}
+            fill
+            sizes="448px"
+            className="object-cover"
+            priority
+          />
+          <span className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        </span>
         <Link
           href={back}
           aria-label="Back"
@@ -110,17 +112,16 @@ export default async function PlaceDetailPage({
           <div className="mt-3 flex items-center gap-2">
             <div className="flex -space-x-2">
               {["p1", "p2", "p3"].map((s) => (
-                <span
-                  key={s}
-                  className="relative h-7 w-7 overflow-hidden rounded-full ring-2 ring-surface-elevated"
-                >
-                  <Image
-                    src={photo(`pl-${place.id}-${s}`, 56, 56)}
-                    alt=""
-                    fill
-                    sizes="28px"
-                    className="object-cover"
-                  />
+                <span key={s} className="wc-frame relative h-8 w-8 rounded-full p-1">
+                  <span className="relative block h-full w-full overflow-hidden rounded-full">
+                    <Image
+                      src={photo(`pl-${place.id}-${s}`, 56, 56)}
+                      alt=""
+                      fill
+                      sizes="28px"
+                      className="object-cover"
+                    />
+                  </span>
                 </span>
               ))}
             </div>

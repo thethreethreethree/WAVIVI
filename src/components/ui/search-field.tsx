@@ -16,7 +16,7 @@ export function SearchField({
       className={`flex items-center gap-2.5 rounded-full px-4 py-2.5 ${
         filled
           ? "bg-surface-elevated"
-          : "border border-border bg-surface"
+          : "wc-frame bg-transparent"
       }`}
     >
       <svg

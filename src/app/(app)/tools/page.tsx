@@ -39,7 +39,7 @@ export default function ToolsPage() {
       {/* Ask Susen — entry to the social coordinator */}
       <Link
         href="/susen"
-        className="mt-4 flex items-center gap-3 rounded-2xl bg-sunset p-4 text-white shadow-card active:scale-[0.99]"
+        className="wc-frame wc-frame-sunset mt-4 flex items-center gap-3 rounded-2xl p-4 text-white shadow-card active:scale-[0.99]"
       >
         <SusenAvatar className="h-10 w-10 ring-2 ring-white/40" />
         <span className="min-w-0 flex-1">

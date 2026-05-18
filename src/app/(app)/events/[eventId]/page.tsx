@@ -30,16 +30,18 @@ export default async function EventDetailPage({
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="relative h-60 w-full">
-        <Image
-          src={event.image}
-          alt={event.title}
-          fill
-          sizes="448px"
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+      <div className="wc-frame relative h-60 w-full rounded-2xl p-2">
+        <span className="relative block h-full w-full overflow-hidden rounded-xl">
+          <Image
+            src={event.image}
+            alt={event.title}
+            fill
+            sizes="448px"
+            className="object-cover"
+            priority
+          />
+          <span className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        </span>
         <Link
           href="/events"
           aria-label="Back"
@@ -89,17 +91,16 @@ export default async function EventDetailPage({
           </div>
           <div className="mt-3 flex -space-x-2">
             {["a1", "a2", "a3", "a4", "a5"].map((seed) => (
-              <span
-                key={seed}
-                className="relative h-9 w-9 overflow-hidden rounded-full ring-2 ring-surface-elevated"
-              >
-                <Image
-                  src={photo(`ev-${event.id}-${seed}`, 72, 72)}
-                  alt=""
-                  fill
-                  sizes="36px"
-                  className="object-cover"
-                />
+              <span key={seed} className="wc-frame relative h-10 w-10 rounded-full p-1">
+                <span className="relative block h-full w-full overflow-hidden rounded-full">
+                  <Image
+                    src={photo(`ev-${event.id}-${seed}`, 72, 72)}
+                    alt=""
+                    fill
+                    sizes="36px"
+                    className="object-cover"
+                  />
+                </span>
               </span>
             ))}
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-glow text-xs font-semibold text-white ring-2 ring-surface-elevated">

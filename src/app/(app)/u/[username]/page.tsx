@@ -60,14 +60,16 @@ export default async function UserProfilePage({
       </header>
 
       <div className="flex flex-col items-center px-5">
-        <span className="relative h-24 w-24">
-          <Image
-            src={member.avatar}
-            alt={member.name}
-            fill
-            sizes="96px"
-            className="rounded-full object-cover ring-2 ring-glow"
-          />
+        <span className="wc-frame relative h-24 w-24 rounded-full p-1">
+          <span className="relative block h-full w-full overflow-hidden rounded-full">
+            <Image
+              src={member.avatar}
+              alt={member.name}
+              fill
+              sizes="96px"
+              className="object-cover"
+            />
+          </span>
         </span>
         <h2 className="mt-3 flex items-center gap-1.5 text-xl font-bold">
           {member.name}
@@ -144,14 +146,16 @@ export default async function UserProfilePage({
               key={note.id}
               className="wc-frame flex items-start gap-2 rounded-2xl p-3"
             >
-              <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full">
-                <Image
-                  src={note.fromAvatar}
-                  alt={note.from}
-                  fill
-                  sizes="28px"
-                  className="object-cover"
-                />
+              <span className="wc-frame relative h-8 w-8 shrink-0 rounded-full p-1">
+                <span className="relative block h-full w-full overflow-hidden rounded-full">
+                  <Image
+                    src={note.fromAvatar}
+                    alt={note.from}
+                    fill
+                    sizes="28px"
+                    className="object-cover"
+                  />
+                </span>
               </span>
               <p className="text-sm text-foreground/90">
                 {note.text}{" "}

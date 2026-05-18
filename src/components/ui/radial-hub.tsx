@@ -64,15 +64,10 @@ export function RadialHub() {
           <span className="absolute inset-0 overflow-hidden rounded-full" aria-hidden>
             <span className="paper-grain absolute inset-0" />
           </span>
-          {/* Crisp content */}
-          <span className="relative flex h-full w-full flex-col items-center justify-center gap-1.5">
-            <svg viewBox="0 0 24 24" className="h-9 w-9" fill="#fff" aria-hidden>
-              <path d="M2 12l19-9-9 19-2-8-8-2z" />
-            </svg>
-            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-white">
-              Where to
-              <br />
-              next?
+          {/* Crisp content — centred wordmark */}
+          <span className="relative flex h-full w-full items-center justify-center px-5">
+            <span className="text-center text-lg font-bold uppercase leading-[1.15] tracking-[0.1em] text-white">
+              Where to next?
             </span>
           </span>
         </Link>

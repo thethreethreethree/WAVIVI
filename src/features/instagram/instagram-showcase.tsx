@@ -22,19 +22,22 @@ export function InstagramShowcase({ posts }: { posts: InstagramPost[] }) {
           href={post.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="wc-edge group relative aspect-square overflow-hidden rounded-xl"
+          className="wc-frame group relative aspect-square rounded-xl p-1.5"
         >
-          <Image
-            src={post.image}
-            alt="Instagram travel moment"
-            fill
-            loading="lazy"
-            sizes="120px"
-            className="object-cover transition-transform group-hover:scale-105"
-          />
-          <span className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
-          <span className="absolute right-1.5 top-1.5 text-white">
-            <InstagramIcon className="h-4 w-4" />
+          {/* Crisp, undistorted photo inside the painted frame */}
+          <span className="relative block h-full w-full overflow-hidden rounded-lg">
+            <Image
+              src={post.image}
+              alt="Instagram travel moment"
+              fill
+              loading="lazy"
+              sizes="120px"
+              className="object-cover transition-transform group-hover:scale-105"
+            />
+            <span className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
+            <span className="absolute right-1.5 top-1.5 text-white">
+              <InstagramIcon className="h-4 w-4" />
+            </span>
           </span>
         </a>
       ))}

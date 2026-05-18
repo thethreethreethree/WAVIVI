@@ -139,6 +139,16 @@ export default function RootLayout({
               />
               <feDisplacementMap in="SourceGraphic" in2="n" scale="6" />
             </filter>
+            <filter id="wc-edge-strong">
+              <feTurbulence
+                type="fractalNoise"
+                baseFrequency="0.009"
+                numOctaves="3"
+                seed="7"
+                result="n"
+              />
+              <feDisplacementMap in="SourceGraphic" in2="n" scale="34" />
+            </filter>
           </defs>
         </svg>
         {children}

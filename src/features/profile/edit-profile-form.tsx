@@ -13,7 +13,7 @@ import { account } from "@/lib/travejor/account";
 const STATUS = ["Exploring", "Local", "In transit", "Offline"];
 
 const fieldClass =
-  "w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm " +
+  "wc-frame w-full rounded-xl bg-transparent px-3.5 py-2.5 text-sm " +
   "outline-none transition-colors placeholder:text-muted focus-visible:border-glow";
 
 /** Local-only profile editor (persists to Supabase in a later phase). */
@@ -31,14 +31,16 @@ export function EditProfileForm() {
       className="flex flex-col gap-4"
     >
       <div className="flex flex-col items-center">
-        <span className="relative h-20 w-20">
-          <Image
-            src={account.avatar}
-            alt=""
-            fill
-            sizes="80px"
-            className="rounded-full object-cover ring-2 ring-glow"
-          />
+        <span className="wc-frame relative h-20 w-20 rounded-full p-1">
+          <span className="relative block h-full w-full overflow-hidden rounded-full">
+            <Image
+              src={account.avatar}
+              alt=""
+              fill
+              sizes="80px"
+              className="object-cover"
+            />
+          </span>
         </span>
         <button type="button" className="mt-2 text-xs font-semibold text-glow">
           Change photo

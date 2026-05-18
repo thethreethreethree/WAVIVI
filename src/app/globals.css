@@ -469,11 +469,12 @@ h3 {
   mix-blend-mode: multiply;
 }
 
-/* Coarse paper — larger, grittier fibres for a heavier hand-made stock. */
+/* Coarse paper — slightly larger fibres than the fine grain, but soft
+   enough to read as hand-made paper rather than concrete. */
 .paper-grain-coarse {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.34' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23c)'/%3E%3C/svg%3E");
-  background-size: 220px 220px;
-  opacity: 0.55;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23c)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  opacity: 0.26;
   mix-blend-mode: multiply;
 }
 
@@ -495,6 +496,11 @@ h3 {
 }
 .wc-edge-soft {
   filter: url(#wc-edge-soft);
+}
+/* Stronger displacement — for large surfaces (photo cards) where the
+   standard edge is too subtle to read as hand-painted. */
+.wc-edge-strong {
+  filter: url(#wc-edge-strong);
 }
 
 /* Warm paper grain — covers app + webapp surfaces. */

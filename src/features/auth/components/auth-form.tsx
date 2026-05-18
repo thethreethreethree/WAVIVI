@@ -9,7 +9,7 @@ import { type AuthState, initialAuthState } from "@/features/auth/types";
 type Mode = "login" | "signup";
 
 const fieldClass =
-  "w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm " +
+  "wc-frame w-full rounded-lg bg-transparent px-3 py-2.5 text-sm " +
   "outline-none transition-colors placeholder:text-muted focus-visible:border-glow";
 
 export function AuthForm({ mode }: { mode: Mode }) {

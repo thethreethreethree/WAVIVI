@@ -62,14 +62,16 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
             href={`/u/${m.username}`}
             className="wc-frame w-36 shrink-0 rounded-2xl p-3 text-center"
           >
-            <div className="relative mx-auto h-16 w-16">
-              <Image
-                src={m.avatar}
-                alt={m.name}
-                fill
-                sizes="64px"
-                className="rounded-full object-cover"
-              />
+            <div className="wc-frame relative mx-auto h-16 w-16 rounded-full p-1">
+              <span className="relative block h-full w-full overflow-hidden rounded-full">
+                <Image
+                  src={m.avatar}
+                  alt={m.name}
+                  fill
+                  sizes="64px"
+                  className="object-cover"
+                />
+              </span>
               {m.verified && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-glow text-[10px] text-white ring-2 ring-surface-elevated">
                   ★
@@ -97,17 +99,16 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
         <div className="mt-3 flex justify-center">
           <div className="flex -space-x-2">
             {group.memberSeeds.concat(["mx1", "mx2"]).map((seed) => (
-              <span
-                key={seed}
-                className="relative h-8 w-8 overflow-hidden rounded-full ring-2 ring-surface-elevated"
-              >
-                <Image
-                  src={photo(seed, 64, 64)}
-                  alt=""
-                  fill
-                  sizes="32px"
-                  className="object-cover"
-                />
+              <span key={seed} className="wc-frame relative h-9 w-9 rounded-full p-1">
+                <span className="relative block h-full w-full overflow-hidden rounded-full">
+                  <Image
+                    src={photo(seed, 64, 64)}
+                    alt=""
+                    fill
+                    sizes="32px"
+                    className="object-cover"
+                  />
+                </span>
               </span>
             ))}
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-glow text-xs font-semibold text-white ring-2 ring-surface-elevated">

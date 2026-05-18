@@ -22,14 +22,16 @@ export default function NotesPage() {
             className="wc-frame rounded-2xl p-4"
           >
             <div className="flex items-center gap-2">
-              <span className="relative h-7 w-7 overflow-hidden rounded-full">
-                <Image
-                  src={note.fromAvatar}
-                  alt={note.from}
-                  fill
-                  sizes="28px"
-                  className="object-cover"
-                />
+              <span className="wc-frame relative h-8 w-8 rounded-full p-1">
+                <span className="relative block h-full w-full overflow-hidden rounded-full">
+                  <Image
+                    src={note.fromAvatar}
+                    alt={note.from}
+                    fill
+                    sizes="28px"
+                    className="object-cover"
+                  />
+                </span>
               </span>
               <span className="text-sm font-semibold">{note.from}</span>
               <span className="ml-auto text-xs text-muted">{note.time}</span>

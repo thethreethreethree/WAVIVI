@@ -142,7 +142,7 @@ export function ChatThread({
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Message…"
-          className="flex-1 rounded-full border border-border bg-surface px-4 py-2.5
+          className="wc-frame flex-1 rounded-full bg-transparent px-4 py-2.5
                      text-sm outline-none placeholder:text-muted focus-visible:border-glow"
         />
         <button

@@ -19,7 +19,7 @@ export function InstagramFeed({
 }) {
   if (posts.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-border bg-surface px-4 py-8 text-center text-sm text-muted">
+      <p className="wc-frame-ghost rounded-2xl px-4 py-8 text-center text-sm text-muted">
         No travel posts yet — connect Instagram to bring this feed to life.
       </p>
     );
@@ -36,27 +36,29 @@ export function InstagramFeed({
           href={post.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="group relative w-[78%] shrink-0 snap-center overflow-hidden
-                     rounded-2xl ring-1 ring-border"
+          className="wc-frame group relative w-[78%] shrink-0 snap-center rounded-2xl p-2"
         >
-          <div className="relative aspect-[4/5] w-full">
-            <Image
-              src={post.image}
-              alt="Instagram travel post"
-              fill
-              loading="lazy"
-              sizes="340px"
-              className="object-cover transition-transform group-hover:scale-105"
-            />
-          </div>
-          <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/15" />
-          <span className="absolute right-3 top-3 text-white">
-            <InstagramIcon className="h-5 w-5" />
-          </span>
-          <span className="absolute bottom-3 left-3 flex items-center gap-1.5 text-sm font-bold text-white">
-            @{username}
-            <span className="text-xs font-medium text-white/80">
-              · View on Instagram
+          {/* Crisp, undistorted photo inside the painted frame */}
+          <span className="relative block overflow-hidden rounded-xl">
+            <span className="relative block aspect-[4/5] w-full">
+              <Image
+                src={post.image}
+                alt="Instagram travel post"
+                fill
+                loading="lazy"
+                sizes="340px"
+                className="object-cover transition-transform group-hover:scale-105"
+              />
+            </span>
+            <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/15" />
+            <span className="absolute right-3 top-3 text-white">
+              <InstagramIcon className="h-5 w-5" />
+            </span>
+            <span className="absolute bottom-3 left-3 flex items-center gap-1.5 text-sm font-bold text-white">
+              @{username}
+              <span className="text-xs font-medium text-white/80">
+                · View on Instagram
+              </span>
             </span>
           </span>
         </a>

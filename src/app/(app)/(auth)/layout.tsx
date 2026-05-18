@@ -16,7 +16,7 @@ export default function AuthLayout({
           </span>
           <span className="text-sm text-muted">{siteConfig.tagline}</span>
         </Link>
-        <div className="rounded-2xl border border-border bg-surface-elevated p-6">
+        <div className="wc-frame rounded-2xl p-6">
           {children}
         </div>
       </div>

@@ -33,7 +33,7 @@ export function InstagramConnectCard({
   }
 
   return (
-    <div className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-border">
+    <div className="wc-frame rounded-2xl p-4 shadow-card">
       <div className="flex items-center gap-2">
         <InstagramIcon className="h-5 w-5 text-glow" />
         <h3 className="text-sm font-bold">Connect Instagram</h3>

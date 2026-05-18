@@ -48,14 +48,16 @@ export default async function GroupMembersPage({
             href={`/u/${m.username}`}
             className="wc-frame flex flex-col items-center rounded-2xl p-5 text-center"
           >
-            <div className="relative h-20 w-20">
-              <Image
-                src={m.avatar}
-                alt={m.name}
-                fill
-                sizes="80px"
-                className="rounded-full object-cover"
-              />
+            <div className="wc-frame relative h-20 w-20 rounded-full p-1">
+              <span className="relative block h-full w-full overflow-hidden rounded-full">
+                <Image
+                  src={m.avatar}
+                  alt={m.name}
+                  fill
+                  sizes="80px"
+                  className="object-cover"
+                />
+              </span>
             </div>
             <p className="mt-3 font-bold">{m.name.split(" ")[0]}</p>
             <p className="mt-2 flex items-center gap-1.5 text-xs italic text-muted">

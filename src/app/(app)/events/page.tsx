@@ -29,34 +29,38 @@ export default function EventsPage() {
         </Link>
         <h1 className="flex-1 text-xl font-bold">Where to Next?</h1>
         <Link href="/profile" aria-label="Profile">
-          <span className="relative block h-8 w-8 overflow-hidden rounded-full ring-1 ring-border">
-            <Image
-              src={account.avatar}
-              alt=""
-              fill
-              sizes="32px"
-              className="object-cover"
-            />
+          <span className="wc-frame relative block h-9 w-9 rounded-full p-1">
+            <span className="relative block h-full w-full overflow-hidden rounded-full">
+              <Image
+                src={account.avatar}
+                alt=""
+                fill
+                sizes="32px"
+                className="object-cover"
+              />
+            </span>
           </span>
         </Link>
       </header>
 
       {/* Hero */}
-      <div className="relative mt-4 h-44 overflow-hidden rounded-2xl">
-        <Image
-          src={photo("discover-hero", 800, 400)}
-          alt=""
-          fill
-          sizes="448px"
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/10" />
-        <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+      <div className="wc-frame relative mt-4 h-44 rounded-2xl p-2">
+        <span className="relative block h-full w-full overflow-hidden rounded-xl">
+          <Image
+            src={photo("discover-hero", 800, 400)}
+            alt=""
+            fill
+            sizes="448px"
+            className="object-cover"
+          />
+          <span className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/10" />
+          <div className="absolute inset-x-0 bottom-0 p-4 text-white">
           <h2 className="text-lg font-bold">Discover Your Next Vibe</h2>
-          <p className="mt-0.5 text-xs text-white/85">
-            Explore local events, social spots, and Travejor hubs.
-          </p>
-        </div>
+            <p className="mt-0.5 text-xs text-white/85">
+              Explore local events, social spots, and Travejor hubs.
+            </p>
+          </div>
+        </span>
       </div>
 
       <div className="mt-4 rounded-xl bg-glow py-2.5 text-center text-sm font-bold text-white">
@@ -65,15 +69,17 @@ export default function EventsPage() {
 
       <ul className="mt-4 flex flex-col gap-4 pb-8">
         {travejorEvents.map((event) => (
-          <li key={event.id} className="wc-frame rounded-2xl p-2.5">
-            <div className="wc-edge relative h-40 w-full overflow-hidden rounded-xl">
-              <Image
-                src={event.image}
-                alt={event.title}
-                fill
-                sizes="448px"
-                className="object-cover"
-              />
+          <li key={event.id} className="wc-soft rounded-2xl">
+            <div className="wc-frame relative h-40 w-full rounded-2xl p-2">
+              <span className="relative block h-full w-full overflow-hidden rounded-xl">
+                <Image
+                  src={event.image}
+                  alt={event.title}
+                  fill
+                  sizes="448px"
+                  className="object-cover"
+                />
+              </span>
             </div>
             <div className="p-2.5 pt-3">
               <h3 className="font-bold">{event.title}</h3>

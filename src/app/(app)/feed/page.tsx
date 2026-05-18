@@ -48,15 +48,17 @@ function FeedItem({ post }: { post: FeedPost }) {
   const [liked, setLiked] = useState(false);
 
   return (
-    <article className="relative h-[calc(100dvh-4.75rem)] w-full snap-start">
-      <Image
-        src={post.image}
-        alt={post.caption}
-        fill
-        sizes="448px"
-        className="object-cover"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/20" />
+    <article className="wc-frame relative h-[calc(100dvh-4.75rem)] w-full snap-start p-2">
+      <span className="relative block h-full w-full overflow-hidden rounded-xl">
+        <Image
+          src={post.image}
+          alt={post.caption}
+          fill
+          sizes="448px"
+          className="object-cover"
+        />
+        <span className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/20" />
+      </span>
 
       {/* Action rail */}
       <div className="absolute bottom-28 right-3 flex flex-col items-center gap-5 text-white">

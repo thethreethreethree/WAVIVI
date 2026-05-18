@@ -104,8 +104,7 @@ export function BottomNav() {
   return (
     <nav className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2">
       <ul
-        className="flex items-center gap-2.5 rounded-full border border-border
-                   bg-surface/95 p-2.5 shadow-card backdrop-blur"
+        className="wc-frame flex items-center gap-2.5 rounded-full p-2.5 shadow-card"
       >
         {TABS.slice(0, 2).map(tab)}
 

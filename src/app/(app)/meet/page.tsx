@@ -50,14 +50,16 @@ export default function MeetPage() {
                   </span>
                 </div>
               </div>
-              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full">
-                <Image
-                  src={group.coverImage}
-                  alt={group.name}
-                  fill
-                  sizes="48px"
-                  className="object-cover"
-                />
+              <div className="wc-frame relative h-12 w-12 shrink-0 rounded-full p-1">
+                <span className="relative block h-full w-full overflow-hidden rounded-full">
+                  <Image
+                    src={group.coverImage}
+                    alt={group.name}
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                  />
+                </span>
               </div>
             </div>
 
@@ -69,17 +71,16 @@ export default function MeetPage() {
               <div className="flex items-center gap-2">
                 <div className="flex -space-x-2">
                   {group.memberSeeds.map((seed) => (
-                    <span
-                      key={seed}
-                      className="relative h-6 w-6 overflow-hidden rounded-full ring-2 ring-surface-elevated"
-                    >
-                      <Image
-                        src={photo(seed, 60, 60)}
-                        alt=""
-                        fill
-                        sizes="24px"
-                        className="object-cover"
-                      />
+                    <span key={seed} className="wc-frame relative h-7 w-7 rounded-full p-1">
+                      <span className="relative block h-full w-full overflow-hidden rounded-full">
+                        <Image
+                          src={photo(seed, 60, 60)}
+                          alt=""
+                          fill
+                          sizes="24px"
+                          className="object-cover"
+                        />
+                      </span>
                     </span>
                   ))}
                 </div>
