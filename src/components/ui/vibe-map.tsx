@@ -166,12 +166,15 @@ export function VibeMap() {
         .map((spot) => ({ spot, score: prominence(spot) }))
         .sort((a, b) => a.score - b.score);
 
-      for (const { spot, score } of scored) {
+      scored.forEach(({ spot, score }, i) => {
         const tier = tierOf(score);
         const size = tier === "premium" ? 46 : tier === "prominent" ? 36 : 26;
+        // Each marker gets its own stop-motion variant + delay so they
+        // jitter independently rather than all in lockstep.
+        const sm = `wc-stop-motion-${(i % 5) + 1}`;
         const icon = L.divIcon({
           className: "",
-          html: `<div class="vm-marker ${spot.vibe} tier-${tier}" title="${escapeHtml(spot.name)}">${VIBE_GLYPH[spot.vibe] ?? ""}</div>`,
+          html: `<div class="vm-marker ${spot.vibe} tier-${tier} ${sm}" style="animation-delay:${-(i % 7) * 0.2}s" title="${escapeHtml(spot.name)}">${VIBE_GLYPH[spot.vibe] ?? ""}</div>`,
           iconSize: [size, size],
           iconAnchor: [size / 2, size / 2],
           popupAnchor: [0, -size / 2],
@@ -183,7 +186,7 @@ export function VibeMap() {
         });
         marker.bindPopup(buildPopup(spot, null), { autoPan: true });
         markersRef.current.push({ marker, spot });
-      }
+      });
 
       setLoading(false);
       applyRef.current();

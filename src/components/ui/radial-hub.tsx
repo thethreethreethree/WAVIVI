@@ -98,8 +98,8 @@ export function RadialHub() {
           >
             {/* Stop-motion jitter — jumps between hand-posed frames */}
             <span
-              className="wc-stop-motion absolute inset-0 block"
-              style={{ animationDelay: `${-i * 0.23}s` }}
+              className={`wc-stop-motion-${(i % 5) + 1} absolute inset-0 block`}
+              style={{ animationDelay: `${-i * 0.31}s` }}
             >
               {/* Painted cream circle with an organic orange ring */}
               <span

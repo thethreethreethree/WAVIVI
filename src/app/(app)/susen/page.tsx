@@ -109,8 +109,8 @@ export default function SusenPage() {
             key={p}
             type="button"
             onClick={() => send(p)}
-            style={{ animationDelay: `${-i * 0.19}s` }}
-            className="wc-stop-motion wc-frame wc-frame-ghost shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold text-glow"
+            style={{ animationDelay: `${-i * 0.27}s` }}
+            className={`wc-stop-motion-${(i % 5) + 1} wc-frame wc-frame-ghost shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold text-glow`}
           >
             {p}
           </button>
