@@ -20,7 +20,7 @@ export default async function GroupMembersPage({
   if (!group) notFound();
 
   return (
-    <div className="flex flex-1 flex-col px-5 pt-4">
+    <div className="flex flex-1 flex-col px-5 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
       <header className="flex items-center gap-3">
         <Link href={`/meet/${id}`} aria-label="Back" className="text-foreground">
           <svg

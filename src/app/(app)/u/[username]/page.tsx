@@ -36,7 +36,7 @@ export default async function UserProfilePage({
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center gap-3 px-5 pb-2 pt-4">
+      <header className="flex items-center gap-3 px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
         <Link href="/meet" aria-label="Back" className="text-foreground">
           <svg
             viewBox="0 0 24 24"

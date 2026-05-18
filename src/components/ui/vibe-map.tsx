@@ -288,7 +288,7 @@ export function VibeMap() {
   return (
     <div className="flex flex-1 flex-col">
       {/* Top bar — mirrors the YumYumPo Vibe Map layout */}
-      <div className="z-20 flex flex-col gap-2.5 border-b border-border bg-white px-4 pb-3 pt-4 shadow-sm">
+      <div className="z-20 flex flex-col gap-2.5 border-b border-border bg-white px-4 pb-3 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))] shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-xl font-bold tracking-tight">
             Vibe Map

@@ -5,7 +5,7 @@ import { siteConfig } from "@/config/site";
 /** Home-screen top bar — wordmark plus notification and group-chat shortcuts. */
 export function AppTopBar() {
   return (
-    <header className="flex items-center justify-between px-5 pb-2 pt-[max(1.25rem,calc(env(safe-area-inset-top)+0.75rem))]">
+    <header className="flex items-center justify-between px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
       <span className="flex items-center gap-2">
         <svg viewBox="0 0 24 24" className="h-6 w-6" fill="#f7941d" aria-hidden>
           <path d="M2 12l19-9-9 19-2-8-8-2z" />

@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "My Profile" };
 export default function MyProfilePage() {
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center px-5 pb-2 pt-4">
+      <header className="flex items-center px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
         <span className="w-6" />
         <h1 className="flex-1 text-center text-lg font-bold">My Profile</h1>
         <Link href="/settings" aria-label="Menu" className="text-muted">

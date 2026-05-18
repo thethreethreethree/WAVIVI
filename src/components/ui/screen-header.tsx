@@ -16,7 +16,7 @@ export function ScreenHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <header className="flex items-center gap-3 px-5 pb-3 pt-4">
+    <header className="flex items-center gap-3 px-5 pb-3 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
       <Link
         href={back}
         aria-label="Back"

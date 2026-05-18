@@ -20,7 +20,7 @@ export default function ToolsPage() {
   );
 
   return (
-    <div className="flex flex-1 flex-col px-5 pt-5">
+    <div className="flex flex-1 flex-col px-5 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Traveler&apos;s Tool</h1>
         <Link href="/susen" aria-label="Ask Susen">
