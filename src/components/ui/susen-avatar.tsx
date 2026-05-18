@@ -1,4 +1,4 @@
-/** Susen's visual mark — a sunset-gradient orb with an orbit glyph. */
+/** Susen's visual mark — a watercolor sunset orb with a crisp orbit glyph. */
 export function SusenAvatar({
   className = "h-9 w-9",
 }: {
@@ -6,15 +6,20 @@ export function SusenAvatar({
 }) {
   return (
     <span
-      className={`bg-sunset relative flex shrink-0 items-center justify-center rounded-full ${className}`}
+      className={`relative flex shrink-0 items-center justify-center ${className}`}
     >
+      {/* Painted orange orb with an organic edge */}
+      <span
+        className="wc-edge absolute inset-0 rounded-full bg-sunset"
+        aria-hidden
+      />
       <svg
         viewBox="0 0 24 24"
         fill="none"
         stroke="#fff"
         strokeWidth="1.6"
         strokeLinecap="round"
-        className="h-[58%] w-[58%]"
+        className="relative h-[58%] w-[58%]"
         aria-hidden
       >
         <circle cx="12" cy="12" r="2.4" fill="#fff" stroke="none" />

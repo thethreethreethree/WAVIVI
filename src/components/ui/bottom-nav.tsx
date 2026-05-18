@@ -64,10 +64,16 @@ export function BottomNav() {
         <Link
           href={t.href}
           aria-current={active ? "page" : undefined}
-          className={`flex items-center gap-1.5 rounded-full px-3 py-2.5 transition-all ${
-            active ? "bg-sunset text-white shadow-md" : "text-muted active:scale-95"
+          className={`relative flex items-center gap-1.5 rounded-full px-3 py-2.5 transition-all ${
+            active ? "text-white" : "text-muted active:scale-95"
           }`}
         >
+          {active && (
+            <span
+              className="wc-edge absolute inset-0 rounded-full bg-sunset"
+              aria-hidden
+            />
+          )}
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -75,11 +81,13 @@ export function BottomNav() {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="h-[1.15rem] w-[1.15rem]"
+            className="relative h-[1.15rem] w-[1.15rem]"
           >
             {t.icon}
           </svg>
-          {active && <span className="text-xs font-bold">{t.label}</span>}
+          {active && (
+            <span className="relative text-xs font-bold">{t.label}</span>
+          )}
         </Link>
       </li>
     );
