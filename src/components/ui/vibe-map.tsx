@@ -349,19 +349,35 @@ export function VibeMap() {
           >
             📍 Region
           </label>
-          <select
-            id="vm-region"
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
-            className="wc-frame min-w-0 flex-1 rounded-xl bg-transparent px-3 py-1.5 text-xs font-bold text-foreground outline-none focus-visible:border-glow"
-          >
-            <option value="all">All regions ({vibeSpots.length})</option>
-            {regions.map((r) => (
-              <option key={r.key} value={r.key}>
-                {r.label} ({r.count})
+          <div className="wc-frame wc-frame-white relative min-w-0 flex-1 rounded-xl">
+            <select
+              id="vm-region"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+              className="w-full appearance-none bg-transparent px-3 py-1.5 pr-8 text-xs font-bold text-white outline-none"
+            >
+              <option value="all" className="text-foreground">
+                All regions ({vibeSpots.length})
               </option>
-            ))}
-          </select>
+              {regions.map((r) => (
+                <option key={r.key} value={r.key} className="text-foreground">
+                  {r.label} ({r.count})
+                </option>
+              ))}
+            </select>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white"
+              aria-hidden
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </div>
           <span className="shrink-0 text-[11px] font-semibold text-white/80">
             {visibleCount} shown
           </span>
@@ -376,14 +392,14 @@ export function VibeMap() {
               onClick={() => setActive(v.id)}
               className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors ${
                 active === v.id
-                  ? "bg-[#111] text-[#ffd000]"
-                  : "wc-frame text-muted"
+                  ? "wc-frame wc-frame-white-solid text-glow"
+                  : "wc-frame wc-frame-white text-white"
               }`}
             >
               {v.label}
               <span
                 className={`rounded-full px-1.5 text-[10px] font-extrabold ${
-                  active === v.id ? "bg-[#ffd000]/25" : "bg-border"
+                  active === v.id ? "bg-glow/15" : "bg-white/25"
                 }`}
               >
                 {counts[v.id] ?? 0}
@@ -396,6 +412,13 @@ export function VibeMap() {
       {/* Map */}
       <div className="relative flex-1">
         <div id="vm-map" className="vm-leaflet absolute inset-0" />
+
+        {/* White painted frame — hides the map's edge text, keeps the
+            watercolor/drawn style of the page. */}
+        <span
+          className="wc-edge-strong pointer-events-none absolute inset-0 z-[500] border-[14px] border-white"
+          aria-hidden
+        />
 
         {loading && (
           <div className="absolute inset-0 z-[600] flex items-center justify-center bg-surface font-bold tracking-wide text-glow">

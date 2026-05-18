@@ -359,6 +359,38 @@ h3 {
 .vm-leaflet {
   background: #aadaff;
 }
+/* Zoom control — watercolor painted buttons matching the app. */
+.leaflet-control-zoom.leaflet-bar {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  display: flex !important;
+  flex-direction: column;
+  gap: 8px;
+}
+.leaflet-control-zoom.leaflet-bar a,
+.leaflet-control-zoom.leaflet-bar a:first-child,
+.leaflet-control-zoom.leaflet-bar a:last-child {
+  width: 38px !important;
+  height: 38px !important;
+  line-height: 33px !important;
+  border-radius: 50% !important;
+  background-color: var(--surface) !important;
+  color: var(--accent-glow) !important;
+  border: 2.5px solid var(--accent-glow) !important;
+  font-size: 21px !important;
+  font-weight: 800 !important;
+  filter: url(#wc-edge-soft);
+  box-shadow: 0 4px 11px -4px rgba(120, 78, 30, 0.55) !important;
+}
+.leaflet-control-zoom.leaflet-bar a:hover {
+  background-color: var(--surface-elevated) !important;
+}
+/* Hide the on-tile attribution — the painted white frame covers that edge
+   and the modern grey text breaks the watercolor style. */
+.vm-leaflet .leaflet-control-attribution {
+  display: none !important;
+}
 /* Slight watercolor wash over the basemap — softens the tiles into a
    painted, paper-like canvas that matches the app's watercolor identity. */
 .vm-leaflet .leaflet-tile {
@@ -579,4 +611,16 @@ h3 {
   background: var(--surface);
   border-color: var(--accent-glow);
   border-width: 2.5px;
+}
+/* Painted white outline, no fill — for controls on coloured surfaces. */
+.wc-frame-white::before {
+  background: transparent;
+  border-color: #fff;
+  border-width: 2px;
+}
+/* Solid white painted fill — the active state of a white-framed control. */
+.wc-frame-white-solid::before {
+  background: #fff;
+  border-color: #fff;
+  border-width: 2px;
 }
