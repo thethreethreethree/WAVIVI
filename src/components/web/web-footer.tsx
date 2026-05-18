@@ -20,7 +20,7 @@ const COLUMNS = [
   {
     title: "Travejor",
     links: [
-      { href: "/", label: "Get the app" },
+      { href: "/?app=1", label: "Get the app" },
       { href: "/discover", label: "How it works" },
     ],
   },

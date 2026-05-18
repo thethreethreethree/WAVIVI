@@ -178,7 +178,7 @@ export default async function ListingDetailPage({
               inside the app.
             </p>
             <Link
-              href="/"
+              href="/?app=1"
               className="mt-4 block rounded-xl bg-sunset py-3 text-center font-bold text-white"
             >
               Open in the Travejor app

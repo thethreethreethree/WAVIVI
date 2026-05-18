@@ -56,7 +56,7 @@ export function WebHeader() {
               List with Travejor
             </Link>
             <Link
-              href="/"
+              href="/?app=1"
               className="glass hidden rounded-full px-4 py-2 text-sm font-bold text-foreground md:inline-block"
             >
               Get the app
@@ -95,7 +95,7 @@ export function WebHeader() {
               List with Travejor
             </Link>
             <Link
-              href="/"
+              href="/?app=1"
               onClick={() => setOpen(false)}
               className="glass rounded-full px-4 py-2.5 text-center text-sm font-bold"
             >
