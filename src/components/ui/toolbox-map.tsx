@@ -42,8 +42,8 @@ const REPORT_TYPES: { value: string; label: string }[] = [
 ];
 
 const DEFAULT_CENTER: [number, number] = [13.7563, 100.4977];
-/** Default view — wide area overview. */
-const DEFAULT_ZOOM = 10;
+/** Default view — roughly a 5 km radius around the region centre. */
+const DEFAULT_ZOOM = 13;
 /** "What's near me" view — street-level, close in around the user. */
 const NEARBY_ZOOM = 16;
 
@@ -285,14 +285,14 @@ export function ToolboxMap({
       markersRef.current.push({ marker, util });
       bounds.extend([util.latitude, util.longitude]);
     }
-    if (userPosRef.current) {
-      bounds.extend([userPosRef.current.lat, userPosRef.current.lng]);
-    }
-    if (bounds.isValid()) {
+    // Always frame the region at the default 5 km-radius zoom rather than
+    // fitting all markers — fit-to-all forces the map to zoom out whenever
+    // pins are spread across a wide region, which felt too distant.
+    const r = regions.find((x) => x.id === region);
+    if (r) {
+      map.setView([r.latitude, r.longitude], DEFAULT_ZOOM);
+    } else if (bounds.isValid()) {
       map.fitBounds(bounds, { padding: [60, 60], maxZoom: DEFAULT_ZOOM });
-    } else {
-      const r = regions.find((x) => x.id === region);
-      if (r) map.setView([r.latitude, r.longitude], DEFAULT_ZOOM);
     }
   }, [utilities, region, regions]);
 
@@ -361,11 +361,8 @@ export function ToolboxMap({
           aria-hidden
         />
         <div className="relative flex items-center justify-between gap-3">
-          <h1 className="text-xl font-bold tracking-tight text-white">
+          <h1 className="text-2xl font-bold tracking-tight text-white">
             Toolbox Map
-            <span className="ml-2 align-middle text-xs font-medium text-white/80">
-              Find what you need nearby
-            </span>
           </h1>
           <div className="flex shrink-0 items-center gap-2">
             <button
