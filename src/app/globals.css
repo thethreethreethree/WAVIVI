@@ -617,6 +617,42 @@ h3 {
   mix-blend-mode: multiply;
 }
 
+/* ===========================================================================
+   Cute Mode — watercolor icon swap + parchment background.
+=========================================================================== */
+
+/* Icon swap: line SVGs by default, watercolor PNGs only under `.cute`. */
+.tj-icon-img {
+  display: none;
+  /* The PNGs are already hand-painted — never apply edge/paint filters. */
+  filter: none !important;
+}
+.cute .tj-icon-svg {
+  display: none;
+}
+.cute .tj-icon-img {
+  display: inline-block;
+}
+
+/* Toolbox map markers keep their crisp SVG glyph even in Cute Mode — the
+   marker circle carries a wc-edge filter that would distort a painted PNG. */
+.cute .vm-marker .tj-icon-img {
+  display: none;
+}
+.cute .vm-marker .tj-icon-svg {
+  display: inline-block;
+}
+
+/* Cute parchment — the mobile app shell shows a hand-painted background. */
+.cute .paper-grain-coarse {
+  background-image: url("/backgrounds/cute/bg-01.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 1;
+  mix-blend-mode: normal;
+}
+
 /* Watercolor wash — soft pigment blob with an organic, bleeding edge. */
 .watercolor-wash {
   mix-blend-mode: multiply;

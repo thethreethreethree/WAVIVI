@@ -139,28 +139,55 @@ const PATHS: Record<string, React.ReactNode> = {
 
 export type IconName = keyof typeof PATHS;
 
-/** Renders a minimalist line icon. */
+import { CUTE_ICONS } from "@/lib/cute-icons";
+
+/**
+ * Renders a minimalist line icon.
+ *
+ * In Cute Mode (the `.cute` class on <html>) the crisp SVG is hidden via CSS
+ * and a hand-painted watercolor PNG is shown instead — when one exists for
+ * this icon. Both elements are always rendered so this stays a plain,
+ * SSR-safe component (no hooks).
+ */
 export function Icon({
   name,
   className = "h-6 w-6",
   strokeWidth = 1.75,
+  svgOnly = false,
 }: {
   name: IconName;
   className?: string;
   strokeWidth?: number;
+  /** Render only the crisp SVG — for callers that supply their own
+      Cute-Mode watercolor image (e.g. the radial hub). */
+  svgOnly?: boolean;
 }) {
+  const cuteSrc = svgOnly ? undefined : CUTE_ICONS[name];
+  // The watercolor PNGs are already painted — strip any edge/paint effect
+  // classes so no filter is layered on the icon asset.
+  const imgClassName = `tj-icon-img object-contain ${className}`
+    .replace(/\bwc-edge-soft\b/g, "")
+    .replace(/\bwc-edge\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={strokeWidth}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={`wc-edge-soft ${className}`}
-      aria-hidden
-    >
-      {PATHS[name]}
-    </svg>
+    <>
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={`tj-icon-svg wc-edge-soft ${className}`}
+        aria-hidden
+      >
+        {PATHS[name]}
+      </svg>
+      {cuteSrc ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={cuteSrc} alt="" aria-hidden className={imgClassName} />
+      ) : null}
+    </>
   );
 }

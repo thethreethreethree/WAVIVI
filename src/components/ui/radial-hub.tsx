@@ -4,31 +4,48 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "motion/react";
 
+import { Icon, type IconName } from "@/components/ui/icon";
+
 interface HubLink {
   href: string;
   label: string;
-  /** Hand-painted watercolor icon (public/icons/travejor). */
+  /** Hand-painted watercolor icon (public/icons/travejor) — Cute Mode. */
   image: string;
+  /** Crisp line icon — Light/Dark mode. */
+  icon: IconName;
 }
 
 /** The five Travejor radial destinations, ordered clockwise from the top. */
 const HUB_LINKS: HubLink[] = [
-  { href: "/meet", label: "Meet up!", image: "/icons/travejor/ui/03_friends.png" },
+  {
+    href: "/meet",
+    label: "Meet up!",
+    image: "/icons/travejor/ui/03_friends.png",
+    icon: "meet",
+  },
   {
     href: "/events",
     label: "Events nearby",
     image: "/icons/travejor/ui/16_calendar.png",
+    icon: "calendar",
   },
   {
     href: "/todo",
     label: "What to do",
     image: "/icons/travejor/travel/14_island.png",
+    icon: "compass",
   },
-  { href: "/eat", label: "What to eat", image: "/icons/travejor/ui/07_food.png" },
+  {
+    href: "/eat",
+    label: "What to eat",
+    image: "/icons/travejor/ui/07_food.png",
+    icon: "utensils",
+  },
   {
     href: "/stay",
     label: "Where to stay",
     image: "/icons/travejor/ui/06_bed.png",
+    icon: "bed",
   },
 ];
 
@@ -113,14 +130,20 @@ export function RadialHub() {
                 className="wc-edge wc-soft absolute inset-0 rounded-full border-[3px] border-glow/70 bg-surface"
                 aria-hidden
               />
-              {/* Hand-painted watercolor icon */}
-              <span className="relative flex h-full w-full items-center justify-center">
+              {/* Icon — crisp SVG in Light/Dark, watercolor PNG in Cute Mode.
+                  Both render; CSS shows only the active theme's version. */}
+              <span className="relative flex h-full w-full items-center justify-center text-foreground">
                 <Image
                   src={item.image}
                   alt=""
                   width={52}
                   height={52}
-                  className="h-[42px] w-[42px] object-contain"
+                  className="tj-icon-img h-[42px] w-[42px] object-contain"
+                />
+                <Icon
+                  name={item.icon}
+                  svgOnly
+                  className="tj-icon-svg h-[36px] w-[36px]"
                 />
               </span>
             </span>
