@@ -61,6 +61,25 @@
   --hub-core: #2a2218;
 }
 
+/* Orange mode — bold, glowing, high-energy. Pairs with the vivid
+   orange-watercolor icon set. Toggled via the `.orange` class on <html>. */
+.orange {
+  --background: #fff0db;
+  --surface: #fffaf0;
+  --surface-elevated: #ffffff;
+  --foreground: #4a2606;
+  --muted: #bb8a55;
+  --border: #ffd9a3;
+
+  --accent-heat: #ff5a1f;
+  --accent-cool: #1aa3c4;
+  --accent-glow: #ff7a00;
+
+  --gradient-sunset: linear-gradient(135deg, #ff6a00 0%, #ff8a00 48%, #ffb443 100%);
+  --shadow-card: 0 10px 26px -12px rgba(255, 110, 0, 0.42);
+  --hub-core: #3a1f04;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
@@ -639,25 +658,52 @@ h3 {
    Cute Mode — watercolor icon swap + parchment background.
 =========================================================================== */
 
-/* Icon swap: line SVGs by default, watercolor PNGs only under `.cute`. */
-.tj-icon-img {
+/* Icon swap: line SVGs by default, watercolor PNGs under `.cute` / `.orange`.
+   The SVG is only hidden for a theme that actually has a painted alternative
+   (`.has-cute` / `.has-orange`), so icons without art still render. */
+.tj-icon-img,
+.tj-icon-img-orange {
   display: none;
   /* The PNGs are already hand-painted — never apply edge/paint filters. */
   filter: none !important;
 }
-.cute .tj-icon-svg {
+.cute .tj-icon-svg.has-cute {
   display: none;
 }
 .cute .tj-icon-img {
   display: inline-block;
 }
-
-/* Toolbox map markers keep their crisp SVG glyph even in Cute Mode — the
-   marker circle carries a wc-edge filter that would distort a painted PNG. */
-.cute .vm-marker .tj-icon-img {
+.orange .tj-icon-svg.has-orange {
   display: none;
 }
-.cute .vm-marker .tj-icon-svg {
+.orange .tj-icon-img-orange {
+  display: inline-block;
+}
+
+/* Painted-icon swap for components that supply their own watercolor art
+   (radial hub, bottom nav). `tj-line` = crisp SVG, `tj-paint` = painted PNG;
+   the PNG shows in any painted theme (Cute or Orange). */
+.tj-paint {
+  display: none;
+  filter: none !important;
+}
+.cute .tj-paint,
+.orange .tj-paint {
+  display: inline-block;
+}
+.cute .tj-line,
+.orange .tj-line {
+  display: none;
+}
+
+/* Toolbox map markers keep their crisp SVG glyph in the painted themes —
+   the marker circle carries a wc-edge filter that would distort a PNG. */
+.cute .vm-marker .tj-icon-img,
+.orange .vm-marker .tj-icon-img-orange {
+  display: none;
+}
+.cute .vm-marker .tj-icon-svg.has-cute,
+.orange .vm-marker .tj-icon-svg.has-orange {
   display: inline-block;
 }
 

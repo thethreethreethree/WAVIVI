@@ -138,12 +138,12 @@ export function RadialHub() {
                   alt=""
                   width={52}
                   height={52}
-                  className="tj-icon-img h-[42px] w-[42px] object-contain"
+                  className="tj-paint h-[42px] w-[42px] object-contain"
                 />
                 <Icon
                   name={item.icon}
                   svgOnly
-                  className="tj-icon-svg h-[36px] w-[36px]"
+                  className="tj-line h-[36px] w-[36px]"
                 />
               </span>
             </span>

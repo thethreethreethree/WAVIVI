@@ -63,8 +63,8 @@ export function BottomNav() {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
   const susenActive = pathname.startsWith("/susen");
 
-  // Crisp SVG in Light/Dark; watercolor PNG in Cute Mode. Both render —
-  // CSS (.tj-icon-svg / .tj-icon-img) shows only the active theme's version.
+  // Crisp SVG in Light/Dark; watercolor PNG in Cute/Orange. Both render —
+  // CSS (.tj-line / .tj-paint) shows only the active theme's version.
   const iconSvg = (t: Tab) => (
     <>
       <svg
@@ -74,7 +74,7 @@ export function BottomNav() {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="tj-icon-svg wc-edge-soft relative h-[1.5rem] w-[1.5rem]"
+        className="tj-line wc-edge-soft relative h-[1.5rem] w-[1.5rem]"
       >
         {t.icon}
       </svg>
@@ -84,7 +84,7 @@ export function BottomNav() {
           src={t.image}
           alt=""
           aria-hidden
-          className="tj-icon-img relative h-[1.7rem] w-[1.7rem] object-contain"
+          className="tj-paint relative h-[1.7rem] w-[1.7rem] object-contain"
         />
       ) : null}
     </>

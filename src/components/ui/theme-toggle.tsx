@@ -2,26 +2,28 @@
 
 import { useEffect, useState } from "react";
 
-/** The three app themes. */
-export type Theme = "light" | "dark" | "cute";
+/** The four app themes. */
+export type Theme = "light" | "dark" | "cute" | "orange";
 
 const OPTIONS: { value: Theme; label: string; icon: string }[] = [
   { value: "light", label: "Light", icon: "☀️" },
   { value: "dark", label: "Dark", icon: "🌙" },
   { value: "cute", label: "Cute", icon: "🎨" },
+  { value: "orange", label: "Orange", icon: "🔥" },
 ];
 
 /** Reads the theme currently applied to <html>. */
 function currentTheme(): Theme {
   const c = document.documentElement.classList;
   if (c.contains("cute")) return "cute";
+  if (c.contains("orange")) return "orange";
   if (c.contains("dark")) return "dark";
   return "light";
 }
 
 /**
- * Theme switch — Light · Dark · Cute. A segmented control that toggles the
- * `dark` / `cute` class on <html> and persists the choice to localStorage.
+ * Theme switch — Light · Dark · Cute · Orange. A segmented control that
+ * toggles the theme class on <html> and persists the choice to localStorage.
  */
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>("light");
@@ -34,7 +36,7 @@ export function ThemeToggle() {
   function choose(next: Theme) {
     setTheme(next);
     const c = document.documentElement.classList;
-    c.remove("dark", "cute");
+    c.remove("dark", "cute", "orange");
     if (next !== "light") c.add(next);
     try {
       localStorage.setItem("wavivi-theme", next);

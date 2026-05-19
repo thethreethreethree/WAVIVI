@@ -50,8 +50,8 @@ const yumyumpo = Space_Grotesk({
   weight: ["500", "700"],
 });
 
-/** Applies the saved/system theme (light · dark · cute) before paint. */
-const themeScript = `(function(){try{var t=localStorage.getItem('wavivi-theme');var theme=t||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');var c=document.documentElement.classList;if(theme==='dark')c.add('dark');else if(theme==='cute')c.add('cute');}catch(e){}})();`;
+/** Applies the saved/system theme (light · dark · cute · orange) before paint. */
+const themeScript = `(function(){try{var t=localStorage.getItem('wavivi-theme');var theme=t||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');var c=document.documentElement.classList;if(theme==='dark')c.add('dark');else if(theme==='cute')c.add('cute');else if(theme==='orange')c.add('orange');}catch(e){}})();`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),

@@ -146,14 +146,15 @@ const PATHS: Record<string, React.ReactNode> = {
 export type IconName = keyof typeof PATHS;
 
 import { CUTE_ICONS } from "@/lib/cute-icons";
+import { ORANGE_ICONS } from "@/lib/orange-icons";
 
 /**
  * Renders a minimalist line icon.
  *
- * In Cute Mode (the `.cute` class on <html>) the crisp SVG is hidden via CSS
- * and a hand-painted watercolor PNG is shown instead — when one exists for
- * this icon. Both elements are always rendered so this stays a plain,
- * SSR-safe component (no hooks).
+ * In the Cute and Orange themes the crisp SVG is hidden via CSS and a
+ * hand-painted watercolor PNG is shown instead — when one exists for this
+ * icon. All elements are always rendered so this stays a plain, SSR-safe
+ * component (no hooks).
  */
 export function Icon({
   name,
@@ -169,13 +170,26 @@ export function Icon({
   svgOnly?: boolean;
 }) {
   const cuteSrc = svgOnly ? undefined : CUTE_ICONS[name];
+  // Orange theme: use the Orange art, falling back to Cute V2 when an
+  // icon hasn't been drawn for Orange yet.
+  const orangeSrc = svgOnly ? undefined : ORANGE_ICONS[name] ?? cuteSrc;
   // The watercolor PNGs are already painted — strip any edge/paint effect
   // classes so no filter is layered on the icon asset.
-  const imgClassName = `tj-icon-img object-contain ${className}`
+  const baseImg = `object-contain ${className}`
     .replace(/\bwc-edge-soft\b/g, "")
     .replace(/\bwc-edge\b/g, "")
     .replace(/\s+/g, " ")
     .trim();
+  // Tell the SVG which themes have a painted alternative, so CSS only hides
+  // it for those themes (icons with no PNG still show the SVG everywhere).
+  const svgClass = [
+    "tj-icon-svg wc-edge-soft",
+    cuteSrc ? "has-cute" : "",
+    orangeSrc ? "has-orange" : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
   return (
     <>
       <svg
@@ -185,14 +199,23 @@ export function Icon({
         strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
-        className={`tj-icon-svg wc-edge-soft ${className}`}
+        className={svgClass}
         aria-hidden
       >
         {PATHS[name]}
       </svg>
       {cuteSrc ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={cuteSrc} alt="" aria-hidden className={imgClassName} />
+        <img src={cuteSrc} alt="" aria-hidden className={`tj-icon-img ${baseImg}`} />
+      ) : null}
+      {orangeSrc ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={orangeSrc}
+          alt=""
+          aria-hidden
+          className={`tj-icon-img-orange ${baseImg}`}
+        />
       ) : null}
     </>
   );
