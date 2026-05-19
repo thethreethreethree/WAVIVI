@@ -212,15 +212,31 @@ h3 {
   50% { transform: translateY(-3px); }
 }
 
-/* Toolbox Map — utility-pin markers reuse the .vm-marker watercolor base.
-   Each category gets its own painted wash. The glyph is a small line icon. */
-.tb-marker {
-  font-size: 0;
+/* Toolbox Map — utility-pin markers. A clean cream disc carrying the
+   hand-painted watercolor category icon (no edge filter — the PNG art is
+   already painted, filtering it would muddy it). */
+.tb-pin {
   position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #fffaf3;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 4px 11px -3px rgba(120, 78, 30, 0.55);
+  cursor: pointer;
+  transition: transform 0.16s ease;
 }
-.tb-marker svg {
-  width: 56%;
-  height: 56%;
+.tb-pin:hover {
+  transform: scale(1.12);
+}
+.tb-pin-img {
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+  display: block;
 }
 
 /* Floating quality badge — driven by the Google rating (see qualityBadge).
@@ -686,6 +702,27 @@ h3 {
    standard edge is too subtle to read as hand-painted. */
 .wc-edge-strong {
   filter: url(#wc-edge-strong);
+}
+/* Ragged torn-paper edge — for framing the map. */
+.wc-torn {
+  filter: url(#wc-torn);
+}
+
+/* Toolbox map — clips the live map tiles into an organic, hand-torn paper
+   shape (jagged perimeter) so the edge matches the app's watercolor look
+   instead of a hard uniform rectangle. Percentage points → scales freely. */
+.tb-map-torn {
+  clip-path: polygon(
+    0% 2%, 7% 0.4%, 14% 2.8%, 21% 0.9%, 28% 3%, 35% 0.7%, 43% 2.5%,
+    51% 0.3%, 58% 2.9%, 66% 1.2%, 73% 2.7%, 81% 0.6%, 88% 3%, 94% 1%,
+    100% 2.2%, 98.4% 9%, 100% 17%, 97.4% 25%, 99.6% 33%, 97.6% 41%,
+    100% 49%, 98.5% 57%, 99.4% 65%, 97.6% 73%, 100% 81%, 98.7% 89%,
+    99.6% 97%, 94% 99.5%, 87% 97.4%, 79% 100%, 72% 98.2%, 64% 99.5%,
+    56% 97.2%, 49% 100%, 41% 98.5%, 34% 99.4%, 26% 97.3%, 19% 100%,
+    12% 98.6%, 5% 99.5%, 0% 98%, 2.2% 91%, 0.4% 83%, 2.6% 75%, 0.9% 67%,
+    3% 59%, 0.6% 51%, 2.5% 43%, 1.1% 35%, 2.8% 27%, 0.7% 19%, 2.1% 11%,
+    1.3% 4%
+  );
 }
 
 /* Warm paper grain — covers app + webapp surfaces. */

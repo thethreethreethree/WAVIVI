@@ -1,10 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { renderToStaticMarkup } from "react-dom/server";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Icon } from "@/components/ui/icon";
+import { CUTE_ICONS } from "@/lib/cute-icons";
 import {
   backpackDisplay,
   backpackLabel,
@@ -94,11 +94,13 @@ function BackpackGlyph({ className }: { className?: string }) {
   );
 }
 
-/** Pre-rendered SVG glyph markup for each category icon (used in divIcon). */
+/** Watercolor icon markup for each category marker (used in divIcon).
+   Inline styles guarantee correct sizing even if cached CSS is stale. */
 const CATEGORY_GLYPH: Record<CategoryId, string> = Object.fromEntries(
   TOOLBOX_CATEGORIES.map((c) => [
     c.id,
-    renderToStaticMarkup(<Icon name={c.icon} strokeWidth={2.4} />),
+    `<img class="tb-pin-img" src="${CUTE_ICONS[c.icon] ?? ""}" alt="" ` +
+      `style="width:24px;height:24px;object-fit:contain;display:block" />`,
   ]),
 ) as Record<CategoryId, string>;
 
@@ -253,7 +255,13 @@ export function ToolboxMap({
     for (const { marker } of markersRef.current) marker.remove();
     markersRef.current = [];
 
-    const size = 38;
+    const size = 36;
+    // Inline styles so the disc renders correctly even with stale cached CSS.
+    const pinStyle =
+      "width:36px;height:36px;display:flex;align-items:center;" +
+      "justify-content:center;border-radius:50%;background:#fffaf3;" +
+      "border:2.5px solid #fff;box-shadow:0 4px 11px -3px rgba(120,78,30,.55);" +
+      "box-sizing:border-box";
     const bounds = L.latLngBounds([]);
     for (const util of utilities) {
       const cat = isCategoryId(util.category) ? util.category : null;
@@ -262,7 +270,7 @@ export function ToolboxMap({
       const badge = qualityBadge(util.rating);
       const icon = L.divIcon({
         className: "",
-        html: `<div class="vm-marker tb-marker ${cls}" title="${escapeHtml(
+        html: `<div class="tb-pin ${cls}" style="${pinStyle}" title="${escapeHtml(
           util.name,
         )}">${glyph}${badge}</div>`,
         iconSize: [size, size],
@@ -342,9 +350,9 @@ export function ToolboxMap({
   const totalCount = utilities.length;
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="bg-sunset flex flex-1 flex-col">
       {/* Top bar — watercolor sunset orange, matching the app's brand */}
-      <div className="bg-sunset relative z-20 flex flex-col gap-2.5 overflow-hidden px-4 pb-3 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))] shadow-card">
+      <div className="bg-sunset relative z-20 flex flex-col gap-2.5 px-4 pb-3 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))] shadow-card">
         <span
           className="paper-grain-coarse pointer-events-none absolute inset-0"
           aria-hidden
@@ -480,15 +488,10 @@ export function ToolboxMap({
       </div>
 
       {/* Map */}
-      <div className="relative flex-1">
-        <div id="tb-map" className="vm-leaflet absolute inset-0" />
-
-        {/* Worn, torn-paper edge framing the map — a thick cream border with
-            the gentle wc-edge filter (displacement stays within the border
-            width, so it never tears holes). */}
-        <span
-          className="wc-edge pointer-events-none absolute inset-0 z-[500] border-[18px] border-background"
-          aria-hidden
+      <div className="relative flex-1 bg-background">
+        <div
+          id="tb-map"
+          className="tb-map-torn vm-leaflet absolute inset-0"
         />
 
         <span className="pointer-events-none absolute bottom-3.5 right-4 z-[600] text-[9px] font-semibold tracking-wide text-foreground/45">

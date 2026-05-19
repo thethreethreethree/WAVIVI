@@ -119,7 +119,7 @@ export default function RootLayout({
           style={{ position: "absolute" }}
         >
           <defs>
-            <filter id="wc-edge">
+            <filter id="wc-edge" colorInterpolationFilters="sRGB">
               <feTurbulence
                 type="fractalNoise"
                 baseFrequency="0.016"
@@ -129,7 +129,7 @@ export default function RootLayout({
               />
               <feDisplacementMap in="SourceGraphic" in2="n" scale="13" />
             </filter>
-            <filter id="wc-edge-soft">
+            <filter id="wc-edge-soft" colorInterpolationFilters="sRGB">
               <feTurbulence
                 type="fractalNoise"
                 baseFrequency="0.022"
@@ -139,7 +139,7 @@ export default function RootLayout({
               />
               <feDisplacementMap in="SourceGraphic" in2="n" scale="6" />
             </filter>
-            <filter id="wc-edge-strong">
+            <filter id="wc-edge-strong" colorInterpolationFilters="sRGB">
               <feTurbulence
                 type="fractalNoise"
                 baseFrequency="0.009"
@@ -148,6 +148,18 @@ export default function RootLayout({
                 result="n"
               />
               <feDisplacementMap in="SourceGraphic" in2="n" scale="34" />
+            </filter>
+            {/* Ragged torn-paper edge — `turbulence` noise (sharp, fibrous)
+                rather than smooth fractalNoise. For framing the map. */}
+            <filter id="wc-torn" colorInterpolationFilters="sRGB">
+              <feTurbulence
+                type="turbulence"
+                baseFrequency="0.045"
+                numOctaves="4"
+                seed="11"
+                result="n"
+              />
+              <feDisplacementMap in="SourceGraphic" in2="n" scale="15" />
             </filter>
           </defs>
         </svg>

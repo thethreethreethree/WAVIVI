@@ -20,7 +20,7 @@ const HUB_LINKS: HubLink[] = [
   {
     href: "/meet",
     label: "Meet up!",
-    image: "/icons/travejor/ui/03_friends.png",
+    image: "/icons/travejor/social/21_group_join.png",
     icon: "meet",
   },
   {
