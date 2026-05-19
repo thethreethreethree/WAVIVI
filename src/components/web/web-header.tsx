@@ -11,7 +11,7 @@ const NAV = [
 ];
 
 /** Cinematic glass navigation for the Travejor partner webapp. */
-export function WebHeader() {
+export function WebHeader({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const isActive = (href: string) => pathname.startsWith(href);
@@ -49,6 +49,14 @@ export function WebHeader() {
           </nav>
 
           <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Link
+                href="/admin/toolbox"
+                className="hidden rounded-full bg-foreground px-4 py-2 text-sm font-bold text-background transition-transform hover:scale-105 md:inline-block"
+              >
+                Admin
+              </Link>
+            )}
             <Link
               href="/list-with-travejor"
               className="hidden rounded-full bg-sunset px-4 py-2 text-sm font-bold text-white shadow-[0_8px_24px_-8px_rgba(255,122,24,0.7)] transition-transform hover:scale-105 md:inline-block"
@@ -101,6 +109,15 @@ export function WebHeader() {
             >
               Get the app
             </Link>
+            {isAdmin && (
+              <Link
+                href="/admin/toolbox"
+                onClick={() => setOpen(false)}
+                className="rounded-full bg-foreground px-4 py-2.5 text-center text-sm font-bold text-background"
+              >
+                Admin
+              </Link>
+            )}
           </div>
         </div>
       )}
