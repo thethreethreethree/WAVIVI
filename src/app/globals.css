@@ -696,6 +696,20 @@ h3 {
   display: none;
 }
 
+/* Susen centre-nav avatar — a slow, gentle up-and-down bob. */
+@keyframes susen-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+.susen-bob {
+  animation: susen-bob 3.2s ease-in-out infinite;
+}
+
 /* Toolbox map markers keep their crisp SVG glyph in the painted themes —
    the marker circle carries a wc-edge filter that would distort a PNG. */
 .cute .vm-marker .tj-icon-img,

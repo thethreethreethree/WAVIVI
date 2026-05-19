@@ -138,7 +138,7 @@ export function BottomNav() {
             }`}
           >
             <SusenAvatar
-              className={`h-17 w-17 shadow-card ring-4 ring-surface ${
+              className={`susen-bob h-17 w-17 shadow-card ring-4 ring-surface ${
                 susenActive ? "ring-glow/40" : ""
               }`}
             />
