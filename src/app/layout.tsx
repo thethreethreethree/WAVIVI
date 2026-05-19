@@ -50,8 +50,8 @@ const yumyumpo = Space_Grotesk({
   weight: ["500", "700"],
 });
 
-/** Applies the saved/system theme before paint to avoid a flash. */
-const themeScript = `(function(){try{var t=localStorage.getItem('wavivi-theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.classList.add('dark');}catch(e){}})();`;
+/** Applies the saved/system theme (light · dark · cute) before paint. */
+const themeScript = `(function(){try{var t=localStorage.getItem('wavivi-theme');var theme=t||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');var c=document.documentElement.classList;if(theme==='dark')c.add('dark');else if(theme==='cute')c.add('cute');}catch(e){}})();`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),

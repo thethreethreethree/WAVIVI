@@ -40,6 +40,25 @@
   --hub-core: #060504;
 }
 
+/* Cute mode — a brighter, softer, playful watercolor theme. Pairs with the
+   hand-painted icon set. Toggled via the `.cute` class on <html>. */
+.cute {
+  --background: #fff3e4;
+  --surface: #fffaf3;
+  --surface-elevated: #ffffff;
+  --foreground: #3a2c1c;
+  --muted: #ad9a84;
+  --border: #f4ddc1;
+
+  --accent-heat: #ff6f4d;
+  --accent-cool: #1bbd8f;
+  --accent-glow: #ff9b22;
+
+  --gradient-sunset: linear-gradient(135deg, #ff8a2e 0%, #ff9b22 50%, #ffc24f 100%);
+  --shadow-card: 0 8px 24px -12px rgba(180, 110, 40, 0.32);
+  --hub-core: #2a2218;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);

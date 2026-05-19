@@ -1,0 +1,145 @@
+Section,Icon Name,Use,Status,Priority
+A Brand,app_logo,Top-bar wordmark,Have,-
+A Brand,paper_plane,Brand motif / loading,Have,-
+A Brand,susen_orb,S.U.S.E.N AI mark,Need,Low
+A Brand,susen_thinking,AI typing / loading state,Need,Low
+B Nav,nav_home,Home tab,Have,-
+B Nav,nav_tools,Tools tab,Have,-
+B Nav,nav_feed,Feed tab,Have,-
+B Nav,nav_profile,Profile tab,Have,-
+B Nav,nav_susen,Centre Susen orb,Need,Low
+C Hub,hub_meet,Meet up,Have,-
+C Hub,hub_events,Events nearby,Have,-
+C Hub,hub_todo,What to do,Have,-
+C Hub,hub_eat,What to eat,Have,-
+C Hub,hub_stay,Where to stay,Have,-
+C Hub,hub_center_map,Centre Where-to-next orb,Need,Low
+D Toolbox,atm,ATMs,Have,-
+D Toolbox,public_wifi,Public Wi-Fi,Have,-
+D Toolbox,currency_exchange,Currency exchange,Have,-
+D Toolbox,transportation,Transport,Have,-
+D Toolbox,market,Markets / shops,Need,High
+D Toolbox,bank,Banks,Need,High
+D Toolbox,sim_card,SIM cards,Need,High
+D Toolbox,bathroom,Public restrooms,Need,High
+D Toolbox,medical_clinic,Clinics / pharmacies,Need,High
+D Toolbox,police,Police stations,Need,High
+D Toolbox,embassy,Embassies,Need,High
+D Toolbox,laundry,Laundry,Need,High
+E Map,map_pin,Map pin,Have,-
+E Map,user_marker,User location,Have,-
+E Map,group_marker,Group location,Have,-
+E Map,gps_locate,Locate me,Have,-
+E Map,direction_arrow,Heading arrow,Have,-
+E Map,compass_ring,Compass,Have,-
+E Map,route_line,Route line,Have,-
+E Map,venue_highlight,Venue highlight,Have,-
+E Map,heat_zone,Vibe heat zone,Have,-
+F Status,status_online,Online,Have,-
+F Status,status_offline,Offline,Have,-
+F Status,status_busy,Busy,Have,-
+F Status,status_traveling,Traveling,Have,-
+F Status,status_nearby,Nearby,Have,-
+F Status,active_now,Active now,Have,-
+F Status,verified,Verified badge,Have,-
+F Status,premium,Premium badge,Have,-
+F Status,new_user,New user badge,Have,-
+F Status,connected,Connected,Have,-
+F Status,loading,Loading,Have,-
+F Status,success,Success,Have,-
+F Status,error,Error,Have,-
+F Status,warning,Warning,Have,-
+G Social,chat_bubble,Chat,Have,-
+G Social,voice_message,Voice message,Have,-
+G Social,video_call,Video call,Have,-
+G Social,call,Call,Have,-
+G Social,typing,Typing indicator,Have,-
+G Social,mention,Mention,Have,-
+G Social,emoji,Emoji picker,Have,-
+G Social,gif,GIF picker,Have,-
+G Social,like,Like / thumbs up,Have,-
+G Social,comment,Comment,Have,-
+G Social,share,Share,Have,-
+G Social,follow,Follow,Have,-
+G Social,friend_request,Friend request,Have,-
+G Social,group_join,Join group,Have,-
+G Social,invite,Invite,Have,-
+G Social,reputation_badge,Reputation,Have,-
+G Social,qr_code,QR code,Have,-
+G Social,grid_view,Grid view,Have,-
+G Social,achievement_badge,Achievement,Have,-
+H UI,search,Search,Have,-
+H UI,plus_add,Add,Have,-
+H UI,bell,Notifications,Have,-
+H UI,heart_save,Save,Have,-
+H UI,star,Star,Have,-
+H UI,lock,Lock,Have,-
+H UI,calendar,Calendar,Have,-
+H UI,mail,Mail,Have,-
+H UI,close_x,Close,Need,High
+H UI,back_arrow,Back,Need,High
+H UI,chevron_up,Chevron up,Need,High
+H UI,chevron_down,Chevron down,Need,High
+H UI,chevron_left,Chevron left,Need,High
+H UI,chevron_right,Chevron right,Need,High
+H UI,menu_kebab,Overflow menu,Need,High
+H UI,settings_gear,Settings,Need,High
+H UI,filter,Filter,Need,High
+H UI,edit_pencil,Edit,Need,High
+H UI,trash_delete,Delete,Need,High
+H UI,check,Checkmark,Need,High
+H UI,info,Info,Need,High
+H UI,eye,Show password,Need,High
+H UI,eye_off,Hide password,Need,High
+H UI,clock,Time,Need,High
+H UI,refresh,Refresh,Need,High
+H UI,send,Send,Need,High
+H UI,bookmark,Bookmark,Need,High
+H UI,external_link,External link,Need,High
+I Profile,profile_avatar,Avatar placeholder,Have,-
+I Profile,camera_change_photo,Change photo,Have,-
+I Profile,passport,Passport,Have,-
+I Profile,globe,Globe,Have,-
+I Profile,flag,Flag,Have,-
+I Profile,traveler_status_exploring,Status - exploring,Need,Low
+I Profile,traveler_status_local,Status - local,Need,Low
+I Profile,traveler_status_transit,Status - in transit,Need,Low
+I Profile,traveler_status_offline,Status - offline,Need,Low
+I Profile,instagram_badge,Instagram link,Need,Low
+I Profile,edit_profile,Edit profile,Need,Low
+J Rating,backpack_filled,Backpack rating filled,Need,Medium
+J Rating,backpack_empty,Backpack rating empty,Need,Medium
+J Rating,balloon_red,Marker badge rating 3-4,Need,Medium
+J Rating,balloon_green,Marker badge rating 4-4.5,Need,Medium
+J Rating,thumbs_up_orange,Marker badge rating 4.5+,Need,Medium
+J Rating,top_pick_badge,Card Top Pick badge,Need,Medium
+K Empty State,empty_no_messages,No chats,Need,Medium
+K Empty State,empty_no_travelers,No travelers nearby,Need,Medium
+K Empty State,empty_no_events,No events,Need,Medium
+K Empty State,empty_no_saved_places,No saved places,Need,Medium
+K Empty State,empty_no_notifications,All caught up,Need,Medium
+K Empty State,empty_no_bookings,No trips booked,Need,Medium
+K Empty State,empty_no_results,Search no matches,Need,Medium
+K Empty State,illustration_error,Error screen,Need,Medium
+K Empty State,illustration_offline,Offline screen,Need,Medium
+K Empty State,illustration_loading,Loading screen,Need,Medium
+L Travel,plane,Flights,Have,-
+L Travel,hostel,Hostels,Have,-
+L Travel,tent,Camping,Have,-
+L Travel,beach,Beach,Have,-
+L Travel,mountain,Mountain,Have,-
+L Travel,island,Island,Have,-
+L Travel,campfire,Campfire,Have,-
+L Travel,bar,Bar,Have,-
+L Travel,club,Club,Have,-
+L Travel,restaurant,Restaurant,Have,-
+L Travel,street_food,Street food,Have,-
+L Travel,surfing,Surfing,Have,-
+L Travel,pub_crawl,Pub crawl,Have,-
+L Travel,safety_zone,Safety zone,Have,-
+L Travel,scooter,Scooter,Have,-
+L Travel,train,Train,Have,-
+L Travel,ferry,Ferry,Have,-
+L Travel,taxi,Taxi,Have,-
+L Travel,coffee,Coffee,Have,-
+L Travel,music,Music,Have,-

@@ -1,23 +1,35 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "motion/react";
-
-import { Icon, type IconName } from "@/components/ui/icon";
 
 interface HubLink {
   href: string;
   label: string;
-  icon: IconName;
+  /** Hand-painted watercolor icon (public/icons/travejor). */
+  image: string;
 }
 
 /** The five Travejor radial destinations, ordered clockwise from the top. */
 const HUB_LINKS: HubLink[] = [
-  { href: "/meet", label: "Meet up!", icon: "meet" },
-  { href: "/events", label: "Events nearby", icon: "calendar" },
-  { href: "/todo", label: "What to do", icon: "compass" },
-  { href: "/eat", label: "What to eat", icon: "utensils" },
-  { href: "/stay", label: "Where to stay", icon: "bed" },
+  { href: "/meet", label: "Meet up!", image: "/icons/travejor/ui/03_friends.png" },
+  {
+    href: "/events",
+    label: "Events nearby",
+    image: "/icons/travejor/ui/16_calendar.png",
+  },
+  {
+    href: "/todo",
+    label: "What to do",
+    image: "/icons/travejor/travel/14_island.png",
+  },
+  { href: "/eat", label: "What to eat", image: "/icons/travejor/ui/07_food.png" },
+  {
+    href: "/stay",
+    label: "Where to stay",
+    image: "/icons/travejor/ui/06_bed.png",
+  },
 ];
 
 /** Radius of the satellite ring, as a percentage of the container. */
@@ -101,9 +113,15 @@ export function RadialHub() {
                 className="wc-edge wc-soft absolute inset-0 rounded-full border-[3px] border-glow/70 bg-surface"
                 aria-hidden
               />
-              {/* Crisp icon */}
-              <span className="relative flex h-full w-full items-center justify-center text-glow">
-                <Icon name={item.icon} className="h-7 w-7" />
+              {/* Hand-painted watercolor icon */}
+              <span className="relative flex h-full w-full items-center justify-center">
+                <Image
+                  src={item.image}
+                  alt=""
+                  width={52}
+                  height={52}
+                  className="h-[42px] w-[42px] object-contain"
+                />
               </span>
             </span>
           </Link>

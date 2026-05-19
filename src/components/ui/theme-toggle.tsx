@@ -2,47 +2,70 @@
 
 import { useEffect, useState } from "react";
 
-/** Light / dark ("night traveler") theme switch. Persists to localStorage. */
+/** The three app themes. */
+export type Theme = "light" | "dark" | "cute";
+
+const OPTIONS: { value: Theme; label: string; icon: string }[] = [
+  { value: "light", label: "Light", icon: "☀️" },
+  { value: "dark", label: "Dark", icon: "🌙" },
+  { value: "cute", label: "Cute", icon: "🎨" },
+];
+
+/** Reads the theme currently applied to <html>. */
+function currentTheme(): Theme {
+  const c = document.documentElement.classList;
+  if (c.contains("cute")) return "cute";
+  if (c.contains("dark")) return "dark";
+  return "light";
+}
+
+/**
+ * Theme switch — Light · Dark · Cute. A segmented control that toggles the
+ * `dark` / `cute` class on <html> and persists the choice to localStorage.
+ */
 export function ThemeToggle() {
-  const [dark, setDark] = useState(false);
+  const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
-    const id = requestAnimationFrame(() =>
-      setDark(document.documentElement.classList.contains("dark")),
-    );
+    const id = requestAnimationFrame(() => setTheme(currentTheme()));
     return () => cancelAnimationFrame(id);
   }, []);
 
-  function toggle() {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.classList.toggle("dark", next);
+  function choose(next: Theme) {
+    setTheme(next);
+    const c = document.documentElement.classList;
+    c.remove("dark", "cute");
+    if (next !== "light") c.add(next);
     try {
-      localStorage.setItem("wavivi-theme", next ? "dark" : "light");
+      localStorage.setItem("wavivi-theme", next);
     } catch {
       // ignore storage failures (private mode, etc.)
     }
   }
 
   return (
-    <button
-      type="button"
-      onClick={toggle}
-      role="switch"
-      aria-checked={dark}
-      aria-label="Toggle dark mode"
-      className={`relative h-7 w-12 rounded-full transition-colors ${
-        dark ? "bg-glow" : "bg-border"
-      }`}
+    <div
+      role="radiogroup"
+      aria-label="Theme"
+      className="inline-flex rounded-full bg-border/70 p-0.5"
     >
-      <span
-        className={`absolute top-0.5 flex h-6 w-6 items-center justify-center
-          rounded-full bg-surface text-[11px] shadow transition-transform ${
-            dark ? "translate-x-[1.4rem]" : "translate-x-0.5"
+      {OPTIONS.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          role="radio"
+          aria-checked={theme === o.value}
+          onClick={() => choose(o.value)}
+          className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition-colors ${
+            theme === o.value
+              ? "bg-surface text-foreground shadow-sm"
+              : "text-muted"
           }`}
-      >
-        {dark ? "🌙" : "☀️"}
-      </span>
-    </button>
+        >
+          <span aria-hidden>{o.icon}</span>
+          {o.label}
+        </button>
+      ))}
+    </div>
   );
 }

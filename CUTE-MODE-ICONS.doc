@@ -1,0 +1,186 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8" />
+<title>Travejor — Cute Mode Icon Manifest</title>
+<style>
+  body { font-family: Calibri, Arial, sans-serif; color: #2c2318; font-size: 11pt; }
+  h1 { color: #f7941d; font-size: 22pt; margin-bottom: 2pt; }
+  h2 { color: #2c2318; font-size: 14pt; border-bottom: 2px solid #f7941d;
+       padding-bottom: 3pt; margin-top: 22pt; }
+  .sub { color: #948b7c; font-size: 10pt; margin-top: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 8pt 0; }
+  th { background: #f7941d; color: #ffffff; text-align: left;
+       padding: 5pt 8pt; font-size: 10pt; }
+  td { border: 1px solid #e6dac3; padding: 5pt 8pt; font-size: 10pt;
+       vertical-align: top; }
+  .have { color: #12a07a; font-weight: bold; }
+  .need { color: #ef5d3c; font-weight: bold; }
+  .icon { font-family: Consolas, monospace; }
+  .note { background: #fdf4e6; border-left: 4px solid #f7941d;
+          padding: 8pt 12pt; font-size: 10pt; margin: 10pt 0; }
+  .summary th { background: #2c2318; }
+</style>
+</head>
+<body>
+
+<h1>Travejor — Cute Mode Icon Manifest</h1>
+<p class="sub">A third app theme (Light / Dark / Cute) using hand-painted watercolor
+icons. This document lists every graphic element in the app.<br/>
+<b>Legend:</b> <span class="have">HAVE</span> = already in the supplied asset
+sets &nbsp;&middot;&nbsp; <span class="need">NEED</span> = must be produced.</p>
+
+<h2>A &middot; Brand &amp; Identity</h2>
+<table>
+<tr><th>Icon name</th><th>Use</th><th>Status</th></tr>
+<tr><td class="icon">app_logo</td><td>Top-bar wordmark</td><td class="have">HAVE</td></tr>
+<tr><td class="icon">paper_plane</td><td>Brand motif / loading</td><td class="have">HAVE</td></tr>
+<tr><td class="icon">susen_orb</td><td>S.U.S.E.N AI mark</td><td class="need">NEED</td></tr>
+<tr><td class="icon">susen_thinking</td><td>AI typing / loading state</td><td class="need">NEED</td></tr>
+</table>
+
+<h2>B &middot; Bottom Navigation (5)</h2>
+<table>
+<tr><th>Icon name</th><th>Use</th><th>Status</th></tr>
+<tr><td class="icon">nav_home</td><td>Home tab</td><td class="have">HAVE</td></tr>
+<tr><td class="icon">nav_tools</td><td>Tools tab</td><td class="have">HAVE</td></tr>
+<tr><td class="icon">nav_feed</td><td>Feed tab</td><td class="have">HAVE</td></tr>
+<tr><td class="icon">nav_profile</td><td>Profile tab</td><td class="have">HAVE</td></tr>
+<tr><td class="icon">nav_susen</td><td>Centre Susen orb</td><td class="need">NEED</td></tr>
+</table>
+
+<h2>C &middot; Home — Radial Hub (5) — already applied</h2>
+<table>
+<tr><th>Icon name</th><th>Use</th><th>Status</th></tr>
+<tr><td class="icon">hub_meet</td><td>Meet up</td><td class="have">HAVE</td></tr>
+<tr><td class="icon">hub_events</td><td>Events nearby</td><td class="have">HAVE</td></tr>
+<tr><td class="icon">hub_todo</td><td>What to do</td><td class="have">HAVE</td></tr>
+<tr><td class="icon">hub_eat</td><td>What to eat</td><td class="have">HAVE</td></tr>
+<tr><td class="icon">hub_stay</td><td>Where to stay</td><td class="have">HAVE</td></tr>
+<tr><td class="icon">hub_center_map</td><td>Centre "Where to next" orb</td><td class="need">NEED</td></tr>
+</table>
+
+<h2>D &middot; Traveler Toolbox — 12 Categories &nbsp;(biggest gap)</h2>
+<table>
+<tr><th>Icon name</th><th>Use</th><th>Status</th></tr>
+<tr><td class="icon">atm</td><td>ATMs</td><td class="have">HAVE</td></tr>
+<tr><td class="icon">public_wifi</td><td>Public Wi-Fi</td><td class="have">HAVE</td></tr>
+<tr><td class="icon">currency_exchange</td><td>Currency exchange</td><td class="have">HAVE</td></tr>
+<tr><td class="icon">transportation</td><td>Transport</td><td class="have">HAVE</td></tr>
+<tr><td class="icon">market</td><td>Markets / shops</td><td class="need">NEED</td></tr>
+<tr><td class="icon">bank</td><td>Banks</td><td class="need">NEED</td></tr>
+<tr><td class="icon">sim_card</td><td>SIM cards</td><td class="need">NEED</td></tr>
+<tr><td class="icon">bathroom</td><td>Public restrooms</td><td class="need">NEED</td></tr>
+<tr><td class="icon">medical_clinic</td><td>Clinics / pharmacies</td><td class="need">NEED</td></tr>
+<tr><td class="icon">police</td><td>Police stations</td><td class="need">NEED</td></tr>
+<tr><td class="icon">embassy</td><td>Embassies</td><td class="need">NEED</td></tr>
+<tr><td class="icon">laundry</td><td>Laundry</td><td class="need">NEED</td></tr>
+</table>
+
+<h2>E &middot; Map &amp; Location</h2>
+<table>
+<tr><th>Icon name</th><th>Status</th></tr>
+<tr><td class="icon">map_pin, user_marker, group_marker, gps_locate, direction_arrow,
+compass_ring, route_line, venue_highlight, heat_zone</td><td class="have">HAVE (9)</td></tr>
+</table>
+
+<h2>F &middot; Status &amp; Badges</h2>
+<table>
+<tr><th>Icon name</th><th>Status</th></tr>
+<tr><td class="icon">status_online, status_offline, status_busy, status_traveling,
+status_nearby, active_now, verified, premium, new_user, connected, loading,
+success, error, warning</td><td class="have">HAVE (14)</td></tr>
+</table>
+
+<h2>G &middot; Social &amp; Communication</h2>
+<table>
+<tr><th>Icon name</th><th>Status</th></tr>
+<tr><td class="icon">chat_bubble, voice_message, video_call, call, typing, mention,
+emoji, gif, like, comment, share, follow, friend_request, group_join, invite,
+reputation_badge, qr_code, grid_view, achievement_badge</td><td class="have">HAVE (19)</td></tr>
+</table>
+
+<h2>H &middot; UI Controls &amp; Actions &nbsp;(gap)</h2>
+<table>
+<tr><th>Icon name</th><th>Status</th></tr>
+<tr><td class="icon">search, plus_add, bell, heart_save, star, lock, calendar,
+mail</td><td class="have">HAVE (8)</td></tr>
+<tr><td class="icon">close_x, back_arrow, chevron_up, chevron_down, chevron_left,
+chevron_right, menu_kebab, settings_gear, filter, edit_pencil, trash_delete,
+check, info, eye, eye_off, clock, refresh, send, bookmark, external_link</td>
+<td class="need">NEED (20)</td></tr>
+</table>
+
+<h2>I &middot; Profile &amp; Account</h2>
+<table>
+<tr><th>Icon name</th><th>Status</th></tr>
+<tr><td class="icon">profile_avatar, camera_change_photo, passport, globe, flag</td>
+<td class="have">HAVE (5)</td></tr>
+<tr><td class="icon">traveler_status_exploring, traveler_status_local,
+traveler_status_transit, traveler_status_offline, instagram_badge,
+edit_profile</td><td class="need">NEED (6)</td></tr>
+</table>
+
+<h2>J &middot; Rating &amp; Quality (Toolbox)</h2>
+<table>
+<tr><th>Icon name</th><th>Use</th><th>Status</th></tr>
+<tr><td class="icon">backpack_filled</td><td>Backpack rating (filled)</td><td class="need">NEED</td></tr>
+<tr><td class="icon">backpack_empty</td><td>Backpack rating (empty)</td><td class="need">NEED</td></tr>
+<tr><td class="icon">balloon_red</td><td>Marker badge — rating 3&ndash;4</td><td class="need">NEED</td></tr>
+<tr><td class="icon">balloon_green</td><td>Marker badge — rating 4&ndash;4.5</td><td class="need">NEED</td></tr>
+<tr><td class="icon">thumbs_up_orange</td><td>Marker badge — rating 4.5+</td><td class="need">NEED</td></tr>
+<tr><td class="icon">top_pick_badge</td><td>Card "Top pick" badge</td><td class="need">NEED</td></tr>
+</table>
+
+<h2>K &middot; Empty-State Illustrations &nbsp;(larger spot art)</h2>
+<table>
+<tr><th>Illustration name</th><th>Use</th><th>Status</th></tr>
+<tr><td class="icon">empty_no_messages</td><td>No chats yet</td><td class="need">NEED</td></tr>
+<tr><td class="icon">empty_no_travelers</td><td>No travelers nearby</td><td class="need">NEED</td></tr>
+<tr><td class="icon">empty_no_events</td><td>No events</td><td class="need">NEED</td></tr>
+<tr><td class="icon">empty_no_saved_places</td><td>No saved places</td><td class="need">NEED</td></tr>
+<tr><td class="icon">empty_no_notifications</td><td>All caught up</td><td class="need">NEED</td></tr>
+<tr><td class="icon">empty_no_bookings</td><td>No trips booked</td><td class="need">NEED</td></tr>
+<tr><td class="icon">empty_no_results</td><td>Search — no matches</td><td class="need">NEED</td></tr>
+<tr><td class="icon">illustration_error</td><td>Error screen</td><td class="need">NEED</td></tr>
+<tr><td class="icon">illustration_offline</td><td>Offline screen</td><td class="need">NEED</td></tr>
+<tr><td class="icon">illustration_loading</td><td>Loading screen</td><td class="need">NEED</td></tr>
+</table>
+
+<h2>L &middot; Travel &amp; Content (Toolbox map / Vibes / Feed)</h2>
+<table>
+<tr><th>Icon name</th><th>Status</th></tr>
+<tr><td class="icon">plane, hostel, tent, beach, mountain, island, campfire, bar,
+club, restaurant, street_food, surfing, pub_crawl, safety_zone, scooter, train,
+ferry, taxi, coffee, music</td><td class="have">HAVE (20)</td></tr>
+</table>
+
+<h2>Summary — Still To Produce</h2>
+<table class="summary">
+<tr><th>Priority</th><th>Set</th><th>Count</th></tr>
+<tr><td>HIGH</td><td>Toolbox category icons (market, bank, sim_card, bathroom,
+medical_clinic, police, embassy, laundry)</td><td>8</td></tr>
+<tr><td>HIGH</td><td>UI control icons (close, back, chevrons, gear, filter, edit,
+trash, check, send&hellip;)</td><td>~20</td></tr>
+<tr><td>MEDIUM</td><td>Empty-state illustrations</td><td>10</td></tr>
+<tr><td>MEDIUM</td><td>Rating system (backpacks, balloons, thumb, top-pick)</td><td>~7</td></tr>
+<tr><td>LOW</td><td>Traveler status (4), Susen orb states (3), nav_susen,
+hub_center, instagram, edit_profile</td><td>~11</td></tr>
+<tr><td><b>TOTAL NEEDED</b></td><td><b>New graphics to produce</b></td><td><b>~56</b></td></tr>
+<tr><td><b>ALREADY HAVE</b></td><td><b>Map, Status, Social, Travel, partial UI</b></td><td><b>~115</b></td></tr>
+</table>
+
+<div class="note">
+<b>Production note:</b> The UI Control icons (Section H) are tiny 16&ndash;20&nbsp;px
+icons that must recolor for active/inactive states. Detailed watercolor raster
+reads poorly at that size &mdash; produce these as <b>simple flat watercolor
+shapes</b>, or keep them as SVG line icons even in Cute mode.
+</div>
+
+<div class="note">
+<b>Specs for all icons:</b> transparent PNG, square canvas, 512&times;512&nbsp;px
+(illustrations 1024&times;1024), hand-painted watercolor, warm sunset-orange
+palette, organic edges. Empty-state illustrations may be wider (4:3).
+</div>
+
+</body>
+</html>
