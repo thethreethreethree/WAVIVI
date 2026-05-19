@@ -483,8 +483,11 @@ export function ToolboxMap({
       <div className="relative flex-1">
         <div id="tb-map" className="vm-leaflet absolute inset-0" />
 
+        {/* Worn, torn-paper edge framing the map — a thick cream border with
+            the gentle wc-edge filter (displacement stays within the border
+            width, so it never tears holes). */}
         <span
-          className="wc-edge-strong pointer-events-none absolute inset-0 z-[500] border-[14px] border-white"
+          className="wc-edge pointer-events-none absolute inset-0 z-[500] border-[18px] border-background"
           aria-hidden
         />
 

@@ -644,8 +644,9 @@ h3 {
 }
 
 /* Cute parchment — a fixed, full-viewport hand-painted background so it
-   always covers the whole screen, regardless of page height or scroll. */
-.cute .paper-grain-coarse {
+   always covers the whole screen. Scoped to the app-shell background layer
+   only (`.app-paper-bg`) — never other `paper-grain-coarse` textures. */
+.cute .app-paper-bg {
   position: fixed;
   inset: 0;
   width: 100vw;
