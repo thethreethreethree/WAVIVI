@@ -74,7 +74,7 @@ export function BottomNav() {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="tj-line wc-edge-soft relative h-[1.5rem] w-[1.5rem]"
+        className="tj-line wc-edge-soft relative h-[1.9rem] w-[1.9rem]"
       >
         {t.icon}
       </svg>
@@ -84,7 +84,7 @@ export function BottomNav() {
           src={t.image}
           alt=""
           aria-hidden
-          className="tj-paint relative h-[1.7rem] w-[1.7rem] object-contain"
+          className="tj-paint relative h-[2.6rem] w-[2.6rem] object-contain"
         />
       ) : null}
     </>
