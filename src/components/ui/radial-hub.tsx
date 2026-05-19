@@ -20,31 +20,31 @@ const HUB_LINKS: HubLink[] = [
   {
     href: "/meet",
     label: "Meet up!",
-    image: "/icons/travejor/social/21_group_join.png",
+    image: "/icons/cute-v2/group.png",
     icon: "meet",
   },
   {
     href: "/events",
     label: "Events nearby",
-    image: "/icons/travejor/ui/16_calendar.png",
+    image: "/icons/cute-v2/calendar.png",
     icon: "calendar",
   },
   {
     href: "/todo",
     label: "What to do",
-    image: "/icons/travejor/travel/14_island.png",
+    image: "/icons/cute-v2/island.png",
     icon: "compass",
   },
   {
     href: "/eat",
     label: "What to eat",
-    image: "/icons/travejor/ui/07_food.png",
+    image: "/icons/cute-v2/food.png",
     icon: "utensils",
   },
   {
     href: "/stay",
     label: "Where to stay",
-    image: "/icons/travejor/ui/06_bed.png",
+    image: "/icons/cute-v2/bed.png",
     icon: "bed",
   },
 ];

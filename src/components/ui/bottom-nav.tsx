@@ -9,6 +9,8 @@ interface Tab {
   href: string;
   label: string;
   icon: React.ReactNode;
+  /** Cute V2 watercolor icon — shown in Cute Mode in place of the SVG. */
+  image?: string;
 }
 
 const TABS: Tab[] = [
@@ -16,11 +18,13 @@ const TABS: Tab[] = [
     href: "/",
     label: "Home",
     icon: <path d="M3 11l9-8 9 8M5 10v10h14V10M9 20v-6h6v6" />,
+    image: "/icons/cute-v2/house.png",
   },
   {
     href: "/tools",
     label: "Tools",
     icon: <path d="M4 7h16v13H4zM9 7V4h6v3M4 12h16" />,
+    image: "/icons/cute-v2/toolbox.png",
   },
   {
     href: "/feed",
@@ -31,6 +35,7 @@ const TABS: Tab[] = [
         <circle cx="12" cy="12" r="3.5" />
       </>
     ),
+    image: "/icons/cute-v2/meetup.png",
   },
   {
     href: "/profile",
@@ -41,6 +46,7 @@ const TABS: Tab[] = [
         <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
       </>
     ),
+    image: "/icons/cute-v2/profile.png",
   },
 ];
 
@@ -57,18 +63,31 @@ export function BottomNav() {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
   const susenActive = pathname.startsWith("/susen");
 
+  // Crisp SVG in Light/Dark; watercolor PNG in Cute Mode. Both render —
+  // CSS (.tj-icon-svg / .tj-icon-img) shows only the active theme's version.
   const iconSvg = (t: Tab) => (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="wc-edge-soft relative h-[1.5rem] w-[1.5rem]"
-    >
-      {t.icon}
-    </svg>
+    <>
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="tj-icon-svg wc-edge-soft relative h-[1.5rem] w-[1.5rem]"
+      >
+        {t.icon}
+      </svg>
+      {t.image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={t.image}
+          alt=""
+          aria-hidden
+          className="tj-icon-img relative h-[1.7rem] w-[1.7rem] object-contain"
+        />
+      ) : null}
+    </>
   );
 
   const tab = (t: Tab) => {
