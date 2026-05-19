@@ -141,14 +141,18 @@ export function ToolboxMap({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/regions");
-        const json = await res.json();
+        const res = await fetch("/api/regions", { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = (await res.json()) as { regions?: Region[] };
         if (cancelled) return;
         const list: Region[] = json.regions ?? [];
         setRegions(list);
         if (list.length > 0) setRegion(list[0].id);
-      } catch {
-        if (!cancelled) setNotice("Couldn't load regions.");
+        else setNotice("No regions yet — add one in the admin Toolbox.");
+      } catch (err) {
+        if (!cancelled) {
+          setNotice(`Couldn't load regions (${String(err)}).`);
+        }
       }
     })();
     return () => {
