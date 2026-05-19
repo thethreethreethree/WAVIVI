@@ -38,10 +38,10 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 const DEFAULT_CENTER: [number, number] = [13.7563, 100.4977];
-/** Default view — roughly a 5 km radius around the centre. */
-const DEFAULT_ZOOM = 13;
-/** "What's near me" view — roughly a 1 km radius around the user. */
-const NEARBY_ZOOM = 15;
+/** Default view — wide neighbourhood overview. */
+const DEFAULT_ZOOM = 12;
+/** "What's near me" view — street-level, close in around the user. */
+const NEARBY_ZOOM = 16;
 
 function regionPrimary(loc: string): string {
   return loc.split(",")[0].trim();
