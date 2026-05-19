@@ -86,7 +86,12 @@ export const overpassProvider: DataSourceProvider = {
       try {
         const res = await fetch(endpoint, {
           method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            // Overpass etiquette: identify the client, or requests 406.
+            "User-Agent": "WaviviToolbox/1.0 (+https://travejor.com)",
+            Accept: "application/json",
+          },
           body: `data=${encodeURIComponent(query)}`,
         });
 

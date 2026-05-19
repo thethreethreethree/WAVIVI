@@ -98,6 +98,25 @@ h3 {
   box-shadow: var(--shadow-card);
 }
 
+/* Admin form inputs — clean, ring-bordered fields used across the
+   admin dashboard (no watercolor styling here). */
+.admin-input {
+  width: 100%;
+  border-radius: 0.75rem;
+  background: var(--color-background);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-foreground);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+.admin-input:focus {
+  box-shadow: 0 0 0 2px var(--color-glow);
+}
+.admin-input::placeholder {
+  color: var(--color-muted);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
