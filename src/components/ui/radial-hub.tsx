@@ -148,7 +148,7 @@ export function RadialHub() {
               </span>
             </span>
           </Link>
-          <span className="text-center text-[12px] font-semibold text-foreground">
+          <span className="text-center text-sm font-semibold text-foreground">
             {item.label}
           </span>
         </motion.div>

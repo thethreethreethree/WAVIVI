@@ -84,7 +84,7 @@ export default function ToolsPage() {
             >
               <Icon name={service.icon} className="h-12 w-12" />
             </span>
-            <span className="text-center text-xs font-medium">
+            <span className="text-center text-sm font-semibold">
               {service.label}
             </span>
           </Link>
