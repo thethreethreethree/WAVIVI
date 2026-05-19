@@ -607,163 +607,191 @@ function UtilityCard({
 
   return (
     <div className="absolute inset-x-0 bottom-0 z-[700] px-3 pb-3">
-      <div className="wc-frame wc-frame-white-solid tb-sheet relative mx-auto max-w-md rounded-3xl bg-surface p-5 text-foreground shadow-card">
+      <div className="tb-sheet relative mx-auto max-w-md overflow-hidden rounded-3xl bg-surface-elevated text-foreground shadow-card ring-1 ring-border">
         {/* Close */}
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="wc-frame wc-frame-orange absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-glow active:scale-90"
+          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-base font-bold text-white backdrop-blur active:scale-90"
         >
           ×
         </button>
 
-        {/* Header */}
-        <div className="flex items-start gap-3 pr-9">
-          {cat && (
-            <span
-              className={`vm-marker tb-marker ${utility.category} flex h-11 w-11 shrink-0`}
-            >
-              <Icon name={cat.icon} className="h-5 w-5" strokeWidth={2.4} />
-            </span>
-          )}
-          <div className="min-w-0">
-            <h2 className="text-base font-bold leading-tight">
-              {utility.name}
-            </h2>
-            <p className="text-xs font-semibold text-muted">
-              {cat?.label ?? utility.category}
-            </p>
-          </div>
-        </div>
-
-        {utility.description && (
-          <p className="mt-3 text-sm text-foreground/80">
-            {utility.description}
-          </p>
+        {/* Venue photo — image categories only (e.g. Wi-Fi cafes) */}
+        {hasImage && imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imageUrl}
+            alt={utility.name}
+            loading="lazy"
+            className="h-36 w-full object-cover"
+          />
         )}
 
-        {/* Backpack rating */}
-        <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-          <span className="tracking-wide" aria-label="Backpack rating">
-            {Array.from({ length: bp.full }).map((_, i) => (
-              <span key={`f${i}`}>🎒</span>
-            ))}
-            {bp.half === 1 && (
-              <span className="opacity-60">🎒</span>
-            )}
-            {Array.from({ length: bp.empty }).map((_, i) => (
-              <span key={`e${i}`} className="opacity-25">
-                🎒
+        <div className="p-5">
+          {/* Header */}
+          <div className="flex items-start gap-3">
+            {!hasImage && cat && (
+              <span
+                className={`vm-marker tb-marker ${utility.category} flex h-11 w-11 shrink-0`}
+              >
+                <Icon name={cat.icon} className="h-5 w-5" strokeWidth={2.4} />
               </span>
-            ))}
-          </span>
-          <span className="font-bold text-glow">
-            {backpackLabel(utility.backpack_rating)}
-          </span>
-          {utility.rating != null && (
-            <span className="text-xs font-semibold text-muted">
-              {utility.rating.toFixed(1)} ★ · {utility.review_count} reviews
-            </span>
-          )}
-        </div>
-        <p className="sr-only">
-          {utility.backpack_rating} of {MAX_BACKPACKS} backpacks
-        </p>
+            )}
+            <div className="min-w-0 flex-1 pr-8">
+              <h2 className="text-lg font-bold leading-tight">
+                {utility.name}
+                {topPick && (
+                  <span className="ml-2 inline-block whitespace-nowrap rounded-full bg-sunset px-2 py-0.5 align-middle text-[11px] font-bold text-white">
+                    ★ Top pick
+                  </span>
+                )}
+              </h2>
+              <p className="mt-0.5 text-sm text-muted">
+                <span className="font-semibold text-foreground">
+                  {cat?.label ?? utility.category}
+                </span>
+                {utility.rating != null && (
+                  <>
+                    {" · ★ "}
+                    {utility.rating.toFixed(1)} (
+                    {utility.review_count.toLocaleString()})
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
 
-        {/* Distance */}
-        {distance && (
-          <p className="mt-1 text-xs font-semibold text-muted">
-            📍 {distance} away
-          </p>
-        )}
-
-        {/* Vote counts */}
-        <div className="mt-3 flex items-center gap-3 text-sm font-bold">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => castVote(1)}
-            className={`wc-frame ${
-              vote === 1 ? "wc-frame-sunset text-white" : "wc-frame-orange"
-            } flex items-center gap-1.5 rounded-full px-3 py-1.5 active:scale-95 disabled:opacity-50`}
-          >
-            👍 {up}
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => castVote(-1)}
-            className={`wc-frame ${
-              vote === -1 ? "wc-frame-sunset text-white" : "wc-frame-orange"
-            } flex items-center gap-1.5 rounded-full px-3 py-1.5 active:scale-95 disabled:opacity-50`}
-          >
-            👎 {down}
-          </button>
-          {voteMsg && (
-            <span className="text-xs font-semibold text-glow">{voteMsg}</span>
-          )}
-        </div>
-
-        {/* Action buttons */}
-        <div className="mt-4 flex gap-2">
-          <button
-            type="button"
-            onClick={() => window.open(utility.google_maps_url, "_blank")}
-            className="wc-frame wc-frame-sunset flex-1 rounded-xl px-3 py-2.5 text-sm font-bold text-white active:scale-[0.98]"
-          >
-            🧭 Directions
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowReport((s) => !s)}
-            className="wc-frame wc-frame-orange rounded-xl px-3 py-2.5 text-sm font-bold text-glow active:scale-[0.98]"
-          >
-            ⚠️ Report
-          </button>
-        </div>
-
-        {/* Report form */}
-        {showReport && (
-          <div className="mt-3 rounded-xl border border-foreground/10 bg-surface-elevated p-3">
-            <label
-              htmlFor="tb-report-type"
-              className="text-xs font-bold text-foreground"
-            >
-              What's wrong?
-            </label>
-            <select
-              id="tb-report-type"
-              value={reportType}
-              onChange={(e) => setReportType(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-foreground/15 bg-surface px-2.5 py-2 text-sm font-semibold outline-none"
-            >
-              {REPORT_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
+          {/* Backpack rating */}
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+            <span aria-label="Backpack rating">
+              {Array.from({ length: bp.full }).map((_, i) => (
+                <span key={`f${i}`}>🎒</span>
               ))}
-            </select>
-            <textarea
-              value={reportNote}
-              onChange={(e) => setReportNote(e.target.value)}
-              placeholder="Add a note (optional)…"
-              rows={2}
-              className="mt-2 w-full resize-none rounded-lg border border-foreground/15 bg-surface px-2.5 py-2 text-sm outline-none"
-            />
+              {bp.half === 1 && <span className="opacity-60">🎒</span>}
+              {Array.from({ length: bp.empty }).map((_, i) => (
+                <span key={`e${i}`} className="opacity-25">
+                  🎒
+                </span>
+              ))}
+            </span>
+            <span className="font-bold text-glow">
+              {backpackLabel(utility.backpack_rating)}
+            </span>
+            <span className="sr-only">
+              {utility.backpack_rating} of {MAX_BACKPACKS} backpacks
+            </span>
+          </div>
+
+          {utility.description && (
+            <p className="mt-2 text-sm text-foreground/75">
+              {utility.description}
+            </p>
+          )}
+
+          {/* Distance + travel times */}
+          {km != null && (
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 rounded-2xl bg-glow/10 px-3.5 py-2.5 text-xs font-bold ring-1 ring-glow/25">
+              <span>📍 {fmtKm(km)} away</span>
+              <span>🚶 {fmtMins((km / 4.8) * 60)}</span>
+              <span>🛵 {fmtMins((km / 25) * 60)}</span>
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={() => window.open(utility.google_maps_url, "_blank")}
+              className="flex-1 rounded-full bg-sunset px-3 py-2.5 text-sm font-bold text-white active:scale-[0.98]"
+            >
+              Directions
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowReport((s) => !s)}
+              className="rounded-full px-3 py-2.5 text-sm font-bold text-foreground ring-[1.5px] ring-border active:scale-[0.98]"
+            >
+              ⚠️ Report
+            </button>
+          </div>
+
+          {/* Vote row */}
+          <div className="mt-3 flex items-center gap-2 text-sm font-bold">
             <button
               type="button"
               disabled={busy}
-              onClick={submitReport}
-              className="wc-frame wc-frame-sunset mt-2 w-full rounded-lg px-3 py-2 text-sm font-bold text-white active:scale-[0.98] disabled:opacity-50"
+              onClick={() => castVote(1)}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 ring-[1.5px] active:scale-95 disabled:opacity-50 ${
+                vote === 1
+                  ? "bg-sunset text-white ring-transparent"
+                  : "ring-border"
+              }`}
             >
-              Send report
+              👍 {up}
             </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => castVote(-1)}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 ring-[1.5px] active:scale-95 disabled:opacity-50 ${
+                vote === -1
+                  ? "bg-sunset text-white ring-transparent"
+                  : "ring-border"
+              }`}
+            >
+              👎 {down}
+            </button>
+            {voteMsg && (
+              <span className="text-xs font-semibold text-glow">
+                {voteMsg}
+              </span>
+            )}
           </div>
-        )}
-        {reportMsg && (
-          <p className="mt-2 text-xs font-semibold text-glow">{reportMsg}</p>
-        )}
+
+          {/* Report form */}
+          {showReport && (
+            <div className="mt-3 rounded-xl border border-foreground/10 bg-background p-3">
+              <label
+                htmlFor="tb-report-type"
+                className="text-xs font-bold text-foreground"
+              >
+                What&apos;s wrong?
+              </label>
+              <select
+                id="tb-report-type"
+                value={reportType}
+                onChange={(e) => setReportType(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-foreground/15 bg-surface px-2.5 py-2 text-sm font-semibold outline-none"
+              >
+                {REPORT_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+              <textarea
+                value={reportNote}
+                onChange={(e) => setReportNote(e.target.value)}
+                placeholder="Add a note (optional)…"
+                rows={2}
+                className="mt-2 w-full resize-none rounded-lg border border-foreground/15 bg-surface px-2.5 py-2 text-sm outline-none"
+              />
+              <button
+                type="button"
+                disabled={busy}
+                onClick={submitReport}
+                className="mt-2 w-full rounded-lg bg-sunset px-3 py-2 text-sm font-bold text-white active:scale-[0.98] disabled:opacity-50"
+              >
+                Send report
+              </button>
+            </div>
+          )}
+          {reportMsg && (
+            <p className="mt-2 text-xs font-semibold text-glow">{reportMsg}</p>
+          )}
+        </div>
       </div>
     </div>
   );
