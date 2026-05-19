@@ -82,7 +82,7 @@ export default function ToolsPage() {
               className={`wc-stop-motion-${(i % 5) + 1} wc-frame wc-frame-orange flex h-[68px] w-[68px] items-center justify-center rounded-full text-glow`}
               style={{ animationDelay: `${-i * 0.29}s` }}
             >
-              <Icon name={service.icon} className="h-7 w-7" />
+              <Icon name={service.icon} className="h-12 w-12" />
             </span>
             <span className="text-center text-xs font-medium">
               {service.label}
