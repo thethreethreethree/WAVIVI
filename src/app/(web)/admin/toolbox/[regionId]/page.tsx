@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { CsvImport } from "@/components/admin/toolbox/csv-import";
 import { ScanButton } from "@/components/admin/toolbox/scan-button";
 import { humanizeTime } from "@/components/admin/toolbox/toolbox-utils";
 import { UtilitiesList } from "@/components/admin/toolbox/utilities-list";
@@ -73,6 +74,8 @@ export default async function RegionUtilitiesPage({
           </div>
         ))}
       </div>
+
+      <CsvImport regionId={region.id} />
 
       <section>
         <h2 className="mb-2 text-sm font-bold">Utilities</h2>

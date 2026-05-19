@@ -115,6 +115,16 @@ export function UtilitiesList({ utilities }: { utilities: UtilityRow[] }) {
                 </span>
                 <span className="mt-1 flex flex-wrap items-center gap-2">
                   <BackpackRating rating={u.backpack_rating} />
+                  {u.rating != null && (
+                    <span className="text-[11px] font-bold text-foreground">
+                      ★ {u.rating}
+                      <span className="font-medium text-muted">
+                        {" "}
+                        · {u.review_count} review
+                        {u.review_count === 1 ? "" : "s"}
+                      </span>
+                    </span>
+                  )}
                   <span className="text-[11px] text-muted">
                     👍 {u.thumbs_up} · 👎 {u.thumbs_down}
                   </span>

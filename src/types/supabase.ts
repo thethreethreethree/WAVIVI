@@ -118,6 +118,8 @@ export type UtilityRow = {
   longitude: number;
   google_maps_url: string;
   address: string | null;
+  rating: number | null;
+  review_count: number;
   thumbs_up: number;
   thumbs_down: number;
   open_24_hours: boolean;
@@ -145,6 +147,8 @@ export type UtilityInsert = {
   longitude: number;
   google_maps_url: string;
   address?: string | null;
+  rating?: number | null;
+  review_count?: number;
   thumbs_up?: number;
   thumbs_down?: number;
   open_24_hours?: boolean;

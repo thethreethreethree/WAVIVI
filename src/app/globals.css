@@ -193,6 +193,37 @@ h3 {
   50% { transform: translateY(-3px); }
 }
 
+/* Toolbox Map — utility-pin markers reuse the .vm-marker watercolor base.
+   Each category gets its own painted wash. The glyph is a small line icon. */
+.tb-marker {
+  font-size: 0;
+}
+.tb-marker svg {
+  width: 56%;
+  height: 56%;
+}
+.tb-marker.atm { background: #3f8f6e; }
+.tb-marker.market { background: #e08a3c; }
+.tb-marker.bank { background: #4a6fb0; }
+.tb-marker.sim_card { background: #8a6bc8; }
+.tb-marker.public_wifi { background: #3f93b8; }
+.tb-marker.currency_exchange { background: #d98b2b; }
+.tb-marker.bathroom { background: #5a9bbf; }
+.tb-marker.transportation { background: #c46a4a; }
+.tb-marker.medical_clinic { background: #d4584f; }
+.tb-marker.police { background: #41527a; }
+.tb-marker.embassy { background: #6b62a6; }
+.tb-marker.laundry { background: #4f9e88; }
+
+/* Toolbox utility card / bottom-sheet — slides up over the map. */
+@keyframes tbSheetUp {
+  from { transform: translateY(105%); }
+  to { transform: translateY(0); }
+}
+.tb-sheet {
+  animation: tbSheetUp 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* Stop-motion jitter — the element jumps between hand-posed "frames" rather
    than gliding, giving a claymation / hand-animated feel. The steps(1)
    timing holds each frame then snaps to the next.

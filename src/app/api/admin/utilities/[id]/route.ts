@@ -22,6 +22,8 @@ const EDITABLE: (keyof UtilityUpdate)[] = [
   "website",
   "open_24_hours",
   "backpack_rating",
+  "rating",
+  "review_count",
   "reliability_score",
   "crowd_level",
   "description",

@@ -6,7 +6,24 @@ import { useMemo, useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import { SearchField } from "@/components/ui/search-field";
 import { SusenAvatar } from "@/components/ui/susen-avatar";
+import type { CategoryId } from "@/lib/toolbox/categories";
 import { travelerServices } from "@/lib/travejor/tools";
+
+/** Maps a Tools-page tile id to its Toolbox category id. */
+const TILE_TO_CATEGORY: Record<string, CategoryId> = {
+  atm: "atm",
+  market: "market",
+  bank: "bank",
+  sim: "sim_card",
+  wifi: "public_wifi",
+  currency: "currency_exchange",
+  bathroom: "bathroom",
+  transport: "transportation",
+  clinic: "medical_clinic",
+  police: "police",
+  embassy: "embassy",
+  laundry: "laundry",
+};
 
 export default function ToolsPage() {
   const [query, setQuery] = useState("");
@@ -56,7 +73,9 @@ export default function ToolsPage() {
         {services.map((service, i) => (
           <Link
             key={service.id}
-            href="/map"
+            href={`/tools/map?category=${
+              TILE_TO_CATEGORY[service.id] ?? service.id
+            }`}
             className="group flex flex-col items-center gap-2"
           >
             <span

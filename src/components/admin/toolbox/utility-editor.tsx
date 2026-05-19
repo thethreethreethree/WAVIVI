@@ -24,6 +24,10 @@ export function UtilityEditor({ utility, onClose }: UtilityEditorProps) {
   const [website, setWebsite] = useState(utility.website ?? "");
   const [open24, setOpen24] = useState(utility.open_24_hours);
   const [rating, setRating] = useState(utility.backpack_rating);
+  const [googleRating, setGoogleRating] = useState(
+    utility.rating != null ? String(utility.rating) : "",
+  );
+  const [reviewCount, setReviewCount] = useState(String(utility.review_count));
   const [crowd, setCrowd] = useState<CrowdLevel | "">(
     utility.crowd_level ?? "",
   );
@@ -51,6 +55,9 @@ export function UtilityEditor({ utility, onClose }: UtilityEditorProps) {
           website: website.trim() || null,
           open_24_hours: open24,
           backpack_rating: rating,
+          rating:
+            googleRating.trim() === "" ? null : Number(googleRating),
+          review_count: Number(reviewCount) || 0,
           crowd_level: crowd || null,
           description: description.trim() || null,
           traveler_notes: notes.map((n) => n.trim()).filter(Boolean),
@@ -193,6 +200,31 @@ export function UtilityEditor({ utility, onClose }: UtilityEditorProps) {
               </span>
             </div>
           </Field>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Google rating (0–5)">
+              <input
+                type="number"
+                min={0}
+                max={5}
+                step={0.1}
+                value={googleRating}
+                onChange={(e) => setGoogleRating(e.target.value)}
+                placeholder="—"
+                className="admin-input"
+              />
+            </Field>
+            <Field label="Review count">
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={reviewCount}
+                onChange={(e) => setReviewCount(e.target.value)}
+                className="admin-input"
+              />
+            </Field>
+          </div>
 
           <Field label="Description">
             <textarea
