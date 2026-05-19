@@ -149,27 +149,29 @@ export function BottomNav() {
         {TABS.slice(0, 2).map(tab)}
 
         {/* Susen — elevated centre action */}
-        <li className="-mt-9 mx-1">
+        <li className="-mt-5 mx-1">
           <Link
             href="/susen"
             aria-label="Ask Susen"
             aria-current={susenActive ? "page" : undefined}
-            className={`flex flex-col items-center transition-transform active:scale-95 ${
+            className={`relative flex flex-col items-center transition-transform active:scale-95 ${
               susenActive ? "scale-105" : ""
             }`}
           >
+            {/* Floating label — same logic as the other nav tabs */}
+            {susenActive && (
+              <span
+                key="susen-label"
+                className="nav-label-rise wc-frame wc-frame-orange-white pointer-events-none absolute -top-9 left-1/2 whitespace-nowrap rounded-full px-3 py-1 text-center text-sm font-extrabold tracking-wide text-[#b8480a]"
+              >
+                Susen
+              </span>
+            )}
             <SusenAvatar
               className={`susen-bob h-17 w-17 shadow-card ring-4 ring-surface ${
                 susenActive ? "ring-glow/40" : ""
               }`}
             />
-            <span
-              className={`mt-0.5 text-[11px] font-bold ${
-                susenActive ? "text-glow" : "text-muted"
-              }`}
-            >
-              Susen
-            </span>
           </Link>
         </li>
 
