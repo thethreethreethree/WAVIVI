@@ -80,6 +80,20 @@ const CATEGORY_FALLBACK_IMAGE: Record<string, string> = {
     "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=600&q=70",
 };
 
+/** A backpack glyph — orange, so it can be tinted via `text-*` (vs the emoji). */
+function BackpackGlyph({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden
+      className={className}
+    >
+      <path d="M9 4.8a3 3 0 0 1 6 0V6h.4A3.6 3.6 0 0 1 19 9.6V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9.6A3.6 3.6 0 0 1 8.6 6H9V4.8zm1.5 1.2h3V4.8a1.5 1.5 0 0 0-3 0V6zM9 11.5v2.2h6v-2.2H9z" />
+    </svg>
+  );
+}
+
 /** Pre-rendered SVG glyph markup for each category icon (used in divIcon). */
 const CATEGORY_GLYPH: Record<CategoryId, string> = Object.fromEntries(
   TOOLBOX_CATEGORIES.map((c) => [
@@ -607,13 +621,13 @@ function UtilityCard({
 
   return (
     <div className="absolute inset-x-0 bottom-0 z-[700] px-3 pb-3">
-      <div className="tb-sheet relative mx-auto max-w-md overflow-hidden rounded-3xl bg-surface-elevated text-foreground shadow-card ring-1 ring-border">
+      <div className="wc-frame tb-sheet relative mx-auto w-full max-w-[290px] rounded-3xl p-3 text-foreground shadow-card">
         {/* Close */}
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-base font-bold text-white backdrop-blur active:scale-90"
+          className="wc-frame wc-frame-orange absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold text-glow active:scale-90"
         >
           ×
         </button>
@@ -625,30 +639,28 @@ function UtilityCard({
             src={imageUrl}
             alt={utility.name}
             loading="lazy"
-            className="h-36 w-full object-cover"
+            className="wc-edge mb-2.5 h-[108px] w-full rounded-xl object-cover"
           />
         )}
 
-        <div className="p-5">
+        <div>
           {/* Header */}
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-2">
             {!hasImage && cat && (
-              <span
-                className={`vm-marker tb-marker ${utility.category} flex h-11 w-11 shrink-0`}
-              >
-                <Icon name={cat.icon} className="h-5 w-5" strokeWidth={2.4} />
+              <span className="wc-frame wc-frame-orange relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-glow">
+                <Icon name={cat.icon} className="h-4 w-4" strokeWidth={2.4} />
               </span>
             )}
-            <div className="min-w-0 flex-1 pr-8">
-              <h2 className="text-lg font-bold leading-tight">
+            <div className="min-w-0 flex-1 pr-6">
+              <h2 className="text-[0.95rem] font-bold leading-snug">
                 {utility.name}
                 {topPick && (
-                  <span className="ml-2 inline-block whitespace-nowrap rounded-full bg-sunset px-2 py-0.5 align-middle text-[11px] font-bold text-white">
+                  <span className="ml-1.5 inline-block whitespace-nowrap rounded-full bg-sunset px-1.5 py-0.5 align-middle text-[9px] font-bold text-white">
                     ★ Top pick
                   </span>
                 )}
               </h2>
-              <p className="mt-0.5 text-sm text-muted">
+              <p className="mt-0.5 text-[0.72rem] text-muted">
                 <span className="font-semibold text-foreground">
                   {cat?.label ?? utility.category}
                 </span>
@@ -664,16 +676,22 @@ function UtilityCard({
           </div>
 
           {/* Backpack rating */}
-          <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-            <span aria-label="Backpack rating">
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs">
+            <span
+              className="flex items-center gap-0.5"
+              aria-label="Backpack rating"
+            >
               {Array.from({ length: bp.full }).map((_, i) => (
-                <span key={`f${i}`}>🎒</span>
+                <BackpackGlyph key={`f${i}`} className="h-3.5 w-3.5 text-glow" />
               ))}
-              {bp.half === 1 && <span className="opacity-60">🎒</span>}
+              {bp.half === 1 && (
+                <BackpackGlyph className="h-3.5 w-3.5 text-glow/50" />
+              )}
               {Array.from({ length: bp.empty }).map((_, i) => (
-                <span key={`e${i}`} className="opacity-25">
-                  🎒
-                </span>
+                <BackpackGlyph
+                  key={`e${i}`}
+                  className="h-3.5 w-3.5 text-glow/20"
+                />
               ))}
             </span>
             <span className="font-bold text-glow">
@@ -684,15 +702,29 @@ function UtilityCard({
             </span>
           </div>
 
+          {/* Tags — traveler notes as pills */}
+          {utility.traveler_notes.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {utility.traveler_notes.map((note) => (
+                <span
+                  key={note}
+                  className="wc-frame wc-frame-ghost rounded-full px-2 py-0.5 text-[10px] font-bold text-glow"
+                >
+                  {note}
+                </span>
+              ))}
+            </div>
+          )}
+
           {utility.description && (
-            <p className="mt-2 text-sm text-foreground/75">
+            <p className="mt-1.5 text-[0.72rem] leading-snug text-foreground/75">
               {utility.description}
             </p>
           )}
 
           {/* Distance + travel times */}
           {km != null && (
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 rounded-2xl bg-glow/10 px-3.5 py-2.5 text-xs font-bold ring-1 ring-glow/25">
+            <div className="wc-frame wc-frame-orange mt-2 flex flex-wrap gap-x-3 gap-y-0.5 rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-foreground">
               <span>📍 {fmtKm(km)} away</span>
               <span>🚶 {fmtMins((km / 4.8) * 60)}</span>
               <span>🛵 {fmtMins((km / 25) * 60)}</span>
@@ -700,34 +732,32 @@ function UtilityCard({
           )}
 
           {/* Action buttons */}
-          <div className="mt-4 flex gap-2">
+          <div className="mt-2.5 flex gap-1.5">
             <button
               type="button"
               onClick={() => window.open(utility.google_maps_url, "_blank")}
-              className="flex-1 rounded-full bg-sunset px-3 py-2.5 text-sm font-bold text-white active:scale-[0.98]"
+              className="wc-frame wc-frame-sunset flex-1 rounded-full px-3 py-2 text-xs font-bold text-white active:scale-[0.98]"
             >
               Directions
             </button>
             <button
               type="button"
               onClick={() => setShowReport((s) => !s)}
-              className="rounded-full px-3 py-2.5 text-sm font-bold text-foreground ring-[1.5px] ring-border active:scale-[0.98]"
+              className="wc-frame wc-frame-orange rounded-full px-3 py-2 text-xs font-bold text-glow active:scale-[0.98]"
             >
               ⚠️ Report
             </button>
           </div>
 
           {/* Vote row */}
-          <div className="mt-3 flex items-center gap-2 text-sm font-bold">
+          <div className="mt-2 flex items-center gap-1.5 text-xs font-bold">
             <button
               type="button"
               disabled={busy}
               onClick={() => castVote(1)}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 ring-[1.5px] active:scale-95 disabled:opacity-50 ${
-                vote === 1
-                  ? "bg-sunset text-white ring-transparent"
-                  : "ring-border"
-              }`}
+              className={`wc-frame ${
+                vote === 1 ? "wc-frame-sunset text-white" : "wc-frame-orange"
+              } flex items-center gap-1 rounded-full px-2.5 py-1 active:scale-95 disabled:opacity-50`}
             >
               👍 {up}
             </button>
@@ -735,16 +765,14 @@ function UtilityCard({
               type="button"
               disabled={busy}
               onClick={() => castVote(-1)}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 ring-[1.5px] active:scale-95 disabled:opacity-50 ${
-                vote === -1
-                  ? "bg-sunset text-white ring-transparent"
-                  : "ring-border"
-              }`}
+              className={`wc-frame ${
+                vote === -1 ? "wc-frame-sunset text-white" : "wc-frame-orange"
+              } flex items-center gap-1 rounded-full px-2.5 py-1 active:scale-95 disabled:opacity-50`}
             >
               👎 {down}
             </button>
             {voteMsg && (
-              <span className="text-xs font-semibold text-glow">
+              <span className="text-[10px] font-semibold text-glow">
                 {voteMsg}
               </span>
             )}
@@ -752,10 +780,10 @@ function UtilityCard({
 
           {/* Report form */}
           {showReport && (
-            <div className="mt-3 rounded-xl border border-foreground/10 bg-background p-3">
+            <div className="wc-frame wc-frame-orange mt-2 rounded-xl p-2.5">
               <label
                 htmlFor="tb-report-type"
-                className="text-xs font-bold text-foreground"
+                className="text-[11px] font-bold text-foreground"
               >
                 What&apos;s wrong?
               </label>
@@ -763,7 +791,7 @@ function UtilityCard({
                 id="tb-report-type"
                 value={reportType}
                 onChange={(e) => setReportType(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-foreground/15 bg-surface px-2.5 py-2 text-sm font-semibold outline-none"
+                className="wc-frame mt-1 w-full rounded-lg bg-transparent px-2 py-1.5 text-xs font-semibold outline-none"
               >
                 {REPORT_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>
@@ -776,20 +804,22 @@ function UtilityCard({
                 onChange={(e) => setReportNote(e.target.value)}
                 placeholder="Add a note (optional)…"
                 rows={2}
-                className="mt-2 w-full resize-none rounded-lg border border-foreground/15 bg-surface px-2.5 py-2 text-sm outline-none"
+                className="wc-frame mt-1.5 w-full resize-none rounded-lg bg-transparent px-2 py-1.5 text-xs outline-none"
               />
               <button
                 type="button"
                 disabled={busy}
                 onClick={submitReport}
-                className="mt-2 w-full rounded-lg bg-sunset px-3 py-2 text-sm font-bold text-white active:scale-[0.98] disabled:opacity-50"
+                className="wc-frame wc-frame-sunset mt-1.5 w-full rounded-lg px-3 py-1.5 text-xs font-bold text-white active:scale-[0.98] disabled:opacity-50"
               >
                 Send report
               </button>
             </div>
           )}
           {reportMsg && (
-            <p className="mt-2 text-xs font-semibold text-glow">{reportMsg}</p>
+            <p className="mt-1.5 text-[11px] font-semibold text-glow">
+              {reportMsg}
+            </p>
           )}
         </div>
       </div>
