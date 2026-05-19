@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { CountryFlags } from "@/components/ui/country-flags";
+import { Icon } from "@/components/ui/icon";
 import { getCurrentProfile } from "@/lib/profiles";
 
 export const metadata: Metadata = { title: "My Profile" };
@@ -27,14 +28,14 @@ export default async function MyProfilePage() {
   return (
     <div className="flex flex-1 flex-col">
       <header className="flex items-center px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
-        <span className="w-6" />
+        <span className="w-10" />
         <h1 className="flex-1 text-center text-lg font-bold">My Profile</h1>
-        <Link href="/settings" aria-label="Menu" className="text-muted">
-          <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-            <circle cx="5" cy="12" r="1.6" />
-            <circle cx="12" cy="12" r="1.6" />
-            <circle cx="19" cy="12" r="1.6" />
-          </svg>
+        <Link
+          href="/settings"
+          aria-label="Settings"
+          className="text-glow transition-transform active:scale-90"
+        >
+          <Icon name="settings" className="h-10 w-10" />
         </Link>
       </header>
 

@@ -33,4 +33,6 @@ export const CUTE_ICONS: Partial<Record<IconName, string>> = {
   laundry: `${V1}/laundry.png`,
   // --- Feed ---
   send: `${V2}/send.png`,
+  // --- UI ---
+  settings: `${V2}/settings_gear.png`,
 };
