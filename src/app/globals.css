@@ -654,6 +654,10 @@ h3 {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  /* Enlarge 10% so the parchment's transparent edge-margins bleed
+     off-screen and the artwork fully covers the viewport. */
+  transform: scale(1.1);
+  transform-origin: center;
   opacity: 1;
   mix-blend-mode: normal;
 }
