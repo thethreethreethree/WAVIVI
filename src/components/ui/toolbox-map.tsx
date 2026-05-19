@@ -42,8 +42,8 @@ const REPORT_TYPES: { value: string; label: string }[] = [
 ];
 
 const DEFAULT_CENTER: [number, number] = [13.7563, 100.4977];
-/** Default view — wide neighbourhood overview. */
-const DEFAULT_ZOOM = 12;
+/** Default view — wide area overview. */
+const DEFAULT_ZOOM = 10;
 /** "What's near me" view — street-level, close in around the user. */
 const NEARBY_ZOOM = 16;
 
