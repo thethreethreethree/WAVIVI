@@ -22,6 +22,10 @@ export function UtilityEditor({ utility, onClose }: UtilityEditorProps) {
   const [address, setAddress] = useState(utility.address ?? "");
   const [phone, setPhone] = useState(utility.phone ?? "");
   const [website, setWebsite] = useState(utility.website ?? "");
+  const [instagram, setInstagram] = useState(utility.instagram ?? "");
+  const [facebook, setFacebook] = useState(utility.facebook ?? "");
+  const [whatsapp, setWhatsapp] = useState(utility.whatsapp ?? "");
+  const [email, setEmail] = useState(utility.email ?? "");
   const [open24, setOpen24] = useState(utility.open_24_hours);
   const [rating, setRating] = useState(utility.backpack_rating);
   const [googleRating, setGoogleRating] = useState(
@@ -53,6 +57,10 @@ export function UtilityEditor({ utility, onClose }: UtilityEditorProps) {
           address: address.trim() || null,
           phone: phone.trim() || null,
           website: website.trim() || null,
+          instagram: instagram.trim() || null,
+          facebook: facebook.trim() || null,
+          whatsapp: whatsapp.trim() || null,
+          email: email.trim() || null,
           open_24_hours: open24,
           backpack_rating: rating,
           rating:
@@ -162,6 +170,41 @@ export function UtilityEditor({ utility, onClose }: UtilityEditorProps) {
               <input
                 value={website}
                 onChange={(e) => setWebsite(e.target.value)}
+                className="admin-input"
+              />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Instagram">
+              <input
+                value={instagram}
+                onChange={(e) => setInstagram(e.target.value)}
+                placeholder="@handle or URL"
+                className="admin-input"
+              />
+            </Field>
+            <Field label="Facebook">
+              <input
+                value={facebook}
+                onChange={(e) => setFacebook(e.target.value)}
+                placeholder="Page or URL"
+                className="admin-input"
+              />
+            </Field>
+            <Field label="WhatsApp">
+              <input
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value)}
+                placeholder="Number or link"
+                className="admin-input"
+              />
+            </Field>
+            <Field label="Email">
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="contact@…"
                 className="admin-input"
               />
             </Field>

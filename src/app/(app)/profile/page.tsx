@@ -35,7 +35,10 @@ export default async function MyProfilePage() {
           aria-label="Settings"
           className="text-glow transition-transform active:scale-90"
         >
-          <Icon name="settings" className="h-10 w-10" />
+          <Icon
+            name="settings"
+            className="h-10 w-10 animate-[spin_8s_linear_infinite]"
+          />
         </Link>
       </header>
 

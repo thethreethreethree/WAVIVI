@@ -125,6 +125,10 @@ export type UtilityRow = {
   open_24_hours: boolean;
   phone: string | null;
   website: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  whatsapp: string | null;
+  email: string | null;
   reliability_score: number;
   backpack_rating: number;
   admin_edited: boolean;
@@ -154,6 +158,10 @@ export type UtilityInsert = {
   open_24_hours?: boolean;
   phone?: string | null;
   website?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
   reliability_score?: number;
   backpack_rating?: number;
   admin_edited?: boolean;

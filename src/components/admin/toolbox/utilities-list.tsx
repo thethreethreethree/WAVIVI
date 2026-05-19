@@ -16,10 +16,32 @@ const CROWD_STYLE: Record<string, string> = {
   high: "bg-heat/15 text-heat",
 };
 
+/** Contact / social channels an admin can filter and inspect by. */
+const CHANNELS = [
+  { key: "instagram", label: "IG", icon: "📷" },
+  { key: "facebook", label: "FB", icon: "📘" },
+  { key: "whatsapp", label: "WhatsApp", icon: "💬" },
+  { key: "email", label: "Email", icon: "✉️" },
+  { key: "phone", label: "Phone", icon: "📞" },
+  { key: "website", label: "Website", icon: "🌐" },
+] as const;
+
+type ChannelKey = (typeof CHANNELS)[number]["key"];
+
+/** True when the utility has a non-empty value for this channel. */
+function hasChannel(u: UtilityRow, key: ChannelKey): boolean {
+  return Boolean((u[key] ?? "").toString().trim());
+}
+
+/** Minimum backpack-rating options for the rating filter. */
+const RATING_STEPS = [0, 1, 2, 3, 4, 4.5] as const;
+
 /** Category-filterable list of a region's utilities, with edit + delete. */
 export function UtilitiesList({ utilities }: { utilities: UtilityRow[] }) {
   const router = useRouter();
   const [filter, setFilter] = useState<UtilityCategory | "all">("all");
+  const [minRating, setMinRating] = useState(0);
+  const [needs, setNeeds] = useState<ChannelKey[]>([]);
   const [editing, setEditing] = useState<UtilityRow | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -30,12 +52,19 @@ export function UtilitiesList({ utilities }: { utilities: UtilityRow[] }) {
     return c;
   }, [utilities]);
 
+  const toggleNeed = (key: ChannelKey) =>
+    setNeeds((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    );
+
   const visible = useMemo(
     () =>
-      filter === "all"
-        ? utilities
-        : utilities.filter((u) => u.category === filter),
-    [utilities, filter],
+      utilities.filter((u) => {
+        if (filter !== "all" && u.category !== filter) return false;
+        if ((u.backpack_rating ?? 0) < minRating) return false;
+        return needs.every((key) => hasChannel(u, key));
+      }),
+    [utilities, filter, minRating, needs],
   );
 
   async function remove(id: string) {
@@ -81,6 +110,61 @@ export function UtilitiesList({ utilities }: { utilities: UtilityRow[] }) {
         ))}
       </div>
 
+      {/* Rating + contact-channel filters */}
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-surface px-3 py-2.5 shadow-card ring-1 ring-border">
+        <label className="flex items-center gap-1.5 text-xs font-bold text-muted">
+          🎒 Min rating
+          <select
+            value={minRating}
+            onChange={(e) => setMinRating(Number(e.target.value))}
+            className="admin-input !w-auto !py-1 !text-xs"
+          >
+            {RATING_STEPS.map((s) => (
+              <option key={s} value={s}>
+                {s === 0 ? "Any" : `${s}+`}
+              </option>
+            ))}
+          </select>
+        </label>
+        <span className="h-4 w-px bg-border" />
+        <span className="text-xs font-bold text-muted">Has:</span>
+        {CHANNELS.map((ch) => {
+          const active = needs.includes(ch.key);
+          return (
+            <button
+              key={ch.key}
+              type="button"
+              aria-pressed={active}
+              onClick={() => toggleNeed(ch.key)}
+              className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition-colors ${
+                active
+                  ? "bg-sunset text-white"
+                  : "text-muted ring-1 ring-border hover:text-foreground"
+              }`}
+            >
+              <span aria-hidden>{ch.icon}</span>
+              {ch.label}
+            </button>
+          );
+        })}
+        {(minRating > 0 || needs.length > 0) && (
+          <button
+            type="button"
+            onClick={() => {
+              setMinRating(0);
+              setNeeds([]);
+            }}
+            className="ml-auto rounded-full px-2.5 py-1 text-xs font-bold text-heat hover:bg-heat/10"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
+      <p className="px-1 text-xs font-semibold text-muted">
+        {visible.length} of {utilities.length} shown
+      </p>
+
       {error && (
         <p className="rounded-lg bg-heat/15 px-3 py-2 text-xs font-semibold text-heat">
           {error}
@@ -89,7 +173,9 @@ export function UtilitiesList({ utilities }: { utilities: UtilityRow[] }) {
 
       {visible.length === 0 ? (
         <p className="rounded-2xl bg-surface px-4 py-8 text-center text-sm text-muted shadow-card ring-1 ring-border">
-          No utilities in this category yet.
+          {minRating > 0 || needs.length > 0
+            ? "No utilities match these filters."
+            : "No utilities in this category yet."}
         </p>
       ) : (
         <ul className="overflow-hidden rounded-2xl bg-surface shadow-card ring-1 ring-border">
@@ -142,6 +228,15 @@ export function UtilitiesList({ utilities }: { utilities: UtilityRow[] }) {
                       24h
                     </span>
                   )}
+                  {CHANNELS.filter((ch) => hasChannel(u, ch.key)).map((ch) => (
+                    <span
+                      key={ch.key}
+                      title={ch.label}
+                      className="rounded-full bg-border px-1.5 py-0.5 text-[10px] font-bold text-foreground"
+                    >
+                      {ch.icon} {ch.label}
+                    </span>
+                  ))}
                 </span>
               </span>
               <span className="flex shrink-0 flex-col gap-1">
