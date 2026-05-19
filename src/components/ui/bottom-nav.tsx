@@ -35,7 +35,7 @@ const TABS: Tab[] = [
         <circle cx="12" cy="12" r="3.5" />
       </>
     ),
-    image: "/icons/cute-v2/meetup.png",
+    image: "/icons/cute-v2/camera.png",
   },
   {
     href: "/profile",
