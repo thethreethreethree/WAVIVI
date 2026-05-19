@@ -38,7 +38,10 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 const DEFAULT_CENTER: [number, number] = [13.7563, 100.4977];
-const DEFAULT_ZOOM = 6;
+/** Default view — roughly a 5 km radius around the centre. */
+const DEFAULT_ZOOM = 13;
+/** "What's near me" view — roughly a 1 km radius around the user. */
+const NEARBY_ZOOM = 15;
 
 function regionPrimary(loc: string): string {
   return loc.split(",")[0].trim();
@@ -224,7 +227,7 @@ export function VibeMap() {
         bounds.extend([userPosRef.current.lat, userPosRef.current.lng]);
       }
       if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 12 });
+        map.fitBounds(bounds, { padding: [60, 60], maxZoom: DEFAULT_ZOOM });
       } else {
         map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
       }
@@ -273,7 +276,7 @@ export function VibeMap() {
             haversineKm({ lat, lng }, { lat: spot.lat, lng: spot.lng }) <= 5,
         );
         setNearby(within.length);
-        map.setView([lat, lng], 12, { animate: true });
+        map.setView([lat, lng], NEARBY_ZOOM, { animate: true });
       },
       (err) => {
         setNearby(null);

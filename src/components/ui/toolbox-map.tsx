@@ -42,7 +42,10 @@ const REPORT_TYPES: { value: string; label: string }[] = [
 ];
 
 const DEFAULT_CENTER: [number, number] = [13.7563, 100.4977];
-const DEFAULT_ZOOM = 6;
+/** Default view — roughly a 5 km radius around the centre. */
+const DEFAULT_ZOOM = 13;
+/** "What's near me" view — roughly a 1 km radius around the user. */
+const NEARBY_ZOOM = 15;
 
 function haversineKm(
   a: { lat: number; lng: number },
@@ -286,10 +289,10 @@ export function ToolboxMap({
       bounds.extend([userPosRef.current.lat, userPosRef.current.lng]);
     }
     if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: DEFAULT_ZOOM });
     } else {
       const r = regions.find((x) => x.id === region);
-      if (r) map.setView([r.latitude, r.longitude], 12);
+      if (r) map.setView([r.latitude, r.longitude], DEFAULT_ZOOM);
     }
   }, [utilities, region, regions]);
 
@@ -333,7 +336,7 @@ export function ToolboxMap({
             ) <= 5,
         );
         setNearby(within.length);
-        map.setView([lat, lng], 13, { animate: true });
+        map.setView([lat, lng], NEARBY_ZOOM, { animate: true });
       },
       (err) => {
         setNearby(null);
@@ -449,7 +452,7 @@ export function ToolboxMap({
           <button
             type="button"
             onClick={() => setActive("all")}
-            className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors ${
+            className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition-colors ${
               active === "all"
                 ? "wc-frame wc-frame-white-solid text-glow"
                 : "wc-frame wc-frame-white text-white"
@@ -457,7 +460,7 @@ export function ToolboxMap({
           >
             All
             <span
-              className={`rounded-full px-1.5 text-[10px] font-extrabold ${
+              className={`rounded-full px-1.5 text-xs font-extrabold ${
                 active === "all" ? "bg-glow/15" : "bg-white/25"
               }`}
             >
@@ -469,16 +472,16 @@ export function ToolboxMap({
               key={c.id}
               type="button"
               onClick={() => setActive(c.id)}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors ${
+              className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition-colors ${
                 active === c.id
                   ? "wc-frame wc-frame-white-solid text-glow"
                   : "wc-frame wc-frame-white text-white"
               }`}
             >
-              <Icon name={c.icon} className="h-3.5 w-3.5" strokeWidth={2.2} />
+              <Icon name={c.icon} className="h-4 w-4" strokeWidth={2.2} />
               {c.label}
               {active === c.id && (
-                <span className="rounded-full bg-glow/15 px-1.5 text-[10px] font-extrabold">
+                <span className="rounded-full bg-glow/15 px-1.5 text-xs font-extrabold">
                   {totalCount}
                 </span>
               )}
