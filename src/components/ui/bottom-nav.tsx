@@ -65,7 +65,7 @@ export function BottomNav() {
 
   // Crisp SVG in Light/Dark; watercolor PNG in Cute/Orange. Both render —
   // CSS (.tj-line / .tj-paint) shows only the active theme's version.
-  const iconSvg = (t: Tab) => (
+  const iconSvg = (t: Tab, big = false) => (
     <>
       <svg
         viewBox="0 0 24 24"
@@ -74,7 +74,9 @@ export function BottomNav() {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="tj-line wc-edge-soft relative h-[1.9rem] w-[1.9rem]"
+        className={`tj-line wc-edge-soft relative ${
+          big ? "h-[2.4rem] w-[2.4rem]" : "h-[1.9rem] w-[1.9rem]"
+        }`}
       >
         {t.icon}
       </svg>
@@ -84,7 +86,9 @@ export function BottomNav() {
           src={t.image}
           alt=""
           aria-hidden
-          className="tj-paint relative h-[2.6rem] w-[2.6rem] object-contain"
+          className={`tj-paint relative object-contain ${
+            big ? "h-[3.4rem] w-[3.4rem]" : "h-[2.6rem] w-[2.6rem]"
+          }`}
         />
       ) : null}
     </>
@@ -92,6 +96,9 @@ export function BottomNav() {
 
   const tab = (t: Tab) => {
     const active = isActive(t.href);
+    // Home is the primary, most-tapped destination — give it a bigger,
+    // friendlier target.
+    const big = t.href === "/";
     return (
       <li key={t.href}>
         {active ? (
@@ -104,16 +111,18 @@ export function BottomNav() {
               className="wc-edge absolute inset-0 rounded-full bg-sunset"
               aria-hidden
             />
-            {iconSvg(t)}
+            {iconSvg(t, big)}
             <span className="relative text-sm font-bold">{t.label}</span>
           </Link>
         ) : (
           <Link
             href={t.href}
             aria-label={t.label}
-            className="wc-frame flex h-13 w-13 items-center justify-center rounded-full text-glow/75 transition-transform active:scale-95"
+            className={`wc-frame flex items-center justify-center rounded-full text-glow/75 transition-transform active:scale-95 ${
+              big ? "h-16 w-16" : "h-13 w-13"
+            }`}
           >
-            {iconSvg(t)}
+            {iconSvg(t, big)}
           </Link>
         )}
       </li>
