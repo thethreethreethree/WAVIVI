@@ -107,8 +107,11 @@ export function BottomNav() {
             aria-current="page"
             className="relative flex flex-col items-center"
           >
-            {/* Floating label — hovers above the button */}
-            <span className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-center text-xs font-extrabold tracking-wide text-[#b8480a]">
+            {/* Floating label — floats up above the button, then fades. */}
+            <span
+              key={t.href}
+              className="nav-label-rise pointer-events-none absolute -top-7 left-1/2 whitespace-nowrap text-center text-sm font-extrabold tracking-wide text-[#b8480a]"
+            >
               {t.label}
             </span>
             <span

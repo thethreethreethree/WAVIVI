@@ -710,6 +710,29 @@ h3 {
   animation: susen-bob 3.2s ease-in-out infinite;
 }
 
+/* Active bottom-nav label — floats up, holds, then fades away after ~2s. */
+@keyframes nav-label-rise {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 9px);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  68% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -7px);
+  }
+}
+.nav-label-rise {
+  animation: nav-label-rise 2s ease forwards;
+}
+
 /* Toolbox map markers keep their crisp SVG glyph in the painted themes —
    the marker circle carries a wc-edge filter that would distort a PNG. */
 .cute .vm-marker .tj-icon-img,
