@@ -643,8 +643,13 @@ h3 {
   display: inline-block;
 }
 
-/* Cute parchment — the mobile app shell shows a hand-painted background. */
+/* Cute parchment — a fixed, full-viewport hand-painted background so it
+   always covers the whole screen, regardless of page height or scroll. */
 .cute .paper-grain-coarse {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
   background-image: url("/backgrounds/cute/bg-01.png");
   background-size: cover;
   background-position: center;
