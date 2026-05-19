@@ -102,6 +102,28 @@ const CATEGORY_GLYPH: Record<CategoryId, string> = Object.fromEntries(
   ]),
 ) as Record<CategoryId, string>;
 
+/* ── Floating quality badge on a marker, by Google rating. ──────── */
+const BALLOON_SVG =
+  '<svg viewBox="0 0 22 30" aria-hidden>' +
+  '<path fill="currentColor" stroke="#fffaf0" stroke-width="1.6" d="M11 1.6c5 0 8.6 3.9 8.6 8.8 0 5.7-5 9.7-7.1 11.1H9.5C7.4 20.1 2.4 16.1 2.4 10.4 2.4 5.5 6 1.6 11 1.6Z"/>' +
+  '<path fill="currentColor" stroke="#fffaf0" stroke-width="1.2" d="M9.4 21.2h3.2L11 24Z"/>' +
+  '<path fill="none" stroke="#fffaf0" stroke-width="1.3" stroke-linecap="round" d="M11 24.2c-1.7 1.5 1.7 3 0 4.6"/>' +
+  "</svg>";
+const THUMB_SVG =
+  '<svg viewBox="0 0 24 24" aria-hidden>' +
+  '<path fill="currentColor" stroke="#fffaf0" stroke-width="1.5" stroke-linejoin="round" ' +
+  'd="M7.4 10.6v9.6H4.5c-.7 0-1.2-.5-1.2-1.2v-7.2c0-.7.5-1.2 1.2-1.2zM9.4 10.6l4-7.2c1.3-.1 2.3.9 2.1 2.2l-.6 3.4h4.7c1.3 0 2.3 1.2 2 2.5l-1.5 6.5c-.2 1-1.1 1.8-2.1 1.8H9.4z"/>' +
+  "</svg>";
+
+/** Returns the badge HTML for a marker, or "" when the rating is too low. */
+function qualityBadge(rating: number | null): string {
+  if (rating == null) return "";
+  if (rating >= 4.5) return `<span class="tb-badge tb-badge-thumb">${THUMB_SVG}</span>`;
+  if (rating >= 4) return `<span class="tb-badge tb-badge-green">${BALLOON_SVG}</span>`;
+  if (rating >= 3) return `<span class="tb-badge tb-badge-red">${BALLOON_SVG}</span>`;
+  return "";
+}
+
 /**
  * Traveler Toolbox Map — Leaflet map of utility pins (ATMs, banks, pharmacies,
  * …). Cloned from the Vibe Map; data comes from the live toolbox API routes.
@@ -237,11 +259,12 @@ export function ToolboxMap({
       const cat = isCategoryId(util.category) ? util.category : null;
       const glyph = cat ? CATEGORY_GLYPH[cat] : "";
       const cls = cat ?? "";
+      const badge = qualityBadge(util.rating);
       const icon = L.divIcon({
         className: "",
         html: `<div class="vm-marker tb-marker ${cls}" title="${escapeHtml(
           util.name,
-        )}">${glyph}</div>`,
+        )}">${glyph}${badge}</div>`,
         iconSize: [size, size],
         iconAnchor: [size / 2, size / 2],
       });
