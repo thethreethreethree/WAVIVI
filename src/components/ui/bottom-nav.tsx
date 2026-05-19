@@ -110,7 +110,7 @@ export function BottomNav() {
             {/* Floating label — floats up above the button, then fades. */}
             <span
               key={t.href}
-              className="nav-label-rise pointer-events-none absolute -top-7 left-1/2 whitespace-nowrap text-center text-sm font-extrabold tracking-wide text-[#b8480a]"
+              className="nav-label-rise wc-frame wc-frame-orange-white pointer-events-none absolute -top-9 left-1/2 whitespace-nowrap rounded-full px-3 py-1 text-center text-sm font-extrabold tracking-wide text-[#b8480a]"
             >
               {t.label}
             </span>

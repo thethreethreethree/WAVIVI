@@ -887,6 +887,12 @@ h3 {
   border-color: var(--accent-glow);
   border-width: 2.5px;
 }
+/* White fill with a hand-painted orange ring — floating labels / tags. */
+.wc-frame-orange-white::before {
+  background: #fff;
+  border-color: var(--accent-glow);
+  border-width: 2.5px;
+}
 /* Painted white outline, no fill — for controls on coloured surfaces. */
 .wc-frame-white::before {
   background: transparent;
