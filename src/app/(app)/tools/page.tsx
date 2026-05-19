@@ -60,8 +60,8 @@ export default function ToolsPage() {
       >
         <SusenAvatar className="h-10 w-10 ring-2 ring-white/40" />
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-bold">Ask Susen</span>
-          <span className="block text-xs text-white/85">
+          <span className="block text-base font-bold">Ask Susen</span>
+          <span className="block text-sm text-white/85">
             Find the vibe, the people, and the plan
           </span>
         </span>

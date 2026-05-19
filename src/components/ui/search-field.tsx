@@ -13,7 +13,7 @@ export function SearchField({
 }) {
   return (
     <div
-      className={`flex items-center gap-2.5 rounded-full px-4 py-2.5 ${
+      className={`flex items-center gap-2.5 rounded-full px-4 py-3 ${
         filled
           ? "bg-surface-elevated"
           : "wc-frame bg-transparent"
@@ -25,7 +25,7 @@ export function SearchField({
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
-        className="h-4.5 w-4.5 text-muted"
+        className="h-5 w-5 text-muted"
         aria-hidden
       >
         <circle cx="11" cy="11" r="7" />
@@ -36,7 +36,7 @@ export function SearchField({
         placeholder={placeholder}
         value={value}
         onChange={onChange ? (e) => onChange(e.target.value) : undefined}
-        className="w-full bg-transparent text-sm outline-none placeholder:text-muted"
+        className="w-full bg-transparent text-base outline-none placeholder:text-muted"
       />
     </div>
   );
