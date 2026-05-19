@@ -105,14 +105,23 @@ export function BottomNav() {
           <Link
             href={t.href}
             aria-current="page"
-            className="relative flex items-center gap-2 rounded-full px-4 py-3.5 text-white"
+            className="relative flex flex-col items-center"
           >
+            {/* Floating label — hovers above the button */}
+            <span className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-center text-xs font-extrabold tracking-wide text-[#b8480a]">
+              {t.label}
+            </span>
             <span
-              className="wc-edge absolute inset-0 rounded-full bg-sunset"
-              aria-hidden
-            />
-            {iconSvg(t, big)}
-            <span className="relative text-sm font-bold">{t.label}</span>
+              className={`relative flex items-center justify-center rounded-full text-white transition-transform active:scale-95 ${
+                big ? "h-16 w-16" : "h-13 w-13"
+              }`}
+            >
+              <span
+                className="wc-edge absolute inset-0 rounded-full bg-sunset"
+                aria-hidden
+              />
+              {iconSvg(t, big)}
+            </span>
           </Link>
         ) : (
           <Link
