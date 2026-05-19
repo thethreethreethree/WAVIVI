@@ -27,10 +27,31 @@ export function ServiceWorkerRegister() {
       return;
     }
 
-    const register = () => {
-      navigator.serviceWorker.register("/sw.js").catch(() => {
-        // Registration failures are non-fatal — the app still works online.
+    // When a new service worker takes control, reload once so the user
+    // immediately runs the latest version (no manual refresh needed).
+    let refreshing = false;
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
       });
+    }
+
+    const register = () => {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((reg) => {
+          // Poll for a new deploy hourly + whenever the app refocuses.
+          const check = () => reg.update().catch(() => {});
+          setInterval(check, 60 * 60 * 1000);
+          document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") check();
+          });
+        })
+        .catch(() => {
+          // Registration failures are non-fatal — the app still works online.
+        });
     };
 
     if (document.readyState === "complete") {

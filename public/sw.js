@@ -1,15 +1,17 @@
-/* WAVIVI service worker — Phase 10 (PWA Optimization).
- * Network-first for navigations (with an offline fallback),
- * cache-first for static assets. */
+/* WAVIVI service worker — keeps installed users on the latest version.
+ *
+ * Strategy: network-first for everything, so any deploy or changed asset is
+ * picked up immediately. Only immutable, content-hashed build files
+ * (/_next/static/) are cached long-term — their URLs change when content
+ * changes, so they can never go stale. The cache is just an offline safety
+ * net, never a source of stale code or images. */
 
-const CACHE = "wavivi-v1";
+const CACHE = "wavivi-v3";
 const OFFLINE_URL = "/offline";
-const PRECACHE = [OFFLINE_URL, "/manifest.webmanifest", "/icons/icon.svg"];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)),
-  );
+  event.waitUntil(caches.open(CACHE).then((c) => c.add(OFFLINE_URL)));
+  // Activate this new worker immediately instead of waiting for old tabs.
   self.skipWaiting();
 });
 
@@ -24,40 +26,56 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data === "skip-waiting") self.skipWaiting();
+});
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
 
-  // Navigations: try the network, fall back to cache, then offline page.
-  if (request.mode === "navigate") {
+  const url = new URL(request.url);
+  // Leave cross-origin requests alone (map tiles, Supabase, fonts…).
+  if (url.origin !== self.location.origin) return;
+
+  // Immutable hashed build assets — cache-first (safe, URL-versioned).
+  if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(async () => {
-          const cached = await caches.match(request);
-          return cached || caches.match(OFFLINE_URL);
-        }),
+      caches.match(request).then(
+        (cached) =>
+          cached ||
+          fetch(request).then((res) => {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(request, copy));
+            return res;
+          }),
+      ),
     );
     return;
   }
 
-  // Static assets: serve from cache, update in the background.
+  // Page navigations — always network; offline page as the fallback.
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request).catch(
+        async () =>
+          (await caches.match(request)) || caches.match(OFFLINE_URL),
+      ),
+    );
+    return;
+  }
+
+  // Everything else (images, /public assets, API) — network-first, so an
+  // updated file shows up right away; cached copy is the offline fallback.
   event.respondWith(
-    caches.match(request).then((cached) => {
-      const network = fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        })
-        .catch(() => cached);
-      return cached || network;
-    }),
+    fetch(request)
+      .then((res) => {
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(request, copy));
+        }
+        return res;
+      })
+      .catch(() => caches.match(request)),
   );
 });
