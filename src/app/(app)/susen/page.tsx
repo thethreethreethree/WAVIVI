@@ -49,13 +49,19 @@ export default function SusenPage() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </Link>
-        <SusenAvatar className="h-9 w-9" />
+        <SusenAvatar className="h-10 w-10" />
         <span className="min-w-0">
-          <span className="block font-bold leading-tight">{SUSEN.name}</span>
-          <span className="block text-xs text-muted">{SUSEN.tagline}</span>
+          <span className="block text-base font-bold leading-tight">
+            {SUSEN.name}
+          </span>
+          <span className="block text-sm text-muted">{SUSEN.tagline}</span>
         </span>
-        <span className="wc-frame ml-auto rounded-full px-2.5 py-1 text-[10px] font-bold text-cool">
-          ● Online
+        <span className="ml-auto flex items-center gap-1.5 rounded-full bg-white/85 px-3 py-1 text-xs font-bold text-cool ring-1 ring-cool/30">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+          </span>
+          Online
         </span>
       </header>
 
@@ -69,10 +75,10 @@ export default function SusenPage() {
           >
             {turn.role === "susen" && <SusenAvatar className="h-7 w-7" />}
             <div
-              className={`wc-frame max-w-[80%] px-3.5 py-2.5 text-sm ${
+              className={`wc-frame max-w-[82%] px-4 py-3 text-base leading-snug ${
                 turn.role === "user"
                   ? "wc-frame-sunset rounded-2xl rounded-br-sm text-white"
-                  : "rounded-2xl rounded-bl-sm text-foreground"
+                  : "rounded-2xl rounded-bl-sm bg-white/85 text-foreground"
               }`}
             >
               {turn.text}
@@ -110,7 +116,7 @@ export default function SusenPage() {
             type="button"
             onClick={() => send(p)}
             style={{ animationDelay: `${-i * 0.27}s` }}
-            className={`wc-stop-motion-${(i % 5) + 1} wc-frame wc-frame-ghost shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold text-glow`}
+            className={`wc-stop-motion-${(i % 5) + 1} wc-frame wc-frame-ghost shrink-0 rounded-full bg-white/70 px-4 py-2 text-sm font-semibold text-glow`}
           >
             {p}
           </button>
@@ -128,13 +134,13 @@ export default function SusenPage() {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Ask Susen anything…"
-          className="wc-frame flex-1 rounded-full bg-transparent px-4 py-2.5
-                     text-sm outline-none placeholder:text-muted"
+          className="wc-frame flex-1 rounded-full bg-white/70 px-4 py-3
+                     text-base outline-none placeholder:text-muted"
         />
         <button
           type="submit"
           disabled={!draft.trim() || thinking}
-          className="wc-frame wc-frame-sunset rounded-full px-4 py-2.5 text-sm font-bold text-white disabled:opacity-40"
+          className="wc-frame wc-frame-sunset rounded-full px-5 py-3 text-base font-bold text-white disabled:opacity-40"
         >
           Send
         </button>
