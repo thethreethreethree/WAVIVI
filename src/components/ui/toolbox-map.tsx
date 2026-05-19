@@ -527,14 +527,17 @@ function UtilityCard({
     : null;
   const bp = backpackDisplay(utility.backpack_rating);
 
-  const distance =
-    userPos &&
-    fmtKm(
-      haversineKm(userPos, {
+  const km = userPos
+    ? haversineKm(userPos, {
         lat: utility.latitude,
         lng: utility.longitude,
-      }),
-    );
+      })
+    : null;
+  const hasImage = IMAGE_CATEGORIES.has(utility.category);
+  const imageUrl =
+    (utility.metadata_json?.image as string | undefined) ||
+    CATEGORY_FALLBACK_IMAGE[utility.category];
+  const topPick = utility.backpack_rating >= 4.5;
 
   async function castVote(value: 1 | -1) {
     setBusy(true);
