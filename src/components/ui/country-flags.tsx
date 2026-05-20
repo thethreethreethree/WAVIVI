@@ -21,14 +21,18 @@ export function CountryFlags({
           className="flex shrink-0 flex-col items-center gap-1"
           title={country}
         >
-          <span className="relative block h-12 w-12 overflow-hidden rounded-full ring-2 ring-glow/50">
-            <Image
-              src={flagImage(country)}
-              alt={country}
-              fill
-              sizes="48px"
-              className="object-cover object-center"
-            />
+          {/* Outer painted ring + small inner padding so the flag image
+              never touches the rounded edge (was clipping at the top). */}
+          <span className="wc-frame wc-frame-orange relative block h-14 w-14 rounded-full p-1">
+            <span className="relative block h-full w-full overflow-hidden rounded-full bg-white">
+              <Image
+                src={flagImage(country)}
+                alt={country}
+                fill
+                sizes="56px"
+                className="object-cover object-center"
+              />
+            </span>
           </span>
           {showLabels && (
             <span className="text-[10px] font-medium text-muted">

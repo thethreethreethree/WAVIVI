@@ -113,7 +113,7 @@ export default async function MyProfilePage() {
         <div className="mt-4 flex gap-2">
           <Link
             href="/profile/edit"
-            className="wc-frame wc-frame-ghost rounded-full px-5 py-2 text-sm font-semibold text-glow"
+            className="wc-frame wc-frame-orange-white rounded-full px-5 py-2 text-sm font-semibold text-glow"
           >
             Edit Profile
           </Link>
