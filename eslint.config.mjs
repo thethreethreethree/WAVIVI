@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Standalone code that runs outside the Next.js app:
+    //   - Node CommonJS scripts (require() is correct there)
+    //   - Cloudflare Worker (its own runtime + bundler)
+    "scripts/**",
+    "cloudflare/**",
   ]),
 ]);
 
