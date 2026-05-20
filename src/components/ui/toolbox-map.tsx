@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Icon } from "@/components/ui/icon";
 import { CUTE_ICONS } from "@/lib/cute-icons";
@@ -226,6 +226,7 @@ export function ToolboxMap({
   useEffect(() => {
     if (!region) return;
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- standard fetch-on-mount flag
     setLoading(true);
     (async () => {
       try {
@@ -540,6 +541,7 @@ export function ToolboxMap({
           <UtilityCard
             key={selected.id}
             utility={selected}
+            // eslint-disable-next-line react-hooks/refs -- pass last known pos to the card; never used to render
             userPos={userPosRef.current}
             onClose={() => setSelected(null)}
           />

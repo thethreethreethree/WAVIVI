@@ -28,7 +28,9 @@ export function MapPicker({ value, radiusKm, onPick }: MapPickerProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const circleRef = useRef<any>(null);
   const onPickRef = useRef(onPick);
-  onPickRef.current = onPick;
+  useEffect(() => {
+    onPickRef.current = onPick;
+  });
 
   // --- Map init (once) ------------------------------------------------------
   useEffect(() => {
