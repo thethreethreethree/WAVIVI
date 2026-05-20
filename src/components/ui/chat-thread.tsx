@@ -50,30 +50,46 @@ export function ChatThread({
   }, [messages]);
 
   // Subscribe to new chat_messages rows for this group.
+  // RLS gates the broadcast — Realtime needs the user's access token, or
+  // SELECT policy evaluation fails server-side and no rows are delivered.
   useEffect(() => {
     if (!joined) return;
     const supabase = createClient();
-    const channel = supabase
-      .channel(`chat:${groupId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "chat_messages",
-          filter: `group_id=eq.${groupId}`,
-        },
-        (payload) => {
-          const row = payload.new as ChatMessage;
-          // Dedupe against optimistic inserts.
-          setMessages((prev) =>
-            prev.some((m) => m.id === row.id) ? prev : [...prev, row],
-          );
-        },
-      )
-      .subscribe();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (session?.access_token) {
+        supabase.realtime.setAuth(session.access_token);
+      }
+      channel = supabase
+        .channel(`chat:${groupId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "chat_messages",
+            filter: `group_id=eq.${groupId}`,
+          },
+          (payload) => {
+            const row = payload.new as ChatMessage;
+            // Dedupe against optimistic inserts.
+            setMessages((prev) =>
+              prev.some((m) => m.id === row.id) ? prev : [...prev, row],
+            );
+          },
+        )
+        .subscribe();
+    })();
+
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
     };
   }, [groupId, joined]);
 
@@ -85,10 +101,17 @@ export function ChatThread({
     setError(null);
     startTransition(async () => {
       const res = await sendMessage(groupId, body);
-      if (res.error) {
-        setError(res.error);
+      if (res.error || !res.message) {
+        setError(res.error ?? "Could not send.");
         setDraft(body);
+        return;
       }
+      // Append immediately so the sender doesn't wait for the realtime
+      // echo. The subscription dedupes by id when the same row arrives.
+      const inserted = res.message;
+      setMessages((prev) =>
+        prev.some((m) => m.id === inserted.id) ? prev : [...prev, inserted],
+      );
     });
   }
 
