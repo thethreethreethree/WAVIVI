@@ -56,6 +56,18 @@ export async function signUp(
   }
 
   const supabase = await createClient();
+
+  // Pre-flight: catch the common "username taken" case before Supabase
+  // raises the opaque "Database error saving new user" from the trigger.
+  const { data: existing } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("username", username)
+    .maybeSingle();
+  if (existing) {
+    return { error: "That username is already taken.", message: null };
+  }
+
   const { error } = await supabase.auth.signUp({
     email,
     password,
@@ -66,6 +78,14 @@ export async function signUp(
   });
 
   if (error) {
+    // Translate the generic Supabase message when the trigger insert fails.
+    if (/Database error saving new user/i.test(error.message)) {
+      return {
+        error:
+          "Could not create your account. The username or email may already be in use.",
+        message: null,
+      };
+    }
     return { error: error.message, message: null };
   }
 
