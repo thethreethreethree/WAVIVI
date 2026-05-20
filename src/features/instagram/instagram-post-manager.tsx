@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 
+import { saveInstagramPosts } from "@/features/instagram/actions";
 import { InstagramIcon } from "@/features/instagram/instagram-icon";
 import type { InstagramPost } from "@/features/instagram/types";
 import { isValidPostUrl, postShortcode } from "@/features/instagram/validation";
@@ -10,8 +11,9 @@ import { photo } from "@/lib/travejor/photo";
 const MAX_POSTS = 6;
 
 /**
- * Featured Travel Posts manager — add, remove, and reorder showcase posts
- * in the Edit Profile flow. Stores URLs only; capped at 6.
+ * Featured Travel Posts manager — add, remove, and reorder showcase posts.
+ * Autosaves to `profiles.instagram_post_urls` on every mutation via the
+ * saveInstagramPosts server action. Stores URLs only; capped at 6.
  */
 export function InstagramPostManager({
   initialPosts = [],
@@ -21,6 +23,21 @@ export function InstagramPostManager({
   const [posts, setPosts] = useState<InstagramPost[]>(initialPosts);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [pending, startTransition] = useTransition();
+
+  /** Persist the current list to the DB. */
+  function persist(next: InstagramPost[]) {
+    startTransition(async () => {
+      const res = await saveInstagramPosts(next.map((p) => p.url));
+      if (res.error) {
+        setError(res.error);
+        return;
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1200);
+    });
+  }
 
   function add() {
     const url = draft.trim();
@@ -36,26 +53,33 @@ export function InstagramPostManager({
       setError("That post is already featured.");
       return;
     }
-    setPosts((p) => [
-      ...p,
+    const next = [
+      ...posts,
       {
         id: crypto.randomUUID(),
         url,
         image: photo(postShortcode(url) ?? url, 240, 240),
       },
-    ]);
+    ];
+    setPosts(next);
     setDraft("");
     setError(null);
+    persist(next);
   }
 
   function move(index: number, dir: -1 | 1) {
-    const next = index + dir;
-    if (next < 0 || next >= posts.length) return;
-    setPosts((p) => {
-      const copy = [...p];
-      [copy[index], copy[next]] = [copy[next], copy[index]];
-      return copy;
-    });
+    const nextIndex = index + dir;
+    if (nextIndex < 0 || nextIndex >= posts.length) return;
+    const copy = [...posts];
+    [copy[index], copy[nextIndex]] = [copy[nextIndex], copy[index]];
+    setPosts(copy);
+    persist(copy);
+  }
+
+  function remove(id: string) {
+    const next = posts.filter((p) => p.id !== id);
+    setPosts(next);
+    persist(next);
   }
 
   return (
@@ -66,6 +90,15 @@ export function InstagramPostManager({
       <div className="flex items-center gap-2">
         <InstagramIcon className="h-5 w-5 text-glow" />
         <h3 className="text-sm font-bold">Featured Travel Posts</h3>
+        {(pending || saved) && (
+          <span
+            className={`text-[10px] font-bold ${
+              saved ? "text-cool" : "text-muted"
+            }`}
+          >
+            {saved ? "Saved ✓" : "Saving…"}
+          </span>
+        )}
         <span className="ml-auto text-xs text-muted">
           {posts.length}/{MAX_POSTS}
         </span>
@@ -124,7 +157,7 @@ export function InstagramPostManager({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPosts((p) => p.filter((x) => x.id !== post.id))}
+                  onClick={() => remove(post.id)}
                   aria-label="Remove"
                   className="flex h-6 w-6 items-center justify-center rounded-md bg-heat/10 text-heat"
                 >

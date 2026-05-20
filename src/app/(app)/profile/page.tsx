@@ -7,10 +7,14 @@ import { CountryFlags } from "@/components/ui/country-flags";
 import { Icon } from "@/components/ui/icon";
 import {
   InstagramConnectCard,
+  InstagramFeed,
   InstagramProfileBadge,
+  InstagramShowcase,
 } from "@/features/instagram";
+import { postShortcode } from "@/features/instagram/validation";
 import { getCurrentProfile } from "@/lib/profiles";
 import { travelerNotes } from "@/lib/travejor/account";
+import { photo } from "@/lib/travejor/photo";
 
 export const metadata: Metadata = { title: "My Profile" };
 
@@ -29,6 +33,23 @@ export default async function MyProfilePage() {
   if (!profile) redirect("/login");
 
   const initial = profile.display_name.trim().charAt(0).toUpperCase() || "?";
+
+  // Build the showcase / feed from the user's saved IG post URLs.
+  // Thumbnails are placeholders until we add a live IG preview API.
+  const posts = (profile.instagram_post_urls ?? []).map((url, i) => ({
+    id: `${profile.username}-${i}`,
+    url,
+    image: photo(postShortcode(url) ?? url, 300, 300),
+  }));
+
+  // Aggregate visited countries: explicit list, plus home_country fallback
+  // so newcomers without a list still see at least one flag.
+  const countries = (profile.countries ?? []).length
+    ? (profile.countries ?? [])
+    : profile.home_country
+      ? [profile.home_country]
+      : [];
+
   // Recent notes the community has left for / about this user.
   // (Real `traveler_notes` table is a separate P1 — for now this is a
   // friendly empty-state preview using the mock feed.)
@@ -97,16 +118,16 @@ export default async function MyProfilePage() {
         </div>
       </div>
 
-      {/* Countries traveled (driven by home_country today; we'll add a
-          `countries[]` profile column when the traveler-history feature lands). */}
+      {/* Countries traveled — pulls from the explicit list, falling back to
+          home_country until the user fills out their travel history. */}
       <section className="mt-6 px-5">
         <h3 className="text-sm font-bold">Countries Traveled</h3>
         <div className="mt-3">
-          {profile.home_country ? (
-            <CountryFlags countries={[profile.home_country]} showLabels />
+          {countries.length > 0 ? (
+            <CountryFlags countries={countries} showLabels />
           ) : (
             <p className="text-xs text-muted">
-              Add your home country in{" "}
+              Add your countries in{" "}
               <Link href="/profile/edit" className="text-glow underline">
                 Edit Profile
               </Link>{" "}
@@ -116,8 +137,8 @@ export default async function MyProfilePage() {
         </div>
       </section>
 
-      {/* Travel Identity — Instagram. Shows the linked badge once connected,
-          plus the connect card so the user can update / unlink. */}
+      {/* Travel Identity — Instagram. Badge first when connected, then the
+          connect card so the user can update / verify / unlink. */}
       <section className="mt-6 px-5">
         <h3 className="text-sm font-bold">Travel Identity</h3>
         <div className="mt-3 flex flex-col gap-3">
@@ -126,7 +147,7 @@ export default async function MyProfilePage() {
               identity={{
                 username: profile.instagram_username,
                 verified: profile.instagram_verified,
-                posts: [],
+                posts,
               }}
             />
           )}
@@ -134,8 +155,40 @@ export default async function MyProfilePage() {
             initialUsername={profile.instagram_username ?? ""}
             initialVerified={profile.instagram_verified}
           />
+          {posts.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-semibold text-muted">
+                Featured Travel Moments
+              </p>
+              <InstagramShowcase posts={posts} />
+            </div>
+          )}
+          {profile.instagram_username && posts.length === 0 && (
+            <p className="text-xs text-muted">
+              Add a few favourite posts in{" "}
+              <Link
+                href="/profile/edit#travel-posts"
+                className="text-glow underline"
+              >
+                Edit Profile
+              </Link>{" "}
+              to fill out your showcase.
+            </p>
+          )}
         </div>
       </section>
+
+      {/* Travel Feed — full IG-sourced feed, only when the user has
+          curated some posts. */}
+      {profile.instagram_username && posts.length > 0 && (
+        <section className="mt-6 px-5">
+          <h3 className="mb-3 text-sm font-bold">Travel Feed</h3>
+          <InstagramFeed
+            posts={posts}
+            username={profile.instagram_username}
+          />
+        </section>
+      )}
 
       {/* Traveler notes — preview pointing at the full feed. Becomes a
           real `notes about you` list when traveler_notes ships. */}

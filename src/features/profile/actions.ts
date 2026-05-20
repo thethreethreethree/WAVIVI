@@ -28,6 +28,12 @@ export async function saveProfile(
   const username = readString(formData, "username").toLowerCase();
   const bio = readString(formData, "bio");
   const homeCountry = readString(formData, "home_country");
+  const countriesRaw = readString(formData, "countries");
+  const countries = countriesRaw
+    .split(",")
+    .map((c) => c.trim())
+    .filter(Boolean)
+    .slice(0, 50);
   const statusRaw = readString(formData, "traveler_status");
   const travelerStatus: TravelerStatus = STATUSES.includes(
     statusRaw as TravelerStatus,
@@ -53,6 +59,7 @@ export async function saveProfile(
     username,
     bio: bio || null,
     home_country: homeCountry || null,
+    countries,
     traveler_status: travelerStatus,
   });
 

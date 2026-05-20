@@ -20,6 +20,7 @@ export type ProfileRow = {
   bio: string | null;
   avatar_url: string | null;
   home_country: string | null;
+  countries: string[];
   traveler_status: TravelerStatus;
   instagram_username: string | null;
   instagram_verified: boolean;
@@ -38,6 +39,7 @@ export type ProfileInsert = {
   bio?: string | null;
   avatar_url?: string | null;
   home_country?: string | null;
+  countries?: string[];
   traveler_status?: TravelerStatus;
   instagram_username?: string | null;
   instagram_verified?: boolean;
@@ -55,6 +57,7 @@ export type ProfileUpdate = {
   bio?: string | null;
   avatar_url?: string | null;
   home_country?: string | null;
+  countries?: string[];
   traveler_status?: TravelerStatus;
   instagram_username?: string | null;
   instagram_verified?: boolean;

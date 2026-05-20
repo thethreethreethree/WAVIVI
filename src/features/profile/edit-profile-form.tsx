@@ -2,7 +2,10 @@
 
 import { useActionState } from "react";
 
+import { InstagramPostManager } from "@/features/instagram";
+import { postShortcode } from "@/features/instagram/validation";
 import { saveProfile, type ProfileFormState } from "@/features/profile/actions";
+import { photo } from "@/lib/travejor/photo";
 import type { ProfileRow } from "@/types/supabase";
 
 const STATUS_OPTIONS: { value: ProfileRow["traveler_status"]; label: string }[] =
@@ -85,6 +88,22 @@ export function EditProfileForm({ profile }: { profile: ProfileRow }) {
       </label>
 
       <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-muted">
+          Countries you&apos;ve traveled
+        </span>
+        <textarea
+          name="countries"
+          rows={2}
+          defaultValue={(profile.countries ?? []).join(", ")}
+          placeholder="Comma-separated, e.g. Japan, Vietnam, Indonesia, Mexico"
+          className={`${fieldClass} resize-none`}
+        />
+        <span className="text-[11px] text-muted">
+          These appear on your profile as flag chips.
+        </span>
+      </label>
+
+      <label className="flex flex-col gap-1.5">
         <span className="text-xs font-medium text-muted">Traveler status</span>
         <select
           name="traveler_status"
@@ -112,6 +131,18 @@ export function EditProfileForm({ profile }: { profile: ProfileRow }) {
       >
         {pending ? "Saving…" : "Save changes"}
       </button>
+
+      {/* Featured Travel Posts live outside the main form — the manager
+          autosaves to profiles.instagram_post_urls on every change. */}
+      <div className="mt-2">
+        <InstagramPostManager
+          initialPosts={(profile.instagram_post_urls ?? []).map((url, i) => ({
+            id: `${i}`,
+            url,
+            image: photo(postShortcode(url) ?? url, 240, 240),
+          }))}
+        />
+      </div>
     </form>
   );
 }

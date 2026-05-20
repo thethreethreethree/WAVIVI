@@ -190,6 +190,31 @@ export async function confirmInstagramVerification(): Promise<ConfirmVerifyResul
   return { error: null, verified: true, username: handle };
 }
 
+/**
+ * Persist the user's featured Instagram post URLs. Validates each URL and
+ * caps at 6 entries.
+ */
+export async function saveInstagramPosts(
+  urls: string[],
+): Promise<{ error: string | null; urls: string[] }> {
+  const cleaned = (urls ?? [])
+    .map((u) => (typeof u === "string" ? u.trim() : ""))
+    .filter(Boolean)
+    .slice(0, 6);
+
+  // Light URL sanity check — reject anything that isn't a real IG post link.
+  for (const u of cleaned) {
+    if (!/^https?:\/\/(www\.)?instagram\.com\/(p|reel)\//i.test(u)) {
+      return { error: `Not an Instagram post URL: ${u}`, urls: [] };
+    }
+  }
+
+  const { error } = await updateProfile({ instagram_post_urls: cleaned });
+  if (error) return { error, urls: [] };
+  revalidatePath("/profile");
+  return { error: null, urls: cleaned };
+}
+
 /** Abandon an in-progress verification, clearing the stored token. */
 export async function cancelInstagramVerification(): Promise<InstagramActionResult> {
   const { error } = await updateProfile({
