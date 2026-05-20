@@ -6,6 +6,45 @@ import { notFound } from "next/navigation";
 import { AddFriendButton } from "@/components/ui/add-friend-button";
 import { CountryFlags } from "@/components/ui/country-flags";
 import { getProfileByUsername } from "@/lib/profiles";
+import { getMember } from "@/lib/travejor/members";
+
+/** Shape the user-profile UI needs — sourced from Supabase or mock member. */
+interface DisplayProfile {
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+  traveler_status: string;
+  bio: string | null;
+  home_country: string | null;
+}
+
+async function loadDisplayProfile(
+  username: string,
+): Promise<DisplayProfile | null> {
+  const real = await getProfileByUsername(username);
+  if (real) {
+    return {
+      username: real.username,
+      display_name: real.display_name,
+      avatar_url: real.avatar_url,
+      traveler_status: real.traveler_status,
+      bio: real.bio,
+      home_country: real.home_country,
+    };
+  }
+  // Fall back to the mock member roster so the page is always viewable
+  // while the real profiles table is being seeded.
+  const m = getMember(username);
+  if (!m) return null;
+  return {
+    username: m.username,
+    display_name: m.name,
+    avatar_url: m.avatar,
+    traveler_status: "exploring",
+    bio: m.bio,
+    home_country: m.countries[0] ?? null,
+  };
+}
 
 type Params = Promise<{ username: string }>;
 
@@ -23,7 +62,7 @@ export async function generateMetadata({
   params: Params;
 }): Promise<Metadata> {
   const { username } = await params;
-  const profile = await getProfileByUsername(username);
+  const profile = await loadDisplayProfile(username);
   return { title: profile ? profile.display_name : "User Profile" };
 }
 
@@ -33,7 +72,7 @@ export default async function UserProfilePage({
   params: Params;
 }) {
   const { username } = await params;
-  const profile = await getProfileByUsername(username);
+  const profile = await loadDisplayProfile(username);
   if (!profile) notFound();
 
   const initial = profile.display_name.trim().charAt(0).toUpperCase() || "?";

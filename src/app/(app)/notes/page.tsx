@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { travelerNotes } from "@/lib/travejor/account";
@@ -22,18 +23,23 @@ export default function NotesPage() {
             className="wc-frame rounded-2xl p-4"
           >
             <div className="flex items-center gap-2">
-              <span className="wc-frame relative h-8 w-8 rounded-full p-1">
-                <span className="relative block h-full w-full overflow-hidden rounded-full">
-                  <Image
-                    src={note.fromAvatar}
-                    alt={note.from}
-                    fill
-                    sizes="28px"
-                    className="object-cover"
-                  />
+              <Link
+                href={`/u/${note.from.toLowerCase()}`}
+                className="flex items-center gap-2 transition-opacity active:opacity-70"
+              >
+                <span className="wc-frame relative h-8 w-8 rounded-full p-1">
+                  <span className="relative block h-full w-full overflow-hidden rounded-full">
+                    <Image
+                      src={note.fromAvatar}
+                      alt={note.from}
+                      fill
+                      sizes="28px"
+                      className="object-cover"
+                    />
+                  </span>
                 </span>
-              </span>
-              <span className="text-sm font-semibold">{note.from}</span>
+                <span className="text-sm font-semibold">{note.from}</span>
+              </Link>
               <span className="ml-auto text-xs text-muted">{note.time}</span>
             </div>
             <p className="mt-2 text-sm text-foreground/90">
