@@ -105,7 +105,7 @@ const CATEGORY_GLYPH: Record<CategoryId, string> = Object.fromEntries(
   TOOLBOX_CATEGORIES.map((c) => {
     const cuteSrc = CUTE_ICONS[c.icon] ?? "";
     const orangeSrc = `/icons/orange/map/${c.id}.png`;
-    const base = `width:24px;height:24px;object-fit:contain`;
+    const base = `width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.35))`;
     return [
       c.id,
       `<img class="tb-pin-img tb-pin-img-cute" src="${cuteSrc}" alt="" style="${base}" />` +
@@ -266,13 +266,14 @@ export function ToolboxMap({
     for (const { marker } of markersRef.current) marker.remove();
     markersRef.current = [];
 
-    const size = 36;
-    // Inline styles so the disc renders correctly even with stale cached CSS.
+    const size = 40;
+    // Inline styles so the marker layout renders correctly even with stale
+    // cached CSS. No background / border — the watercolor icon art carries
+    // its own shadow + halo, so the cream disc isn't needed.
     const pinStyle =
-      "width:36px;height:36px;display:flex;align-items:center;" +
-      "justify-content:center;border-radius:50%;background:#fffaf3;" +
-      "border:2.5px solid #fff;box-shadow:0 4px 11px -3px rgba(120,78,30,.55);" +
-      "box-sizing:border-box";
+      "width:40px;height:40px;display:flex;align-items:center;" +
+      "justify-content:center;background:transparent;border:0;" +
+      "box-shadow:none";
     const bounds = L.latLngBounds([]);
     for (const util of utilities) {
       const cat = isCategoryId(util.category) ? util.category : null;

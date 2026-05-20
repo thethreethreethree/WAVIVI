@@ -243,10 +243,9 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: #fffaf3;
-  border: 2.5px solid #ffffff;
-  box-shadow: 0 4px 11px -3px rgba(120, 78, 30, 0.55);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
   cursor: pointer;
   transition: transform 0.16s ease;
 }
@@ -254,10 +253,11 @@ h3 {
   transform: scale(1.12);
 }
 .tb-pin-img {
-  width: 82%;
-  height: 82%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   display: block;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
 }
 /* Theme-conditional toolbox marker icon. Default (light/dark/cute) shows
    the cute image; FUEGO swaps to the orange map-icon set. */
