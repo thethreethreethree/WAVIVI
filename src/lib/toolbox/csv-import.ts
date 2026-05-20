@@ -4,7 +4,10 @@
  * Expected columns (matched by header name, case-insensitive; order and
  * blank spacer columns don't matter):
  *   Title, Rating, Reviews, Address, Website, Latitude, Longitude,
- *   Google Maps Link
+ *   Google Maps Link, Photo
+ *
+ * The Photo column accepts any image URL (jpg/png/webp). It becomes the
+ * cover photo on the traveler-facing utility card.
  */
 
 export interface CsvRow {
@@ -13,6 +16,7 @@ export interface CsvRow {
   reviewCount: number;
   address: string | null;
   website: string | null;
+  photoUrl: string | null;
   latitude: number;
   longitude: number;
   /** Stable dedup ref from the Google Maps link, or a coord-based fallback. */
@@ -97,6 +101,7 @@ export function parseToolboxCsv(text: string): CsvParseResult {
     reviews: col("reviews", "review count", "reviewcount"),
     address: col("address"),
     website: col("website"),
+    photo: col("photo", "image", "photo url", "photo_url", "image url", "image_url"),
     lat: col("latitude", "lat"),
     lng: col("longitude", "lng", "lon"),
     link: col("google maps link", "google maps url", "link", "url"),
@@ -134,6 +139,12 @@ export function parseToolboxCsv(text: string): CsvParseResult {
     const rating =
       ratingRaw != null ? Math.max(0, Math.min(5, ratingRaw)) : null;
 
+    const photoRaw =
+      idx.photo === -1 ? "" : (f[idx.photo] || "").trim();
+    // Only accept http/https URLs — keep our schema honest.
+    const photoUrl =
+      photoRaw && /^https?:\/\//i.test(photoRaw) ? photoRaw : null;
+
     rows.push({
       name,
       rating,
@@ -143,6 +154,7 @@ export function parseToolboxCsv(text: string): CsvParseResult {
         idx.address === -1 ? null : (f[idx.address] || "").trim() || null,
       website:
         idx.website === -1 ? null : (f[idx.website] || "").trim() || null,
+      photoUrl,
       latitude: lat,
       longitude: lng,
       placeRef: extractPlaceRef(link) ?? `csv:${lat.toFixed(5)},${lng.toFixed(5)}`,

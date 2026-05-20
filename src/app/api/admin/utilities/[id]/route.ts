@@ -20,6 +20,7 @@ const EDITABLE: (keyof UtilityUpdate)[] = [
   "address",
   "phone",
   "website",
+  "photo_url",
   "instagram",
   "facebook",
   "whatsapp",

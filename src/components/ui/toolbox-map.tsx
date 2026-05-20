@@ -590,8 +590,13 @@ function UtilityCard({
         lng: utility.longitude,
       })
     : null;
-  const hasImage = IMAGE_CATEGORIES.has(utility.category);
+  // Photo precedence: explicit `photo_url` (CSV-imported / admin-edited)
+  // → metadata_json.image (legacy) → per-category fallback art (only for
+  // categories where a stock photo improves discovery, e.g. cafes/hostels).
+  const explicitPhoto = utility.photo_url?.trim() || null;
+  const hasImage = Boolean(explicitPhoto) || IMAGE_CATEGORIES.has(utility.category);
   const imageUrl =
+    explicitPhoto ||
     (utility.metadata_json?.image as string | undefined) ||
     CATEGORY_FALLBACK_IMAGE[utility.category];
   const topPick = utility.backpack_rating >= 4.5;

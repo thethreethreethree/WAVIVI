@@ -22,6 +22,7 @@ export function UtilityEditor({ utility, onClose }: UtilityEditorProps) {
   const [address, setAddress] = useState(utility.address ?? "");
   const [phone, setPhone] = useState(utility.phone ?? "");
   const [website, setWebsite] = useState(utility.website ?? "");
+  const [photoUrl, setPhotoUrl] = useState(utility.photo_url ?? "");
   const [instagram, setInstagram] = useState(utility.instagram ?? "");
   const [facebook, setFacebook] = useState(utility.facebook ?? "");
   const [whatsapp, setWhatsapp] = useState(utility.whatsapp ?? "");
@@ -57,6 +58,7 @@ export function UtilityEditor({ utility, onClose }: UtilityEditorProps) {
           address: address.trim() || null,
           phone: phone.trim() || null,
           website: website.trim() || null,
+          photo_url: photoUrl.trim() || null,
           instagram: instagram.trim() || null,
           facebook: facebook.trim() || null,
           whatsapp: whatsapp.trim() || null,
@@ -174,6 +176,23 @@ export function UtilityEditor({ utility, onClose }: UtilityEditorProps) {
               />
             </Field>
           </div>
+
+          <Field label="Photo URL">
+            <input
+              value={photoUrl}
+              onChange={(e) => setPhotoUrl(e.target.value)}
+              placeholder="https://…/cover.jpg"
+              className="admin-input"
+            />
+            {photoUrl && /^https?:\/\//i.test(photoUrl) && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={photoUrl}
+                alt="Cover preview"
+                className="mt-2 h-28 w-full rounded-lg border border-border object-cover"
+              />
+            )}
+          </Field>
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Instagram">

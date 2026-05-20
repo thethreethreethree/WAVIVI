@@ -165,6 +165,7 @@ export type UtilityRow = {
   crowd_level: CrowdLevel | null;
   description: string | null;
   traveler_notes: string[];
+  photo_url: string | null;
   source: string;
   source_ref: string;
   metadata_json: Record<string, unknown>;
@@ -198,6 +199,7 @@ export type UtilityInsert = {
   crowd_level?: CrowdLevel | null;
   description?: string | null;
   traveler_notes?: string[];
+  photo_url?: string | null;
   source?: string;
   source_ref: string;
   metadata_json?: Record<string, unknown>;

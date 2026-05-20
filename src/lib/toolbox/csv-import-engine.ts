@@ -89,6 +89,9 @@ export async function importCsvRows(
       };
       if (row.website && !best.website) update.website = row.website;
       if (row.address && !best.address) update.address = row.address;
+      // Always refresh the photo when the CSV provides one — admins are
+      // usually re-uploading with better imagery.
+      if (row.photoUrl) update.photo_url = row.photoUrl;
       // Refresh the backpack rating from the Google rating — unless an admin
       // has hand-edited this pin.
       if (row.rating != null && !best.admin_edited) {
@@ -113,6 +116,7 @@ export async function importCsvRows(
         google_maps_url: mapsUrl,
         address: row.address,
         website: row.website,
+        photo_url: row.photoUrl,
         rating: row.rating,
         review_count: row.reviewCount,
         reliability_score: row.rating != null ? Math.min(10, row.rating * 2) : 0,
