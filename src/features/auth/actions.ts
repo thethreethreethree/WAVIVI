@@ -11,12 +11,21 @@ function readString(form: FormData, key: string): string {
   return String(form.get(key) ?? "").trim();
 }
 
+/** Only allow same-origin redirects (no protocol-relative or absolute URLs). */
+function safeRedirect(next: string, fallback: string): string {
+  if (!next) return fallback;
+  if (!next.startsWith("/")) return fallback;
+  if (next.startsWith("//")) return fallback;
+  return next;
+}
+
 export async function signIn(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
   const email = readString(formData, "email");
   const password = readString(formData, "password");
+  const next = readString(formData, "next");
 
   if (!email || !password) {
     return { error: "Email and password are required.", message: null };
@@ -30,7 +39,7 @@ export async function signIn(
   }
 
   revalidatePath("/", "layout");
-  redirect("/profile");
+  redirect(safeRedirect(next, "/profile"));
 }
 
 export async function signUp(
@@ -41,6 +50,7 @@ export async function signUp(
   const password = readString(formData, "password");
   const username = readString(formData, "username").toLowerCase();
   const displayName = readString(formData, "display_name");
+  const next = readString(formData, "next");
 
   if (!email || !password || !username || !displayName) {
     return { error: "All fields are required.", message: null };
@@ -73,7 +83,7 @@ export async function signUp(
     password,
     options: {
       data: { username, display_name: displayName },
-      emailRedirectTo: `${siteConfig.url}/auth/confirm`,
+      emailRedirectTo: `${siteConfig.url}/auth/confirm?next=${encodeURIComponent(safeRedirect(next, "/profile"))}`,
     },
   });
 

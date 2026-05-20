@@ -12,7 +12,14 @@ const fieldClass =
   "wc-frame w-full rounded-lg bg-transparent px-3 py-2.5 text-sm " +
   "outline-none transition-colors placeholder:text-muted focus-visible:border-glow";
 
-export function AuthForm({ mode }: { mode: Mode }) {
+export function AuthForm({
+  mode,
+  next,
+}: {
+  mode: Mode;
+  /** Path to send the user to on successful auth (e.g. "/admin"). */
+  next?: string;
+}) {
   const action = mode === "login" ? signIn : signUp;
   const [state, formAction, pending] = useActionState<AuthState, FormData>(
     action,
@@ -21,6 +28,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
+      {next && <input type="hidden" name="next" value={next} />}
       {mode === "signup" && (
         <>
           <Field
@@ -84,14 +92,20 @@ export function AuthForm({ mode }: { mode: Mode }) {
         {mode === "login" ? (
           <>
             New to WAVIVI?{" "}
-            <Link href="/signup" className="text-glow hover:underline">
+            <Link
+              href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"}
+              className="text-glow hover:underline"
+            >
               Create an account
             </Link>
           </>
         ) : (
           <>
             Already have an account?{" "}
-            <Link href="/login" className="text-glow hover:underline">
+            <Link
+              href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
+              className="text-glow hover:underline"
+            >
               Sign in
             </Link>
           </>

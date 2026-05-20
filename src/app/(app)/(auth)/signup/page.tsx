@@ -7,13 +7,26 @@ import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Create account" };
 
-export default async function SignupPage() {
+type Search = Promise<{ next?: string }>;
+
+function safe(next: string | undefined): string | undefined {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return undefined;
+  return next;
+}
+
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Search;
+}) {
+  const next = safe((await searchParams).next);
+
   if (isConfigured) {
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (user) redirect("/profile");
+    if (user) redirect(next ?? "/profile");
   }
 
   return (
@@ -22,7 +35,7 @@ export default async function SignupPage() {
       <p className="mb-5 text-sm text-muted">
         Create an account to find your people on the map.
       </p>
-      <AuthForm mode="signup" />
+      <AuthForm mode="signup" next={next} />
     </div>
   );
 }
