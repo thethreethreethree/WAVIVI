@@ -1,10 +1,12 @@
 import "server-only";
 
+import { serverEnv } from "@/lib/env";
+
 export interface BioProbeResult {
   /** The actual bio text we managed to read, or null if we couldn't read one. */
   bio: string | null;
   /** Which source produced the result, for debugging. */
-  source: "json" | "html" | "none";
+  source: "proxy" | "json" | "html" | "none";
   /** HTTP status of the last attempt (or 0 on network failure). */
   status: number;
   /** A short, safe snippet to surface in error messages. */
@@ -48,7 +50,51 @@ export async function probeInstagramBio(
     return { bio: null, source: "none", status: 0, snippet: "" };
   }
 
-  // ---- 1) Web-profile JSON ----
+  // ---- 0) Cloudflare Worker proxy (preferred when configured) ----
+  if (serverEnv.instagramProxyUrl) {
+    try {
+      const url = new URL(serverEnv.instagramProxyUrl);
+      url.searchParams.set("username", clean);
+      const headers: HeadersInit = {};
+      if (serverEnv.instagramProxySecret) {
+        headers["x-wavivi-proxy-secret"] = serverEnv.instagramProxySecret;
+      }
+      const res = await fetch(url.toString(), {
+        headers,
+        cache: "no-store",
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (res.ok) {
+        try {
+          const json = (await res.json()) as {
+            data?: { user?: { biography?: string } };
+          };
+          const bio = json?.data?.user?.biography;
+          if (typeof bio === "string") {
+            return {
+              bio,
+              source: "proxy",
+              status: res.status,
+              snippet: bio.slice(0, 80),
+            };
+          }
+        } catch {
+          // proxy returned non-JSON — fall through to direct fetch
+        }
+      } else {
+        console.warn(
+          "[ig-verify] proxy returned",
+          res.status,
+          "for",
+          clean,
+        );
+      }
+    } catch (err) {
+      console.warn("[ig-verify] proxy fetch failed:", err);
+    }
+  }
+
+  // ---- 1) Web-profile JSON (direct) ----
   try {
     const res = await fetch(
       `https://www.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(clean)}`,

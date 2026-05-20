@@ -1,0 +1,7 @@
+name = "wavivi-instagram-proxy"
+main = "src/worker.ts"
+compatibility_date = "2026-05-20"
+
+# Set the shared secret with:
+#   wrangler secret put PROXY_SECRET
+# Then mirror the same value into the app's env as INSTAGRAM_PROXY_SECRET.

@@ -26,6 +26,13 @@ export const serverEnv = {
       process.env.SUPABASE_SERVICE_ROLE_KEY,
     );
   },
+  /** Optional Cloudflare Worker that proxies Instagram public-profile
+   *  fetches — used because Vercel data-center IPs are routinely
+   *  rate-limited / login-walled by IG. Empty string disables it. */
+  instagramProxyUrl: process.env.INSTAGRAM_PROXY_URL ?? "",
+  /** Shared secret the Worker checks (header: x-wavivi-proxy-secret).
+   *  Empty string skips the header — useful for an open Worker in dev. */
+  instagramProxySecret: process.env.INSTAGRAM_PROXY_SECRET ?? "",
 };
 
 /**
