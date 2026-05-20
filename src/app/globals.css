@@ -157,6 +157,26 @@ h3 {
   color: var(--color-muted);
 }
 
+/* Partner-dashboard form inputs — slightly softer than admin (lighter
+   ring, larger padding) since partners spend more time on it. */
+.partner-input {
+  width: 100%;
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  padding: 0.65rem 0.85rem;
+  font-size: 0.9rem;
+  color: var(--color-foreground);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--color-border);
+  transition: box-shadow 0.15s;
+}
+.partner-input:focus {
+  box-shadow: 0 0 0 2px var(--color-glow);
+}
+.partner-input::placeholder {
+  color: var(--color-muted);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
