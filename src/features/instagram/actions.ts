@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { cleanUsername, isValidUsername } from "@/features/instagram/validation";
 import {
-  fetchInstagramProfileHtml,
+  fetchInstagramBio,
   generateVerifyToken,
   htmlContainsToken,
 } from "@/features/instagram/verify";
@@ -143,19 +143,20 @@ export async function confirmInstagramVerification(): Promise<ConfirmVerifyResul
     };
   }
 
-  const html = await fetchInstagramProfileHtml(handle);
-  if (!html) {
+  const bio = await fetchInstagramBio(handle);
+  if (bio === null) {
     return {
       error:
-        "Couldn't reach Instagram right now. Make sure your profile is public, then try again.",
+        "Couldn't reach Instagram right now. Make sure your profile is public, then try again in a few seconds.",
       verified: false,
       username: null,
     };
   }
-  if (!htmlContainsToken(html, token)) {
+  if (!htmlContainsToken(bio, token)) {
     return {
       error:
-        "Token wasn't found in your bio yet. Save the bio in Instagram, wait a few seconds, then try again.",
+        "Token wasn't found in your bio yet. Open Instagram, paste " +
+        `"${token}" anywhere in your bio, hit Done, then come back.`,
       verified: false,
       username: null,
     };
