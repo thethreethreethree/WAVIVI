@@ -10,10 +10,68 @@ import {
   InstagramProfileBadge,
   InstagramShowcase,
 } from "@/features/instagram";
+import type { InstagramIdentity } from "@/features/instagram";
 import { travelerNotes } from "@/lib/travejor/account";
 import { getMember } from "@/lib/travejor/members";
+import { photo } from "@/lib/travejor/photo";
+import { getProfileByUsername } from "@/lib/profiles";
 
 type Params = Promise<{ username: string }>;
+
+/** Unified view of a traveler, sourced from the real profile or the mock roster. */
+interface DisplayTraveler {
+  username: string;
+  name: string;
+  avatar: string;
+  bio: string;
+  countries: string[];
+  verified: boolean;
+  instagram: InstagramIdentity | null;
+}
+
+/** Build a showcase set from raw IG post URLs (placeholders until live previews). */
+function postsFromUrls(username: string, urls: string[]) {
+  return urls.slice(0, 6).map((url, i) => ({
+    id: `${username}-${i}`,
+    url,
+    image: photo(`ig-${username}-${i}`, 300, 300),
+  }));
+}
+
+async function loadTraveler(username: string): Promise<DisplayTraveler | null> {
+  // Prefer the real profile when one exists; fall back to the mock roster
+  // so the page is always viewable while accounts are being seeded.
+  const real = await getProfileByUsername(username);
+  if (real) {
+    const instagram: InstagramIdentity | null = real.instagram_username
+      ? {
+          username: real.instagram_username,
+          verified: real.instagram_verified,
+          posts: postsFromUrls(real.instagram_username, real.instagram_post_urls ?? []),
+        }
+      : null;
+    return {
+      username: real.username,
+      name: real.display_name,
+      avatar: real.avatar_url ?? photo(real.username, 200, 200),
+      bio: real.bio ?? "",
+      countries: real.home_country ? [real.home_country] : [],
+      verified: real.instagram_verified,
+      instagram,
+    };
+  }
+  const m = getMember(username);
+  if (!m) return null;
+  return {
+    username: m.username,
+    name: m.name,
+    avatar: m.avatar,
+    bio: m.bio,
+    countries: m.countries,
+    verified: m.verified,
+    instagram: m.instagram ?? null,
+  };
+}
 
 export async function generateMetadata({
   params,
@@ -21,8 +79,8 @@ export async function generateMetadata({
   params: Params;
 }): Promise<Metadata> {
   const { username } = await params;
-  const member = getMember(username);
-  return { title: member ? member.name : "User Profile" };
+  const t = await loadTraveler(username);
+  return { title: t ? t.name : "User Profile" };
 }
 
 export default async function UserProfilePage({
@@ -31,8 +89,8 @@ export default async function UserProfilePage({
   params: Params;
 }) {
   const { username } = await params;
-  const member = getMember(username);
-  if (!member) notFound();
+  const t = await loadTraveler(username);
+  if (!t) notFound();
 
   return (
     <div className="flex flex-1 flex-col">
@@ -63,8 +121,8 @@ export default async function UserProfilePage({
         <span className="wc-frame relative h-24 w-24 rounded-full p-1">
           <span className="relative block h-full w-full overflow-hidden rounded-full">
             <Image
-              src={member.avatar}
-              alt={member.name}
+              src={t.avatar}
+              alt={t.name}
               fill
               sizes="96px"
               className="object-cover"
@@ -72,16 +130,18 @@ export default async function UserProfilePage({
           </span>
         </span>
         <h2 className="mt-3 flex items-center gap-1.5 text-xl font-bold">
-          {member.name}
-          {member.verified && (
+          {t.name}
+          {t.verified && (
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-cool text-[10px] text-white">
               ✓
             </span>
           )}
         </h2>
-        <p className="mt-1 max-w-[18rem] text-center text-sm italic text-muted">
-          &ldquo;{member.bio}&rdquo;
-        </p>
+        {t.bio && (
+          <p className="mt-1 max-w-[18rem] text-center text-sm italic text-muted">
+            &ldquo;{t.bio}&rdquo;
+          </p>
+        )}
 
         <div className="mt-4 flex gap-2">
           <AddFriendButton />
@@ -98,36 +158,40 @@ export default async function UserProfilePage({
       </div>
 
       {/* Countries traveled */}
-      <section className="mt-6 px-5">
-        <h3 className="text-sm font-bold">Countries Traveled</h3>
-        <div className="mt-3">
-          <CountryFlags countries={member.countries} showLabels />
-        </div>
-      </section>
+      {t.countries.length > 0 && (
+        <section className="mt-6 px-5">
+          <h3 className="text-sm font-bold">Countries Traveled</h3>
+          <div className="mt-3">
+            <CountryFlags countries={t.countries} showLabels />
+          </div>
+        </section>
+      )}
 
       {/* Travel Identity — Instagram social layer */}
-      {member.instagram && (
+      {t.instagram && (
         <section className="mt-6 px-5">
           <h3 className="text-sm font-bold">Travel Identity</h3>
           <div className="mt-3 flex flex-col gap-3">
-            <InstagramProfileBadge identity={member.instagram} />
-            <div>
-              <p className="mb-2 text-xs font-semibold text-muted">
-                Featured Travel Moments
-              </p>
-              <InstagramShowcase posts={member.instagram.posts} />
-            </div>
+            <InstagramProfileBadge identity={t.instagram} />
+            {t.instagram.posts.length > 0 && (
+              <div>
+                <p className="mb-2 text-xs font-semibold text-muted">
+                  Featured Travel Moments
+                </p>
+                <InstagramShowcase posts={t.instagram.posts} />
+              </div>
+            )}
           </div>
         </section>
       )}
 
       {/* Travel Feed — sourced from Instagram */}
-      {member.instagram && (
+      {t.instagram && t.instagram.posts.length > 0 && (
         <section className="mt-6 px-5">
           <h3 className="mb-3 text-sm font-bold">Travel Feed</h3>
           <InstagramFeed
-            posts={member.instagram.posts}
-            username={member.instagram.username}
+            posts={t.instagram.posts}
+            username={t.instagram.username}
           />
         </section>
       )}

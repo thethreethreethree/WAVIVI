@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 
 import { CountryFlags } from "@/components/ui/country-flags";
 import { Icon } from "@/components/ui/icon";
-import { InstagramConnectCard } from "@/features/instagram";
+import {
+  InstagramConnectCard,
+  InstagramProfileBadge,
+} from "@/features/instagram";
 import { getCurrentProfile } from "@/lib/profiles";
 import { travelerNotes } from "@/lib/travejor/account";
 
@@ -113,12 +116,23 @@ export default async function MyProfilePage() {
         </div>
       </section>
 
-      {/* Travel Identity — Instagram. The real per-profile IG identity is a
-          separate P2 (the connect flow exists; storing/displaying it is next). */}
+      {/* Travel Identity — Instagram. Shows the linked badge once connected,
+          plus the connect card so the user can update / unlink. */}
       <section className="mt-6 px-5">
         <h3 className="text-sm font-bold">Travel Identity</h3>
-        <div className="mt-3">
-          <InstagramConnectCard />
+        <div className="mt-3 flex flex-col gap-3">
+          {profile.instagram_username && (
+            <InstagramProfileBadge
+              identity={{
+                username: profile.instagram_username,
+                verified: profile.instagram_verified,
+                posts: [],
+              }}
+            />
+          )}
+          <InstagramConnectCard
+            initialUsername={profile.instagram_username ?? ""}
+          />
         </div>
       </section>
 

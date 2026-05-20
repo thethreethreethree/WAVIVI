@@ -21,6 +21,9 @@ export type ProfileRow = {
   avatar_url: string | null;
   home_country: string | null;
   traveler_status: TravelerStatus;
+  instagram_username: string | null;
+  instagram_verified: boolean;
+  instagram_post_urls: string[];
   created_at: string;
   updated_at: string;
 };
@@ -33,6 +36,9 @@ export type ProfileInsert = {
   avatar_url?: string | null;
   home_country?: string | null;
   traveler_status?: TravelerStatus;
+  instagram_username?: string | null;
+  instagram_verified?: boolean;
+  instagram_post_urls?: string[];
   created_at?: string;
   updated_at?: string;
 };
@@ -44,6 +50,9 @@ export type ProfileUpdate = {
   avatar_url?: string | null;
   home_country?: string | null;
   traveler_status?: TravelerStatus;
+  instagram_username?: string | null;
+  instagram_verified?: boolean;
+  instagram_post_urls?: string[];
 };
 
 /* ── Traveler Toolbox ─────────────────────────────────────────────────── */
