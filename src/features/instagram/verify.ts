@@ -5,12 +5,35 @@ import { serverEnv } from "@/lib/env";
 export interface BioProbeResult {
   /** The actual bio text we managed to read, or null if we couldn't read one. */
   bio: string | null;
+  /** Up to ~12 recent post URLs we could pull from the same response. */
+  postUrls: string[];
   /** Which source produced the result, for debugging. */
   source: "proxy" | "json" | "html" | "none";
   /** HTTP status of the last attempt (or 0 on network failure). */
   status: number;
   /** A short, safe snippet to surface in error messages. */
   snippet: string;
+}
+
+/** Shape of the slice of IG's web_profile_info JSON we care about. */
+type WebProfileResponse = {
+  data?: {
+    user?: {
+      biography?: string;
+      edge_owner_to_timeline_media?: {
+        edges?: { node?: { shortcode?: string } }[];
+      };
+    };
+  };
+};
+
+function extractPostUrls(json: WebProfileResponse): string[] {
+  const edges = json?.data?.user?.edge_owner_to_timeline_media?.edges ?? [];
+  return edges
+    .map((e) => e?.node?.shortcode)
+    .filter((s): s is string => typeof s === "string" && s.length > 0)
+    .slice(0, 12)
+    .map((shortcode) => `https://www.instagram.com/p/${shortcode}/`);
 }
 
 const UA =
@@ -47,7 +70,13 @@ export async function probeInstagramBio(
 ): Promise<BioProbeResult> {
   const clean = handle.trim().replace(/^@/, "");
   if (!/^[a-zA-Z0-9._]{1,30}$/.test(clean)) {
-    return { bio: null, source: "none", status: 0, snippet: "" };
+    return {
+      bio: null,
+      postUrls: [],
+      source: "none",
+      status: 0,
+      snippet: "",
+    };
   }
 
   // ---- 0) Cloudflare Worker proxy (preferred when configured) ----
@@ -66,13 +95,12 @@ export async function probeInstagramBio(
       });
       if (res.ok) {
         try {
-          const json = (await res.json()) as {
-            data?: { user?: { biography?: string } };
-          };
+          const json = (await res.json()) as WebProfileResponse;
           const bio = json?.data?.user?.biography;
           if (typeof bio === "string") {
             return {
               bio,
+              postUrls: extractPostUrls(json),
               source: "proxy",
               status: res.status,
               snippet: bio.slice(0, 80),
@@ -106,13 +134,12 @@ export async function probeInstagramBio(
     );
     if (res.ok) {
       try {
-        const json = (await res.json()) as {
-          data?: { user?: { biography?: string } };
-        };
+        const json = (await res.json()) as WebProfileResponse;
         const bio = json?.data?.user?.biography;
         if (typeof bio === "string") {
           return {
             bio,
+            postUrls: extractPostUrls(json),
             source: "json",
             status: res.status,
             snippet: bio.slice(0, 80),
@@ -139,12 +166,22 @@ export async function probeInstagramBio(
     if (!res.ok) {
       return {
         bio: null,
+        postUrls: [],
         source: "html",
         status: res.status,
         snippet: "",
       };
     }
     const html = await res.text();
+    // Heuristic post extract: scan inline JSON for shortcodes.
+    const shortcodes = new Set<string>();
+    for (const m of html.matchAll(/"shortcode":"([A-Za-z0-9_-]{5,15})"/g)) {
+      shortcodes.add(m[1]);
+      if (shortcodes.size >= 12) break;
+    }
+    const postUrls = [...shortcodes].map(
+      (sc) => `https://www.instagram.com/p/${sc}/`,
+    );
     // Heuristic bio extract: og:description, biography:"…" in inline JSON.
     let bio: string | null = null;
     const og = html.match(
@@ -160,6 +197,7 @@ export async function probeInstagramBio(
       // something to look at, but flag the snippet as truncated.
       return {
         bio: html,
+        postUrls,
         source: "html",
         status: res.status,
         snippet: html.replace(/\s+/g, " ").slice(0, 80),
@@ -167,13 +205,14 @@ export async function probeInstagramBio(
     }
     return {
       bio,
+      postUrls,
       source: "html",
       status: res.status,
       snippet: bio.slice(0, 80),
     };
   } catch (err) {
     console.warn("[ig-verify] HTML fetch failed:", err);
-    return { bio: null, source: "none", status: 0, snippet: "" };
+    return { bio: null, postUrls: [], source: "none", status: 0, snippet: "" };
   }
 }
 

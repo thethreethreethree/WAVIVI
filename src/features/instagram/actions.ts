@@ -119,7 +119,7 @@ export async function confirmInstagramVerification(): Promise<ConfirmVerifyResul
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "instagram_verify_token, instagram_verify_handle, instagram_verify_expires_at",
+      "instagram_verify_token, instagram_verify_handle, instagram_verify_expires_at, instagram_post_urls",
     )
     .eq("id", user.id)
     .maybeSingle();
@@ -127,6 +127,7 @@ export async function confirmInstagramVerification(): Promise<ConfirmVerifyResul
   const token = profile?.instagram_verify_token;
   const handle = profile?.instagram_verify_handle;
   const expiresAt = profile?.instagram_verify_expires_at;
+  const existingPosts = profile?.instagram_post_urls ?? [];
 
   if (!token || !handle) {
     return {
@@ -149,6 +150,7 @@ export async function confirmInstagramVerification(): Promise<ConfirmVerifyResul
     source: probe.source,
     status: probe.status,
     snippet: probe.snippet,
+    posts: probe.postUrls.length,
   });
 
   if (probe.bio === null) {
@@ -176,9 +178,15 @@ export async function confirmInstagramVerification(): Promise<ConfirmVerifyResul
     };
   }
 
+  // Auto-seed featured posts the very first time: if the user hasn't
+  // curated any yet, drop in the most recent 6 from their public IG.
+  const seededPosts =
+    existingPosts.length === 0 ? probe.postUrls.slice(0, 6) : existingPosts;
+
   const { error } = await updateProfile({
     instagram_username: handle,
     instagram_verified: true,
+    instagram_post_urls: seededPosts,
     instagram_verify_token: null,
     instagram_verify_handle: null,
     instagram_verify_expires_at: null,

@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 
+import { CountryPicker } from "@/components/ui/country-picker";
 import { InstagramPostManager } from "@/features/instagram";
 import { postShortcode } from "@/features/instagram/validation";
 import { saveProfile, type ProfileFormState } from "@/features/profile/actions";
@@ -87,21 +88,12 @@ export function EditProfileForm({ profile }: { profile: ProfileRow }) {
         />
       </label>
 
-      <label className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1.5">
         <span className="text-xs font-medium text-muted">
           Countries you&apos;ve traveled
         </span>
-        <textarea
-          name="countries"
-          rows={2}
-          defaultValue={(profile.countries ?? []).join(", ")}
-          placeholder="Comma-separated, e.g. Japan, Vietnam, Indonesia, Mexico"
-          className={`${fieldClass} resize-none`}
-        />
-        <span className="text-[11px] text-muted">
-          These appear on your profile as flag chips.
-        </span>
-      </label>
+        <CountryPicker initial={profile.countries ?? []} />
+      </div>
 
       <label className="flex flex-col gap-1.5">
         <span className="text-xs font-medium text-muted">Traveler status</span>
