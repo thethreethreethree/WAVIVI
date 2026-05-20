@@ -1,3 +1,4 @@
+import { findCountry } from "@/lib/countries";
 import { photo } from "@/lib/travejor/photo";
 
 /** A note left about a traveler by another traveler. */
@@ -83,9 +84,11 @@ export const countryCodes: Record<string, string> = {
   Australia: "au",
 };
 
-/** Round flag image URL for a country (flagcdn — free, no key). */
+/** Round flag image URL for a country (flagcdn — free, no key).
+ *  Looks up against the canonical 160-country list first, falling back to
+ *  the legacy countryCodes map (which uses short aliases like "USA"). */
 export function flagImage(country: string): string {
-  const code = countryCodes[country] ?? "un";
+  const code = findCountry(country)?.code ?? countryCodes[country] ?? "un";
   return `https://flagcdn.com/w160/${code}.png`;
 }
 

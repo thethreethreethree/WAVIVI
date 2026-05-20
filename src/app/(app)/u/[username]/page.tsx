@@ -118,13 +118,13 @@ export default async function UserProfilePage({
       </header>
 
       <div className="flex flex-col items-center px-5">
-        <span className="wc-frame relative h-24 w-24 rounded-full p-1">
+        <span className="wc-frame wc-frame-orange relative h-28 w-28 rounded-full p-1.5">
           <span className="relative block h-full w-full overflow-hidden rounded-full">
             <Image
               src={t.avatar}
               alt={t.name}
               fill
-              sizes="96px"
+              sizes="112px"
               className="object-cover"
             />
           </span>
@@ -167,34 +167,47 @@ export default async function UserProfilePage({
         </section>
       )}
 
-      {/* Travel Identity — Instagram social layer */}
-      {t.instagram && (
-        <section className="mt-6 px-5">
-          <h3 className="text-sm font-bold">Travel Identity</h3>
-          <div className="mt-3 flex flex-col gap-3">
-            <InstagramProfileBadge identity={t.instagram} />
-            {t.instagram.posts.length > 0 && (
-              <div>
-                <p className="mb-2 text-xs font-semibold text-muted">
-                  Featured Travel Moments
-                </p>
-                <InstagramShowcase posts={t.instagram.posts} />
+      {/* Travel Identity — Instagram social layer.
+          Split the post list so Featured Moments (first 6) and the Travel
+          Feed (subsequent posts) never share the same artwork. */}
+      {t.instagram && (() => {
+        const ig = t.instagram;
+        const splitAt = ig.posts.length > 6 ? 6 : Math.ceil(ig.posts.length / 2);
+        const featured = ig.posts.slice(0, splitAt);
+        const feed = ig.posts.slice(splitAt);
+        return (
+          <>
+            <section className="mt-6 px-5">
+              <h3 className="text-base font-bold">Travel Identity</h3>
+              <div className="mt-3 flex flex-col gap-3">
+                <InstagramProfileBadge identity={ig} />
+                {featured.length > 0 && (
+                  <div>
+                    <h3 className="mb-3 text-base font-bold">
+                      Featured Travel Moments
+                    </h3>
+                    <InstagramShowcase posts={featured} />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </section>
-      )}
+            </section>
 
-      {/* Travel Feed — sourced from Instagram */}
-      {t.instagram && t.instagram.posts.length > 0 && (
-        <section className="mt-6 px-5">
-          <h3 className="mb-3 text-sm font-bold">Travel Feed</h3>
-          <InstagramFeed
-            posts={t.instagram.posts}
-            username={t.instagram.username}
-          />
-        </section>
-      )}
+            {ig.posts.length > 0 && (
+              <section className="mt-6 px-5">
+                <h3 className="mb-3 text-base font-bold">Travel Feed</h3>
+                {feed.length > 0 ? (
+                  <InstagramFeed posts={feed} username={ig.username} />
+                ) : (
+                  <p className="wc-frame rounded-2xl p-4 text-center text-sm text-muted">
+                    {ig.username}'s Travel Feed will fill out as they add
+                    more featured posts.
+                  </p>
+                )}
+              </section>
+            )}
+          </>
+        );
+      })()}
 
       {/* Traveler notes */}
       <section className="mt-6 px-5 pb-8">

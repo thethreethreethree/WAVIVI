@@ -2,13 +2,17 @@
 
 import { useState, useTransition } from "react";
 
-import { saveInstagramPosts } from "@/features/instagram/actions";
+import {
+  refreshInstagramPosts,
+  saveInstagramPosts,
+} from "@/features/instagram/actions";
 import { InstagramIcon } from "@/features/instagram/instagram-icon";
 import type { InstagramPost } from "@/features/instagram/types";
 import { isValidPostUrl, postShortcode } from "@/features/instagram/validation";
 import { photo } from "@/lib/travejor/photo";
 
-const MAX_POSTS = 6;
+/** 12 = 6 Featured Travel Moments + 6 Travel Feed cards. */
+const MAX_POSTS = 12;
 
 /**
  * Featured Travel Posts manager — add, remove, and reorder showcase posts.
@@ -17,8 +21,12 @@ const MAX_POSTS = 6;
  */
 export function InstagramPostManager({
   initialPosts = [],
+  canPullFromInstagram = false,
 }: {
   initialPosts?: InstagramPost[];
+  /** Show the "Pull latest from Instagram" CTA — typically when the user
+      has a verified IG handle linked. */
+  canPullFromInstagram?: boolean;
 }) {
   const [posts, setPosts] = useState<InstagramPost[]>(initialPosts);
   const [draft, setDraft] = useState("");
@@ -82,6 +90,25 @@ export function InstagramPostManager({
     persist(next);
   }
 
+  function pullFromInstagram() {
+    setError(null);
+    startTransition(async () => {
+      const res = await refreshInstagramPosts();
+      if (res.error || res.urls.length === 0) {
+        setError(res.error ?? "Couldn't pull posts from Instagram.");
+        return;
+      }
+      const next = res.urls.map((url, i) => ({
+        id: `ig-${i}`,
+        url,
+        image: photo(postShortcode(url) ?? url, 240, 240),
+      }));
+      setPosts(next);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    });
+  }
+
   return (
     <div
       id="travel-posts"
@@ -106,6 +133,18 @@ export function InstagramPostManager({
       <p className="mt-0.5 text-xs text-muted">
         Showcase a few moments that capture your travel vibe.
       </p>
+
+      {canPullFromInstagram && (
+        <button
+          type="button"
+          onClick={pullFromInstagram}
+          disabled={pending}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-glow/40 bg-glow/10 px-4 py-2.5 text-sm font-bold text-glow active:scale-[0.98] disabled:opacity-50"
+        >
+          <InstagramIcon className="h-4 w-4" />
+          {pending ? "Pulling…" : "Pull latest from Instagram"}
+        </button>
+      )}
 
       <div className="mt-3 flex gap-2">
         <input

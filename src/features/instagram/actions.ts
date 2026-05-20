@@ -179,9 +179,11 @@ export async function confirmInstagramVerification(): Promise<ConfirmVerifyResul
   }
 
   // Auto-seed featured posts the very first time: if the user hasn't
-  // curated any yet, drop in the most recent 6 from their public IG.
+  // curated any yet, drop in the most recent 12 from their public IG.
+  // First 6 render as "Featured Travel Moments"; the rest power the
+  // "Travel Feed" section so the two grids never duplicate.
   const seededPosts =
-    existingPosts.length === 0 ? probe.postUrls.slice(0, 6) : existingPosts;
+    existingPosts.length === 0 ? probe.postUrls.slice(0, 12) : existingPosts;
 
   const { error } = await updateProfile({
     instagram_username: handle,
@@ -208,7 +210,7 @@ export async function saveInstagramPosts(
   const cleaned = (urls ?? [])
     .map((u) => (typeof u === "string" ? u.trim() : ""))
     .filter(Boolean)
-    .slice(0, 6);
+    .slice(0, 12);
 
   // Light URL sanity check — reject anything that isn't a real IG post link.
   for (const u of cleaned) {
@@ -221,6 +223,51 @@ export async function saveInstagramPosts(
   if (error) return { error, urls: [] };
   revalidatePath("/profile");
   return { error: null, urls: cleaned };
+}
+
+/**
+ * Re-fetch the most recent ~12 posts from the signed-in user's linked
+ * Instagram handle and overwrite `instagram_post_urls`. Useful for users
+ * who linked their handle before auto-seed existed, or who want their
+ * showcase refreshed without manually pasting URLs.
+ */
+export async function refreshInstagramPosts(): Promise<{
+  error: string | null;
+  urls: string[];
+}> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You need to be signed in.", urls: [] };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("instagram_username")
+    .eq("id", user.id)
+    .maybeSingle();
+  const handle = profile?.instagram_username;
+  if (!handle) {
+    return {
+      error: "Link your Instagram first, then pull your posts.",
+      urls: [],
+    };
+  }
+
+  const probe = await probeInstagramBio(handle);
+  if (probe.postUrls.length === 0) {
+    return {
+      error:
+        "Couldn't read any public posts from your profile. Make sure it's public, then try again.",
+      urls: [],
+    };
+  }
+
+  const urls = probe.postUrls.slice(0, 12);
+  const { error } = await updateProfile({ instagram_post_urls: urls });
+  if (error) return { error, urls: [] };
+  revalidatePath("/profile");
+  return { error: null, urls };
 }
 
 /** Abandon an in-progress verification, clearing the stored token. */

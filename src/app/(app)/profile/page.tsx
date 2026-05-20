@@ -36,11 +36,19 @@ export default async function MyProfilePage() {
 
   // Build the showcase / feed from the user's saved IG post URLs.
   // Thumbnails are placeholders until we add a live IG preview API.
+  // First 6 → Featured Travel Moments; remainder → Travel Feed (so the
+  // two sections never show the same content).
   const posts = (profile.instagram_post_urls ?? []).map((url, i) => ({
     id: `${profile.username}-${i}`,
     url,
     image: photo(postShortcode(url) ?? url, 300, 300),
   }));
+  // Always split the list so Featured Moments and Travel Feed never show
+  // the same artwork. With 12+ posts: Featured = 6, Feed = rest. With
+  // fewer: split half-and-half so both sections still have something.
+  const splitAt = posts.length > 6 ? 6 : Math.ceil(posts.length / 2);
+  const featuredPosts = posts.slice(0, splitAt);
+  const feedPosts = posts.slice(splitAt);
 
   // Aggregate visited countries: explicit list, plus home_country fallback
   // so newcomers without a list still see at least one flag.
@@ -74,18 +82,18 @@ export default async function MyProfilePage() {
 
       {/* Identity */}
       <div className="flex flex-col items-center px-5">
-        <span className="wc-frame relative h-24 w-24 rounded-full p-1">
+        <span className="wc-frame wc-frame-orange relative h-28 w-28 rounded-full p-1.5">
           <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-surface-elevated">
             {profile.avatar_url ? (
               <Image
                 src={profile.avatar_url}
                 alt={profile.display_name}
                 fill
-                sizes="96px"
+                sizes="112px"
                 className="object-cover"
               />
             ) : (
-              <span className="text-3xl font-bold text-glow">{initial}</span>
+              <span className="text-4xl font-bold text-glow">{initial}</span>
             )}
           </span>
         </span>
@@ -140,14 +148,14 @@ export default async function MyProfilePage() {
       {/* Travel Identity — Instagram. Badge first when connected, then the
           connect card so the user can update / verify / unlink. */}
       <section className="mt-6 px-5">
-        <h3 className="text-sm font-bold">Travel Identity</h3>
+        <h3 className="text-base font-bold">Travel Identity</h3>
         <div className="mt-3 flex flex-col gap-3">
           {profile.instagram_username && (
             <InstagramProfileBadge
               identity={{
                 username: profile.instagram_username,
                 verified: profile.instagram_verified,
-                posts,
+                posts: featuredPosts,
               }}
             />
           )}
@@ -155,12 +163,12 @@ export default async function MyProfilePage() {
             initialUsername={profile.instagram_username ?? ""}
             initialVerified={profile.instagram_verified}
           />
-          {posts.length > 0 && (
+          {featuredPosts.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-semibold text-muted">
+              <h3 className="mb-3 text-base font-bold">
                 Featured Travel Moments
-              </p>
-              <InstagramShowcase posts={posts} />
+              </h3>
+              <InstagramShowcase posts={featuredPosts} />
             </div>
           )}
           {profile.instagram_username && posts.length === 0 && (
@@ -178,15 +186,29 @@ export default async function MyProfilePage() {
         </div>
       </section>
 
-      {/* Travel Feed — full IG-sourced feed, only when the user has
-          curated some posts. */}
+      {/* Travel Feed — shows posts NOT in Featured Moments so the two
+          sections never duplicate. Always rendered when the user has any
+          posts; shows a "add more" prompt when the feed half is empty. */}
       {profile.instagram_username && posts.length > 0 && (
-        <section className="mt-6 px-5">
-          <h3 className="mb-3 text-sm font-bold">Travel Feed</h3>
-          <InstagramFeed
-            posts={posts}
-            username={profile.instagram_username}
-          />
+        <section className="mt-6 px-5 pb-2">
+          <h3 className="mb-3 text-base font-bold">Travel Feed</h3>
+          {feedPosts.length > 0 ? (
+            <InstagramFeed
+              posts={feedPosts}
+              username={profile.instagram_username}
+            />
+          ) : (
+            <p className="wc-frame rounded-2xl p-4 text-center text-sm text-muted">
+              Add a few more posts in{" "}
+              <Link
+                href="/profile/edit#travel-posts"
+                className="text-glow underline"
+              >
+                Edit Profile
+              </Link>{" "}
+              to fill out your Travel Feed.
+            </p>
+          )}
         </section>
       )}
 

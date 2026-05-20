@@ -45,7 +45,7 @@ export function EditProfileForm({ profile }: { profile: ProfileRow }) {
       </div>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-muted">Display name</span>
+        <span className="text-sm font-bold text-foreground">Display name</span>
         <input
           name="display_name"
           defaultValue={profile.display_name}
@@ -56,7 +56,7 @@ export function EditProfileForm({ profile }: { profile: ProfileRow }) {
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-muted">Username</span>
+        <span className="text-sm font-bold text-foreground">Username</span>
         <input
           name="username"
           defaultValue={profile.username}
@@ -67,7 +67,7 @@ export function EditProfileForm({ profile }: { profile: ProfileRow }) {
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-muted">Travel quote</span>
+        <span className="text-sm font-bold text-foreground">Travel quote</span>
         <textarea
           name="bio"
           rows={3}
@@ -79,7 +79,7 @@ export function EditProfileForm({ profile }: { profile: ProfileRow }) {
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-muted">Home country</span>
+        <span className="text-sm font-bold text-foreground">Home country</span>
         <input
           name="home_country"
           defaultValue={profile.home_country ?? ""}
@@ -89,14 +89,14 @@ export function EditProfileForm({ profile }: { profile: ProfileRow }) {
       </label>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-muted">
+        <span className="text-sm font-bold text-foreground">
           Countries you&apos;ve traveled
         </span>
         <CountryPicker initial={profile.countries ?? []} />
       </div>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-muted">Traveler status</span>
+        <span className="text-sm font-bold text-foreground">Traveler status</span>
         <select
           name="traveler_status"
           defaultValue={profile.traveler_status}
@@ -133,6 +133,7 @@ export function EditProfileForm({ profile }: { profile: ProfileRow }) {
             url,
             image: photo(postShortcode(url) ?? url, 240, 240),
           }))}
+          canPullFromInstagram={Boolean(profile.instagram_username)}
         />
       </div>
     </form>

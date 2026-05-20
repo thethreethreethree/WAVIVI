@@ -21,13 +21,13 @@ export function CountryFlags({
           className="flex shrink-0 flex-col items-center gap-1"
           title={country}
         >
-          <span className="wc-edge relative block h-12 w-12 overflow-hidden rounded-full ring-2 ring-glow/50">
+          <span className="relative block h-12 w-12 overflow-hidden rounded-full ring-2 ring-glow/50">
             <Image
               src={flagImage(country)}
               alt={country}
               fill
               sizes="48px"
-              className="object-cover"
+              className="object-cover object-center"
             />
           </span>
           {showLabels && (

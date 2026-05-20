@@ -10,10 +10,10 @@ export function AddFriendButton() {
     <button
       type="button"
       onClick={() => setAdded((a) => !a)}
-      className={`rounded-full px-5 py-2 text-sm font-semibold transition-colors ${
+      className={`wc-frame rounded-full px-5 py-2 text-sm font-bold transition-colors active:scale-[0.98] ${
         added
-          ? "border border-glow text-glow"
-          : "bg-glow text-white"
+          ? "wc-frame-orange text-glow"
+          : "wc-frame-sunset text-white"
       }`}
     >
       {added ? "Friends ✓" : "Add Friend"}
