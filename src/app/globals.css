@@ -259,6 +259,17 @@ h3 {
   object-fit: contain;
   display: block;
 }
+/* Theme-conditional toolbox marker icon. Default (light/dark/cute) shows
+   the cute image; FUEGO swaps to the orange map-icon set. */
+.tb-pin-img-orange {
+  display: none;
+}
+.orange .tb-pin-img-cute {
+  display: none;
+}
+.orange .tb-pin-img-orange {
+  display: block;
+}
 
 /* Floating quality badge — driven by the Google rating (see qualityBadge).
    🔴 balloon 3–4 · 🟢 balloon 4–4.5 · 🟧 thumbs-up 4.5+. */
@@ -758,6 +769,23 @@ h3 {
   background-repeat: no-repeat;
   /* Enlarge 10% so the parchment's transparent edge-margins bleed
      off-screen and the artwork fully covers the viewport. */
+  transform: scale(1.1);
+  transform-origin: center;
+  opacity: 1;
+  mix-blend-mode: normal;
+}
+
+/* FUEGO! parchment — fixed, full-viewport bold orange backdrop. Same
+   technique as .cute .app-paper-bg, just a different image. */
+.orange .app-paper-bg {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  background-image: url("/backgrounds/orange/bg.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   transform: scale(1.1);
   transform-origin: center;
   opacity: 1;

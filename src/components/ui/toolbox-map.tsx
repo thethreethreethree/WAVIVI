@@ -98,13 +98,20 @@ function BackpackGlyph({ className }: { className?: string }) {
 }
 
 /** Watercolor icon markup for each category marker (used in divIcon).
-   Inline styles guarantee correct sizing even if cached CSS is stale. */
+   Renders both a default (cute) image and a FUEGO/orange image; CSS
+   toggles which one shows based on the active theme. Inline width/height
+   guarantee sizing even if cached CSS is stale. */
 const CATEGORY_GLYPH: Record<CategoryId, string> = Object.fromEntries(
-  TOOLBOX_CATEGORIES.map((c) => [
-    c.id,
-    `<img class="tb-pin-img" src="${CUTE_ICONS[c.icon] ?? ""}" alt="" ` +
-      `style="width:24px;height:24px;object-fit:contain;display:block" />`,
-  ]),
+  TOOLBOX_CATEGORIES.map((c) => {
+    const cuteSrc = CUTE_ICONS[c.icon] ?? "";
+    const orangeSrc = `/icons/orange/map/${c.id}.png`;
+    const base = `width:24px;height:24px;object-fit:contain`;
+    return [
+      c.id,
+      `<img class="tb-pin-img tb-pin-img-cute" src="${cuteSrc}" alt="" style="${base}" />` +
+        `<img class="tb-pin-img tb-pin-img-orange" src="${orangeSrc}" alt="" style="${base}" />`,
+    ];
+  }),
 ) as Record<CategoryId, string>;
 
 /* ── Floating quality badge on a marker, by Google rating. ──────── */
