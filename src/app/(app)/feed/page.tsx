@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 
 import { Icon } from "@/components/ui/icon";
@@ -93,14 +94,17 @@ function FeedItem({ post }: { post: FeedPost }) {
 
       {/* Caption */}
       <div className="absolute inset-x-0 bottom-6 px-4 text-white">
-        <p className="flex items-center gap-1.5 text-base font-bold">
+        <Link
+          href={`/u/${post.handle}`}
+          className="flex items-center gap-1.5 text-base font-bold transition-opacity active:opacity-70"
+        >
           @{post.handle}
           {post.verified && (
             <span className="flex h-4 w-4 items-center justify-center rounded-full bg-glow text-[9px]">
               ✓
             </span>
           )}
-        </p>
+        </Link>
         <p className="mt-1 max-w-[80%] text-sm">{post.caption}</p>
         <p className="mt-1.5 flex items-center gap-1 text-xs text-white/80">
           📍 {post.location}
