@@ -6,7 +6,7 @@ import { publicEnv } from "@/lib/env";
 import type { Database } from "@/types/supabase";
 
 /** Path prefixes that require an authenticated user. */
-const PROTECTED_PREFIXES = ["/profile"];
+const PROTECTED_PREFIXES = ["/profile", "/settings"];
 
 /** Auth pages a signed-in user should not see. */
 const AUTH_PREFIXES = ["/login", "/signup"];
