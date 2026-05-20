@@ -41,32 +41,47 @@ export function InstagramConnectCard({
   const [verifyHandle, setVerifyHandle] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  async function copyToken() {
-    if (!token) return;
+  /**
+   * One-tap helper: copy the token to the clipboard AND open the user's
+   * Instagram bio in a new tab. `window.open` must be called synchronously
+   * inside the same user-gesture event handler, so we do the synchronous
+   * fallback copy first and the async Clipboard API best-effort after.
+   */
+  function copyAndOpenBio() {
+    if (!token || !verifyHandle) return;
+
+    // 1. Synchronous textarea copy (works in iOS Safari + PWAs).
     let ok = false;
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(token);
-        ok = true;
-      } else {
-        // Fallback for Safari / installed PWAs where the Clipboard API
-        // isn't available without a user-permission prompt.
-        const ta = document.createElement("textarea");
-        ta.value = token;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.focus();
-        ta.select();
-        ok = document.execCommand("copy");
-        document.body.removeChild(ta);
-      }
+      const ta = document.createElement("textarea");
+      ta.value = token;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      ok = document.execCommand("copy");
+      document.body.removeChild(ta);
     } catch {
       ok = false;
     }
+
+    // 2. Open IG — must be in the same gesture or popup-blocked.
+    window.open(instagramUrl(verifyHandle), "_blank", "noopener,noreferrer");
+
+    // 3. Best-effort modern Clipboard API as a backup; safe to await later.
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(token).then(
+        () => {
+          ok = true;
+        },
+        () => {},
+      );
+    }
+
     if (ok) {
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      setTimeout(() => setCopied(false), 2000);
     } else {
       setError("Couldn't copy automatically — long-press the token to copy.");
     }
@@ -147,7 +162,7 @@ export function InstagramConnectCard({
           <li>Paste this token anywhere in your bio, then save:</li>
         </ol>
 
-        <div className="mt-2 flex items-center gap-2">
+        <div className="mt-2 flex items-stretch gap-2">
           <code
             className="flex-1 cursor-text select-all rounded-lg bg-surface-elevated px-3 py-2 font-mono text-sm font-bold text-glow"
             onClick={(e) => (e.currentTarget as HTMLElement).focus()}
@@ -156,20 +171,26 @@ export function InstagramConnectCard({
           </code>
           <button
             type="button"
-            onClick={copyToken}
-            className={`rounded-lg border px-3 py-2 text-xs font-bold transition-colors ${
+            onClick={copyAndOpenBio}
+            className={`flex items-center gap-1.5 rounded-lg border px-3 text-xs font-bold transition-colors ${
               copied
                 ? "border-cool/40 bg-cool/10 text-cool"
-                : "border-border text-muted hover:text-foreground"
+                : "border-glow/40 bg-glow/10 text-glow hover:bg-glow/20"
             }`}
           >
-            {copied ? "Copied ✓" : "Copy"}
+            {copied ? "Copied ✓" : (
+              <>
+                <InstagramIcon className="h-3.5 w-3.5" />
+                Copy &amp; open bio
+              </>
+            )}
           </button>
         </div>
 
         <p className="mt-2 text-[11px] text-muted">
-          When confirmed, remove the token from your bio — it's only needed
-          once. Your profile must be public for us to verify.
+          Tap the button to copy your token and jump straight to your
+          Instagram. Paste it anywhere in your bio, save, then come back.
+          Profile must be public.
         </p>
 
         {error && <p className="mt-2 text-xs text-heat">{error}</p>}
