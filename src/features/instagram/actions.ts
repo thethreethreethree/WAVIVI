@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 
 import { cleanUsername, isValidUsername } from "@/features/instagram/validation";
 import {
-  fetchInstagramBio,
   generateVerifyToken,
   htmlContainsToken,
+  probeInstagramBio,
 } from "@/features/instagram/verify";
 import { updateProfile } from "@/lib/profiles";
 import { createClient } from "@/lib/supabase/server";
@@ -143,20 +143,34 @@ export async function confirmInstagramVerification(): Promise<ConfirmVerifyResul
     };
   }
 
-  const bio = await fetchInstagramBio(handle);
-  if (bio === null) {
+  const probe = await probeInstagramBio(handle);
+  console.warn("[ig-verify] probe", {
+    handle,
+    source: probe.source,
+    status: probe.status,
+    snippet: probe.snippet,
+  });
+
+  if (probe.bio === null) {
+    const detail =
+      probe.status === 401 || probe.status === 403
+        ? " Instagram blocked the request — your profile may be private or rate-limited."
+        : probe.status === 404
+          ? " Instagram says that handle doesn't exist."
+          : probe.status === 0
+            ? " The request timed out."
+            : "";
     return {
-      error:
-        "Couldn't reach Instagram right now. Make sure your profile is public, then try again in a few seconds.",
+      error: `Couldn't read your Instagram bio.${detail} Try again in a minute.`,
       verified: false,
       username: null,
     };
   }
-  if (!htmlContainsToken(bio, token)) {
+  if (!htmlContainsToken(probe.bio, token)) {
+    const peek = probe.snippet ? ` We saw: "${probe.snippet}…"` : "";
     return {
       error:
-        "Token wasn't found in your bio yet. Open Instagram, paste " +
-        `"${token}" anywhere in your bio, hit Done, then come back.`,
+        `Token "${token}" wasn't in your bio yet. Paste it anywhere in your IG bio, hit Done, then try again.${peek}`,
       verified: false,
       username: null,
     };

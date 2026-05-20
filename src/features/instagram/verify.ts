@@ -1,77 +1,141 @@
 import "server-only";
 
+export interface BioProbeResult {
+  /** The actual bio text we managed to read, or null if we couldn't read one. */
+  bio: string | null;
+  /** Which source produced the result, for debugging. */
+  source: "json" | "html" | "none";
+  /** HTTP status of the last attempt (or 0 on network failure). */
+  status: number;
+  /** A short, safe snippet to surface in error messages. */
+  snippet: string;
+}
+
+const UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " +
+  "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
+
+const JSON_HEADERS: HeadersInit = {
+  "User-Agent": UA,
+  "Accept-Language": "en-US,en;q=0.9",
+  Accept: "*/*",
+  // Public web-app id — Instagram's own JS sends this on every
+  // unauthenticated profile fetch.
+  "X-IG-App-ID": "936619743392459",
+  "Sec-Fetch-Mode": "cors",
+  "Sec-Fetch-Site": "same-origin",
+};
+
+const HTML_HEADERS: HeadersInit = {
+  "User-Agent": UA,
+  "Accept-Language": "en-US,en;q=0.9",
+  Accept:
+    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+};
+
 /**
- * Fetch the public bio of an Instagram handle.
+ * Probe a public Instagram profile for its bio.
  *
- * Instagram has been gradually moving the bio off the static HTML and into
- * a client-hydrated payload, so the old "fetch the profile page HTML and
- * grep" trick is no longer reliable. The web app's own public JSON endpoint
- * does still return the bio in plain text, gated only by a well-known
- * `x-ig-app-id` header — that's our primary source. If it ever stops
- * working we fall back to the HTML page (which may still contain the bio
- * in `og:description` or inline JSON for some accounts).
- *
- * Returns the bio string, or `null` if the request failed or IG hid it
- * behind a login wall.
+ * Instagram's static HTML increasingly hides the bio behind a hydration
+ * step, so we hit the web-profile JSON API first and only fall back to
+ * the HTML scrape if that fails. Returns `null` when blocked / private.
  */
-export async function fetchInstagramBio(
+export async function probeInstagramBio(
   handle: string,
-): Promise<string | null> {
+): Promise<BioProbeResult> {
   const clean = handle.trim().replace(/^@/, "");
-  if (!/^[a-zA-Z0-9._]{1,30}$/.test(clean)) return null;
+  if (!/^[a-zA-Z0-9._]{1,30}$/.test(clean)) {
+    return { bio: null, source: "none", status: 0, snippet: "" };
+  }
 
-  const UA =
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " +
-    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
-
-  // ---- 1) IG's web-profile JSON API (most reliable) ----
+  // ---- 1) Web-profile JSON ----
   try {
     const res = await fetch(
       `https://www.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(clean)}`,
       {
-        headers: {
-          "User-Agent": UA,
-          "Accept-Language": "en-US,en;q=0.9",
-          Accept: "*/*",
-          // Public web-app id; Instagram's own JS uses this on every
-          // unauthenticated profile fetch.
-          "X-IG-App-ID": "936619743392459",
-          "Sec-Fetch-Mode": "cors",
-          "Sec-Fetch-Site": "same-origin",
-        },
+        headers: JSON_HEADERS,
         cache: "no-store",
         signal: AbortSignal.timeout(10_000),
       },
     );
     if (res.ok) {
-      const json = (await res.json()) as {
-        data?: { user?: { biography?: string } };
-      };
-      const bio = json?.data?.user?.biography;
-      if (typeof bio === "string") return bio;
+      try {
+        const json = (await res.json()) as {
+          data?: { user?: { biography?: string } };
+        };
+        const bio = json?.data?.user?.biography;
+        if (typeof bio === "string") {
+          return {
+            bio,
+            source: "json",
+            status: res.status,
+            snippet: bio.slice(0, 80),
+          };
+        }
+      } catch {
+        // JSON parse failed — body wasn't JSON. Fall through.
+      }
+    } else {
+      console.warn("[ig-verify] JSON endpoint returned", res.status, "for", clean);
     }
-  } catch {
-    // fall through to HTML scrape
+  } catch (err) {
+    console.warn("[ig-verify] JSON fetch failed:", err);
   }
 
-  // ---- 2) HTML fallback (best-effort) ----
+  // ---- 2) HTML fallback ----
   try {
     const res = await fetch(`https://www.instagram.com/${clean}/`, {
-      headers: {
-        "User-Agent": UA,
-        "Accept-Language": "en-US,en;q=0.9",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
+      headers: HTML_HEADERS,
       cache: "no-store",
       signal: AbortSignal.timeout(10_000),
       redirect: "follow",
     });
-    if (!res.ok) return null;
-    return await res.text();
-  } catch {
-    return null;
+    if (!res.ok) {
+      return {
+        bio: null,
+        source: "html",
+        status: res.status,
+        snippet: "",
+      };
+    }
+    const html = await res.text();
+    // Heuristic bio extract: og:description, biography:"…" in inline JSON.
+    let bio: string | null = null;
+    const og = html.match(
+      /<meta\s+property=["']og:description["']\s+content=["']([^"']{0,500})["']/i,
+    );
+    if (og) bio = og[1];
+    if (!bio) {
+      const inline = html.match(/"biography":"([^"\\]{0,500})"/);
+      if (inline) bio = inline[1];
+    }
+    if (bio === null) {
+      // Last resort: return the whole HTML so the token search still has
+      // something to look at, but flag the snippet as truncated.
+      return {
+        bio: html,
+        source: "html",
+        status: res.status,
+        snippet: html.replace(/\s+/g, " ").slice(0, 80),
+      };
+    }
+    return {
+      bio,
+      source: "html",
+      status: res.status,
+      snippet: bio.slice(0, 80),
+    };
+  } catch (err) {
+    console.warn("[ig-verify] HTML fetch failed:", err);
+    return { bio: null, source: "none", status: 0, snippet: "" };
   }
+}
+
+/** Back-compat shim for callers that just want the bio text. */
+export async function fetchInstagramBio(
+  handle: string,
+): Promise<string | null> {
+  return (await probeInstagramBio(handle)).bio;
 }
 
 /** True when the (random) token appears anywhere in the supplied text. */
