@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 
 import { CountryFlags } from "@/components/ui/country-flags";
 import { Icon } from "@/components/ui/icon";
+import { InstagramConnectCard } from "@/features/instagram";
 import { getCurrentProfile } from "@/lib/profiles";
+import { travelerNotes } from "@/lib/travejor/account";
 
 export const metadata: Metadata = { title: "My Profile" };
 
@@ -24,6 +26,10 @@ export default async function MyProfilePage() {
   if (!profile) redirect("/login");
 
   const initial = profile.display_name.trim().charAt(0).toUpperCase() || "?";
+  // Recent notes the community has left for / about this user.
+  // (Real `traveler_notes` table is a separate P1 — for now this is a
+  // friendly empty-state preview using the mock feed.)
+  const noteCount = travelerNotes.length;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -42,6 +48,7 @@ export default async function MyProfilePage() {
         </Link>
       </header>
 
+      {/* Identity */}
       <div className="flex flex-col items-center px-5">
         <span className="wc-frame relative h-24 w-24 rounded-full p-1">
           <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-surface-elevated">
@@ -66,8 +73,8 @@ export default async function MyProfilePage() {
         </span>
 
         {profile.bio && (
-          <p className="mt-3 max-w-sm text-center text-sm text-muted">
-            {profile.bio}
+          <p className="mt-3 max-w-sm text-center text-sm italic text-muted">
+            &ldquo;{profile.bio}&rdquo;
           </p>
         )}
 
@@ -87,15 +94,61 @@ export default async function MyProfilePage() {
         </div>
       </div>
 
-      {/* Home country */}
-      {profile.home_country && (
-        <section className="mt-6 px-5">
-          <h3 className="text-sm font-bold">Home Country</h3>
-          <div className="mt-3">
+      {/* Countries traveled (driven by home_country today; we'll add a
+          `countries[]` profile column when the traveler-history feature lands). */}
+      <section className="mt-6 px-5">
+        <h3 className="text-sm font-bold">Countries Traveled</h3>
+        <div className="mt-3">
+          {profile.home_country ? (
             <CountryFlags countries={[profile.home_country]} showLabels />
-          </div>
-        </section>
-      )}
+          ) : (
+            <p className="text-xs text-muted">
+              Add your home country in{" "}
+              <Link href="/profile/edit" className="text-glow underline">
+                Edit Profile
+              </Link>{" "}
+              to start building your travel map.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* Travel Identity — Instagram. The real per-profile IG identity is a
+          separate P2 (the connect flow exists; storing/displaying it is next). */}
+      <section className="mt-6 px-5">
+        <h3 className="text-sm font-bold">Travel Identity</h3>
+        <div className="mt-3">
+          <InstagramConnectCard />
+        </div>
+      </section>
+
+      {/* Traveler notes — preview pointing at the full feed. Becomes a
+          real `notes about you` list when traveler_notes ships. */}
+      <section className="mt-6 px-5 pb-8">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold">Traveler Notes</h3>
+          <Link href="/notes" className="text-xs font-medium text-glow">
+            See all
+          </Link>
+        </div>
+        <Link
+          href="/notes"
+          className="wc-frame mt-3 flex items-center gap-3 rounded-2xl p-4 active:scale-[0.99]"
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-glow/15 text-lg">
+            📓
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">
+              {noteCount} note{noteCount === 1 ? "" : "s"} from fellow travelers
+            </span>
+            <span className="block text-xs text-muted">
+              Community-written notes build real, traveler-to-traveler trust.
+            </span>
+          </span>
+          <span className="text-muted">›</span>
+        </Link>
+      </section>
     </div>
   );
 }
