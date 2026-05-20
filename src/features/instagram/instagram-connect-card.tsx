@@ -39,9 +39,37 @@ export function InstagramConnectCard({
   // Verify flow state (only set while a token is outstanding).
   const [token, setToken] = useState<string | null>(null);
   const [verifyHandle, setVerifyHandle] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  function copyToken() {
-    if (token) navigator.clipboard?.writeText(token).catch(() => {});
+  async function copyToken() {
+    if (!token) return;
+    let ok = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(token);
+        ok = true;
+      } else {
+        // Fallback for Safari / installed PWAs where the Clipboard API
+        // isn't available without a user-permission prompt.
+        const ta = document.createElement("textarea");
+        ta.value = token;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+    } catch {
+      ok = false;
+    }
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } else {
+      setError("Couldn't copy automatically — long-press the token to copy.");
+    }
   }
 
   function selfClaim() {
@@ -120,15 +148,22 @@ export function InstagramConnectCard({
         </ol>
 
         <div className="mt-2 flex items-center gap-2">
-          <code className="flex-1 rounded-lg bg-surface-elevated px-3 py-2 font-mono text-sm font-bold text-glow">
+          <code
+            className="flex-1 cursor-text select-all rounded-lg bg-surface-elevated px-3 py-2 font-mono text-sm font-bold text-glow"
+            onClick={(e) => (e.currentTarget as HTMLElement).focus()}
+          >
             {token}
           </code>
           <button
             type="button"
             onClick={copyToken}
-            className="rounded-lg border border-border px-3 py-2 text-xs font-bold text-muted hover:text-foreground"
+            className={`rounded-lg border px-3 py-2 text-xs font-bold transition-colors ${
+              copied
+                ? "border-cool/40 bg-cool/10 text-cool"
+                : "border-border text-muted hover:text-foreground"
+            }`}
           >
-            Copy
+            {copied ? "Copied ✓" : "Copy"}
           </button>
         </div>
 
