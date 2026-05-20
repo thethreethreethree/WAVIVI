@@ -18,7 +18,7 @@ Toward production launch (v1):      ███████████░░░�
 | Foundation (stack, proxy, PWA)     | 95 % | ✅ ready |
 | Design system + themes (4-way)     | 90 % | ✅ ready, polishing |
 | Maps (Vibe + Toolbox)              | 85 % | ✅ ready, needs real Vibe data |
-| Toolbox backend + admin            | 90 % | ⏳ migration + seed pending |
+| Toolbox backend + admin            | 93 % | ⏳ seed pending |
 | App pages (against mock data)      | 85 % | ⏳ wire to real data |
 | Auth (end-to-end signup → session) | 30 % | 🔥 launch blocker |
 | Profiles (read/write real)         | 25 % | 🔥 launch blocker |
@@ -94,7 +94,7 @@ trust (auth, real data, chat, notifications, observability).
 ## 🔥 P0 — Launch blockers (do next)
 
 ### Production data wiring
-- [ ] **Run migration `0006_utility_contacts.sql`** on the live Supabase
+- [x] **Run migration `0006_utility_contacts.sql`** on the live Supabase ✅ done 2026-05-20
 - [ ] Seed real regions (start with 1–3 destinations the team uses)
 - [ ] Run a real toolbox scan on each seeded region; spot-check the pins
 - [ ] Set `CRON_SECRET` env var on Vercel; verify cron hits succeed
