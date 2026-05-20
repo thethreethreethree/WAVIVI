@@ -5,56 +5,15 @@ import { notFound } from "next/navigation";
 
 import { AddFriendButton } from "@/components/ui/add-friend-button";
 import { CountryFlags } from "@/components/ui/country-flags";
-import { getProfileByUsername } from "@/lib/profiles";
+import {
+  InstagramFeed,
+  InstagramProfileBadge,
+  InstagramShowcase,
+} from "@/features/instagram";
+import { travelerNotes } from "@/lib/travejor/account";
 import { getMember } from "@/lib/travejor/members";
 
-/** Shape the user-profile UI needs — sourced from Supabase or mock member. */
-interface DisplayProfile {
-  username: string;
-  display_name: string;
-  avatar_url: string | null;
-  traveler_status: string;
-  bio: string | null;
-  home_country: string | null;
-}
-
-async function loadDisplayProfile(
-  username: string,
-): Promise<DisplayProfile | null> {
-  const real = await getProfileByUsername(username);
-  if (real) {
-    return {
-      username: real.username,
-      display_name: real.display_name,
-      avatar_url: real.avatar_url,
-      traveler_status: real.traveler_status,
-      bio: real.bio,
-      home_country: real.home_country,
-    };
-  }
-  // Fall back to the mock member roster so the page is always viewable
-  // while the real profiles table is being seeded.
-  const m = getMember(username);
-  if (!m) return null;
-  return {
-    username: m.username,
-    display_name: m.name,
-    avatar_url: m.avatar,
-    traveler_status: "exploring",
-    bio: m.bio,
-    home_country: m.countries[0] ?? null,
-  };
-}
-
 type Params = Promise<{ username: string }>;
-
-/** Human label for each traveler status. */
-const STATUS_LABEL: Record<string, string> = {
-  exploring: "Exploring",
-  local: "Local",
-  transit: "In transit",
-  offline: "Offline",
-};
 
 export async function generateMetadata({
   params,
@@ -62,8 +21,8 @@ export async function generateMetadata({
   params: Params;
 }): Promise<Metadata> {
   const { username } = await params;
-  const profile = await loadDisplayProfile(username);
-  return { title: profile ? profile.display_name : "User Profile" };
+  const member = getMember(username);
+  return { title: member ? member.name : "User Profile" };
 }
 
 export default async function UserProfilePage({
@@ -72,10 +31,8 @@ export default async function UserProfilePage({
   params: Params;
 }) {
   const { username } = await params;
-  const profile = await loadDisplayProfile(username);
-  if (!profile) notFound();
-
-  const initial = profile.display_name.trim().charAt(0).toUpperCase() || "?";
+  const member = getMember(username);
+  if (!member) notFound();
 
   return (
     <div className="flex flex-1 flex-col">
@@ -93,42 +50,44 @@ export default async function UserProfilePage({
           </svg>
         </Link>
         <h1 className="flex-1 text-lg font-bold">User Profile</h1>
+        <span className="text-muted">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+            <circle cx="12" cy="5" r="1.6" />
+            <circle cx="12" cy="12" r="1.6" />
+            <circle cx="12" cy="19" r="1.6" />
+          </svg>
+        </span>
       </header>
 
       <div className="flex flex-col items-center px-5">
         <span className="wc-frame relative h-24 w-24 rounded-full p-1">
-          <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-surface-elevated">
-            {profile.avatar_url ? (
-              <Image
-                src={profile.avatar_url}
-                alt={profile.display_name}
-                fill
-                sizes="96px"
-                className="object-cover"
-              />
-            ) : (
-              <span className="text-3xl font-bold text-glow">{initial}</span>
-            )}
+          <span className="relative block h-full w-full overflow-hidden rounded-full">
+            <Image
+              src={member.avatar}
+              alt={member.name}
+              fill
+              sizes="96px"
+              className="object-cover"
+            />
           </span>
         </span>
-        <h2 className="mt-3 text-xl font-bold">{profile.display_name}</h2>
-        <p className="mt-0.5 text-sm text-muted">@{profile.username}</p>
-
-        <span className="wc-frame wc-frame-ghost mt-2 rounded-full px-3 py-1 text-xs font-semibold text-glow">
-          {STATUS_LABEL[profile.traveler_status] ?? "Exploring"}
-        </span>
-
-        {profile.bio && (
-          <p className="mt-3 max-w-[18rem] text-center text-sm italic text-muted">
-            &ldquo;{profile.bio}&rdquo;
-          </p>
-        )}
+        <h2 className="mt-3 flex items-center gap-1.5 text-xl font-bold">
+          {member.name}
+          {member.verified && (
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-cool text-[10px] text-white">
+              ✓
+            </span>
+          )}
+        </h2>
+        <p className="mt-1 max-w-[18rem] text-center text-sm italic text-muted">
+          &ldquo;{member.bio}&rdquo;
+        </p>
 
         <div className="mt-4 flex gap-2">
           <AddFriendButton />
           <Link
             href="/meet"
-            className="wc-frame wc-frame-ghost rounded-full px-5 py-2 text-sm font-semibold text-glow"
+            className="rounded-full border border-foreground/20 px-5 py-2 text-sm font-semibold"
           >
             Invite to Chat
           </Link>
@@ -138,15 +97,76 @@ export default async function UserProfilePage({
         </p>
       </div>
 
-      {/* Home country */}
-      {profile.home_country && (
-        <section className="mt-6 px-5 pb-8">
-          <h3 className="text-sm font-bold">Home Country</h3>
-          <div className="mt-3">
-            <CountryFlags countries={[profile.home_country]} showLabels />
+      {/* Countries traveled */}
+      <section className="mt-6 px-5">
+        <h3 className="text-sm font-bold">Countries Traveled</h3>
+        <div className="mt-3">
+          <CountryFlags countries={member.countries} showLabels />
+        </div>
+      </section>
+
+      {/* Travel Identity — Instagram social layer */}
+      {member.instagram && (
+        <section className="mt-6 px-5">
+          <h3 className="text-sm font-bold">Travel Identity</h3>
+          <div className="mt-3 flex flex-col gap-3">
+            <InstagramProfileBadge identity={member.instagram} />
+            <div>
+              <p className="mb-2 text-xs font-semibold text-muted">
+                Featured Travel Moments
+              </p>
+              <InstagramShowcase posts={member.instagram.posts} />
+            </div>
           </div>
         </section>
       )}
+
+      {/* Travel Feed — sourced from Instagram */}
+      {member.instagram && (
+        <section className="mt-6 px-5">
+          <h3 className="mb-3 text-sm font-bold">Travel Feed</h3>
+          <InstagramFeed
+            posts={member.instagram.posts}
+            username={member.instagram.username}
+          />
+        </section>
+      )}
+
+      {/* Traveler notes */}
+      <section className="mt-6 px-5 pb-8">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold">Traveler Notes</h3>
+          <Link href="/notes" className="text-xs font-medium text-glow">
+            See all
+          </Link>
+        </div>
+        <div className="mt-3 flex flex-col gap-2">
+          {travelerNotes.slice(0, 2).map((note) => (
+            <div
+              key={note.id}
+              className="wc-frame flex items-start gap-2 rounded-2xl p-3"
+            >
+              <span className="wc-frame relative h-8 w-8 shrink-0 rounded-full p-1">
+                <span className="relative block h-full w-full overflow-hidden rounded-full">
+                  <Image
+                    src={note.fromAvatar}
+                    alt={note.from}
+                    fill
+                    sizes="28px"
+                    className="object-cover"
+                  />
+                </span>
+              </span>
+              <p className="text-sm text-foreground/90">
+                {note.text}{" "}
+                <span className="text-xs text-muted">
+                  — {note.from} · {note.time}
+                </span>
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
