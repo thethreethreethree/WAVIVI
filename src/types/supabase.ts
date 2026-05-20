@@ -24,6 +24,9 @@ export type ProfileRow = {
   instagram_username: string | null;
   instagram_verified: boolean;
   instagram_post_urls: string[];
+  instagram_verify_token: string | null;
+  instagram_verify_handle: string | null;
+  instagram_verify_expires_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -39,6 +42,9 @@ export type ProfileInsert = {
   instagram_username?: string | null;
   instagram_verified?: boolean;
   instagram_post_urls?: string[];
+  instagram_verify_token?: string | null;
+  instagram_verify_handle?: string | null;
+  instagram_verify_expires_at?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -53,6 +59,9 @@ export type ProfileUpdate = {
   instagram_username?: string | null;
   instagram_verified?: boolean;
   instagram_post_urls?: string[];
+  instagram_verify_token?: string | null;
+  instagram_verify_handle?: string | null;
+  instagram_verify_expires_at?: string | null;
 };
 
 /* ── Traveler Toolbox ─────────────────────────────────────────────────── */

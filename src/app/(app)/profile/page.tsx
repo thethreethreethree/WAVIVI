@@ -132,6 +132,7 @@ export default async function MyProfilePage() {
           )}
           <InstagramConnectCard
             initialUsername={profile.instagram_username ?? ""}
+            initialVerified={profile.instagram_verified}
           />
         </div>
       </section>

@@ -2,30 +2,49 @@
 
 import { useState, useTransition } from "react";
 
-import { saveInstagramUsername } from "@/features/instagram/actions";
+import {
+  cancelInstagramVerification,
+  confirmInstagramVerification,
+  saveInstagramUsername,
+  startInstagramVerification,
+} from "@/features/instagram/actions";
 import { InstagramIcon } from "@/features/instagram/instagram-icon";
 import { instagramUrl } from "@/features/instagram/validation";
 
 /**
- * Connect Instagram — username linking, persists to `profiles.instagram_username`
- * via the saveInstagramUsername server action.
+ * Connect Instagram — supports two flows that both populate
+ * `profiles.instagram_username`:
  *
- * Note on flow: this is a self-claim today (no password / no OAuth) — the user
- * types their public handle and we trust it. To make it real we can add either
- * a lightweight bio-token verification or full OAuth via the IG Basic Display
- * API; both populate the same column. See ROADMAP.md.
+ *   1. **Verify with bio** (recommended): user gets a short token, pastes
+ *      it into their public IG bio, we fetch the public profile and
+ *      confirm the token's there. Sets `instagram_verified = true`.
+ *   2. **Link without verifying** (fast self-claim): username only,
+ *      no verification — shows as linked, but not ✓ verified.
+ *
+ * No password or OAuth required either way.
  */
 export function InstagramConnectCard({
   initialUsername = "",
+  initialVerified = false,
 }: {
   initialUsername?: string;
+  initialVerified?: boolean;
 }) {
   const [value, setValue] = useState(initialUsername);
-  const [connected, setConnected] = useState(Boolean(initialUsername));
+  const [linked, setLinked] = useState(Boolean(initialUsername));
+  const [verified, setVerified] = useState(initialVerified);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  function submit() {
+  // Verify flow state (only set while a token is outstanding).
+  const [token, setToken] = useState<string | null>(null);
+  const [verifyHandle, setVerifyHandle] = useState<string | null>(null);
+
+  function copyToken() {
+    if (token) navigator.clipboard?.writeText(token).catch(() => {});
+  }
+
+  function selfClaim() {
     setError(null);
     startTransition(async () => {
       const res = await saveInstagramUsername(value);
@@ -34,7 +53,46 @@ export function InstagramConnectCard({
         return;
       }
       setValue(res.username ?? "");
-      setConnected(Boolean(res.username));
+      setLinked(Boolean(res.username));
+      setVerified(false);
+    });
+  }
+
+  function startVerify() {
+    setError(null);
+    startTransition(async () => {
+      const res = await startInstagramVerification(value);
+      if (res.error || !res.token || !res.handle) {
+        setError(res.error ?? "Could not start verification.");
+        return;
+      }
+      setToken(res.token);
+      setVerifyHandle(res.handle);
+    });
+  }
+
+  function confirmVerify() {
+    setError(null);
+    startTransition(async () => {
+      const res = await confirmInstagramVerification();
+      if (res.error || !res.verified) {
+        setError(res.error ?? "Could not confirm verification.");
+        return;
+      }
+      setLinked(true);
+      setVerified(true);
+      setToken(null);
+      setVerifyHandle(null);
+      setValue(res.username ?? "");
+    });
+  }
+
+  function cancelVerify() {
+    setError(null);
+    setToken(null);
+    setVerifyHandle(null);
+    startTransition(async () => {
+      await cancelInstagramVerification();
     });
   }
 
@@ -43,19 +101,86 @@ export function InstagramConnectCard({
     startTransition(async () => {
       await saveInstagramUsername("");
       setValue("");
-      setConnected(false);
+      setLinked(false);
+      setVerified(false);
     });
   }
 
+  // -------- Verify-in-progress panel --------
+  if (token && verifyHandle) {
+    return (
+      <div className="wc-frame rounded-2xl p-4 shadow-card">
+        <div className="flex items-center gap-2">
+          <InstagramIcon className="h-5 w-5 text-glow" />
+          <h3 className="text-sm font-bold">Verify @{verifyHandle}</h3>
+        </div>
+        <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs text-foreground/90">
+          <li>Open Instagram and edit your bio.</li>
+          <li>Paste this token anywhere in your bio, then save:</li>
+        </ol>
+
+        <div className="mt-2 flex items-center gap-2">
+          <code className="flex-1 rounded-lg bg-surface-elevated px-3 py-2 font-mono text-sm font-bold text-glow">
+            {token}
+          </code>
+          <button
+            type="button"
+            onClick={copyToken}
+            className="rounded-lg border border-border px-3 py-2 text-xs font-bold text-muted hover:text-foreground"
+          >
+            Copy
+          </button>
+        </div>
+
+        <p className="mt-2 text-[11px] text-muted">
+          When confirmed, remove the token from your bio — it's only needed
+          once. Your profile must be public for us to verify.
+        </p>
+
+        {error && <p className="mt-2 text-xs text-heat">{error}</p>}
+
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={confirmVerify}
+            disabled={pending}
+            className="rounded-xl bg-sunset px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+          >
+            {pending ? "Checking…" : "I've added it — verify"}
+          </button>
+          <button
+            type="button"
+            onClick={cancelVerify}
+            disabled={pending}
+            className="text-xs font-semibold text-muted hover:text-heat"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // -------- Default / linked panel --------
   return (
     <div className="wc-frame rounded-2xl p-4 shadow-card">
       <div className="flex items-center gap-2">
         <InstagramIcon className="h-5 w-5 text-glow" />
         <h3 className="text-sm font-bold">Connect Instagram</h3>
+        {linked && verified && (
+          <span className="ml-auto rounded-full bg-cool/15 px-2 py-0.5 text-[10px] font-bold text-cool">
+            ✓ Verified
+          </span>
+        )}
+        {linked && !verified && (
+          <span className="ml-auto rounded-full bg-glow/15 px-2 py-0.5 text-[10px] font-bold text-glow">
+            Linked
+          </span>
+        )}
       </div>
       <p className="mt-0.5 text-xs text-muted">
-        Link your Instagram so other travelers can see your vibe. We store
-        your username only — never your password, photos, or any tokens.
+        Link your Instagram so other travelers can see your vibe. Verify with
+        a token in your bio — no password, no OAuth, never any media.
       </p>
 
       <div className="mt-3 flex items-center gap-2">
@@ -66,7 +191,8 @@ export function InstagramConnectCard({
           value={value}
           onChange={(e) => {
             setValue(e.target.value);
-            setConnected(false);
+            setLinked(false);
+            setVerified(false);
             setError(null);
           }}
           placeholder="johntravels"
@@ -80,7 +206,7 @@ export function InstagramConnectCard({
 
       {error && <p className="mt-1.5 text-xs text-heat">{error}</p>}
 
-      {connected && value ? (
+      {linked && value ? (
         <div className="mt-2 flex items-center justify-between gap-3">
           <p className="text-xs text-cool">
             ✓ Linked —{" "}
@@ -93,24 +219,46 @@ export function InstagramConnectCard({
               {instagramUrl(value)}
             </a>
           </p>
-          <button
-            type="button"
-            onClick={disconnect}
-            disabled={pending}
-            className="text-xs font-semibold text-muted hover:text-heat disabled:opacity-60"
-          >
-            {pending ? "…" : "Unlink"}
-          </button>
+          <div className="flex items-center gap-3">
+            {!verified && (
+              <button
+                type="button"
+                onClick={startVerify}
+                disabled={pending}
+                className="text-xs font-semibold text-glow hover:underline disabled:opacity-60"
+              >
+                Verify
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={disconnect}
+              disabled={pending}
+              className="text-xs font-semibold text-muted hover:text-heat disabled:opacity-60"
+            >
+              {pending ? "…" : "Unlink"}
+            </button>
+          </div>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={submit}
-          disabled={pending || !value.trim()}
-          className="mt-3 rounded-xl bg-sunset px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
-        >
-          {pending ? "Connecting…" : "Connect"}
-        </button>
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={startVerify}
+            disabled={pending || !value.trim()}
+            className="rounded-xl bg-sunset px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+          >
+            {pending ? "…" : "Verify with bio"}
+          </button>
+          <button
+            type="button"
+            onClick={selfClaim}
+            disabled={pending || !value.trim()}
+            className="text-xs font-semibold text-muted hover:text-foreground disabled:opacity-50"
+          >
+            Or save without verifying
+          </button>
+        </div>
       )}
     </div>
   );
