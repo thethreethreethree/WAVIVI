@@ -4,6 +4,39 @@ Living plan. Items move from 🟥/🟧/🟨/🌱 → ✅ as we ship them.
 
 ---
 
+## 📊 Release readiness
+
+```
+Toward demo-able beta (mock data):  ████████████████░░░░  85%
+Toward production launch (v1):      ███████████░░░░░░░░░  55%
+```
+
+### Per-track completion
+
+| Track                              | Done | Status |
+|------------------------------------|-----:|--------|
+| Foundation (stack, proxy, PWA)     | 95 % | ✅ ready |
+| Design system + themes (4-way)     | 90 % | ✅ ready, polishing |
+| Maps (Vibe + Toolbox)              | 85 % | ✅ ready, needs real Vibe data |
+| Toolbox backend + admin            | 90 % | ⏳ migration + seed pending |
+| App pages (against mock data)      | 85 % | ⏳ wire to real data |
+| Auth (end-to-end signup → session) | 30 % | 🔥 launch blocker |
+| Profiles (read/write real)         | 25 % | 🔥 launch blocker |
+| Group chat (Realtime)              |  5 % | 🟧 P1, app's heart |
+| Traveler notes / events / RSVPs    | 10 % | 🟧 P1 |
+| Push notifications                 |  0 % | 🟧 P1 |
+| Instagram (real, not mock)         | 20 % | 🟨 P2 |
+| Susen AI (real Claude call)        | 25 % | 🟨 P2 |
+| A11y, i18n, observability          | 10 % | 🟨 P2 |
+| Native wrapper / monetization      |  0 % | 🌱 P3 |
+
+**How the overall numbers are derived:** the *beta* meter weights what makes
+the app demoable against mock data (foundation, design, UI, maps).
+The *launch* meter weights what makes it a real product real users can
+trust (auth, real data, chat, notifications, observability).
+
+---
+
 ## ✅ Done
 
 ### Foundation
