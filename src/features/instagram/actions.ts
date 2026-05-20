@@ -178,21 +178,35 @@ export async function confirmInstagramVerification(): Promise<ConfirmVerifyResul
     };
   }
 
-  // Auto-seed featured posts the very first time: if the user hasn't
-  // curated any yet, drop in the most recent 12 from their public IG.
-  // First 6 render as "Featured Travel Moments"; the rest power the
-  // "Travel Feed" section so the two grids never duplicate.
-  const seededPosts =
-    existingPosts.length === 0 ? probe.postUrls.slice(0, 12) : existingPosts;
+  // Auto-seed both Instagram lists the very first time the user
+  // verifies: top 6 → Featured Travel Moments, next 6 → Travel Feed.
+  const probePosts = probe.posts.slice(0, 12);
+  const featuredSeed = probePosts.slice(0, 6);
+  const feedSeed = probePosts.slice(6, 12);
 
-  const { error } = await updateProfile({
+  const profileUpdate = {
     instagram_username: handle,
     instagram_verified: true,
-    instagram_post_urls: seededPosts,
     instagram_verify_token: null,
     instagram_verify_handle: null,
     instagram_verify_expires_at: null,
-  });
+  } as Record<string, unknown>;
+
+  if (existingPosts.length === 0 && featuredSeed.length > 0) {
+    profileUpdate.instagram_post_urls = featuredSeed.map((p) => p.url);
+    profileUpdate.instagram_post_thumbnails = featuredSeed.map(
+      (p) => p.thumbnail,
+    );
+  }
+  // Only seed Feed when there's distinct content beyond the Featured 6.
+  if (feedSeed.length > 0) {
+    profileUpdate.instagram_feed_urls = feedSeed.map((p) => p.url);
+    profileUpdate.instagram_feed_thumbnails = feedSeed.map(
+      (p) => p.thumbnail,
+    );
+  }
+
+  const { error } = await updateProfile(profileUpdate);
   if (error) {
     return { error, verified: false, username: null };
   }
@@ -200,12 +214,28 @@ export async function confirmInstagramVerification(): Promise<ConfirmVerifyResul
   return { error: null, verified: true, username: handle };
 }
 
+/** Which Instagram list a manager / action targets. */
+export type IgList = "featured" | "feed";
+
+const LIST_COLUMNS = {
+  featured: {
+    urls: "instagram_post_urls",
+    thumbs: "instagram_post_thumbnails",
+  },
+  feed: {
+    urls: "instagram_feed_urls",
+    thumbs: "instagram_feed_thumbnails",
+  },
+} as const;
+
 /**
- * Persist the user's featured Instagram post URLs. Validates each URL and
- * caps at 6 entries.
+ * Persist a user's Instagram post URLs into either the Featured Travel
+ * Moments showcase or the Travel Feed list. When manual URLs are saved
+ * the thumbnail array is cleared (we'll re-derive via Pull-from-IG).
  */
 export async function saveInstagramPosts(
   urls: string[],
+  list: IgList = "featured",
 ): Promise<{ error: string | null; urls: string[] }> {
   const cleaned = (urls ?? [])
     .map((u) => (typeof u === "string" ? u.trim() : ""))
@@ -219,22 +249,25 @@ export async function saveInstagramPosts(
     }
   }
 
-  const { error } = await updateProfile({ instagram_post_urls: cleaned });
+  const cols = LIST_COLUMNS[list];
+  const { error } = await updateProfile({
+    [cols.urls]: cleaned,
+    // Manual edits invalidate stored thumbnails — Pull-from-IG repopulates them.
+    [cols.thumbs]: [],
+  });
   if (error) return { error, urls: [] };
   revalidatePath("/profile");
   return { error: null, urls: cleaned };
 }
 
 /**
- * Re-fetch the most recent ~12 posts from the signed-in user's linked
- * Instagram handle and overwrite `instagram_post_urls`. Useful for users
- * who linked their handle before auto-seed existed, or who want their
- * showcase refreshed without manually pasting URLs.
+ * Re-fetch the user's most recent IG posts and overwrite either the
+ * Featured Travel Moments or Travel Feed list. Featured pulls the first
+ * 6 posts; Feed pulls posts 7-12.
  */
-export async function refreshInstagramPosts(): Promise<{
-  error: string | null;
-  urls: string[];
-}> {
+export async function refreshInstagramPosts(
+  list: IgList = "featured",
+): Promise<{ error: string | null; urls: string[] }> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -255,7 +288,7 @@ export async function refreshInstagramPosts(): Promise<{
   }
 
   const probe = await probeInstagramBio(handle);
-  if (probe.postUrls.length === 0) {
+  if (probe.posts.length === 0) {
     return {
       error:
         "Couldn't read any public posts from your profile. Make sure it's public, then try again.",
@@ -263,11 +296,26 @@ export async function refreshInstagramPosts(): Promise<{
     };
   }
 
-  const urls = probe.postUrls.slice(0, 12);
-  const { error } = await updateProfile({ instagram_post_urls: urls });
+  const slice =
+    list === "featured" ? probe.posts.slice(0, 6) : probe.posts.slice(6, 12);
+  if (slice.length === 0) {
+    return {
+      error:
+        list === "feed"
+          ? "Not enough public posts to fill the Travel Feed — add a few more on Instagram."
+          : "No posts available to pull.",
+      urls: [],
+    };
+  }
+
+  const cols = LIST_COLUMNS[list];
+  const { error } = await updateProfile({
+    [cols.urls]: slice.map((p) => p.url),
+    [cols.thumbs]: slice.map((p) => p.thumbnail),
+  });
   if (error) return { error, urls: [] };
   revalidatePath("/profile");
-  return { error: null, urls };
+  return { error: null, urls: slice.map((p) => p.url) };
 }
 
 /** Abandon an in-progress verification, clearing the stored token. */

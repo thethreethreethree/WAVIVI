@@ -27,14 +27,22 @@ interface DisplayTraveler {
   countries: string[];
   verified: boolean;
   instagram: InstagramIdentity | null;
+  /** Travel Feed posts — separate column on real profiles. */
+  feedPosts: InstagramIdentity["posts"];
 }
 
-/** Build a showcase set from raw IG post URLs (placeholders until live previews). */
-function postsFromUrls(username: string, urls: string[]) {
-  return urls.slice(0, 6).map((url, i) => ({
-    id: `${username}-${i}`,
+/** Build IG post list from URL + parallel thumbnail arrays. */
+function postsFromUrls(
+  username: string,
+  prefix: string,
+  urls: string[],
+  thumbs: string[] = [],
+) {
+  return urls.slice(0, 12).map((url, i) => ({
+    id: `${username}-${prefix}-${i}`,
     url,
-    image: photo(`ig-${username}-${i}`, 300, 300),
+    image:
+      thumbs[i] || photo(`ig-${username}-${prefix}-${i}`, 300, 300),
   }));
 }
 
@@ -47,21 +55,45 @@ async function loadTraveler(username: string): Promise<DisplayTraveler | null> {
       ? {
           username: real.instagram_username,
           verified: real.instagram_verified,
-          posts: postsFromUrls(real.instagram_username, real.instagram_post_urls ?? []),
+          posts: postsFromUrls(
+            real.instagram_username,
+            "feat",
+            real.instagram_post_urls ?? [],
+            real.instagram_post_thumbnails ?? [],
+          ),
         }
       : null;
+    const feedPosts = real.instagram_username
+      ? postsFromUrls(
+          real.instagram_username,
+          "feed",
+          real.instagram_feed_urls ?? [],
+          real.instagram_feed_thumbnails ?? [],
+        )
+      : [];
     return {
       username: real.username,
       name: real.display_name,
       avatar: real.avatar_url ?? photo(real.username, 200, 200),
       bio: real.bio ?? "",
-      countries: real.home_country ? [real.home_country] : [],
+      countries:
+        (real.countries ?? []).length > 0
+          ? (real.countries ?? [])
+          : real.home_country
+            ? [real.home_country]
+            : [],
       verified: real.instagram_verified,
       instagram,
+      feedPosts,
     };
   }
   const m = getMember(username);
   if (!m) return null;
+  // Mock members carry a single posts list; split half-half so Featured
+  // and Feed don't duplicate on existing mock profiles.
+  const allPosts = m.instagram?.posts ?? [];
+  const splitAt =
+    allPosts.length > 6 ? 6 : Math.ceil(allPosts.length / 2);
   return {
     username: m.username,
     name: m.name,
@@ -69,7 +101,10 @@ async function loadTraveler(username: string): Promise<DisplayTraveler | null> {
     bio: m.bio,
     countries: m.countries,
     verified: m.verified,
-    instagram: m.instagram ?? null,
+    instagram: m.instagram
+      ? { ...m.instagram, posts: allPosts.slice(0, splitAt) }
+      : null,
+    feedPosts: allPosts.slice(splitAt),
   };
 }
 
@@ -170,44 +205,34 @@ export default async function UserProfilePage({
       {/* Travel Identity — Instagram social layer.
           Split the post list so Featured Moments (first 6) and the Travel
           Feed (subsequent posts) never share the same artwork. */}
-      {t.instagram && (() => {
-        const ig = t.instagram;
-        const splitAt = ig.posts.length > 6 ? 6 : Math.ceil(ig.posts.length / 2);
-        const featured = ig.posts.slice(0, splitAt);
-        const feed = ig.posts.slice(splitAt);
-        return (
-          <>
-            <section className="mt-6 px-5">
-              <h3 className="text-base font-bold">Travel Identity</h3>
-              <div className="mt-3 flex flex-col gap-3">
-                <InstagramProfileBadge identity={ig} />
-                {featured.length > 0 && (
-                  <div>
-                    <h3 className="mb-3 text-base font-bold">
-                      Featured Travel Moments
-                    </h3>
-                    <InstagramShowcase posts={featured} />
-                  </div>
-                )}
-              </div>
-            </section>
+      {t.instagram && (
+        <>
+          <section className="mt-6 px-5">
+            <h3 className="text-base font-bold">Travel Identity</h3>
+            <div className="mt-3 flex flex-col gap-3">
+              <InstagramProfileBadge identity={t.instagram} />
+              {t.instagram.posts.length > 0 && (
+                <div>
+                  <h3 className="mb-3 text-base font-bold">
+                    Featured Travel Moments
+                  </h3>
+                  <InstagramShowcase posts={t.instagram.posts} />
+                </div>
+              )}
+            </div>
+          </section>
 
-            {ig.posts.length > 0 && (
-              <section className="mt-6 px-5">
-                <h3 className="mb-3 text-base font-bold">Travel Feed</h3>
-                {feed.length > 0 ? (
-                  <InstagramFeed posts={feed} username={ig.username} />
-                ) : (
-                  <p className="wc-frame rounded-2xl p-4 text-center text-sm text-muted">
-                    {ig.username}'s Travel Feed will fill out as they add
-                    more featured posts.
-                  </p>
-                )}
-              </section>
-            )}
-          </>
-        );
-      })()}
+          {t.feedPosts.length > 0 && (
+            <section className="mt-6 px-5">
+              <h3 className="mb-3 text-base font-bold">Travel Feed</h3>
+              <InstagramFeed
+                posts={t.feedPosts}
+                username={t.instagram.username}
+              />
+            </section>
+          )}
+        </>
+      )}
 
       {/* Traveler notes */}
       <section className="mt-6 px-5 pb-8">

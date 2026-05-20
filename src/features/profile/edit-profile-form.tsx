@@ -124,14 +124,34 @@ export function EditProfileForm({ profile }: { profile: ProfileRow }) {
         {pending ? "Saving…" : "Save changes"}
       </button>
 
-      {/* Featured Travel Posts live outside the main form — the manager
-          autosaves to profiles.instagram_post_urls on every change. */}
-      <div className="mt-2">
+      {/* Two managers — each autosaves into its own DB column.
+          Featured = the 6-tile showcase grid on /profile.
+          Feed = the horizontally-scrolling Travel Feed below it. */}
+      <div className="mt-2 flex flex-col gap-4">
         <InstagramPostManager
+          title="Featured Travel Moments"
+          description="Up to 6 highlight posts — these fill the showcase grid."
+          list="featured"
           initialPosts={(profile.instagram_post_urls ?? []).map((url, i) => ({
-            id: `${i}`,
+            id: `feat-${i}`,
             url,
-            image: photo(postShortcode(url) ?? url, 240, 240),
+            image:
+              profile.instagram_post_thumbnails?.[i] ||
+              photo(postShortcode(url) ?? url, 240, 240),
+          }))}
+          canPullFromInstagram={Boolean(profile.instagram_username)}
+        />
+        <InstagramPostManager
+          title="Travel Feed"
+          description="Up to 6 favourite posts, reels, or stories — these
+            fill the scrolling Travel Feed."
+          list="feed"
+          initialPosts={(profile.instagram_feed_urls ?? []).map((url, i) => ({
+            id: `feed-${i}`,
+            url,
+            image:
+              profile.instagram_feed_thumbnails?.[i] ||
+              photo(postShortcode(url) ?? url, 240, 240),
           }))}
           canPullFromInstagram={Boolean(profile.instagram_username)}
         />

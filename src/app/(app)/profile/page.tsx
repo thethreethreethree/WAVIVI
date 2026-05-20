@@ -33,22 +33,35 @@ export default async function MyProfilePage() {
   if (!profile) redirect("/login");
 
   const initial = profile.display_name.trim().charAt(0).toUpperCase() || "?";
+  const myUsername = profile.username;
 
-  // Build the showcase / feed from the user's saved IG post URLs.
-  // Thumbnails are placeholders until we add a live IG preview API.
-  // First 6 → Featured Travel Moments; remainder → Travel Feed (so the
-  // two sections never show the same content).
-  const posts = (profile.instagram_post_urls ?? []).map((url, i) => ({
-    id: `${profile.username}-${i}`,
-    url,
-    image: photo(postShortcode(url) ?? url, 300, 300),
-  }));
-  // Always split the list so Featured Moments and Travel Feed never show
-  // the same artwork. With 12+ posts: Featured = 6, Feed = rest. With
-  // fewer: split half-and-half so both sections still have something.
-  const splitAt = posts.length > 6 ? 6 : Math.ceil(posts.length / 2);
-  const featuredPosts = posts.slice(0, splitAt);
-  const feedPosts = posts.slice(splitAt);
+  // Two distinct Instagram lists — Featured Travel Moments and Travel
+  // Feed live in their own DB columns and never share content. Each
+  // URL carries a parallel signed CDN thumbnail (set when Pull-from-IG
+  // last ran); we fall back to a placeholder when one isn't stored.
+  function buildPosts(
+    urls: string[] | null,
+    thumbs: string[] | null,
+    prefix: string,
+  ) {
+    return (urls ?? []).map((url, i) => ({
+      id: `${myUsername}-${prefix}-${i}`,
+      url,
+      image:
+        thumbs?.[i] || photo(postShortcode(url) ?? url, 300, 300),
+    }));
+  }
+  const featuredPosts = buildPosts(
+    profile.instagram_post_urls,
+    profile.instagram_post_thumbnails,
+    "feat",
+  );
+  const feedPosts = buildPosts(
+    profile.instagram_feed_urls,
+    profile.instagram_feed_thumbnails,
+    "feed",
+  );
+  const hasAnyPosts = featuredPosts.length + feedPosts.length > 0;
 
   // Aggregate visited countries: explicit list, plus home_country fallback
   // so newcomers without a list still see at least one flag.
@@ -171,7 +184,7 @@ export default async function MyProfilePage() {
               <InstagramShowcase posts={featuredPosts} />
             </div>
           )}
-          {profile.instagram_username && posts.length === 0 && (
+          {profile.instagram_username && !hasAnyPosts && (
             <p className="text-xs text-muted">
               Add a few favourite posts in{" "}
               <Link
@@ -186,10 +199,8 @@ export default async function MyProfilePage() {
         </div>
       </section>
 
-      {/* Travel Feed — shows posts NOT in Featured Moments so the two
-          sections never duplicate. Always rendered when the user has any
-          posts; shows a "add more" prompt when the feed half is empty. */}
-      {profile.instagram_username && posts.length > 0 && (
+      {/* Travel Feed — its own list in the DB (instagram_feed_urls). */}
+      {profile.instagram_username && (
         <section className="mt-6 px-5 pb-2">
           <h3 className="mb-3 text-base font-bold">Travel Feed</h3>
           {feedPosts.length > 0 ? (
@@ -199,14 +210,14 @@ export default async function MyProfilePage() {
             />
           ) : (
             <p className="wc-frame rounded-2xl p-4 text-center text-sm text-muted">
-              Add a few more posts in{" "}
+              Add Travel Feed posts in{" "}
               <Link
                 href="/profile/edit#travel-posts"
                 className="text-glow underline"
               >
                 Edit Profile
-              </Link>{" "}
-              to fill out your Travel Feed.
+              </Link>
+              .
             </p>
           )}
         </section>

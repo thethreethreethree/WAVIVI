@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import {
+  type IgList,
   refreshInstagramPosts,
   saveInstagramPosts,
 } from "@/features/instagram/actions";
@@ -11,18 +12,25 @@ import type { InstagramPost } from "@/features/instagram/types";
 import { isValidPostUrl, postShortcode } from "@/features/instagram/validation";
 import { photo } from "@/lib/travejor/photo";
 
-/** 12 = 6 Featured Travel Moments + 6 Travel Feed cards. */
-const MAX_POSTS = 12;
+/** Each list (Featured / Feed) holds at most 6 posts. */
+const MAX_POSTS = 6;
 
 /**
- * Featured Travel Posts manager — add, remove, and reorder showcase posts.
- * Autosaves to `profiles.instagram_post_urls` on every mutation via the
- * saveInstagramPosts server action. Stores URLs only; capped at 6.
+ * Reusable Instagram-post list manager — used twice on the Edit Profile
+ * page, once for Featured Travel Moments and once for the Travel Feed.
+ * Autosaves to the appropriate column via saveInstagramPosts.
  */
 export function InstagramPostManager({
+  title = "Featured Travel Posts",
+  description = "Showcase a few moments that capture your travel vibe.",
+  list = "featured",
   initialPosts = [],
   canPullFromInstagram = false,
 }: {
+  title?: string;
+  description?: string;
+  /** Which DB column the manager writes to. */
+  list?: IgList;
   initialPosts?: InstagramPost[];
   /** Show the "Pull latest from Instagram" CTA — typically when the user
       has a verified IG handle linked. */
@@ -37,7 +45,7 @@ export function InstagramPostManager({
   /** Persist the current list to the DB. */
   function persist(next: InstagramPost[]) {
     startTransition(async () => {
-      const res = await saveInstagramPosts(next.map((p) => p.url));
+      const res = await saveInstagramPosts(next.map((p) => p.url), list);
       if (res.error) {
         setError(res.error);
         return;
@@ -93,7 +101,7 @@ export function InstagramPostManager({
   function pullFromInstagram() {
     setError(null);
     startTransition(async () => {
-      const res = await refreshInstagramPosts();
+      const res = await refreshInstagramPosts(list);
       if (res.error || res.urls.length === 0) {
         setError(res.error ?? "Couldn't pull posts from Instagram.");
         return;
@@ -116,7 +124,7 @@ export function InstagramPostManager({
     >
       <div className="flex items-center gap-2">
         <InstagramIcon className="h-5 w-5 text-glow" />
-        <h3 className="text-sm font-bold">Featured Travel Posts</h3>
+        <h3 className="text-sm font-bold">{title}</h3>
         {(pending || saved) && (
           <span
             className={`text-[10px] font-bold ${
@@ -130,9 +138,7 @@ export function InstagramPostManager({
           {posts.length}/{MAX_POSTS}
         </span>
       </div>
-      <p className="mt-0.5 text-xs text-muted">
-        Showcase a few moments that capture your travel vibe.
-      </p>
+      <p className="mt-0.5 text-xs text-muted">{description}</p>
 
       {canPullFromInstagram && (
         <button

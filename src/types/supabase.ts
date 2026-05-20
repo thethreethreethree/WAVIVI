@@ -25,6 +25,9 @@ export type ProfileRow = {
   instagram_username: string | null;
   instagram_verified: boolean;
   instagram_post_urls: string[];
+  instagram_post_thumbnails: string[];
+  instagram_feed_urls: string[];
+  instagram_feed_thumbnails: string[];
   instagram_verify_token: string | null;
   instagram_verify_handle: string | null;
   instagram_verify_expires_at: string | null;
@@ -44,6 +47,9 @@ export type ProfileInsert = {
   instagram_username?: string | null;
   instagram_verified?: boolean;
   instagram_post_urls?: string[];
+  instagram_post_thumbnails?: string[];
+  instagram_feed_urls?: string[];
+  instagram_feed_thumbnails?: string[];
   instagram_verify_token?: string | null;
   instagram_verify_handle?: string | null;
   instagram_verify_expires_at?: string | null;
@@ -62,6 +68,9 @@ export type ProfileUpdate = {
   instagram_username?: string | null;
   instagram_verified?: boolean;
   instagram_post_urls?: string[];
+  instagram_post_thumbnails?: string[];
+  instagram_feed_urls?: string[];
+  instagram_feed_thumbnails?: string[];
   instagram_verify_token?: string | null;
   instagram_verify_handle?: string | null;
   instagram_verify_expires_at?: string | null;
