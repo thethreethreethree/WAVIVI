@@ -284,6 +284,94 @@ export type UtilityVoteInsert = {
 
 export type UtilityVoteUpdate = { vote: -1 | 1 };
 
+/* ── Stays (lodging) ──────────────────────────────────────────────────── */
+
+export type StayType =
+  | "hostel"
+  | "hotel"
+  | "guesthouse"
+  | "resort"
+  | "apartment"
+  | "bnb"
+  | "camping"
+  | "other";
+
+export type StayRow = {
+  id: string;
+  region_id: string | null;
+  stay_type: StayType;
+  name: string;
+  latitude: number;
+  longitude: number;
+  google_maps_url: string;
+  address: string | null;
+  rating: number | null;
+  review_count: number;
+  thumbs_up: number;
+  thumbs_down: number;
+  backpack_rating: number;
+  reliability_score: number;
+  admin_edited: boolean;
+  phone: string | null;
+  website: string | null;
+  email: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  whatsapp: string | null;
+  price_per_night_usd: number | null;
+  check_in_time: string | null;
+  check_out_time: string | null;
+  amenities: string[];
+  description: string | null;
+  photo_url: string | null;
+  photo_urls: string[];
+  source: string;
+  source_ref: string;
+  claimed_by: string | null;
+  metadata_json: Record<string, unknown>;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type StayInsert = {
+  id?: string;
+  region_id?: string | null;
+  stay_type?: StayType;
+  name: string;
+  latitude: number;
+  longitude: number;
+  google_maps_url?: string;
+  address?: string | null;
+  rating?: number | null;
+  review_count?: number;
+  thumbs_up?: number;
+  thumbs_down?: number;
+  backpack_rating?: number;
+  reliability_score?: number;
+  admin_edited?: boolean;
+  phone?: string | null;
+  website?: string | null;
+  email?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
+  whatsapp?: string | null;
+  price_per_night_usd?: number | null;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
+  amenities?: string[];
+  description?: string | null;
+  photo_url?: string | null;
+  photo_urls?: string[];
+  source?: string;
+  source_ref: string;
+  claimed_by?: string | null;
+  metadata_json?: Record<string, unknown>;
+  active?: boolean;
+};
+
+export type StayUpdate = Partial<Omit<StayInsert, "source_ref">>;
+
 /* ── Chat ─────────────────────────────────────────────────────────────── */
 
 export type ChatGroupRow = {
@@ -356,6 +444,7 @@ export type Database = {
       >;
       scan_jobs: TableShape<ScanJobRow, ScanJobInsert, ScanJobUpdate>;
       scan_logs: TableShape<ScanLogRow, ScanLogInsert, ScanLogInsert>;
+      stays: TableShape<StayRow, StayInsert, StayUpdate>;
       chat_groups: TableShape<
         ChatGroupRow,
         ChatGroupInsert,

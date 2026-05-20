@@ -1,0 +1,287 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+
+import { StayEditor } from "./stay-editor";
+import type { StayRow, StayType } from "@/types/supabase";
+
+const STAY_TYPE_LABEL: Record<StayType, string> = {
+  hostel: "Hostel",
+  hotel: "Hotel",
+  guesthouse: "Guesthouse",
+  resort: "Resort",
+  apartment: "Apartment",
+  bnb: "B&B",
+  camping: "Camping",
+  other: "Other",
+};
+
+const CHANNELS = [
+  { key: "instagram", label: "IG", icon: "📷" },
+  { key: "facebook", label: "FB", icon: "📘" },
+  { key: "whatsapp", label: "WhatsApp", icon: "💬" },
+  { key: "email", label: "Email", icon: "✉️" },
+  { key: "phone", label: "Phone", icon: "📞" },
+  { key: "website", label: "Website", icon: "🌐" },
+] as const;
+type ChannelKey = (typeof CHANNELS)[number]["key"];
+
+function hasChannel(s: StayRow, key: ChannelKey): boolean {
+  return Boolean((s[key] ?? "").toString().trim());
+}
+
+const RATING_STEPS = [0, 1, 2, 3, 4, 4.5] as const;
+
+/** Filterable list of stays in a region, with edit + delete. */
+export function StaysList({ stays }: { stays: StayRow[] }) {
+  const router = useRouter();
+  const [typeFilter, setTypeFilter] = useState<StayType | "all">("all");
+  const [minRating, setMinRating] = useState(0);
+  const [needs, setNeeds] = useState<ChannelKey[]>([]);
+  const [editing, setEditing] = useState<StayRow | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = {};
+    for (const s of stays) c[s.stay_type] = (c[s.stay_type] ?? 0) + 1;
+    return c;
+  }, [stays]);
+
+  const toggleNeed = (key: ChannelKey) =>
+    setNeeds((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]));
+
+  const visible = useMemo(
+    () =>
+      stays.filter((s) => {
+        if (typeFilter !== "all" && s.stay_type !== typeFilter) return false;
+        if ((s.backpack_rating ?? 0) < minRating) return false;
+        return needs.every((k) => hasChannel(s, k));
+      }),
+    [stays, typeFilter, minRating, needs],
+  );
+
+  async function remove(id: string) {
+    if (!window.confirm("Delete this stay? This cannot be undone.")) return;
+    setDeletingId(id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/stays/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const b = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(b?.error ?? `Delete failed (${res.status})`);
+      }
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {/* Type filter chips */}
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <Chip
+          active={typeFilter === "all"}
+          onClick={() => setTypeFilter("all")}
+          label="All"
+          count={stays.length}
+        />
+        {(Object.keys(STAY_TYPE_LABEL) as StayType[]).map((t) => (
+          <Chip
+            key={t}
+            active={typeFilter === t}
+            onClick={() => setTypeFilter(t)}
+            label={STAY_TYPE_LABEL[t]}
+            count={counts[t] ?? 0}
+          />
+        ))}
+      </div>
+
+      {/* Rating + channels */}
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-surface px-3 py-2.5 shadow-card ring-1 ring-border">
+        <label className="flex items-center gap-1.5 text-xs font-bold text-muted">
+          🎒 Min rating
+          <select
+            value={minRating}
+            onChange={(e) => setMinRating(Number(e.target.value))}
+            className="admin-input !w-auto !py-1 !text-xs"
+          >
+            {RATING_STEPS.map((s) => (
+              <option key={s} value={s}>
+                {s === 0 ? "Any" : `${s}+`}
+              </option>
+            ))}
+          </select>
+        </label>
+        <span className="h-4 w-px bg-border" />
+        <span className="text-xs font-bold text-muted">Has:</span>
+        {CHANNELS.map((ch) => {
+          const active = needs.includes(ch.key);
+          return (
+            <button
+              key={ch.key}
+              type="button"
+              aria-pressed={active}
+              onClick={() => toggleNeed(ch.key)}
+              className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition-colors ${
+                active
+                  ? "bg-sunset text-white"
+                  : "text-muted ring-1 ring-border hover:text-foreground"
+              }`}
+            >
+              <span aria-hidden>{ch.icon}</span>
+              {ch.label}
+            </button>
+          );
+        })}
+        {(minRating > 0 || needs.length > 0) && (
+          <button
+            type="button"
+            onClick={() => {
+              setMinRating(0);
+              setNeeds([]);
+            }}
+            className="ml-auto rounded-full px-2.5 py-1 text-xs font-bold text-heat hover:bg-heat/10"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
+      <p className="px-1 text-xs font-semibold text-muted">
+        {visible.length} of {stays.length} shown
+      </p>
+
+      {error && (
+        <p className="rounded-lg bg-heat/15 px-3 py-2 text-xs font-semibold text-heat">
+          {error}
+        </p>
+      )}
+
+      {visible.length === 0 ? (
+        <p className="rounded-2xl bg-surface px-4 py-8 text-center text-sm text-muted shadow-card ring-1 ring-border">
+          {minRating > 0 || needs.length > 0
+            ? "No stays match these filters."
+            : "No stays in this region yet — import a CSV above."}
+        </p>
+      ) : (
+        <ul className="overflow-hidden rounded-2xl bg-surface shadow-card ring-1 ring-border">
+          {visible.map((s, i) => (
+            <li
+              key={s.id}
+              className={`flex items-center gap-3 px-4 py-3 ${
+                i > 0 ? "border-t border-border" : ""
+              }`}
+            >
+              {s.photo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={s.photo_url}
+                  alt=""
+                  className="h-12 w-12 shrink-0 rounded-xl object-cover ring-1 ring-border"
+                />
+              ) : (
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-background text-lg">
+                  🏠
+                </span>
+              )}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">
+                  {s.name}
+                </span>
+                <span className="block truncate text-xs text-muted">
+                  {STAY_TYPE_LABEL[s.stay_type]}
+                  {s.address ? ` · ${s.address}` : ""}
+                </span>
+                <span className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                  <span className="font-bold text-foreground">
+                    🎒 {s.backpack_rating.toFixed(1)}
+                  </span>
+                  {s.rating != null && (
+                    <span className="font-bold text-foreground">
+                      ★ {s.rating}
+                      <span className="font-medium text-muted">
+                        {" "}
+                        · {s.review_count} review{s.review_count === 1 ? "" : "s"}
+                      </span>
+                    </span>
+                  )}
+                  <span className="text-muted">
+                    👍 {s.thumbs_up} · 👎 {s.thumbs_down}
+                  </span>
+                  {CHANNELS.filter((ch) => hasChannel(s, ch.key)).map((ch) => (
+                    <span
+                      key={ch.key}
+                      title={ch.label}
+                      className="rounded-full bg-border px-1.5 py-0.5 font-bold text-foreground"
+                    >
+                      {ch.icon} {ch.label}
+                    </span>
+                  ))}
+                </span>
+              </span>
+              <span className="flex shrink-0 flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => setEditing(s)}
+                  className="rounded-full px-3 py-1 text-xs font-bold text-muted ring-1 ring-border hover:text-foreground"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => remove(s.id)}
+                  disabled={deletingId === s.id}
+                  className="rounded-full px-3 py-1 text-xs font-bold text-heat ring-1 ring-border hover:bg-heat/10 disabled:opacity-60"
+                >
+                  {deletingId === s.id ? "…" : "Delete"}
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {editing && <StayEditor stay={editing} onClose={() => setEditing(null)} />}
+    </div>
+  );
+}
+
+function Chip({
+  active,
+  onClick,
+  label,
+  count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count: number;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+        active
+          ? "bg-sunset text-white"
+          : "text-muted ring-1 ring-border hover:text-foreground"
+      }`}
+    >
+      {label}
+      <span
+        className={`rounded-full px-1.5 text-[10px] font-extrabold ${
+          active ? "bg-white/25" : "bg-border"
+        }`}
+      >
+        {count}
+      </span>
+    </button>
+  );
+}

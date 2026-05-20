@@ -80,12 +80,20 @@ export default async function ToolboxPage() {
             Manage scan regions, utility pins, and the discovery engine.
           </p>
         </div>
-        <Link
-          href="/admin/toolbox/scans"
-          className="shrink-0 rounded-full px-3 py-1.5 text-xs font-bold text-glow ring-1 ring-border hover:bg-glow/10"
-        >
-          Scan jobs ›
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link
+            href="/admin/stays"
+            className="rounded-full px-3 py-1.5 text-xs font-bold text-glow ring-1 ring-border hover:bg-glow/10"
+          >
+            Stays admin ›
+          </Link>
+          <Link
+            href="/admin/toolbox/scans"
+            className="rounded-full px-3 py-1.5 text-xs font-bold text-glow ring-1 ring-border hover:bg-glow/10"
+          >
+            Scan jobs ›
+          </Link>
+        </div>
       </div>
 
       {/* Analytics tiles */}
