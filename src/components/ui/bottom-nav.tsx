@@ -15,7 +15,9 @@ interface Tab {
 
 const TABS: Tab[] = [
   {
-    href: "/",
+    // `?app=1` keeps desktop visitors on the mobile app home instead
+    // of being redirected to /discover by the proxy.
+    href: "/?app=1",
     label: "Home",
     icon: <path d="M3 11l9-8 9 8M5 10v10h14V10M9 20v-6h6v6" />,
     image: "/icons/cute-v2/house.png",
@@ -59,8 +61,10 @@ export function BottomNav() {
 
   if (HIDDEN_PREFIXES.some((p) => pathname.startsWith(p))) return null;
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const isActive = (href: string) => {
+    const p = href.split("?")[0];
+    return p === "/" ? pathname === "/" : pathname.startsWith(p);
+  };
   const susenActive = pathname.startsWith("/susen");
 
   // Crisp SVG in Light/Dark; watercolor PNG in Cute/Orange. Both render —
