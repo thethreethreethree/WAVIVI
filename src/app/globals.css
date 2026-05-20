@@ -707,6 +707,25 @@ h3 {
   display: none;
 }
 
+/* Pencil underline — a hand-drawn ink line under form inputs, so each
+   field reads like a fillable journal entry instead of a boxed input.
+   The SVG is rendered once as a stretchable background-image; on focus
+   it swaps to a glow-colored version so the active field is obvious. */
+.pencil-line {
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: bottom left;
+  background-size: 100% 6px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'><path d='M0 4 C10 3 20 5 30 4 S50 5 60 4 S80 3 100 4' stroke='%234a2606' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>");
+  border: 0;
+  border-radius: 0;
+  padding: 0.4rem 0.25rem 0.65rem;
+  outline: none;
+}
+.pencil-line:focus-visible {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'><path d='M0 4 C10 3 20 5 30 4 S50 5 60 4 S80 3 100 4' stroke='%23f08a3c' stroke-width='2' fill='none' stroke-linecap='round'/></svg>");
+}
+
 /* Susen centre-nav avatar — a slow, gentle up-and-down bob. */
 @keyframes susen-bob {
   0%,

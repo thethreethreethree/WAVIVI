@@ -18,8 +18,8 @@ const STATUS_OPTIONS: { value: ProfileRow["traveler_status"]; label: string }[] 
   ];
 
 const fieldClass =
-  "wc-frame w-full rounded-xl bg-transparent px-3.5 py-2.5 text-sm " +
-  "outline-none transition-colors placeholder:text-muted focus-visible:border-glow";
+  "pencil-line w-full text-sm font-semibold text-foreground " +
+  "placeholder:font-normal placeholder:text-muted/70";
 
 /** Profile editor — persists to the live `profiles` table via a server action. */
 export function EditProfileForm({ profile }: { profile: ProfileRow }) {

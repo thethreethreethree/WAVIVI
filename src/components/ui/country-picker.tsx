@@ -120,9 +120,9 @@ export function CountryPicker({
               : "Add a country you've visited…"
           }
           disabled={selected.length >= MAX}
-          className="wc-frame w-full rounded-xl bg-transparent px-3.5 py-2.5 text-sm
-                     outline-none transition-colors placeholder:text-muted
-                     focus-visible:border-glow disabled:opacity-50"
+          className="pencil-line w-full text-sm font-semibold text-foreground
+                     placeholder:font-normal placeholder:text-muted/70
+                     disabled:opacity-50"
         />
 
         {open && suggestions.length > 0 && (
