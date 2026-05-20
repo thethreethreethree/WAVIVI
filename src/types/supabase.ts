@@ -252,6 +252,55 @@ export type UtilityVoteInsert = {
 
 export type UtilityVoteUpdate = { vote: -1 | 1 };
 
+/* ── Chat ─────────────────────────────────────────────────────────────── */
+
+export type ChatGroupRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  cover_image: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+export type ChatGroupInsert = {
+  id: string;
+  name: string;
+  description?: string | null;
+  category?: string | null;
+  cover_image?: string | null;
+  created_by?: string | null;
+};
+export type ChatGroupUpdate = Partial<Omit<ChatGroupInsert, "id">>;
+
+export type ChatGroupMemberRow = {
+  group_id: string;
+  user_id: string;
+  joined_at: string;
+};
+export type ChatGroupMemberInsert = {
+  group_id: string;
+  user_id: string;
+};
+export type ChatGroupMemberUpdate = Partial<ChatGroupMemberInsert>;
+
+export type ChatMessageRow = {
+  id: string;
+  group_id: string;
+  user_id: string;
+  author_name: string;
+  body: string;
+  created_at: string;
+};
+export type ChatMessageInsert = {
+  id?: string;
+  group_id: string;
+  user_id: string;
+  author_name: string;
+  body: string;
+};
+export type ChatMessageUpdate = Partial<Omit<ChatMessageInsert, "id">>;
+
 /* ── Database ─────────────────────────────────────────────────────────── */
 
 type TableShape<R, I, U> = {
@@ -275,6 +324,21 @@ export type Database = {
       >;
       scan_jobs: TableShape<ScanJobRow, ScanJobInsert, ScanJobUpdate>;
       scan_logs: TableShape<ScanLogRow, ScanLogInsert, ScanLogInsert>;
+      chat_groups: TableShape<
+        ChatGroupRow,
+        ChatGroupInsert,
+        ChatGroupUpdate
+      >;
+      chat_group_members: TableShape<
+        ChatGroupMemberRow,
+        ChatGroupMemberInsert,
+        ChatGroupMemberUpdate
+      >;
+      chat_messages: TableShape<
+        ChatMessageRow,
+        ChatMessageInsert,
+        ChatMessageUpdate
+      >;
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };

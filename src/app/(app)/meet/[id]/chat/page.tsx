@@ -1,56 +1,50 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { ChatThread, type ThreadMessage } from "@/components/ui/chat-thread";
+import { ChatThread } from "@/components/ui/chat-thread";
+import { getChatGroup, getChatMessages, isMember } from "@/lib/chat";
+import { createClient } from "@/lib/supabase/server";
 import { getGroup } from "@/lib/travejor/groups";
 
 export const metadata: Metadata = { title: "Group Chat" };
 
 type Params = Promise<{ id: string }>;
 
-const seed: ThreadMessage[] = [
-  {
-    id: "g0",
-    author: "Susen",
-    body: "Welcome in 👋 Quick one for the room — what's a place you almost skipped but ended up loving?",
-    time: "18:40",
-    own: false,
-    susen: true,
-  },
-  {
-    id: "g1",
-    author: "Maya",
-    body: "Anyone heading to the night market later? 🍜",
-    time: "18:42",
-    own: false,
-  },
-  {
-    id: "g2",
-    author: "Carlos",
-    body: "I'm in! Meeting at the hostel lobby at 7?",
-    time: "18:45",
-    own: false,
-  },
-  {
-    id: "g3",
-    author: "Zara",
-    body: "Save me a spot — bringing two more travelers 🙌",
-    time: "18:51",
-    own: false,
-  },
-];
-
 export default async function GroupChatPage({ params }: { params: Params }) {
   const { id } = await params;
-  const group = getGroup(id);
-  if (!group) notFound();
+
+  // The chat_groups row is the source of truth for chat; fall back to the
+  // mock travel-group for discovery metadata (cover image, traveler count)
+  // that the seed didn't carry across.
+  const [dbGroup, mockGroup] = await Promise.all([
+    getChatGroup(id),
+    Promise.resolve(getGroup(id)),
+  ]);
+  if (!dbGroup && !mockGroup) notFound();
+
+  const name = dbGroup?.name ?? mockGroup?.name ?? "Group";
+  const category = dbGroup?.category ?? mockGroup?.category ?? "Travellers";
+  const subtitle = mockGroup?.travelerCount
+    ? `${mockGroup.travelerCount} travelers · ${category}`
+    : category;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const joined = user ? await isMember(id) : false;
+  const initialMessages = joined ? await getChatMessages(id) : [];
 
   return (
     <ChatThread
-      title={group.name}
-      subtitle={`${group.travelerCount} travelers · ${group.category}`}
+      title={name}
+      subtitle={subtitle}
       back={`/meet/${id}`}
-      initialMessages={seed}
+      groupId={id}
+      currentUserId={user?.id ?? null}
+      joined={joined}
+      initialMessages={initialMessages}
       showAuthors
     />
   );
