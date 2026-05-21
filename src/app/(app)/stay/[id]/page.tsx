@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { Rating } from "@/components/ui/rating";
 import { StayPhoto } from "@/components/ui/stay-photo";
+import { BackpackerPickButton } from "@/features/stays/backpacker-pick-button";
 import { createClient } from "@/lib/supabase/server";
 import type { StayRow, StayType } from "@/types/supabase";
 
@@ -121,6 +122,21 @@ export default async function StayDetailPage({ params }: { params: Params }) {
   const stay = await fetchStay(id);
   if (!stay) notFound();
 
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  let voted = false;
+  if (user) {
+    const { data: v } = await supabase
+      .from("stay_votes")
+      .select("voter_id")
+      .eq("stay_id", stay.id)
+      .eq("voter_id", user.id)
+      .maybeSingle();
+    voted = Boolean(v);
+  }
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="wc-frame relative h-60 w-full rounded-2xl p-2">
@@ -144,6 +160,11 @@ export default async function StayDetailPage({ params }: { params: Params }) {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </Link>
+        {stay.thumbs_up > 0 && (
+          <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-glow px-2.5 py-1 text-[11px] font-bold text-white shadow-card">
+            🎒 Backpacker Pick · {stay.thumbs_up}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-col gap-5 px-5 py-5">
@@ -207,6 +228,13 @@ export default async function StayDetailPage({ params }: { params: Params }) {
         >
           Get Directions
         </a>
+
+        <BackpackerPickButton
+          stayId={stay.id}
+          initialVoted={voted}
+          initialCount={stay.thumbs_up}
+          signedIn={Boolean(user)}
+        />
 
         <div className="grid grid-cols-4 gap-2">
           <ContactButton

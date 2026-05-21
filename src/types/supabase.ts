@@ -372,6 +372,15 @@ export type StayInsert = {
 
 export type StayUpdate = Partial<Omit<StayInsert, "source_ref">>;
 
+export type StayVoteRow = {
+  id: string;
+  stay_id: string;
+  voter_id: string;
+  created_at: string;
+};
+export type StayVoteInsert = { stay_id: string; voter_id: string };
+export type StayVoteUpdate = Partial<StayVoteInsert>;
+
 /* ── Chat ─────────────────────────────────────────────────────────────── */
 
 export type ChatGroupRow = {
@@ -445,6 +454,7 @@ export type Database = {
       scan_jobs: TableShape<ScanJobRow, ScanJobInsert, ScanJobUpdate>;
       scan_logs: TableShape<ScanLogRow, ScanLogInsert, ScanLogInsert>;
       stays: TableShape<StayRow, StayInsert, StayUpdate>;
+      stay_votes: TableShape<StayVoteRow, StayVoteInsert, StayVoteUpdate>;
       chat_groups: TableShape<
         ChatGroupRow,
         ChatGroupInsert,
