@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Rating } from "@/components/ui/rating";
 import { StayPhoto } from "@/components/ui/stay-photo";
 import { BackpackerPickButton } from "@/features/stays/backpacker-pick-button";
+import { SaveToPlanButton } from "@/features/where-to-next/save-to-plan-button";
 import { amenityIconPath } from "@/lib/stays/csv-import";
 import { createClient } from "@/lib/supabase/server";
 import { flagImage } from "@/lib/travejor/account";
@@ -336,6 +337,21 @@ export default async function StayDetailPage({ params }: { params: Params }) {
           initialCount={stay.thumbs_up}
           signedIn={Boolean(user)}
         />
+
+        {user && (
+          <div className="flex justify-center">
+            <SaveToPlanButton
+              list="saved_hotels"
+              item={{
+                externalId: stay.id,
+                name: stay.name,
+                city: stay.address,
+                notes: null,
+              }}
+              label="Save to my trip"
+            />
+          </div>
+        )}
 
         <div className="grid grid-cols-4 gap-2">
           <ContactButton

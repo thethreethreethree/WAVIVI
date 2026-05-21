@@ -269,6 +269,78 @@ export async function setPlanOpenToMeet(
   return { ok: true, error: null };
 }
 
+/**
+ * List the signed-in traveler's plans (id + headline only). Used by the
+ * "Save to plan" picker on stay / place detail pages.
+ */
+export async function listMyPlans(): Promise<
+  {
+    id: string;
+    headline: string;
+    startDate: string;
+    endDate: string;
+  }[]
+> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("travel_plans")
+    .select("id, destinations, destination_countries, start_date, end_date")
+    .order("start_date", { ascending: true });
+  return (data ?? []).map((p) => {
+    const first = (p.destinations ?? [])[0];
+    const headline = first
+      ? [first.city, first.country].filter(Boolean).join(", ")
+      : (p.destination_countries ?? []).join(", ");
+    return {
+      id: p.id,
+      headline: headline || "Trip",
+      startDate: p.start_date,
+      endDate: p.end_date,
+    };
+  });
+}
+
+/**
+ * Append a stay (or any external item) to a plan's saved list. Caller
+ * supplies the externalId + denormalised name so the plan still renders
+ * after the source row is removed. RLS scopes the write to the owner.
+ */
+export async function saveExternalToPlan(
+  planId: string,
+  list: SavedItemList,
+  item: SavedTravelItem,
+): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createClient();
+  const { data: plan } = await supabase
+    .from("travel_plans")
+    .select("saved_hotels, saved_restaurants")
+    .eq("id", planId)
+    .maybeSingle();
+  if (!plan) return { ok: false, error: "Plan not found." };
+
+  const current =
+    list === "saved_hotels"
+      ? plan.saved_hotels ?? []
+      : plan.saved_restaurants ?? [];
+  // No duplicates by externalId — re-saving is a no-op (success).
+  if (current.some((it) => it.externalId === item.externalId)) {
+    return { ok: true, error: null };
+  }
+  const next = [...current, item];
+  const patch: TravelPlanUpdate =
+    list === "saved_hotels"
+      ? { saved_hotels: next }
+      : { saved_restaurants: next };
+  const { error } = await supabase
+    .from("travel_plans")
+    .update(patch)
+    .eq("id", planId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/where-to-next/plans/${planId}`);
+  return { ok: true, error: null };
+}
+
 /* ── Trip Planner ─────────────────────────────────────────────────────── */
 
 export async function addItineraryItem(

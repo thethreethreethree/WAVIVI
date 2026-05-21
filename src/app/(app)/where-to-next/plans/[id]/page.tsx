@@ -138,7 +138,7 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
         title="Saved hotels"
         emoji="🏨"
         items={plan.saved_hotels}
-        emptyHint="Suggestions arrive after matching ships — save any stay from /stay to pin it here."
+        emptyHint="Browse Where to Stay and tap “Save to my trip” on any listing to pin it here."
         planId={plan.id}
         list="saved_hotels"
       />
