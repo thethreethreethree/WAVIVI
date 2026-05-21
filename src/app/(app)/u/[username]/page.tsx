@@ -24,6 +24,7 @@ interface DisplayTraveler {
   name: string;
   avatar: string;
   bio: string;
+  home_country: string | null;
   countries: string[];
   verified: boolean;
   instagram: InstagramIdentity | null;
