@@ -8,7 +8,7 @@ Living plan. Items move from 🟥/🟧/🟨/🌱 → ✅ as we ship them.
 
 ```
 Toward demo-able beta (mock data):  ████████████████░░░░  85%
-Toward production launch (v1):      █████████████████░░░  87%
+Toward production launch (v1):      ████████████████░░░░  82%
 ```
 
 ### Per-track completion
