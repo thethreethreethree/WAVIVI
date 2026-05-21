@@ -97,7 +97,7 @@ export function TripPlanner({ planId, startDate, durationDays, items }: Props) {
 
   return (
     <section>
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-base font-bold">
           <span className="wc-underline">Day-by-Day Trip Planner</span>
         </h2>
