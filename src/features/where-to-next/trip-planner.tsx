@@ -123,7 +123,7 @@ export function TripPlanner({ planId, startDate, durationDays, items }: Props) {
 
       <div
         ref={scrollerRef}
-        className="wc-frame mt-3 shrink-0 overflow-y-auto rounded-2xl p-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="mt-3 shrink-0 overflow-y-auto rounded-2xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{
           height: "16rem",
           maxHeight: "16rem",
