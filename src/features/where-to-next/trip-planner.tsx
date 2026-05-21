@@ -124,11 +124,18 @@ export function TripPlanner({ planId, startDate, durationDays, items }: Props) {
       <div
         ref={scrollerRef}
         className="wc-frame mt-3 shrink-0 overflow-y-auto rounded-2xl p-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        style={{
-          height: "16rem",
-          maxHeight: "16rem",
-          minHeight: "16rem",
-        }}
+        style={
+          {
+            height: "16rem",
+            maxHeight: "16rem",
+            minHeight: "16rem",
+            // Override the wc-frame painted fill (var(--surface)) with a
+            // warm light-orange wash — the ::before paints from this
+            // variable so the background stays anchored to the frame
+            // (it never scrolls with the day cards inside).
+            "--surface": "#ffe6c4",
+          } as React.CSSProperties
+        }
       >
         <div className="flex flex-col gap-3">
           {days.map((d) => (
