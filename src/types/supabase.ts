@@ -372,6 +372,80 @@ export type StayInsert = {
 
 export type StayUpdate = Partial<Omit<StayInsert, "source_ref">>;
 
+/* ── Experiences (tours, dives, kayak rentals, viewpoints, …) ─────────── */
+
+export type ExperienceRow = {
+  id: string;
+  region_id: string | null;
+  activity_type: string;
+  name: string;
+  description: string | null;
+  latitude: number;
+  longitude: number;
+  google_maps_url: string;
+  address: string | null;
+  rating: number | null;
+  review_count: number;
+  thumbs_up: number;
+  thumbs_down: number;
+  backpack_rating: number;
+  reliability_score: number;
+  admin_edited: boolean;
+  phone: string | null;
+  website: string | null;
+  email: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  whatsapp: string | null;
+  price_per_session_usd: number | null;
+  amenities: string[];
+  photo_url: string | null;
+  photo_urls: string[];
+  source: string;
+  source_ref: string;
+  claimed_by: string | null;
+  metadata_json: Record<string, unknown>;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ExperienceInsert = {
+  id?: string;
+  region_id?: string | null;
+  activity_type?: string;
+  name: string;
+  description?: string | null;
+  latitude: number;
+  longitude: number;
+  google_maps_url?: string;
+  address?: string | null;
+  rating?: number | null;
+  review_count?: number;
+  thumbs_up?: number;
+  thumbs_down?: number;
+  backpack_rating?: number;
+  reliability_score?: number;
+  admin_edited?: boolean;
+  phone?: string | null;
+  website?: string | null;
+  email?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
+  whatsapp?: string | null;
+  price_per_session_usd?: number | null;
+  amenities?: string[];
+  photo_url?: string | null;
+  photo_urls?: string[];
+  source?: string;
+  source_ref: string;
+  claimed_by?: string | null;
+  metadata_json?: Record<string, unknown>;
+  active?: boolean;
+};
+
+export type ExperienceUpdate = Partial<Omit<ExperienceInsert, "source_ref">>;
+
 export type StayVoteRow = {
   id: string;
   stay_id: string;
@@ -580,6 +654,11 @@ export type Database = {
       scan_logs: TableShape<ScanLogRow, ScanLogInsert, ScanLogInsert>;
       stays: TableShape<StayRow, StayInsert, StayUpdate>;
       stay_votes: TableShape<StayVoteRow, StayVoteInsert, StayVoteUpdate>;
+      experiences: TableShape<
+        ExperienceRow,
+        ExperienceInsert,
+        ExperienceUpdate
+      >;
       chat_groups: TableShape<
         ChatGroupRow,
         ChatGroupInsert,
