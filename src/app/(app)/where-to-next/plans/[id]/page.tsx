@@ -172,6 +172,9 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
         items={plan.itinerary}
       />
 
+      {/* Activities & places — top stays in the destination country. */}
+      <ActivitiesAndPlaces plan={plan} />
+
       {/* Suggested travelers — 0.45–0.65 bucket. */}
       <SuggestedTravelers plan={plan} />
 
@@ -213,6 +216,76 @@ function TagRow({ label, tags }: { label: string; tags: string[] }) {
         ))}
       </div>
     </div>
+  );
+}
+
+async function ActivitiesAndPlaces({ plan }: { plan: TravelPlanRow }) {
+  // We don't have a `stays.country` column yet (region_id is region-keyed),
+  // so the simplest "places in your destination" pick is to match on
+  // address ILIKE %city% / %country%. Cheap, good enough for an MVP
+  // recommendation strip.
+  const country = plan.destinations[0]?.country ?? plan.destination_countries[0];
+  const city = plan.destinations[0]?.city ?? null;
+  if (!country) return null;
+
+  const supabase = createAdminClient();
+  let query = supabase
+    .from("stays")
+    .select("id, name, photo_url, stay_type, address, rating, backpack_rating")
+    .eq("active", true)
+    .order("backpack_rating", { ascending: false })
+    .limit(6);
+  query = query.or(
+    [
+      `address.ilike.%${country}%`,
+      city ? `address.ilike.%${city}%` : null,
+    ]
+      .filter(Boolean)
+      .join(","),
+  );
+  const { data } = await query;
+  const picks = data ?? [];
+  if (picks.length === 0) return null;
+
+  return (
+    <section>
+      <h2 className="text-base font-bold">📍 Activities &amp; places</h2>
+      <p className="mt-1 text-xs text-muted">
+        Top picks for {city ? `${city}, ` : ""}{country}.
+      </p>
+      <div className="-mx-5 mt-3 flex gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {picks.map((s) => (
+          <Link
+            key={s.id}
+            href={`/stay/${s.id}`}
+            className="w-40 shrink-0"
+          >
+            <div className="wc-frame relative h-24 w-40 rounded-2xl p-1.5">
+              <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-background">
+                {s.photo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={s.photo_url}
+                    alt={s.name}
+                    referrerPolicy="no-referrer"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="text-3xl" aria-hidden>
+                    🏠
+                  </span>
+                )}
+              </span>
+            </div>
+            <p className="mt-1.5 truncate text-sm font-bold">{s.name}</p>
+            <p className="truncate text-xs text-muted">
+              ★ {(s.rating ?? s.backpack_rating).toFixed(1)} ·{" "}
+              {s.stay_type}
+            </p>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 
