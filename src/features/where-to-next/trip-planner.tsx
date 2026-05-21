@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 
 import {
   addItineraryItem,
@@ -17,6 +17,27 @@ interface Props {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Compute the YYYY-MM-DD of `startDate + dayIndex` in UTC. */
+function dayDateString(startDate: string, dayIndex: number): string {
+  const d = new Date(`${startDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + dayIndex);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Inverse of dayDateString — translate an arbitrary date back to dayIndex. */
+function dateToDayIndex(
+  startDate: string,
+  durationDays: number,
+  target: string,
+): number {
+  const start = Date.parse(`${startDate}T00:00:00Z`);
+  const t = Date.parse(`${target}T00:00:00Z`);
+  if (!Number.isFinite(start) || !Number.isFinite(t)) return -1;
+  const idx = Math.round((t - start) / DAY_MS);
+  if (idx < 0 || idx >= Math.max(1, durationDays)) return -1;
+  return idx;
+}
 
 const TIME_OPTIONS: { id: ItineraryTimeOfDay; label: string; emoji: string }[] =
   [
@@ -41,6 +62,7 @@ export function TripPlanner({ planId, startDate, durationDays, items }: Props) {
     () =>
       Array.from({ length: Math.max(1, durationDays) }, (_, i) => ({
         index: i,
+        date: dayDateString(startDate, i),
         label: fmtDayHeader(startDate, i),
         items: items
           .filter((it) => it.dayIndex === i)
@@ -57,13 +79,51 @@ export function TripPlanner({ planId, startDate, durationDays, items }: Props) {
     [startDate, durationDays, items],
   );
 
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const endDate = dayDateString(startDate, Math.max(0, durationDays - 1));
+
+  function jumpToDate(target: string) {
+    const idx = dateToDayIndex(startDate, durationDays, target);
+    if (idx < 0) return;
+    setCalendarOpen(false);
+    const node = scrollerRef.current?.querySelector<HTMLElement>(
+      `[data-day-index="${idx}"]`,
+    );
+    if (node) {
+      node.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
   return (
     <section>
-      <h2 className="text-base font-bold">
-        <span className="wc-underline">Day-by-Day Trip Planner</span>
-      </h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-base font-bold">
+          <span className="wc-underline">Day-by-Day Trip Planner</span>
+        </h2>
+        <button
+          type="button"
+          onClick={() => setCalendarOpen((o) => !o)}
+          aria-expanded={calendarOpen}
+          className="wc-frame wc-frame-orange-white inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-bold text-glow"
+        >
+          📅 Calendar
+        </button>
+      </div>
+
+      {calendarOpen && (
+        <CalendarPicker
+          startDate={startDate}
+          endDate={endDate}
+          days={days}
+          onPick={jumpToDate}
+          onClose={() => setCalendarOpen(false)}
+        />
+      )}
+
       <div
-        className="wc-frame mt-3 shrink-0 overflow-y-scroll rounded-2xl p-3"
+        ref={scrollerRef}
+        className="wc-frame mt-3 shrink-0 overflow-y-auto rounded-2xl p-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{
           height: "16rem",
           maxHeight: "16rem",
@@ -83,6 +143,81 @@ export function TripPlanner({ planId, startDate, durationDays, items }: Props) {
         </div>
       </div>
     </section>
+  );
+}
+
+function CalendarPicker({
+  startDate,
+  endDate,
+  days,
+  onPick,
+  onClose,
+}: {
+  startDate: string;
+  endDate: string;
+  days: { index: number; date: string; label: string; items: ItineraryItem[] }[];
+  onPick: (target: string) => void;
+  onClose: () => void;
+}) {
+  const [manual, setManual] = useState(startDate);
+  return (
+    <div className="wc-frame mt-3 rounded-2xl p-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-bold uppercase tracking-wide text-muted">
+          Jump to a day
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="text-muted"
+        >
+          ✕
+        </button>
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <input
+          type="date"
+          value={manual}
+          min={startDate}
+          max={endDate}
+          onChange={(e) => setManual(e.target.value)}
+          className="wtn-input"
+        />
+        <button
+          type="button"
+          onClick={() => onPick(manual)}
+          className="wc-frame wc-frame-sunset rounded-full px-4 py-2 text-xs font-bold text-white"
+        >
+          Go ›
+        </button>
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+        {days.map((d) => (
+          <button
+            key={d.index}
+            type="button"
+            onClick={() => onPick(d.date)}
+            className={`wc-frame ${
+              d.items.length > 0
+                ? "wc-frame-sunset text-white"
+                : "wc-frame-orange-white text-foreground"
+            } rounded-xl px-2 py-1.5 text-left`}
+          >
+            <p className="text-[11px] font-bold leading-tight">
+              Day {d.index + 1}
+            </p>
+            <p
+              className={`text-[10px] leading-tight ${
+                d.items.length > 0 ? "text-white/85" : "text-muted"
+              }`}
+            >
+              {d.label}
+            </p>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -142,7 +277,7 @@ function DayCard({
   }
 
   return (
-    <div className="wc-frame rounded-2xl p-4">
+    <div data-day-index={dayIndex} className="wc-frame rounded-2xl p-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-bold">
           Day {dayIndex + 1}
