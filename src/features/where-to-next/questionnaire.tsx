@@ -245,6 +245,7 @@ export function Questionnaire({
     });
   }
 
+  if (pending && step === TOTAL_STEPS - 1) return <GeneratingScreen />;
   if (donePlanId) return <CelebrationScreen planId={donePlanId} />;
 
   return (
@@ -590,6 +591,41 @@ function DecorativeSplashes({ step }: { step: number }) {
         aria-hidden
       />
     </>
+  );
+}
+
+function GeneratingScreen() {
+  const lines = [
+    "Lining up your destinations…",
+    "Looking for travelers on the same trip…",
+    "Pulling places worth checking out…",
+  ];
+  return (
+    <div className="relative flex flex-1 flex-col items-center justify-center px-5 text-center">
+      <span
+        className="watercolor-wash pointer-events-none absolute -left-16 -top-8 h-56 w-56 rounded-full"
+        style={{ background: "#ff9d6b", opacity: 0.32 }}
+        aria-hidden
+      />
+      <span
+        className="watercolor-wash pointer-events-none absolute -right-16 bottom-1/4 h-60 w-60 rounded-full"
+        style={{ background: "#ffd28a", opacity: 0.28 }}
+        aria-hidden
+      />
+      <div className="relative">
+        <div className="text-7xl" aria-hidden>
+          🧭
+        </div>
+        <h1 className="mt-4 text-2xl font-bold tracking-tight">
+          <span className="wc-underline">Building your plan…</span>
+        </h1>
+        <ul className="mt-4 flex flex-col items-center gap-1.5 text-sm text-muted">
+          {lines.map((l) => (
+            <li key={l}>{l}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
   );
 }
 
