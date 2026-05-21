@@ -61,6 +61,28 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Where to Next — verified-only travel-plan + matching tool. */}
+      <section className="px-5 pb-6">
+        <Link
+          href="/where-to-next"
+          className="wc-frame wc-frame-sunset relative block overflow-hidden rounded-2xl px-5 py-5 text-white shadow-card active:scale-[0.99]"
+        >
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/80">
+            Where to Next
+          </p>
+          <p className="mt-1 text-2xl font-bold leading-tight">
+            Meet. Vibe. Move.
+          </p>
+          <p className="mt-1.5 max-w-[22rem] text-xs text-white/85">
+            Plan your trip, find your crew. Tap in and we&apos;ll line up
+            places, eats, and travelers headed the same way.
+          </p>
+          <span className="mt-3 inline-flex items-center gap-1 text-sm font-bold">
+            Start planning <span aria-hidden>›</span>
+          </span>
+        </Link>
+      </section>
+
       {/* Folded-in WAVIVI feature — AI "For you" recommendations */}
       <section className="px-5 pb-8">
         <div className="mb-3 flex items-center justify-between">
