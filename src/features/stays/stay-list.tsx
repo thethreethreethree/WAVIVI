@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { Rating } from "@/components/ui/rating";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { SearchField } from "@/components/ui/search-field";
+import { StayPhoto } from "@/components/ui/stay-photo";
 import {
   SCOOTER_KMH,
   WALK_KMH,
@@ -244,19 +245,8 @@ export function StayList({ stays }: { stays: StayRow[] }) {
                   className="wc-frame flex gap-3 rounded-2xl p-3"
                 >
                   <div className="wc-frame relative h-20 w-20 shrink-0 rounded-xl p-1.5">
-                    <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-lg bg-background">
-                      {s.photo_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={s.photo_url}
-                          alt={s.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-2xl" aria-hidden>
-                          🏠
-                        </span>
-                      )}
+                    <span className="relative block h-full w-full overflow-hidden rounded-lg">
+                      <StayPhoto src={s.photo_url} alt={s.name} />
                     </span>
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col">

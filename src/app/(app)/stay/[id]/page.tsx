@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Rating } from "@/components/ui/rating";
+import { StayPhoto } from "@/components/ui/stay-photo";
 import { createClient } from "@/lib/supabase/server";
 import type { StayRow, StayType } from "@/types/supabase";
 
@@ -125,19 +126,8 @@ export default async function StayDetailPage({ params }: { params: Params }) {
   return (
     <div className="flex flex-1 flex-col">
       <div className="wc-frame relative h-60 w-full rounded-2xl p-2">
-        <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-background">
-          {stay.photo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={stay.photo_url}
-              alt={stay.name}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <span className="text-5xl" aria-hidden>
-              🏠
-            </span>
-          )}
+        <span className="relative block h-full w-full overflow-hidden rounded-xl">
+          <StayPhoto src={stay.photo_url} alt={stay.name} emojiSize="text-5xl" />
           <span className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
         </span>
         <Link
