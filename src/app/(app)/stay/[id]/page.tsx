@@ -167,7 +167,7 @@ export default async function StayDetailPage({ params }: { params: Params }) {
   const overflow = Math.max(0, stay.thumbs_up - pickers.length);
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col pt-[max(2.5rem,calc(env(safe-area-inset-top)+1.5rem))]">
       <div className="wc-frame relative h-60 w-full rounded-2xl p-2">
         <span className="relative block h-full w-full overflow-hidden rounded-xl">
           <StayPhoto src={stay.photo_url} alt={stay.name} emojiSize="text-5xl" />
