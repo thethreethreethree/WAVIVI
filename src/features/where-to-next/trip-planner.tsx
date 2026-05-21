@@ -65,9 +65,9 @@ export function TripPlanner({ planId, startDate, durationDays, items }: Props) {
       <div
         className="wc-frame mt-3 shrink-0 overflow-y-scroll rounded-2xl p-3"
         style={{
-          height: "28rem",
-          maxHeight: "28rem",
-          minHeight: "28rem",
+          height: "22rem",
+          maxHeight: "22rem",
+          minHeight: "22rem",
         }}
       >
         <div className="flex flex-col gap-3">

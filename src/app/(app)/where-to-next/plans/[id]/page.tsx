@@ -340,7 +340,7 @@ function MySavedList({ plan }: { plan: TravelPlanRow }) {
       <h2 className="text-base font-bold">
         <span className="wc-underline">My Saved</span>
       </h2>
-      <div className="mt-3 grid grid-cols-2 gap-3">
+      <div className="mt-3 grid grid-cols-4 gap-2">
         <SavedTile
           href={`${base}/stay`}
           label="Places I'll stay"
@@ -378,13 +378,13 @@ function SavedTile({
   return (
     <Link
       href={href}
-      className="wc-frame flex aspect-square flex-col items-center justify-center gap-1 rounded-2xl p-3 text-center transition active:scale-[0.98]"
+      className="wc-frame flex aspect-square flex-col items-center justify-center gap-0.5 rounded-2xl p-1.5 text-center transition active:scale-[0.98]"
     >
-      <p className="text-3xl font-bold text-glow">{count}</p>
-      <p className="text-[11px] font-bold leading-tight text-foreground">
+      <p className="text-xl font-bold leading-none text-glow">{count}</p>
+      <p className="text-[10px] font-bold leading-tight text-foreground">
         {label}
       </p>
-      <p className="mt-0.5 text-[10px] font-semibold text-muted">Manage ›</p>
+      <p className="text-[9px] font-semibold text-muted">Manage ›</p>
     </Link>
   );
 }
