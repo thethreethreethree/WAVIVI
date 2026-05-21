@@ -391,6 +391,13 @@ export type ChatGroupRow = {
   cover_image: string | null;
   created_by: string | null;
   created_at: string;
+  /* Where-to-Next routing columns (migration 0017). */
+  destination_country: string | null;
+  destination_city: string | null;
+  window_start: string | null;
+  window_end: string | null;
+  theme_tags: string[];
+  is_auto_generated: boolean;
 };
 export type ChatGroupInsert = {
   id: string;
@@ -399,6 +406,12 @@ export type ChatGroupInsert = {
   category?: string | null;
   cover_image?: string | null;
   created_by?: string | null;
+  destination_country?: string | null;
+  destination_city?: string | null;
+  window_start?: string | null;
+  window_end?: string | null;
+  theme_tags?: string[];
+  is_auto_generated?: boolean;
 };
 export type ChatGroupUpdate = Partial<Omit<ChatGroupInsert, "id">>;
 
@@ -429,6 +442,95 @@ export type ChatMessageInsert = {
   body: string;
 };
 export type ChatMessageUpdate = Partial<Omit<ChatMessageInsert, "id">>;
+
+/* ── Where to Next (travel plans + match audit) ───────────────────────── */
+
+export type TravelPlanBudget = "shoestring" | "mid" | "premium" | "luxury";
+export type TravelPlanTravelingWith = "solo" | "partner" | "friends" | "family";
+export type TravelPlanStatus = "draft" | "upcoming" | "active" | "past";
+
+/** One leg of a multi-stop trip — stored as jsonb so the shape can grow. */
+export type TravelPlanDestination = {
+  country: string;
+  city: string | null;
+  arriveOn: string; // YYYY-MM-DD
+  departOn: string; // YYYY-MM-DD
+};
+
+export type SavedTravelItem = {
+  /** Stable id from the source table (stays.id, places.id, etc.). */
+  externalId: string;
+  /** Denormalised so the plan still renders if the source row is removed. */
+  name: string;
+  city: string | null;
+  notes: string | null;
+};
+
+export type TravelPlanRow = {
+  id: string;
+  user_id: string;
+  start_date: string;
+  end_date: string;
+  duration_days: number;
+  destinations: TravelPlanDestination[];
+  destination_countries: string[];
+  purpose: string[];
+  activities: string[];
+  vibe_tags: string[];
+  must_see: string[];
+  budget: TravelPlanBudget;
+  traveling_with: TravelPlanTravelingWith;
+  open_to_meet_others: boolean;
+  saved_hotels: SavedTravelItem[];
+  saved_restaurants: SavedTravelItem[];
+  saved_chats: string[];
+  status: TravelPlanStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TravelPlanInsert = {
+  id?: string;
+  user_id: string;
+  start_date: string;
+  end_date: string;
+  destinations?: TravelPlanDestination[];
+  destination_countries?: string[];
+  purpose?: string[];
+  activities?: string[];
+  vibe_tags?: string[];
+  must_see?: string[];
+  budget: TravelPlanBudget;
+  traveling_with: TravelPlanTravelingWith;
+  open_to_meet_others?: boolean;
+  saved_hotels?: SavedTravelItem[];
+  saved_restaurants?: SavedTravelItem[];
+  saved_chats?: string[];
+  status?: TravelPlanStatus;
+};
+
+export type TravelPlanUpdate = Partial<Omit<TravelPlanInsert, "user_id">>;
+
+export type ChatInviteLogRow = {
+  id: string;
+  group_id: string;
+  invitee_id: string;
+  source_plan_id: string | null;
+  match_score: number | null;
+  reason: string | null;
+  created_at: string;
+};
+
+export type ChatInviteLogInsert = {
+  id?: string;
+  group_id: string;
+  invitee_id: string;
+  source_plan_id?: string | null;
+  match_score?: number | null;
+  reason?: string | null;
+};
+
+export type ChatInviteLogUpdate = Partial<Omit<ChatInviteLogInsert, "id">>;
 
 /* ── Database ─────────────────────────────────────────────────────────── */
 
@@ -469,6 +571,16 @@ export type Database = {
         ChatMessageRow,
         ChatMessageInsert,
         ChatMessageUpdate
+      >;
+      travel_plans: TableShape<
+        TravelPlanRow,
+        TravelPlanInsert,
+        TravelPlanUpdate
+      >;
+      chat_invite_log: TableShape<
+        ChatInviteLogRow,
+        ChatInviteLogInsert,
+        ChatInviteLogUpdate
       >;
     };
     Views: { [_ in never]: never };
