@@ -96,7 +96,7 @@ export default async function MyProfilePage() {
 
       {/* Identity */}
       <div className="flex flex-col items-center px-5">
-        <span className="wc-frame wc-frame-orange relative h-28 w-28 rounded-full p-1.5">
+        <span className="wc-frame wc-frame-orange relative block h-28 w-28 rounded-full p-1.5">
           <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-surface-elevated">
             {profile.avatar_url ? (
               <Image
@@ -112,7 +112,8 @@ export default async function MyProfilePage() {
           </span>
           {profile.home_country && (
             <span
-              className="wc-frame wc-frame-orange absolute -bottom-2 right-0 z-10 block h-10 w-10 rounded-full p-1"
+              className="wc-frame wc-frame-orange absolute z-10 block h-10 w-10 rounded-full p-1"
+              style={{ top: "64px", left: "76px" }}
               title={profile.home_country}
             >
               <span className="relative block h-full w-full overflow-hidden rounded-full bg-white">
