@@ -97,27 +97,23 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
         </Link>
       </header>
 
-      {/* Saved sections — only render when the user has actually saved
-          something to keep empty plans from looking like an empty-state
-          gallery. */}
-      {plan.saved_hotels.length > 0 && (
-        <SavedSection
-          title="Saved hotels"
-          emoji="🏨"
-          items={plan.saved_hotels}
-          planId={plan.id}
-          list="saved_hotels"
-        />
-      )}
-      {plan.saved_restaurants.length > 0 && (
-        <SavedSection
-          title="Saved restaurants"
-          emoji="🍜"
-          items={plan.saved_restaurants}
-          planId={plan.id}
-          list="saved_restaurants"
-        />
-      )}
+      {/* Saved sections — always visible. Empty states are silent
+          (just the section heading) so the layout is consistent
+          whether or not the user has saved anything yet. */}
+      <SavedSection
+        title="Saved hotels"
+        emoji="🏨"
+        items={plan.saved_hotels}
+        planId={plan.id}
+        list="saved_hotels"
+      />
+      <SavedSection
+        title="Saved restaurants"
+        emoji="🍜"
+        items={plan.saved_restaurants}
+        planId={plan.id}
+        list="saved_restaurants"
+      />
 
       {/* Things to do — top stays in the destination country. */}
       <ActivitiesAndPlaces plan={plan} />
@@ -128,7 +124,7 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
       {/* Suggested travelers — 0.45–0.65 bucket. */}
       <SuggestedTravelers plan={plan} />
 
-      {/* Group chats — only render when the user is in chats. */}
+      {/* Group chats. */}
       <ChatsSection planId={plan.id} chatIds={plan.saved_chats} />
 
       <PlanActions planId={plan.id} />
@@ -356,38 +352,41 @@ async function ChatsSection({
   planId: string;
   chatIds: string[];
 }) {
-  if (chatIds.length === 0) return null;
-  const supabase = createAdminClient();
-  const { data } = await supabase
-    .from("chat_groups")
-    .select("*")
-    .in("id", chatIds);
-  const chats = (data ?? []) as ChatGroupRow[];
-  if (chats.length === 0) return null;
+  let chats: ChatGroupRow[] = [];
+  if (chatIds.length > 0) {
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from("chat_groups")
+      .select("*")
+      .in("id", chatIds);
+    chats = (data ?? []) as ChatGroupRow[];
+  }
 
   return (
     <section>
       <h2 className="text-base font-bold">💬 Group chats</h2>
-      <ul className="mt-2 flex flex-col gap-2">
-        {chats.map((c) => (
-          <li key={c.id}>
-            <Link
-              href={`/meet/${c.id}`}
-              className="wc-frame flex items-center justify-between gap-3 rounded-2xl p-3"
-            >
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold">{c.name}</p>
-                {c.is_auto_generated && (
-                  <p className="truncate text-[11px] text-muted">
-                    Auto-created from your trip
-                  </p>
-                )}
-              </div>
-              <span className="text-glow">›</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {chats.length > 0 && (
+        <ul className="mt-2 flex flex-col gap-2">
+          {chats.map((c) => (
+            <li key={c.id}>
+              <Link
+                href={`/meet/${c.id}`}
+                className="wc-frame flex items-center justify-between gap-3 rounded-2xl p-3"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold">{c.name}</p>
+                  {c.is_auto_generated && (
+                    <p className="truncate text-[11px] text-muted">
+                      Auto-created from your trip
+                    </p>
+                  )}
+                </div>
+                <span className="text-glow">›</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
