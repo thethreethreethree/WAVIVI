@@ -121,8 +121,6 @@ export default async function StayDetailPage({ params }: { params: Params }) {
   const stay = await fetchStay(id);
   if (!stay) notFound();
 
-  const recommended = stay.backpack_rating >= 4;
-
   return (
     <div className="flex flex-1 flex-col">
       <div className="wc-frame relative h-60 w-full rounded-2xl p-2">
@@ -146,11 +144,6 @@ export default async function StayDetailPage({ params }: { params: Params }) {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </Link>
-        {recommended && (
-          <span className="absolute right-4 top-4 rounded-full bg-glow px-2.5 py-1 text-[11px] font-bold text-white">
-            ✓ Backpacker Pick
-          </span>
-        )}
       </div>
 
       <div className="flex flex-col gap-5 px-5 py-5">
@@ -161,10 +154,7 @@ export default async function StayDetailPage({ params }: { params: Params }) {
             {stay.address ? ` · ${stay.address}` : ""}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
-            <Rating
-              value={stay.rating ?? stay.backpack_rating}
-              favourite={recommended}
-            />
+            <Rating value={stay.rating ?? stay.backpack_rating} />
             {stay.review_count > 0 && (
               <span className="text-xs text-muted">
                 ({stay.review_count.toLocaleString()} review

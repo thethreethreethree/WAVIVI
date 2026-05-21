@@ -237,7 +237,6 @@ export function StayList({ stays }: { stays: StayRow[] }) {
       ) : (
         <ul className="flex flex-col gap-3 px-5 pb-8 pt-2">
           {results.map(({ s, km }) => {
-            const recommended = s.backpack_rating >= 4;
             return (
               <li key={s.id}>
                 <Link
@@ -265,10 +264,7 @@ export function StayList({ stays }: { stays: StayRow[] }) {
                       </div>
                     )}
                     <div className="mt-auto flex items-center gap-2 pt-1.5">
-                      <Rating
-                        value={s.rating ?? s.backpack_rating}
-                        favourite={recommended}
-                      />
+                      <Rating value={s.rating ?? s.backpack_rating} />
                       {s.review_count > 0 && (
                         <span className="text-[11px] text-muted">
                           ({s.review_count.toLocaleString()})
