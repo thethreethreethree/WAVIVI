@@ -173,6 +173,10 @@ const AMENITY_ICON_FILENAMES: Record<string, string> = {
   "EV charger": "EV Charger.png",
   "Beach access": "Beach Access.png",
   "Wheelchair accessible": "Wheelchair Accessible.png",
+  "Kitchen/Kitchenette in room": "Kitchen_Kitchenette.png",
+  // Non-canonical labels that the CSV keeps verbatim — we still ship art.
+  Balcony: "Balcony.png",
+  Garden: "Garden.png",
 };
 
 export function amenityIconPath(amenity: string): string | null {
