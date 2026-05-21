@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { PlanActions } from "@/features/where-to-next/plan-actions";
+import { TripPlanner } from "@/features/where-to-next/trip-planner";
 import { VerificationGate } from "@/features/where-to-next/verification-gate";
 import { getCurrentProfile } from "@/lib/profiles";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -96,9 +97,16 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
         </Link>
       </header>
 
-      {/* My Saved List — three tiles covering Stay / Eat / Do, with
-          the saved items listed below the tile grid. */}
+      {/* My Saved — 2x2 tile grid linking out to manage pages. */}
       <MySavedList plan={plan} />
+
+      {/* Day-by-Day Trip Planner — scrollable day editor. */}
+      <TripPlanner
+        planId={plan.id}
+        startDate={plan.start_date}
+        durationDays={plan.duration_days}
+        items={plan.itinerary}
+      />
 
       {/* Things to do — top stays in the destination country. */}
       <ActivitiesAndPlaces plan={plan} />
@@ -330,7 +338,7 @@ function MySavedList({ plan }: { plan: TravelPlanRow }) {
   return (
     <section>
       <h2 className="text-base font-bold">
-        <span className="wc-underline">My Saved List</span>
+        <span className="wc-underline">My Saved</span>
       </h2>
       <div className="mt-3 grid grid-cols-2 gap-3">
         <SavedTile

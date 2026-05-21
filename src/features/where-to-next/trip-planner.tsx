@@ -59,10 +59,9 @@ export function TripPlanner({ planId, startDate, durationDays, items }: Props) {
 
   return (
     <section>
-      <h2 className="text-base font-bold">📒 Trip Planner</h2>
-      <p className="mt-1 text-xs text-muted">
-        Day-by-day plan — pencil in anything you don&apos;t want to forget.
-      </p>
+      <h2 className="text-base font-bold">
+        <span className="wc-underline">Day-by-Day Trip Planner</span>
+      </h2>
       <div
         className="wc-frame mt-3 shrink-0 overflow-y-scroll rounded-2xl p-3"
         style={{
