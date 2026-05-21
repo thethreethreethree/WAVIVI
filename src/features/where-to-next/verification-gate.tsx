@@ -32,14 +32,14 @@ export function VerificationGate() {
 
       <Link
         href="/profile/edit"
-        className="wc-frame wc-frame-sunset block rounded-2xl px-5 py-3 text-center text-sm font-bold text-white shadow-card active:scale-[0.98]"
+        className="wc-frame wc-frame-sunset block rounded-2xl px-5 py-3 text-center text-sm font-bold text-white active:scale-[0.98]"
       >
         Verify my account ›
       </Link>
 
       <Link
         href="/"
-        className="text-center text-xs font-semibold text-muted underline"
+        className="wc-frame wc-frame-orange-white self-center rounded-full px-5 py-2 text-xs font-semibold text-glow"
       >
         Back to home
       </Link>

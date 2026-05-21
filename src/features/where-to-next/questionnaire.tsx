@@ -229,7 +229,7 @@ export function Questionnaire() {
           type="button"
           onClick={step === 0 ? () => history.back() : back}
           aria-label="Back"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-surface text-foreground ring-1 ring-border"
+          className="wc-frame wc-frame-orange-white flex h-9 w-9 items-center justify-center rounded-full text-glow"
         >
           <svg
             viewBox="0 0 24 24"
@@ -398,22 +398,22 @@ export function Questionnaire() {
               <button
                 type="button"
                 onClick={() => setOpenToMeetOthers(true)}
-                className={`flex-1 rounded-2xl px-5 py-4 text-lg font-bold shadow-card transition ${
+                className={`wc-frame ${
                   openToMeetOthers
-                    ? "bg-sunset text-white"
-                    : "bg-surface text-foreground ring-1 ring-border"
-                }`}
+                    ? "wc-frame-sunset text-white"
+                    : "wc-frame-orange-white text-foreground"
+                } flex-1 rounded-2xl px-5 py-4 text-lg font-bold transition active:scale-[0.98]`}
               >
                 Yes please 🙌
               </button>
               <button
                 type="button"
                 onClick={() => setOpenToMeetOthers(false)}
-                className={`flex-1 rounded-2xl px-5 py-4 text-lg font-bold shadow-card transition ${
+                className={`wc-frame ${
                   !openToMeetOthers
-                    ? "bg-foreground text-white"
-                    : "bg-surface text-foreground ring-1 ring-border"
-                }`}
+                    ? "wc-frame-sunset text-white"
+                    : "wc-frame-orange-white text-foreground"
+                } flex-1 rounded-2xl px-5 py-4 text-lg font-bold transition active:scale-[0.98]`}
               >
                 Solo mode 🧘
               </button>
@@ -439,7 +439,7 @@ export function Questionnaire() {
             type="button"
             onClick={back}
             disabled={step === 0 || pending}
-            className="rounded-full bg-surface px-5 py-3 text-sm font-bold text-foreground ring-1 ring-border disabled:opacity-40 active:scale-[0.98]"
+            className="wc-frame wc-frame-orange-white rounded-full px-5 py-3 text-sm font-bold text-glow disabled:opacity-40 active:scale-[0.98]"
           >
             ‹ Back
           </button>
@@ -450,7 +450,7 @@ export function Questionnaire() {
             type="button"
             onClick={next}
             disabled={!canAdvance || pending}
-            className="rounded-full bg-sunset px-6 py-3 text-sm font-bold text-white shadow-card disabled:opacity-50 active:scale-[0.98]"
+            className="wc-frame wc-frame-sunset rounded-full px-6 py-3 text-sm font-bold text-white disabled:opacity-50 active:scale-[0.98]"
           >
             {pending
               ? "Building your plan…"
@@ -483,9 +483,9 @@ function Step({
         {emoji}
       </div>
       <h1 className="text-2xl font-bold leading-tight tracking-tight">
-        {title}
+        <span className="wc-underline">{title}</span>
       </h1>
-      {hint && <p className="mt-1.5 text-sm text-muted">{hint}</p>}
+      {hint && <p className="mt-2 text-sm text-muted">{hint}</p>}
       <div className="mt-5 flex flex-col">{children}</div>
     </div>
   );
@@ -529,11 +529,9 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-bold shadow-sm transition active:scale-[0.97] ${
-        active
-          ? "bg-sunset text-white"
-          : "bg-surface text-foreground ring-1 ring-border hover:bg-foreground/5"
-      }`}
+      className={`wc-frame ${
+        active ? "wc-frame-sunset text-white" : "wc-frame-orange-white text-foreground"
+      } inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-bold transition active:scale-[0.97]`}
     >
       <span className="text-base" aria-hidden>
         {emoji}
@@ -570,16 +568,18 @@ function CelebrationScreen() {
       <div className="mb-4 text-7xl" aria-hidden>
         🎉
       </div>
-      <h1 className="text-3xl font-bold tracking-tight">Plan saved!</h1>
-      <p className="mt-2 max-w-sm text-sm text-muted">
-        We&apos;ll line up places, eats, and travelers headed your way. Detail
-        screen lands next — for now your plan is in Upcoming Adventures.
+      <h1 className="text-3xl font-bold tracking-tight">
+        <span className="wc-underline">Plan saved!</span>
+      </h1>
+      <p className="mt-3 max-w-sm text-sm text-muted">
+        We&apos;ll line up places, eats, and travelers headed your way. Your
+        plan is saved to Upcoming Adventures.
       </p>
       <Link
         href="/where-to-next"
-        className="mt-6 rounded-full bg-sunset px-6 py-3 text-sm font-bold text-white shadow-card active:scale-[0.98]"
+        className="wc-frame wc-frame-sunset mt-6 rounded-full px-6 py-3 text-sm font-bold text-white active:scale-[0.98]"
       >
-        Back to Where to Next ›
+        See my plan ›
       </Link>
     </div>
   );

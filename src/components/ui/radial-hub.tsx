@@ -55,8 +55,12 @@ const RING_RADIUS = 39;
 /**
  * The "Where to Next?" radial hub — Travejor's signature home control,
  * painted in a watercolor style: organic edges, soft washes, warm glow.
+ *
+ * When the traveler already has at least one saved travel plan, the
+ * center label flips to "My travel plans" so the hub doubles as a
+ * shortcut back to their itineraries.
  */
-export function RadialHub() {
+export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
   const items = HUB_LINKS.map((link, i) => {
     const angle = ((-90 + i * 72) * Math.PI) / 180;
     return {
@@ -96,7 +100,7 @@ export function RadialHub() {
           {/* Crisp content — centred wordmark */}
           <span className="relative flex h-full w-full items-center justify-center px-5">
             <span className="text-center text-lg font-bold uppercase leading-[1.15] tracking-[0.1em] text-white">
-              Where to next?
+              {hasPlans ? "My travel plans" : "Where to next?"}
             </span>
           </span>
         </Link>
