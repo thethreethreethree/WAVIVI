@@ -3,11 +3,15 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
+import { runMatching } from "@/lib/where-to-next/match-plan";
 import type {
+  SavedTravelItem,
   TravelPlanBudget,
   TravelPlanDestination,
   TravelPlanInsert,
+  TravelPlanRow,
   TravelPlanTravelingWith,
+  TravelPlanUpdate,
 } from "@/types/supabase";
 
 const BUDGET: readonly TravelPlanBudget[] = [
@@ -111,14 +115,55 @@ export async function submitTravelPlan(
   const { data, error } = await supabase
     .from("travel_plans")
     .insert(insert)
-    .select("id")
+    .select("*")
     .single();
   if (error || !data) {
     return { ok: false, error: error?.message ?? "Couldn't save your plan." };
   }
 
+  // Run matching now so the celebration screen can mention "you've been
+  // added to {chat}". Failures here shouldn't block the save — log and
+  // continue with the plain success response.
+  try {
+    await runMatching(data as TravelPlanRow);
+  } catch (err) {
+    console.error("[where-to-next] matching failed", err);
+  }
+
   revalidatePath("/where-to-next");
+  revalidatePath(`/where-to-next/plans/${data.id}`);
   return { ok: true, planId: data.id };
+}
+
+/**
+ * Re-run matching for an existing plan — used when the owner edits their
+ * answers or taps "Find my crew again" on the detail page.
+ */
+export async function rematchPlan(
+  planId: string,
+): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "You need to be signed in." };
+
+  const { data: plan } = await supabase
+    .from("travel_plans")
+    .select("*")
+    .eq("id", planId)
+    .maybeSingle();
+  if (!plan) return { ok: false, error: "Plan not found." };
+
+  try {
+    await runMatching(plan as TravelPlanRow);
+  } catch (err) {
+    console.error("[where-to-next] rematch failed", err);
+    return { ok: false, error: "Couldn't run matching right now." };
+  }
+
+  revalidatePath(`/where-to-next/plans/${planId}`);
+  return { ok: true, error: null };
 }
 
 /* ── Saved items + delete (Phase 4) ───────────────────────────────────── */
@@ -143,12 +188,19 @@ export async function removeSavedItem(
     .maybeSingle();
   if (!plan) return { ok: false, error: "Plan not found." };
 
-  const current = (plan[list] as { externalId: string }[]) ?? [];
+  const current =
+    ((plan as Record<string, unknown>)[list] as
+      | SavedTravelItem[]
+      | undefined) ?? [];
   const next = current.filter((it) => it.externalId !== externalId);
 
+  const patch: TravelPlanUpdate =
+    list === "saved_hotels"
+      ? { saved_hotels: next }
+      : { saved_restaurants: next };
   const { error } = await supabase
     .from("travel_plans")
-    .update({ [list]: next })
+    .update(patch)
     .eq("id", planId);
   if (error) return { ok: false, error: error.message };
 

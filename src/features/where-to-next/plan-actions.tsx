@@ -3,21 +3,24 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { deletePlan } from "@/features/where-to-next/actions";
+import { deletePlan, rematchPlan } from "@/features/where-to-next/actions";
 
 /**
- * Footer actions on the plan-detail page. Delete is destructive so it
- * confirms first; matching/rematch will land in phase 5 alongside this.
+ * Footer actions on the plan-detail page: rematch (re-run the matcher
+ * with current answers) and delete. Both call server actions that hide
+ * the cross-user query behind the service role.
  */
 export function PlanActions({ planId }: { planId: string }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const [pendingDelete, startDelete] = useTransition();
+  const [pendingRematch, startRematch] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [rematchedAt, setRematchedAt] = useState<number | null>(null);
 
   function onDelete() {
     if (!confirm("Delete this plan? This can't be undone.")) return;
     setError(null);
-    startTransition(async () => {
+    startDelete(async () => {
       const res = await deletePlan(planId);
       if (!res.ok) {
         setError(res.error ?? "Couldn't delete the plan.");
@@ -27,8 +30,21 @@ export function PlanActions({ planId }: { planId: string }) {
     });
   }
 
+  function onRematch() {
+    setError(null);
+    startRematch(async () => {
+      const res = await rematchPlan(planId);
+      if (!res.ok) {
+        setError(res.error ?? "Couldn't run matching right now.");
+        return;
+      }
+      setRematchedAt(Date.now());
+      router.refresh();
+    });
+  }
+
   return (
-    <div className="mt-2 flex flex-col gap-2">
+    <div className="mt-2 flex flex-col gap-3">
       {error && (
         <p className="rounded-lg bg-heat/15 px-3 py-2 text-xs font-semibold text-heat">
           {error}
@@ -36,11 +52,23 @@ export function PlanActions({ planId }: { planId: string }) {
       )}
       <button
         type="button"
+        onClick={onRematch}
+        disabled={pendingRematch}
+        className="wc-frame wc-frame-sunset rounded-full px-5 py-3 text-sm font-bold text-white disabled:opacity-60 active:scale-[0.98]"
+      >
+        {pendingRematch
+          ? "Looking for your crew…"
+          : rematchedAt
+            ? "Found anyone new — refresh to see ✓"
+            : "Find my crew again ›"}
+      </button>
+      <button
+        type="button"
         onClick={onDelete}
-        disabled={pending}
+        disabled={pendingDelete}
         className="wc-frame wc-frame-orange-white self-center rounded-full px-5 py-2 text-xs font-semibold text-heat disabled:opacity-60"
       >
-        {pending ? "Deleting…" : "Delete plan"}
+        {pendingDelete ? "Deleting…" : "Delete plan"}
       </button>
     </div>
   );

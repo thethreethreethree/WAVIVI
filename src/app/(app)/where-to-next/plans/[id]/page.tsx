@@ -5,8 +5,9 @@ import { notFound, redirect } from "next/navigation";
 import { PlanActions } from "@/features/where-to-next/plan-actions";
 import { VerificationGate } from "@/features/where-to-next/verification-gate";
 import { getCurrentProfile } from "@/lib/profiles";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import type { TravelPlanRow } from "@/types/supabase";
+import type { ChatGroupRow, TravelPlanRow } from "@/types/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -150,14 +151,8 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
         list="saved_restaurants"
       />
 
-      {/* Group chats */}
-      <section>
-        <h2 className="text-base font-bold">Group chats</h2>
-        <p className="mt-2 rounded-2xl bg-surface p-4 text-center text-sm text-muted ring-1 ring-border">
-          Match suggestions land next phase — once it's live, chats that
-          line up with this trip will show up here.
-        </p>
-      </section>
+      {/* Group chats — joined + suggested */}
+      <ChatsSection planId={plan.id} chatIds={plan.saved_chats} />
 
       <PlanActions planId={plan.id} />
     </div>
@@ -194,6 +189,56 @@ function TagRow({ label, tags }: { label: string; tags: string[] }) {
         ))}
       </div>
     </div>
+  );
+}
+
+async function ChatsSection({
+  chatIds,
+}: {
+  planId: string;
+  chatIds: string[];
+}) {
+  let chats: ChatGroupRow[] = [];
+  if (chatIds.length > 0) {
+    const supabase = createAdminClient();
+    const { data } = await supabase
+      .from("chat_groups")
+      .select("*")
+      .in("id", chatIds);
+    chats = (data ?? []) as ChatGroupRow[];
+  }
+  return (
+    <section>
+      <h2 className="text-base font-bold">💬 Group chats</h2>
+      {chats.length === 0 ? (
+        <p className="mt-2 rounded-2xl bg-surface p-4 text-center text-sm text-muted ring-1 ring-border">
+          No matches yet — tap{" "}
+          <span className="font-bold text-foreground">Find my crew again</span>
+          {" "}below once more travelers have booked the same window.
+        </p>
+      ) : (
+        <ul className="mt-2 flex flex-col gap-2">
+          {chats.map((c) => (
+            <li key={c.id}>
+              <Link
+                href={`/meet/${c.id}`}
+                className="wc-frame flex items-center justify-between gap-3 rounded-2xl p-3"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold">{c.name}</p>
+                  {c.is_auto_generated && (
+                    <p className="truncate text-[11px] text-muted">
+                      Auto-created from your trip
+                    </p>
+                  )}
+                </div>
+                <span className="text-glow">›</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
