@@ -137,6 +137,80 @@ export async function submitTravelPlan(
 }
 
 /**
+ * Update an existing plan's answers and re-run matching. Accepts the
+ * same QuestionnaireAnswers shape as submit — so the Edit screen can
+ * reuse the Questionnaire component without conversion logic.
+ */
+export async function updateTravelPlan(
+  planId: string,
+  answers: QuestionnaireAnswers,
+): Promise<SubmitResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "You need to be signed in." };
+
+  const country = answers.country.trim();
+  if (!country) return { ok: false, error: "Pick a destination first." };
+  if (!answers.startDate || !answers.endDate) {
+    return { ok: false, error: "Add your travel dates." };
+  }
+  if (answers.endDate < answers.startDate) {
+    return { ok: false, error: "End date can't be before start date." };
+  }
+  if (!BUDGET.includes(answers.budget)) {
+    return { ok: false, error: "Pick a budget range." };
+  }
+  if (!TRAVELING_WITH.includes(answers.travelingWith)) {
+    return { ok: false, error: "Tell us who you're traveling with." };
+  }
+
+  const destinations: TravelPlanDestination[] = [
+    {
+      country,
+      city: answers.city?.trim() || null,
+      arriveOn: answers.startDate,
+      departOn: answers.endDate,
+    },
+  ];
+
+  const patch: TravelPlanUpdate = {
+    start_date: answers.startDate,
+    end_date: answers.endDate,
+    destinations,
+    destination_countries: [country],
+    purpose: answers.purpose,
+    activities: answers.activities,
+    vibe_tags: answers.vibeTags,
+    must_see: answers.mustSee,
+    budget: answers.budget,
+    traveling_with: answers.travelingWith,
+    open_to_meet_others: answers.openToMeetOthers,
+  };
+
+  const { data, error } = await supabase
+    .from("travel_plans")
+    .update(patch)
+    .eq("id", planId)
+    .select("*")
+    .single();
+  if (error || !data) {
+    return { ok: false, error: error?.message ?? "Couldn't update your plan." };
+  }
+
+  try {
+    await runMatching(data as TravelPlanRow);
+  } catch (err) {
+    console.error("[where-to-next] post-edit matching failed", err);
+  }
+
+  revalidatePath("/where-to-next");
+  revalidatePath(`/where-to-next/plans/${planId}`);
+  return { ok: true, planId };
+}
+
+/**
  * Re-run matching for an existing plan — used when the owner edits their
  * answers or taps "Find my crew again" on the detail page.
  */

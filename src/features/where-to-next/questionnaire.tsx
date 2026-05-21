@@ -4,11 +4,29 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 
-import { submitTravelPlan } from "@/features/where-to-next/actions";
+import {
+  submitTravelPlan,
+  updateTravelPlan,
+} from "@/features/where-to-next/actions";
 import type {
   TravelPlanBudget,
   TravelPlanTravelingWith,
 } from "@/types/supabase";
+
+export interface QuestionnaireInitial {
+  planId: string;
+  country: string;
+  city: string;
+  startDate: string;
+  endDate: string;
+  purpose: string[];
+  activities: string[];
+  mustSee: string;
+  vibeTags: string[];
+  budget: TravelPlanBudget;
+  travelingWith: TravelPlanTravelingWith;
+  openToMeetOthers: boolean;
+}
 
 /* ── Question data ────────────────────────────────────────────────────── */
 
@@ -69,25 +87,34 @@ const TRAVELING_WITH_OPTIONS: {
 
 const TOTAL_STEPS = 9;
 
-export function Questionnaire() {
+export function Questionnaire({
+  initial,
+}: { initial?: QuestionnaireInitial } = {}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const isEdit = Boolean(initial);
 
-  const [country, setCountry] = useState("");
-  const [city, setCity] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [purpose, setPurpose] = useState<string[]>([]);
-  const [activities, setActivities] = useState<string[]>([]);
+  const [country, setCountry] = useState(initial?.country ?? "");
+  const [city, setCity] = useState(initial?.city ?? "");
+  const [startDate, setStartDate] = useState(initial?.startDate ?? "");
+  const [endDate, setEndDate] = useState(initial?.endDate ?? "");
+  const [purpose, setPurpose] = useState<string[]>(initial?.purpose ?? []);
+  const [activities, setActivities] = useState<string[]>(
+    initial?.activities ?? [],
+  );
   const [otherActivity, setOtherActivity] = useState("");
-  const [mustSee, setMustSee] = useState("");
-  const [vibeTags, setVibeTags] = useState<string[]>([]);
-  const [budget, setBudget] = useState<TravelPlanBudget | null>(null);
+  const [mustSee, setMustSee] = useState(initial?.mustSee ?? "");
+  const [vibeTags, setVibeTags] = useState<string[]>(initial?.vibeTags ?? []);
+  const [budget, setBudget] = useState<TravelPlanBudget | null>(
+    initial?.budget ?? null,
+  );
   const [travelingWith, setTravelingWith] =
-    useState<TravelPlanTravelingWith | null>(null);
-  const [openToMeetOthers, setOpenToMeetOthers] = useState(true);
+    useState<TravelPlanTravelingWith | null>(initial?.travelingWith ?? null);
+  const [openToMeetOthers, setOpenToMeetOthers] = useState(
+    initial?.openToMeetOthers ?? true,
+  );
   const [donePlanId, setDonePlanId] = useState<string | null>(null);
 
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
@@ -193,7 +220,7 @@ export function Questionnaire() {
       .map((s) => s.trim())
       .filter(Boolean);
     startTransition(async () => {
-      const res = await submitTravelPlan({
+      const answers = {
         country: country.trim(),
         city: city.trim() || null,
         startDate,
@@ -205,7 +232,10 @@ export function Questionnaire() {
         budget,
         travelingWith,
         openToMeetOthers,
-      });
+      };
+      const res = initial
+        ? await updateTravelPlan(initial.planId, answers)
+        : await submitTravelPlan(answers);
       if (!res.ok) {
         setError(res.error);
         return;
@@ -450,9 +480,13 @@ export function Questionnaire() {
             className="wc-frame wc-frame-sunset rounded-full px-6 py-3 text-sm font-bold text-white disabled:opacity-50 active:scale-[0.98]"
           >
             {pending
-              ? "Building your plan…"
+              ? isEdit
+                ? "Saving…"
+                : "Building your plan…"
               : step === TOTAL_STEPS - 1
-                ? "Build my plan ›"
+                ? isEdit
+                  ? "Save changes ›"
+                  : "Build my plan ›"
                 : "Next ›"}
           </button>
         </div>

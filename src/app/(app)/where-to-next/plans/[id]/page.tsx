@@ -103,6 +103,12 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
             {plan.start_date} → {plan.end_date} · {plan.duration_days} days
           </p>
         </div>
+        <Link
+          href={`/where-to-next/plans/${plan.id}/edit`}
+          className="wc-frame wc-frame-orange-white shrink-0 self-start rounded-full px-3 py-1.5 text-[11px] font-bold text-glow"
+        >
+          Edit
+        </Link>
       </header>
 
       {/* Overview */}
