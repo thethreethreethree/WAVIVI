@@ -21,6 +21,79 @@ const STAY_TYPE_LABEL: Record<StayType, string> = {
 
 export const dynamic = "force-dynamic";
 
+function whatsappHref(
+  whatsapp: string | null,
+  phone: string | null,
+): string | null {
+  const raw = whatsapp?.trim() || phone?.trim();
+  if (!raw) return null;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  // Strip everything but digits — wa.me only accepts an international number.
+  const digits = raw.replace(/\D/g, "");
+  return digits ? `https://wa.me/${digits}` : null;
+}
+
+function instagramHref(value: string | null): string | null {
+  const v = value?.trim();
+  if (!v) return null;
+  if (/^https?:\/\//i.test(v)) return v;
+  const handle = v.replace(/^@/, "").trim();
+  return handle ? `https://instagram.com/${handle}` : null;
+}
+
+function facebookHref(value: string | null): string | null {
+  const v = value?.trim();
+  if (!v) return null;
+  if (/^https?:\/\//i.test(v)) return v;
+  return `https://facebook.com/${v.replace(/^@/, "")}`;
+}
+
+function websiteHref(value: string | null): string | null {
+  const v = value?.trim();
+  if (!v) return null;
+  return /^https?:\/\//i.test(v) ? v : `https://${v}`;
+}
+
+function ContactButton({
+  label,
+  emoji,
+  href,
+}: {
+  label: string;
+  emoji: string;
+  href: string | null;
+}) {
+  const base =
+    "flex flex-col items-center gap-1 rounded-2xl py-2.5 text-[11px] font-bold transition-colors";
+  if (!href) {
+    return (
+      <span
+        aria-disabled
+        className={`${base} cursor-not-allowed bg-surface text-muted opacity-50 ring-1 ring-border`}
+        title={`${label} not available`}
+      >
+        <span className="text-base grayscale" aria-hidden>
+          {emoji}
+        </span>
+        {label}
+      </span>
+    );
+  }
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className={`${base} bg-surface text-foreground ring-1 ring-border hover:bg-foreground/5`}
+    >
+      <span className="text-base" aria-hidden>
+        {emoji}
+      </span>
+      {label}
+    </a>
+  );
+}
+
 async function fetchStay(id: string): Promise<StayRow | null> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -140,31 +213,48 @@ export default async function StayDetailPage({ params }: { params: Params }) {
           </p>
         )}
 
-        <div className="flex flex-wrap gap-2">
-          <a
-            href={`https://www.google.com/maps/dir/?api=1&destination=${stay.latitude},${stay.longitude}&destination_place_id=${encodeURIComponent(stay.name)}&travelmode=driving`}
-            target="_blank"
-            rel="noreferrer"
-            className="flex-1 rounded-2xl bg-sunset py-3 text-center font-bold text-white shadow-card active:scale-[0.98]"
-          >
-            Get Directions
-          </a>
-          {stay.website && (
-            <a
-              href={stay.website}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-2xl border border-glow px-5 py-3 text-center font-bold text-glow"
-            >
-              Website
-            </a>
-          )}
+        <a
+          href={`https://www.google.com/maps/dir/?api=1&destination=${stay.latitude},${stay.longitude}&destination_place_id=${encodeURIComponent(stay.name)}&travelmode=driving`}
+          target="_blank"
+          rel="noreferrer"
+          className="rounded-2xl bg-sunset py-3 text-center font-bold text-white shadow-card active:scale-[0.98]"
+        >
+          Get Directions
+        </a>
+
+        <div className="grid grid-cols-4 gap-2">
+          <ContactButton
+            label="WhatsApp"
+            emoji="💬"
+            href={whatsappHref(stay.whatsapp, stay.phone)}
+          />
+          <ContactButton
+            label="Instagram"
+            emoji="📷"
+            href={instagramHref(stay.instagram)}
+          />
+          <ContactButton
+            label="Facebook"
+            emoji="📘"
+            href={facebookHref(stay.facebook)}
+          />
+          <ContactButton
+            label="Website"
+            emoji="🌐"
+            href={websiteHref(stay.website)}
+          />
         </div>
 
-        {(stay.phone || stay.whatsapp || stay.email || stay.instagram) && (
+        {(stay.phone || stay.email) && (
           <div className="wc-frame flex flex-col gap-2 rounded-2xl p-4 text-sm">
-            {stay.phone && <p>📞 {stay.phone}</p>}
-            {stay.whatsapp && <p>💬 WhatsApp: {stay.whatsapp}</p>}
+            {stay.phone && (
+              <p>
+                📞{" "}
+                <a className="underline" href={`tel:${stay.phone}`}>
+                  {stay.phone}
+                </a>
+              </p>
+            )}
             {stay.email && (
               <p>
                 ✉️{" "}
@@ -173,7 +263,6 @@ export default async function StayDetailPage({ params }: { params: Params }) {
                 </a>
               </p>
             )}
-            {stay.instagram && <p>📷 {stay.instagram}</p>}
           </div>
         )}
       </div>

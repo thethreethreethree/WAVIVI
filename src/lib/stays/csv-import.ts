@@ -90,8 +90,11 @@ export function extractPlaceRef(url: string): string | null {
 }
 
 const num = (v: string | undefined): number | null => {
-  if (v == null || v.trim() === "") return null;
-  const n = Number(v);
+  if (v == null) return null;
+  // Strip parens, commas, and whitespace so "(99)" and "1,234" parse.
+  const cleaned = v.replace(/[(),\s]/g, "");
+  if (cleaned === "") return null;
+  const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
 };
 
