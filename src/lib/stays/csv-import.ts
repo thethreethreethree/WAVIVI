@@ -19,6 +19,10 @@
  *   Address
  *   Website
  *   Photo | Image | Photo URL
+ *   Amenities                       — quoted comma-separated list, normalised
+ *                                     to a canonical set (Free Wi-Fi, Outdoor
+ *                                     pool, Air conditioning, …); unknown
+ *                                     entries are kept verbatim.
  *   Google Maps Link | Google Maps URL | Link | URL
  */
 
@@ -37,10 +41,157 @@ export interface StayCsvRow {
   address: string | null;
   website: string | null;
   photoUrl: string | null;
+  amenities: string[];
   latitude: number;
   longitude: number;
   /** Stable dedup ref from the Google Maps link, or a coord-based fallback. */
   placeRef: string;
+}
+
+/**
+ * Canonical amenity vocabulary travelers will filter against. The CSV
+ * importer normalises raw Google-Maps amenity strings into these values;
+ * anything unmatched is kept verbatim so we don't silently drop data.
+ */
+export const CANONICAL_AMENITIES = [
+  "Free Wi-Fi",
+  "Paid Wi-Fi",
+  "Free parking",
+  "Paid parking",
+  "Free breakfast",
+  "Paid breakfast",
+  "Indoor pool",
+  "Outdoor pool",
+  "Air conditioning",
+  "Fitness center",
+  "Spa",
+  "Bar",
+  "Restaurant",
+  "Room service",
+  "24-hour front desk",
+  "Full-service laundry",
+  "Pet-friendly",
+  "Kid-friendly",
+  "Airport shuttle",
+  "EV charger",
+  "Wheelchair accessible",
+  "Business center",
+  "Meeting rooms",
+  "Smoke-free property",
+  "Beach access",
+  "Hot tub",
+  "Kitchen/Kitchenette in room",
+  "All-inclusive available",
+] as const;
+
+const AMENITY_ALIASES: Record<string, string> = {
+  "wi-fi": "Free Wi-Fi",
+  wifi: "Free Wi-Fi",
+  "free wi-fi": "Free Wi-Fi",
+  "free wifi": "Free Wi-Fi",
+  "paid wi-fi": "Paid Wi-Fi",
+  "paid wifi": "Paid Wi-Fi",
+  parking: "Free parking",
+  "free parking": "Free parking",
+  "paid parking": "Paid parking",
+  breakfast: "Paid breakfast",
+  "free breakfast": "Free breakfast",
+  "paid breakfast": "Paid breakfast",
+  pool: "Outdoor pool",
+  "outdoor pool": "Outdoor pool",
+  "indoor pool": "Indoor pool",
+  "air-conditioned": "Air conditioning",
+  "air conditioning": "Air conditioning",
+  ac: "Air conditioning",
+  "a/c": "Air conditioning",
+  "fitness center": "Fitness center",
+  gym: "Fitness center",
+  spa: "Spa",
+  bar: "Bar",
+  restaurant: "Restaurant",
+  "room service": "Room service",
+  "24-hour front desk": "24-hour front desk",
+  "24/7 front desk": "24-hour front desk",
+  laundry: "Full-service laundry",
+  "laundry service": "Full-service laundry",
+  "full-service laundry": "Full-service laundry",
+  "pet-friendly": "Pet-friendly",
+  "kid-friendly": "Kid-friendly",
+  "airport shuttle": "Airport shuttle",
+  "free airport shuttle": "Airport shuttle",
+  "ev charger": "EV charger",
+  "ev charging": "EV charger",
+  "wheelchair accessible": "Wheelchair accessible",
+  accessible: "Wheelchair accessible",
+  "business center": "Business center",
+  "meeting rooms": "Meeting rooms",
+  "smoke-free property": "Smoke-free property",
+  "smoke-free": "Smoke-free property",
+  "beach access": "Beach access",
+  beachfront: "Beach access",
+  "hot tub": "Hot tub",
+  jacuzzi: "Hot tub",
+  kitchen: "Kitchen/Kitchenette in room",
+  kitchenette: "Kitchen/Kitchenette in room",
+  "kitchen/kitchenette in room": "Kitchen/Kitchenette in room",
+  "all-inclusive available": "All-inclusive available",
+  "all-inclusive": "All-inclusive available",
+};
+
+/** Normalise a single raw amenity label. Returns null for empty input. */
+function normaliseAmenity(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const canonical = AMENITY_ALIASES[trimmed.toLowerCase()];
+  return canonical ?? trimmed;
+}
+
+/**
+ * Public-asset icon path for an amenity, or null if we don't ship art
+ * for that label. Filenames match the canonical labels (Title Case).
+ */
+const AMENITY_ICON_FILENAMES: Record<string, string> = {
+  "Free Wi-Fi": "Free Wi-Fi.png",
+  "Paid Wi-Fi": "Paid Wi-Fi.png",
+  "Free parking": "Free Parking.png",
+  "Paid parking": "Paid Parking.png",
+  "Free breakfast": "Free Breakfast.png",
+  "Paid breakfast": "Paid Breakfast.png",
+  "Indoor pool": "Indoor Pool.png",
+  "Outdoor pool": "Outdoor Pool.png",
+  "Air conditioning": "Air Conditioning.png",
+  "Fitness center": "Fitness Center.png",
+  Spa: "Spa.png",
+  Bar: "Bar.png",
+  Restaurant: "Restaurant.png",
+  "Room service": "Room Service.png",
+  "24-hour front desk": "24-hour Front Desk.png",
+  "Full-service laundry": "Full-service Laundry.png",
+  "Pet-friendly": "Pet-friendly.png",
+  "Kid-friendly": "Kid-friendly.png",
+  "Airport shuttle": "Airport Shuttle.png",
+  "EV charger": "EV Charger.png",
+};
+
+export function amenityIconPath(amenity: string): string | null {
+  const file = AMENITY_ICON_FILENAMES[amenity];
+  return file ? `/icons/amenities/${file}` : null;
+}
+
+/** Parse the CSV Amenities cell into a deduped, normalised string array. */
+export function parseAmenitiesCell(cell: string | undefined): string[] {
+  if (!cell) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const piece of cell.split(/[,;|]/)) {
+    const normalised = normaliseAmenity(piece);
+    if (!normalised) continue;
+    const key = normalised.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(normalised);
+  }
+  return out;
 }
 
 export interface StayCsvParseResult {
@@ -163,6 +314,7 @@ export function parseStaysCsv(text: string): StayCsvParseResult {
       "image url",
       "image_url",
     ),
+    amenities: col("amenities", "amenity", "features", "perks"),
     lat: col("latitude", "lat"),
     lng: col("longitude", "lng", "lon"),
     link: col("google maps link", "google maps url", "link", "url"),
@@ -228,6 +380,8 @@ export function parseStaysCsv(text: string): StayCsvParseResult {
       address: text(idx.address),
       website: text(idx.website),
       photoUrl,
+      amenities:
+        idx.amenities === -1 ? [] : parseAmenitiesCell(f[idx.amenities]),
       latitude: lat,
       longitude: lng,
       placeRef:

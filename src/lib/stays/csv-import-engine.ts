@@ -103,6 +103,10 @@ export async function importStaysCsv(
       if (row.email && !best.email) update.email = row.email;
       // CSV photos always win — admins are usually re-uploading with art.
       if (row.photoUrl) update.photo_url = row.photoUrl;
+      // CSV amenities replace the stored list when present — Google's
+      // amenity scrape is the source of truth, and admin edits to
+      // amenities flow through the partner dashboard, not re-import.
+      if (row.amenities.length > 0) update.amenities = row.amenities;
       // Re-snap backpack rating from Google rating — unless an admin
       // already hand-edited this stay.
       if (row.rating != null && !best.admin_edited) {
@@ -133,6 +137,7 @@ export async function importStaysCsv(
         facebook: row.facebook,
         email: row.email,
         photo_url: row.photoUrl,
+        amenities: row.amenities,
         rating: row.rating,
         review_count: row.reviewCount,
         reliability_score: row.rating != null ? Math.min(10, row.rating * 2) : 0,

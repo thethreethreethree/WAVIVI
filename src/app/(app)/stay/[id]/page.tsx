@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Rating } from "@/components/ui/rating";
 import { StayPhoto } from "@/components/ui/stay-photo";
 import { BackpackerPickButton } from "@/features/stays/backpacker-pick-button";
+import { amenityIconPath } from "@/lib/stays/csv-import";
 import { createClient } from "@/lib/supabase/server";
 import { flagImage } from "@/lib/travejor/account";
 import type { StayRow, StayType } from "@/types/supabase";
@@ -288,14 +289,26 @@ export default async function StayDetailPage({ params }: { params: Params }) {
 
         {stay.amenities.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {stay.amenities.map((a) => (
-              <span
-                key={a}
-                className="rounded-full bg-surface px-2.5 py-1 text-[11px] font-semibold text-foreground ring-1 ring-border"
-              >
-                {a}
-              </span>
-            ))}
+            {stay.amenities.map((a) => {
+              const icon = amenityIconPath(a);
+              return (
+                <span
+                  key={a}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-[11px] font-semibold text-foreground ring-1 ring-border"
+                >
+                  {icon && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={icon}
+                      alt=""
+                      aria-hidden
+                      className="h-4 w-4 object-contain"
+                    />
+                  )}
+                  {a}
+                </span>
+              );
+            })}
           </div>
         )}
 
