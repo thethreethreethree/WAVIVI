@@ -9,6 +9,11 @@ import { VerificationGate } from "@/features/where-to-next/verification-gate";
 import { getCurrentProfile } from "@/lib/profiles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { flagImage } from "@/lib/travejor/account";
+import { scoreCandidatesForPlan } from "@/lib/where-to-next/match-plan";
+import {
+  overlapDays as overlapDaysFn,
+} from "@/lib/where-to-next/matching";
 import type { ChatGroupRow, TravelPlanRow } from "@/types/supabase";
 
 export const dynamic = "force-dynamic";
@@ -161,6 +166,9 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
         items={plan.itinerary}
       />
 
+      {/* Suggested travelers — 0.45–0.65 bucket. */}
+      <SuggestedTravelers plan={plan} />
+
       {/* Group chats — joined + suggested */}
       <ChatsSection planId={plan.id} chatIds={plan.saved_chats} />
 
@@ -199,6 +207,100 @@ function TagRow({ label, tags }: { label: string; tags: string[] }) {
         ))}
       </div>
     </div>
+  );
+}
+
+async function SuggestedTravelers({ plan }: { plan: TravelPlanRow }) {
+  if (!plan.open_to_meet_others) return null;
+  const { suggested } = await scoreCandidatesForPlan(plan);
+  if (suggested.length === 0) return null;
+
+  const supabase = createAdminClient();
+  const ids = suggested.map((s) => s.plan.user_id);
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, username, display_name, avatar_url, home_country")
+    .in("id", ids);
+  const profileById = new Map(
+    (profiles ?? []).map((p) => [p.id, p] as const),
+  );
+
+  return (
+    <section>
+      <h2 className="text-base font-bold">✨ You might vibe with</h2>
+      <p className="mt-1 text-xs text-muted">
+        Travelers on similar trips. Strong matches are already in your group
+        chat — these are soft suggestions.
+      </p>
+      <ul className="mt-3 flex flex-col gap-2">
+        {suggested.slice(0, 6).map(({ plan: candidate, score }) => {
+          const profile = profileById.get(candidate.user_id);
+          if (!profile) return null;
+          const overlap = overlapDaysFn(
+            plan.start_date,
+            plan.end_date,
+            candidate.start_date,
+            candidate.end_date,
+          );
+          return (
+            <li key={candidate.id}>
+              <Link
+                href={`/u/${profile.username}`}
+                className="wc-frame flex items-center gap-3 rounded-2xl p-3"
+              >
+                <span className="relative block h-12 w-12 shrink-0 overflow-hidden rounded-full bg-surface ring-2 ring-background">
+                  {profile.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={profile.avatar_url}
+                      alt={profile.display_name}
+                      referrerPolicy="no-referrer"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-base font-bold text-glow">
+                      {profile.display_name.slice(0, 1).toUpperCase()}
+                    </span>
+                  )}
+                  {profile.home_country && (
+                    <span className="absolute -bottom-0.5 -right-0.5 block h-5 w-5 overflow-hidden rounded-full bg-white ring-2 ring-background">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={flagImage(profile.home_country)}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    </span>
+                  )}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold">
+                    {profile.display_name}
+                  </p>
+                  <p className="text-[11px] text-muted">
+                    {overlap} day{overlap === 1 ? "" : "s"} overlap ·{" "}
+                    {(score.total * 100).toFixed(0)}% match
+                  </p>
+                  {candidate.vibe_tags.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {candidate.vibe_tags.slice(0, 3).map((t) => (
+                        <span
+                          key={t}
+                          className="rounded-full bg-surface px-2 py-0.5 text-[10px] font-bold text-foreground ring-1 ring-border"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <span className="text-glow">›</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 

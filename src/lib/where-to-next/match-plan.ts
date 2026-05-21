@@ -33,6 +33,67 @@ export interface MatchSummary {
   chat: { id: string; name: string; isNew: boolean } | null;
 }
 
+/**
+ * Score candidates for a plan without any side effects (no chat
+ * creation, no membership writes). Used by the plan-detail page to
+ * render the "suggested matches" panel on every load — runMatching()
+ * is reserved for save / explicit rematch flows.
+ */
+export async function scoreCandidatesForPlan(
+  plan: TravelPlanRow,
+): Promise<{
+  autoInvite: { plan: TravelPlanRow; score: MatchScore }[];
+  suggested: { plan: TravelPlanRow; score: MatchScore }[];
+}> {
+  if (!plan.open_to_meet_others || plan.destination_countries.length === 0) {
+    return { autoInvite: [], suggested: [] };
+  }
+  const supabase = createAdminClient();
+  const { data: candidates } = await supabase
+    .from("travel_plans")
+    .select("*")
+    .overlaps("destination_countries", plan.destination_countries)
+    .lte("start_date", plan.end_date)
+    .gte("end_date", plan.start_date)
+    .eq("open_to_meet_others", true)
+    .neq("user_id", plan.user_id)
+    .limit(200);
+
+  const pool = (candidates ?? []) as TravelPlanRow[];
+  const source: PlanForMatching = {
+    user_id: plan.user_id,
+    destination_countries: plan.destination_countries,
+    start_date: plan.start_date,
+    end_date: plan.end_date,
+    activities: plan.activities,
+    vibe_tags: plan.vibe_tags,
+    budget: plan.budget,
+  };
+  const scored = pool.map((c) => ({
+    candidate: c,
+    score: scorePair(source, {
+      user_id: c.user_id,
+      destination_countries: c.destination_countries,
+      start_date: c.start_date,
+      end_date: c.end_date,
+      activities: c.activities,
+      vibe_tags: c.vibe_tags,
+      budget: c.budget,
+    }),
+  }));
+  const { autoInvite, suggested } = bucketScores(scored);
+  return {
+    autoInvite: autoInvite.map(({ candidate, score }) => ({
+      plan: candidate,
+      score,
+    })),
+    suggested: suggested.map(({ candidate, score }) => ({
+      plan: candidate,
+      score,
+    })),
+  };
+}
+
 const CHAT_ID_PREFIX = "wtn-";
 
 function generateChatId(): string {
