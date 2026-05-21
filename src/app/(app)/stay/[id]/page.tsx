@@ -137,6 +137,34 @@ export default async function StayDetailPage({ params }: { params: Params }) {
     voted = Boolean(v);
   }
 
+  // Latest 3 travelers who picked this stay → avatar stack
+  const { data: voteRows } = await supabase
+    .from("stay_votes")
+    .select("voter_id, created_at")
+    .eq("stay_id", stay.id)
+    .order("created_at", { ascending: false })
+    .limit(3);
+  const voterIds = (voteRows ?? []).map((r) => r.voter_id);
+  type PickerProfile = {
+    id: string;
+    username: string;
+    display_name: string;
+    avatar_url: string | null;
+    home_country: string | null;
+  };
+  let pickers: PickerProfile[] = [];
+  if (voterIds.length > 0) {
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("id, username, display_name, avatar_url, home_country")
+      .in("id", voterIds);
+    const byId = new Map(((profs ?? []) as PickerProfile[]).map((p) => [p.id, p]));
+    pickers = voterIds
+      .map((id) => byId.get(id))
+      .filter((p): p is PickerProfile => Boolean(p));
+  }
+  const overflow = Math.max(0, stay.thumbs_up - pickers.length);
+
   return (
     <div className="flex flex-1 flex-col">
       <div className="wc-frame relative h-60 w-full rounded-2xl p-2">
@@ -198,6 +226,42 @@ export default async function StayDetailPage({ params }: { params: Params }) {
               </span>
             )}
           </div>
+          {pickers.length > 0 && (
+            <div className="mt-3 flex items-center gap-2">
+              <span className="text-[11px] font-semibold text-muted">
+                Picked by
+              </span>
+              <div className="flex -space-x-2">
+                {pickers.map((p) => (
+                  <Link
+                    key={p.id}
+                    href={`/u/${p.username}`}
+                    title={p.display_name}
+                    className="relative inline-block h-7 w-7 overflow-hidden rounded-full bg-surface ring-2 ring-background"
+                  >
+                    {p.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={p.avatar_url}
+                        alt={p.display_name}
+                        referrerPolicy="no-referrer"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center text-[11px] font-bold text-foreground">
+                        {p.display_name.slice(0, 1).toUpperCase()}
+                      </span>
+                    )}
+                  </Link>
+                ))}
+                {overflow > 0 && (
+                  <span className="relative inline-flex h-7 min-w-[1.75rem] items-center justify-center rounded-full bg-glow px-1 text-[10px] font-bold text-white ring-2 ring-background">
+                    +{overflow}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {stay.description && (
