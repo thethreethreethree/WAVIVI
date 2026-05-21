@@ -22,6 +22,65 @@ const RATING_FILTERS = [
   { v: 4.5, label: "4.5+" },
 ];
 
+type DayBucket = "morning" | "midday" | "nighttime";
+
+const DAY_BUCKETS: { id: DayBucket; label: string; emoji: string }[] = [
+  { id: "morning", label: "Morning Adventure", emoji: "🌅" },
+  { id: "midday", label: "Midday Activities", emoji: "🌞" },
+  { id: "nighttime", label: "Nighttime Fun", emoji: "🌙" },
+];
+
+/**
+ * Heuristic bucketing — keyword match the free-text activity_type into
+ * one of three time-of-day flavours. Order matters: nightlife wins over
+ * generic "bar" (e.g. "diving + bar" → diving wins), morning adventure
+ * wins over passive midday, everything else falls through to midday.
+ */
+function bucketForActivity(rawType: string | null): DayBucket {
+  const t = (rawType ?? "").toLowerCase();
+  // Morning Adventure — outdoor, high-energy, weather-window stuff.
+  const morningKeywords = [
+    "dive",
+    "freediving",
+    "hike",
+    "hiking",
+    "climb",
+    "via ferrata",
+    "adventure",
+    "zipline",
+    "kayak",
+    "canoe",
+    "tour",
+    "boat",
+    "island",
+    "cruise",
+    "expedition",
+    "paintball",
+    "shooting",
+    "motorcycle",
+    "ecotour",
+    "ferrata",
+    "freediv",
+  ];
+  if (morningKeywords.some((k) => t.includes(k))) return "morning";
+
+  // Nighttime Fun — anything that's primarily evening-coded.
+  const nightKeywords = [
+    "bar",
+    "nightlife",
+    "lounge",
+    "sunset",
+    "cocktail",
+    "live music",
+    "club",
+  ];
+  if (nightKeywords.some((k) => t.includes(k))) return "nighttime";
+
+  // Everything else (beach, yoga, spa, cafe, scenic viewpoint, hostel,
+  // hotel, museum…) defaults to Midday Activities.
+  return "midday";
+}
+
 type UserPos = { lat: number; lng: number };
 
 /**
@@ -34,7 +93,7 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
   const [query, setQuery] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [minRating, setMinRating] = useState(0);
-  const [category, setCategory] = useState<"all" | string>("all");
+  const [bucket, setBucket] = useState<"all" | DayBucket>("all");
   const [userPos, setUserPos] = useState<UserPos | null>(null);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
@@ -59,21 +118,12 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
     );
   }
 
-  // Derive a tidy list of activity types from the actual data so the
-  // filter chips only ever show categories the user can pick.
-  const presentTypes = useMemo(() => {
-    const set = new Set<string>();
-    for (const e of experiences) {
-      const t = e.activity_type?.trim();
-      if (t) set.add(t);
-    }
-    return Array.from(set).sort();
-  }, [experiences]);
-
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = experiences.filter((e) => {
-      if (category !== "all" && e.activity_type !== category) return false;
+      if (bucket !== "all" && bucketForActivity(e.activity_type) !== bucket) {
+        return false;
+      }
       const rating = e.rating ?? e.backpack_rating;
       if (rating < minRating) return false;
       if (!q) return true;
@@ -93,10 +143,10 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
         .sort((a, b) => a.km - b.km);
     }
     return filtered.map((e) => ({ e, km: null as number | null }));
-  }, [experiences, query, category, minRating, userPos]);
+  }, [experiences, query, bucket, minRating, userPos]);
 
   const activeFilterCount =
-    (minRating > 0 ? 1 : 0) + (category !== "all" ? 1 : 0);
+    (minRating > 0 ? 1 : 0) + (bucket !== "all" ? 1 : 0);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -185,31 +235,32 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
               </div>
             </div>
             <div>
-              <p className="mb-1.5 font-bold text-foreground">Type</p>
+              <p className="mb-1.5 font-bold text-foreground">When</p>
               <div className="flex flex-wrap gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setCategory("all")}
+                  onClick={() => setBucket("all")}
                   className={`rounded-full px-2.5 py-1 font-bold ${
-                    category === "all"
+                    bucket === "all"
                       ? "bg-sunset text-white"
                       : "bg-surface text-foreground ring-1 ring-border"
                   }`}
                 >
-                  All
+                  All day
                 </button>
-                {presentTypes.map((t) => (
+                {DAY_BUCKETS.map((b) => (
                   <button
-                    key={t}
+                    key={b.id}
                     type="button"
-                    onClick={() => setCategory(t)}
-                    className={`rounded-full px-2.5 py-1 font-bold ${
-                      category === t
+                    onClick={() => setBucket(b.id)}
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-bold ${
+                      bucket === b.id
                         ? "bg-sunset text-white"
                         : "bg-surface text-foreground ring-1 ring-border"
                     }`}
                   >
-                    {t}
+                    <span aria-hidden>{b.emoji}</span>
+                    {b.label}
                   </button>
                 ))}
               </div>
@@ -219,7 +270,7 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
                 type="button"
                 onClick={() => {
                   setMinRating(0);
-                  setCategory("all");
+                  setBucket("all");
                 }}
                 className="self-start text-[11px] font-semibold text-muted underline"
               >
