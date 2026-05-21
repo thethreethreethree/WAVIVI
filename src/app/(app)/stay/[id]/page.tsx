@@ -6,6 +6,7 @@ import { Rating } from "@/components/ui/rating";
 import { StayPhoto } from "@/components/ui/stay-photo";
 import { BackpackerPickButton } from "@/features/stays/backpacker-pick-button";
 import { createClient } from "@/lib/supabase/server";
+import { flagImage } from "@/lib/travejor/account";
 import type { StayRow, StayType } from "@/types/supabase";
 
 type Params = Promise<{ id: string }>;
@@ -233,29 +234,44 @@ export default async function StayDetailPage({ params }: { params: Params }) {
               </span>
               <div className="flex -space-x-2">
                 {pickers.map((p) => (
-                  <Link
-                    key={p.id}
-                    href={`/u/${p.username}`}
-                    title={p.display_name}
-                    className="relative inline-block h-7 w-7 overflow-hidden rounded-full bg-surface ring-2 ring-background"
-                  >
-                    {p.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={p.avatar_url}
-                        alt={p.display_name}
-                        referrerPolicy="no-referrer"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span className="flex h-full w-full items-center justify-center text-[11px] font-bold text-foreground">
-                        {p.display_name.slice(0, 1).toUpperCase()}
+                  <div key={p.id} className="relative h-10 w-10">
+                    <Link
+                      href={`/u/${p.username}`}
+                      title={p.display_name}
+                      className="block h-full w-full overflow-hidden rounded-full bg-surface ring-2 ring-background"
+                    >
+                      {p.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={p.avatar_url}
+                          alt={p.display_name}
+                          referrerPolicy="no-referrer"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center text-sm font-bold text-glow">
+                          {p.display_name.slice(0, 1).toUpperCase()}
+                        </span>
+                      )}
+                    </Link>
+                    {p.home_country && (
+                      <span
+                        className="pointer-events-none absolute -bottom-0.5 -right-0.5 block h-4 w-4 overflow-hidden rounded-full bg-white ring-2 ring-background"
+                        title={p.home_country}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={flagImage(p.home_country)}
+                          alt={p.home_country}
+                          referrerPolicy="no-referrer"
+                          className="h-full w-full object-cover"
+                        />
                       </span>
                     )}
-                  </Link>
+                  </div>
                 ))}
                 {overflow > 0 && (
-                  <span className="relative inline-flex h-7 min-w-[1.75rem] items-center justify-center rounded-full bg-glow px-1 text-[10px] font-bold text-white ring-2 ring-background">
+                  <span className="relative z-10 inline-flex h-10 min-w-[2.5rem] items-center justify-center rounded-full bg-glow px-1 text-xs font-bold text-white ring-2 ring-background">
                     +{overflow}
                   </span>
                 )}
