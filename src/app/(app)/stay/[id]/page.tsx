@@ -162,7 +162,14 @@ export default async function StayDetailPage({ params }: { params: Params }) {
         </Link>
         {stay.thumbs_up > 0 && (
           <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-glow px-2.5 py-1 text-[11px] font-bold text-white shadow-card">
-            🎒 Backpacker Pick · {stay.thumbs_up}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/orange/thumbs_up_orange.png"
+              alt=""
+              aria-hidden
+              className="h-3.5 w-3.5 object-contain"
+            />
+            Backpacker Pick · {stay.thumbs_up}
           </span>
         )}
       </div>

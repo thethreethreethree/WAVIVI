@@ -61,7 +61,13 @@ export function BackpackerPickButton({
             : "bg-surface text-foreground ring-1 ring-border hover:bg-foreground/5"
         }`}
       >
-        <span aria-hidden>{voted ? "✓" : "🎒"}</span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/icons/orange/thumbs_up_orange.png"
+          alt=""
+          aria-hidden
+          className="h-5 w-5 object-contain"
+        />
         {voted ? "You picked this" : "Backpacker Pick"}
         <span
           className={`rounded-full px-2 py-0.5 text-[11px] ${
