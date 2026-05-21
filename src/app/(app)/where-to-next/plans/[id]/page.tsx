@@ -306,7 +306,19 @@ async function ChatsSection({
 
   return (
     <section>
-      <h2 className="text-base font-bold">💬 Group chats</h2>
+      <div className="flex justify-end">
+        <Link
+          href="/meet"
+          className="wc-frame wc-frame-orange-white inline-flex items-center gap-1 rounded-full px-4 py-2 text-xs font-bold text-glow"
+        >
+          💬 Group chats
+          {chats.length > 0 && (
+            <span className="rounded-full bg-glow px-1.5 text-[10px] text-white">
+              {chats.length}
+            </span>
+          )}
+        </Link>
+      </div>
       {chats.length > 0 && (
         <ul className="mt-2 flex flex-col gap-2">
           {chats.map((c) => (
