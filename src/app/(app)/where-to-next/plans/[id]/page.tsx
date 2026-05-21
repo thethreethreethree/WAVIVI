@@ -97,23 +97,9 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
         </Link>
       </header>
 
-      {/* Saved sections — always visible. Empty states are silent
-          (just the section heading) so the layout is consistent
-          whether or not the user has saved anything yet. */}
-      <SavedSection
-        title="Saved hotels"
-        emoji="🏨"
-        items={plan.saved_hotels}
-        planId={plan.id}
-        list="saved_hotels"
-      />
-      <SavedSection
-        title="Saved restaurants"
-        emoji="🍜"
-        items={plan.saved_restaurants}
-        planId={plan.id}
-        list="saved_restaurants"
-      />
+      {/* My Saved List — three tiles covering Stay / Eat / Do, with
+          the saved items listed below the tile grid. */}
+      <MySavedList plan={plan} />
 
       {/* Things to do — top stays in the destination country. */}
       <ActivitiesAndPlaces plan={plan} />
@@ -391,40 +377,94 @@ async function ChatsSection({
   );
 }
 
-function SavedSection({
-  title,
-  emoji,
-  items,
-}: {
-  title: string;
-  emoji: string;
-  items: { externalId: string; name: string; city: string | null }[];
-  planId: string;
-  list: "saved_hotels" | "saved_restaurants";
-}) {
+function MySavedList({ plan }: { plan: TravelPlanRow }) {
+  const stayCount = plan.saved_hotels.length;
+  const eatCount = plan.saved_restaurants.length;
+  const doCount = plan.itinerary.length;
+
   return (
     <section>
       <h2 className="text-base font-bold">
-        <span className="mr-2" aria-hidden>
-          {emoji}
-        </span>
-        {title}
+        <span className="wc-underline">My Saved List</span>
       </h2>
-      <ul className="mt-2 flex flex-col gap-2">
+      <div className="mt-3 grid grid-cols-3 gap-3">
+        <SavedTile label="Places I'll stay" count={stayCount} />
+        <SavedTile label="Where I will eat" count={eatCount} />
+        <SavedTile label="What I will do" count={doCount} />
+      </div>
+
+      {stayCount > 0 && (
+        <SavedList
+          label="Places I'll stay"
+          items={plan.saved_hotels.map((h) => ({
+            id: h.externalId,
+            title: h.name,
+            sub: h.city,
+          }))}
+        />
+      )}
+      {eatCount > 0 && (
+        <SavedList
+          label="Where I will eat"
+          items={plan.saved_restaurants.map((r) => ({
+            id: r.externalId,
+            title: r.name,
+            sub: r.city,
+          }))}
+        />
+      )}
+      {doCount > 0 && (
+        <SavedList
+          label="What I will do"
+          items={plan.itinerary.map((it) => ({
+            id: it.id,
+            title: it.title,
+            sub: `Day ${it.dayIndex + 1}`,
+          }))}
+        />
+      )}
+    </section>
+  );
+}
+
+function SavedTile({ label, count }: { label: string; count: number }) {
+  return (
+    <div className="wc-frame flex aspect-square flex-col items-center justify-center gap-1 rounded-2xl p-3 text-center">
+      <p className="text-3xl font-bold text-glow">{count}</p>
+      <p className="text-[11px] font-bold leading-tight text-foreground">
+        {label}
+      </p>
+    </div>
+  );
+}
+
+function SavedList({
+  label,
+  items,
+}: {
+  label: string;
+  items: { id: string; title: string; sub: string | null }[];
+}) {
+  return (
+    <div className="mt-3">
+      <p className="text-xs font-bold uppercase tracking-wide text-muted">
+        {label}
+      </p>
+      <ul className="mt-1.5 flex flex-col gap-2">
         {items.map((it) => (
           <li
-            key={it.externalId}
+            key={it.id}
             className="wc-frame flex items-center justify-between gap-3 rounded-2xl p-3"
           >
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold">{it.name}</p>
-              {it.city && (
-                <p className="truncate text-xs text-muted">{it.city}</p>
+              <p className="truncate text-sm font-bold">{it.title}</p>
+              {it.sub && (
+                <p className="truncate text-xs text-muted">{it.sub}</p>
               )}
             </div>
           </li>
         ))}
       </ul>
-    </section>
+    </div>
   );
 }
