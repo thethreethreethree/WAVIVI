@@ -5,6 +5,7 @@ import {
   Questionnaire,
   type QuestionnaireInitial,
 } from "@/features/where-to-next/questionnaire";
+import { TripPlanner } from "@/features/where-to-next/trip-planner";
 import { VerificationGate } from "@/features/where-to-next/verification-gate";
 import { getCurrentProfile } from "@/lib/profiles";
 import { createClient } from "@/lib/supabase/server";
@@ -47,5 +48,17 @@ export default async function EditPlanPage({ params }: { params: Params }) {
     openToMeetOthers: plan.open_to_meet_others,
   };
 
-  return <Questionnaire initial={initial} />;
+  return (
+    <div className="flex flex-col">
+      <Questionnaire initial={initial} />
+      <div className="px-5 pb-8">
+        <TripPlanner
+          planId={plan.id}
+          startDate={plan.start_date}
+          durationDays={plan.duration_days}
+          items={plan.itinerary}
+        />
+      </div>
+    </div>
+  );
 }

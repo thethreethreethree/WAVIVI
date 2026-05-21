@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { MatchToggle } from "@/features/where-to-next/match-toggle";
 import { PlanActions } from "@/features/where-to-next/plan-actions";
-import { TripPlanner } from "@/features/where-to-next/trip-planner";
 import { VerificationGate } from "@/features/where-to-next/verification-gate";
 import { getCurrentProfile } from "@/lib/profiles";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -38,19 +36,6 @@ export async function generateMetadata({
     : "Travel plan";
   return { title: where };
 }
-
-const BUDGET_LABEL: Record<string, string> = {
-  shoestring: "Shoestring",
-  mid: "Mid",
-  premium: "Premium",
-  luxury: "Luxury",
-};
-const TRAVELING_WITH_LABEL: Record<string, string> = {
-  solo: "Solo",
-  partner: "With my partner",
-  friends: "With friends",
-  family: "With family",
-};
 
 export default async function PlanDetailPage({ params }: { params: Params }) {
   const { id } = await params;
@@ -111,39 +96,6 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
         </Link>
       </header>
 
-      {/* Overview */}
-      <section className="wc-frame rounded-2xl p-4">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-muted">
-          Overview
-        </h2>
-        <dl className="mt-3 flex flex-col gap-2 text-sm">
-          <Row label="Budget" value={BUDGET_LABEL[plan.budget] ?? plan.budget} />
-          <Row
-            label="Traveling with"
-            value={
-              TRAVELING_WITH_LABEL[plan.traveling_with] ?? plan.traveling_with
-            }
-          />
-          <MatchToggle
-            planId={plan.id}
-            initial={plan.open_to_meet_others}
-          />
-        </dl>
-
-        {plan.vibe_tags.length > 0 && (
-          <TagRow label="Vibe" tags={plan.vibe_tags} />
-        )}
-        {plan.purpose.length > 0 && (
-          <TagRow label="Mission" tags={plan.purpose} />
-        )}
-        {plan.activities.length > 0 && (
-          <TagRow label="Activities" tags={plan.activities} />
-        )}
-        {plan.must_see.length > 0 && (
-          <TagRow label="Must-see" tags={plan.must_see} />
-        )}
-      </section>
-
       {/* Hotels */}
       <SavedSection
         title="Saved hotels"
@@ -164,14 +116,6 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
         list="saved_restaurants"
       />
 
-      {/* Trip Planner — day-by-day editor */}
-      <TripPlanner
-        planId={plan.id}
-        startDate={plan.start_date}
-        durationDays={plan.duration_days}
-        items={plan.itinerary}
-      />
-
       {/* Activities & places — top stays in the destination country. */}
       <ActivitiesAndPlaces plan={plan} />
 
@@ -187,37 +131,6 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
 }
 
 /* ── Pieces ──────────────────────────────────────────────────────────── */
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <dt className="text-xs font-bold uppercase tracking-wide text-muted">
-        {label}
-      </dt>
-      <dd className="text-right font-semibold">{value}</dd>
-    </div>
-  );
-}
-
-function TagRow({ label, tags }: { label: string; tags: string[] }) {
-  return (
-    <div className="mt-3">
-      <p className="text-xs font-bold uppercase tracking-wide text-muted">
-        {label}
-      </p>
-      <div className="mt-1.5 flex flex-wrap gap-1.5">
-        {tags.map((t) => (
-          <span
-            key={t}
-            className="wc-frame wc-frame-orange-white rounded-full px-2.5 py-1 text-[11px] font-bold text-foreground"
-          >
-            {t}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 async function ActivitiesAndPlaces({ plan }: { plan: TravelPlanRow }) {
   // We don't have a `stays.country` column yet (region_id is region-keyed),
