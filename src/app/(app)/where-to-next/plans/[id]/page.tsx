@@ -8,6 +8,7 @@ import { getCurrentProfile } from "@/lib/profiles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { flagImage } from "@/lib/travejor/account";
+import { travejorEvents } from "@/lib/travejor/events";
 import { scoreCandidatesForPlan } from "@/lib/where-to-next/match-plan";
 import {
   overlapDays as overlapDaysFn,
@@ -96,33 +97,38 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
         </Link>
       </header>
 
-      {/* Hotels */}
-      <SavedSection
-        title="Saved hotels"
-        emoji="🏨"
-        items={plan.saved_hotels}
-        emptyHint="Browse Where to Stay and tap “Save to my trip” on any listing to pin it here."
-        planId={plan.id}
-        list="saved_hotels"
-      />
+      {/* Saved sections — only render when the user has actually saved
+          something to keep empty plans from looking like an empty-state
+          gallery. */}
+      {plan.saved_hotels.length > 0 && (
+        <SavedSection
+          title="Saved hotels"
+          emoji="🏨"
+          items={plan.saved_hotels}
+          planId={plan.id}
+          list="saved_hotels"
+        />
+      )}
+      {plan.saved_restaurants.length > 0 && (
+        <SavedSection
+          title="Saved restaurants"
+          emoji="🍜"
+          items={plan.saved_restaurants}
+          planId={plan.id}
+          list="saved_restaurants"
+        />
+      )}
 
-      {/* Restaurants */}
-      <SavedSection
-        title="Saved restaurants"
-        emoji="🍜"
-        items={plan.saved_restaurants}
-        emptyHint="Restaurants you save show up here for the trip."
-        planId={plan.id}
-        list="saved_restaurants"
-      />
-
-      {/* Activities & places — top stays in the destination country. */}
+      {/* Things to do — top stays in the destination country. */}
       <ActivitiesAndPlaces plan={plan} />
+
+      {/* Events — upcoming social events, filtered by the trip's vibe. */}
+      <EventsForTrip plan={plan} />
 
       {/* Suggested travelers — 0.45–0.65 bucket. */}
       <SuggestedTravelers plan={plan} />
 
-      {/* Group chats — joined + suggested */}
+      {/* Group chats — only render when the user is in chats. */}
       <ChatsSection planId={plan.id} chatIds={plan.saved_chats} />
 
       <PlanActions planId={plan.id} />
@@ -162,7 +168,7 @@ async function ActivitiesAndPlaces({ plan }: { plan: TravelPlanRow }) {
 
   return (
     <section>
-      <h2 className="text-base font-bold">📍 Activities &amp; places</h2>
+      <h2 className="text-base font-bold">📍 Things to do</h2>
       <p className="mt-1 text-xs text-muted">
         Top picks for {city ? `${city}, ` : ""}{country}.
       </p>
@@ -194,6 +200,54 @@ async function ActivitiesAndPlaces({ plan }: { plan: TravelPlanRow }) {
             <p className="truncate text-xs text-muted">
               ★ {(s.rating ?? s.backpack_rating).toFixed(1)} ·{" "}
               {s.stay_type}
+            </p>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Events strip — mock data for now (travejorEvents). When a real
+ * events table lands, swap the source and add destination/date
+ * filtering; the visual layout stays the same.
+ */
+function EventsForTrip({ plan }: { plan: TravelPlanRow }) {
+  const vibes = new Set(plan.vibe_tags.map((v) => v.toLowerCase()));
+  const sorted = [...travejorEvents].sort((a, b) => {
+    const aMatch = vibes.has(a.category.toLowerCase()) ? 1 : 0;
+    const bMatch = vibes.has(b.category.toLowerCase()) ? 1 : 0;
+    return bMatch - aMatch;
+  });
+  const picks = sorted.slice(0, 6);
+  if (picks.length === 0) return null;
+  return (
+    <section>
+      <h2 className="text-base font-bold">🎉 Events</h2>
+      <p className="mt-1 text-xs text-muted">
+        Social events to slot into your trip.
+      </p>
+      <div className="-mx-5 mt-3 flex gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {picks.map((ev) => (
+          <Link
+            key={ev.id}
+            href={`/events/${ev.id}`}
+            className="w-44 shrink-0"
+          >
+            <div className="wc-frame relative h-24 w-44 rounded-2xl p-1.5">
+              <span className="relative block h-full w-full overflow-hidden rounded-xl">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={ev.image}
+                  alt={ev.title}
+                  className="h-full w-full object-cover"
+                />
+              </span>
+            </div>
+            <p className="mt-1.5 truncate text-sm font-bold">{ev.title}</p>
+            <p className="truncate text-xs text-muted">
+              {ev.when} · {ev.category}
             </p>
           </Link>
         ))}
@@ -302,46 +356,38 @@ async function ChatsSection({
   planId: string;
   chatIds: string[];
 }) {
-  let chats: ChatGroupRow[] = [];
-  if (chatIds.length > 0) {
-    const supabase = createAdminClient();
-    const { data } = await supabase
-      .from("chat_groups")
-      .select("*")
-      .in("id", chatIds);
-    chats = (data ?? []) as ChatGroupRow[];
-  }
+  if (chatIds.length === 0) return null;
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("chat_groups")
+    .select("*")
+    .in("id", chatIds);
+  const chats = (data ?? []) as ChatGroupRow[];
+  if (chats.length === 0) return null;
+
   return (
     <section>
       <h2 className="text-base font-bold">💬 Group chats</h2>
-      {chats.length === 0 ? (
-        <p className="mt-2 rounded-2xl bg-surface p-4 text-center text-sm text-muted ring-1 ring-border">
-          No matches yet — tap{" "}
-          <span className="font-bold text-foreground">Find my crew again</span>
-          {" "}below once more travelers have booked the same window.
-        </p>
-      ) : (
-        <ul className="mt-2 flex flex-col gap-2">
-          {chats.map((c) => (
-            <li key={c.id}>
-              <Link
-                href={`/meet/${c.id}`}
-                className="wc-frame flex items-center justify-between gap-3 rounded-2xl p-3"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold">{c.name}</p>
-                  {c.is_auto_generated && (
-                    <p className="truncate text-[11px] text-muted">
-                      Auto-created from your trip
-                    </p>
-                  )}
-                </div>
-                <span className="text-glow">›</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className="mt-2 flex flex-col gap-2">
+        {chats.map((c) => (
+          <li key={c.id}>
+            <Link
+              href={`/meet/${c.id}`}
+              className="wc-frame flex items-center justify-between gap-3 rounded-2xl p-3"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold">{c.name}</p>
+                {c.is_auto_generated && (
+                  <p className="truncate text-[11px] text-muted">
+                    Auto-created from your trip
+                  </p>
+                )}
+              </div>
+              <span className="text-glow">›</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -350,12 +396,10 @@ function SavedSection({
   title,
   emoji,
   items,
-  emptyHint,
 }: {
   title: string;
   emoji: string;
   items: { externalId: string; name: string; city: string | null }[];
-  emptyHint: string;
   planId: string;
   list: "saved_hotels" | "saved_restaurants";
 }) {
@@ -367,27 +411,21 @@ function SavedSection({
         </span>
         {title}
       </h2>
-      {items.length === 0 ? (
-        <p className="mt-2 rounded-2xl bg-surface p-4 text-center text-sm text-muted ring-1 ring-border">
-          {emptyHint}
-        </p>
-      ) : (
-        <ul className="mt-2 flex flex-col gap-2">
-          {items.map((it) => (
-            <li
-              key={it.externalId}
-              className="wc-frame flex items-center justify-between gap-3 rounded-2xl p-3"
-            >
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold">{it.name}</p>
-                {it.city && (
-                  <p className="truncate text-xs text-muted">{it.city}</p>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className="mt-2 flex flex-col gap-2">
+        {items.map((it) => (
+          <li
+            key={it.externalId}
+            className="wc-frame flex items-center justify-between gap-3 rounded-2xl p-3"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold">{it.name}</p>
+              {it.city && (
+                <p className="truncate text-xs text-muted">{it.city}</p>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
