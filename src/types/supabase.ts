@@ -466,6 +466,19 @@ export type SavedTravelItem = {
   notes: string | null;
 };
 
+export type ItineraryTimeOfDay = "morning" | "afternoon" | "evening" | "anytime";
+
+/** One Trip Planner row — fits in the jsonb `itinerary` column. */
+export type ItineraryItem = {
+  /** Client-generated UUID so React keys + delete-by-id are stable. */
+  id: string;
+  /** 0-based offset from the plan's start_date. */
+  dayIndex: number;
+  title: string;
+  time: ItineraryTimeOfDay;
+  notes: string | null;
+};
+
 export type TravelPlanRow = {
   id: string;
   user_id: string;
@@ -484,6 +497,7 @@ export type TravelPlanRow = {
   saved_hotels: SavedTravelItem[];
   saved_restaurants: SavedTravelItem[];
   saved_chats: string[];
+  itinerary: ItineraryItem[];
   status: TravelPlanStatus;
   created_at: string;
   updated_at: string;
@@ -506,6 +520,7 @@ export type TravelPlanInsert = {
   saved_hotels?: SavedTravelItem[];
   saved_restaurants?: SavedTravelItem[];
   saved_chats?: string[];
+  itinerary?: ItineraryItem[];
   status?: TravelPlanStatus;
 };
 

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { PlanActions } from "@/features/where-to-next/plan-actions";
+import { TripPlanner } from "@/features/where-to-next/trip-planner";
 import { VerificationGate } from "@/features/where-to-next/verification-gate";
 import { getCurrentProfile } from "@/lib/profiles";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -149,6 +150,14 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
         emptyHint="Restaurants you save show up here for the trip."
         planId={plan.id}
         list="saved_restaurants"
+      />
+
+      {/* Trip Planner — day-by-day editor */}
+      <TripPlanner
+        planId={plan.id}
+        startDate={plan.start_date}
+        durationDays={plan.duration_days}
+        items={plan.itinerary}
       />
 
       {/* Group chats — joined + suggested */}

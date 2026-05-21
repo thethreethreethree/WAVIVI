@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { runMatching } from "@/lib/where-to-next/match-plan";
 import type {
+  ItineraryItem,
   SavedTravelItem,
   TravelPlanBudget,
   TravelPlanDestination,
@@ -225,6 +226,60 @@ export async function removeSavedChat(
   const { error } = await supabase
     .from("travel_plans")
     .update({ saved_chats: next })
+    .eq("id", planId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/where-to-next/plans/${planId}`);
+  return { ok: true, error: null };
+}
+
+/* ── Trip Planner ─────────────────────────────────────────────────────── */
+
+export async function addItineraryItem(
+  planId: string,
+  item: Omit<ItineraryItem, "id">,
+): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createClient();
+  const { data: plan } = await supabase
+    .from("travel_plans")
+    .select("itinerary")
+    .eq("id", planId)
+    .maybeSingle();
+  if (!plan) return { ok: false, error: "Plan not found." };
+
+  const title = item.title.trim();
+  if (!title) return { ok: false, error: "Add a title." };
+
+  const next: ItineraryItem[] = [
+    ...(plan.itinerary ?? []),
+    { ...item, id: crypto.randomUUID(), title },
+  ];
+  const { error } = await supabase
+    .from("travel_plans")
+    .update({ itinerary: next })
+    .eq("id", planId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/where-to-next/plans/${planId}`);
+  return { ok: true, error: null };
+}
+
+export async function removeItineraryItem(
+  planId: string,
+  itemId: string,
+): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createClient();
+  const { data: plan } = await supabase
+    .from("travel_plans")
+    .select("itinerary")
+    .eq("id", planId)
+    .maybeSingle();
+  if (!plan) return { ok: false, error: "Plan not found." };
+
+  const next = (plan.itinerary ?? []).filter((it) => it.id !== itemId);
+  const { error } = await supabase
+    .from("travel_plans")
+    .update({ itinerary: next })
     .eq("id", planId);
   if (error) return { ok: false, error: error.message };
 
