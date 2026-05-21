@@ -64,8 +64,12 @@ export function TripPlanner({ planId, startDate, durationDays, items }: Props) {
         Day-by-day plan — pencil in anything you don&apos;t want to forget.
       </p>
       <div
-        className="wc-frame mt-3 overflow-y-auto rounded-2xl p-3 [scrollbar-width:thin]"
-        style={{ height: "28rem", maxHeight: "28rem" }}
+        className="wc-frame mt-3 shrink-0 overflow-y-scroll rounded-2xl p-3"
+        style={{
+          height: "28rem",
+          maxHeight: "28rem",
+          minHeight: "28rem",
+        }}
       >
         <div className="flex flex-col gap-3">
           {days.map((d) => (
