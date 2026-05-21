@@ -68,7 +68,7 @@ export function RadialHub() {
 
   return (
     <div className="relative mx-auto aspect-square w-full max-w-[360px]">
-      {/* Centre hub → live map */}
+      {/* Centre hub → Where to Next questionnaire + matching */}
       <motion.div
         className="absolute left-1/2 top-1/2 z-10 h-[42%] w-[42%] -translate-x-1/2 -translate-y-1/2"
         initial={{ scale: 0.42, opacity: 0, filter: "blur(14px)" }}
@@ -76,7 +76,7 @@ export function RadialHub() {
         transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
       >
         <Link
-          href="/map"
+          href="/where-to-next"
           className="group relative block h-full w-full transition-transform hover:scale-105 active:scale-95"
         >
           {/* Soft watercolor glow */}

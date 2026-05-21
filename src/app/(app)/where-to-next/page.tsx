@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 
 import { VerificationGate } from "@/features/where-to-next/verification-gate";
 import { getCurrentProfile } from "@/lib/profiles";
+import { createClient } from "@/lib/supabase/server";
+import type { TravelPlanRow } from "@/types/supabase";
 
 export const metadata: Metadata = { title: "Where to Next" };
 export const dynamic = "force-dynamic";
@@ -24,6 +26,13 @@ export default async function WhereToNextPage() {
   if (!profile.instagram_verified) {
     return <VerificationGate />;
   }
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("travel_plans")
+    .select("*")
+    .order("start_date", { ascending: true });
+  const plans = (data ?? []) as TravelPlanRow[];
 
   return (
     <div className="flex flex-1 flex-col gap-6 px-5 pb-8 pt-[max(2.5rem,calc(env(safe-area-inset-top)+1.5rem))]">
@@ -49,10 +58,42 @@ export default async function WhereToNextPage() {
 
       <section>
         <h2 className="text-base font-bold">Upcoming Adventures</h2>
-        <p className="mt-3 rounded-2xl bg-surface px-4 py-6 text-center text-sm text-muted ring-1 ring-border">
-          No plans yet — start one to see suggested places, restaurants, and
-          travelers headed your way.
-        </p>
+        {plans.length === 0 ? (
+          <p className="mt-3 rounded-2xl bg-surface px-4 py-6 text-center text-sm text-muted ring-1 ring-border">
+            No plans yet — start one to see suggested places, restaurants, and
+            travelers headed your way.
+          </p>
+        ) : (
+          <ul className="mt-3 flex flex-col gap-3">
+            {plans.map((p) => {
+              const first = p.destinations[0];
+              const where = first
+                ? [first.city, first.country].filter(Boolean).join(", ")
+                : p.destination_countries.join(", ");
+              return (
+                <li key={p.id}>
+                  <Link
+                    href={`/where-to-next/plans/${p.id}`}
+                    className="wc-frame block rounded-2xl p-4"
+                  >
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted">
+                      {p.status}
+                    </p>
+                    <p className="mt-0.5 truncate text-lg font-bold">{where}</p>
+                    <p className="text-xs text-muted">
+                      {p.start_date} → {p.end_date} · {p.duration_days} days
+                    </p>
+                    {p.vibe_tags.length > 0 && (
+                      <p className="mt-1 truncate text-xs text-muted">
+                        {p.vibe_tags.join(" · ")}
+                      </p>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
     </div>
   );
