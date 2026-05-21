@@ -8,7 +8,6 @@ import { getCurrentProfile } from "@/lib/profiles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { flagImage } from "@/lib/travejor/account";
-import { travejorEvents } from "@/lib/travejor/events";
 import { scoreCandidatesForPlan } from "@/lib/where-to-next/match-plan";
 import {
   overlapDays as overlapDaysFn,
@@ -104,9 +103,6 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
       {/* Things to do — top stays in the destination country. */}
       <ActivitiesAndPlaces plan={plan} />
 
-      {/* Events — upcoming social events, filtered by the trip's vibe. */}
-      <EventsForTrip plan={plan} />
-
       {/* Suggested travelers — 0.45–0.65 bucket. */}
       <SuggestedTravelers plan={plan} />
 
@@ -182,54 +178,6 @@ async function ActivitiesAndPlaces({ plan }: { plan: TravelPlanRow }) {
             <p className="truncate text-xs text-muted">
               ★ {(s.rating ?? s.backpack_rating).toFixed(1)} ·{" "}
               {s.stay_type}
-            </p>
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/**
- * Events strip — mock data for now (travejorEvents). When a real
- * events table lands, swap the source and add destination/date
- * filtering; the visual layout stays the same.
- */
-function EventsForTrip({ plan }: { plan: TravelPlanRow }) {
-  const vibes = new Set(plan.vibe_tags.map((v) => v.toLowerCase()));
-  const sorted = [...travejorEvents].sort((a, b) => {
-    const aMatch = vibes.has(a.category.toLowerCase()) ? 1 : 0;
-    const bMatch = vibes.has(b.category.toLowerCase()) ? 1 : 0;
-    return bMatch - aMatch;
-  });
-  const picks = sorted.slice(0, 6);
-  if (picks.length === 0) return null;
-  return (
-    <section>
-      <h2 className="text-base font-bold">🎉 Events</h2>
-      <p className="mt-1 text-xs text-muted">
-        Social events to slot into your trip.
-      </p>
-      <div className="-mx-5 mt-3 flex gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {picks.map((ev) => (
-          <Link
-            key={ev.id}
-            href={`/events/${ev.id}`}
-            className="w-44 shrink-0"
-          >
-            <div className="wc-frame relative h-24 w-44 rounded-2xl p-1.5">
-              <span className="relative block h-full w-full overflow-hidden rounded-xl">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={ev.image}
-                  alt={ev.title}
-                  className="h-full w-full object-cover"
-                />
-              </span>
-            </div>
-            <p className="mt-1.5 truncate text-sm font-bold">{ev.title}</p>
-            <p className="truncate text-xs text-muted">
-              {ev.when} · {ev.category}
             </p>
           </Link>
         ))}
@@ -378,93 +326,57 @@ async function ChatsSection({
 }
 
 function MySavedList({ plan }: { plan: TravelPlanRow }) {
-  const stayCount = plan.saved_hotels.length;
-  const eatCount = plan.saved_restaurants.length;
-  const doCount = plan.itinerary.length;
-
+  const base = `/where-to-next/plans/${plan.id}/saved`;
   return (
     <section>
       <h2 className="text-base font-bold">
         <span className="wc-underline">My Saved List</span>
       </h2>
-      <div className="mt-3 grid grid-cols-3 gap-3">
-        <SavedTile label="Places I'll stay" count={stayCount} />
-        <SavedTile label="Where I will eat" count={eatCount} />
-        <SavedTile label="What I will do" count={doCount} />
-      </div>
-
-      {stayCount > 0 && (
-        <SavedList
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <SavedTile
+          href={`${base}/stay`}
           label="Places I'll stay"
-          items={plan.saved_hotels.map((h) => ({
-            id: h.externalId,
-            title: h.name,
-            sub: h.city,
-          }))}
+          count={plan.saved_hotels.length}
         />
-      )}
-      {eatCount > 0 && (
-        <SavedList
+        <SavedTile
+          href={`${base}/eat`}
           label="Where I will eat"
-          items={plan.saved_restaurants.map((r) => ({
-            id: r.externalId,
-            title: r.name,
-            sub: r.city,
-          }))}
+          count={plan.saved_restaurants.length}
         />
-      )}
-      {doCount > 0 && (
-        <SavedList
+        <SavedTile
+          href={`${base}/do`}
           label="What I will do"
-          items={plan.itinerary.map((it) => ({
-            id: it.id,
-            title: it.title,
-            sub: `Day ${it.dayIndex + 1}`,
-          }))}
+          count={plan.saved_activities.length}
         />
-      )}
+        <SavedTile
+          href={`${base}/events`}
+          label="Saved events"
+          count={plan.saved_events.length}
+        />
+      </div>
     </section>
   );
 }
 
-function SavedTile({ label, count }: { label: string; count: number }) {
+function SavedTile({
+  href,
+  label,
+  count,
+}: {
+  href: string;
+  label: string;
+  count: number;
+}) {
   return (
-    <div className="wc-frame flex aspect-square flex-col items-center justify-center gap-1 rounded-2xl p-3 text-center">
+    <Link
+      href={href}
+      className="wc-frame flex aspect-square flex-col items-center justify-center gap-1 rounded-2xl p-3 text-center transition active:scale-[0.98]"
+    >
       <p className="text-3xl font-bold text-glow">{count}</p>
       <p className="text-[11px] font-bold leading-tight text-foreground">
         {label}
       </p>
-    </div>
-  );
-}
-
-function SavedList({
-  label,
-  items,
-}: {
-  label: string;
-  items: { id: string; title: string; sub: string | null }[];
-}) {
-  return (
-    <div className="mt-3">
-      <p className="text-xs font-bold uppercase tracking-wide text-muted">
-        {label}
-      </p>
-      <ul className="mt-1.5 flex flex-col gap-2">
-        {items.map((it) => (
-          <li
-            key={it.id}
-            className="wc-frame flex items-center justify-between gap-3 rounded-2xl p-3"
-          >
-            <div className="min-w-0">
-              <p className="truncate text-sm font-bold">{it.title}</p>
-              {it.sub && (
-                <p className="truncate text-xs text-muted">{it.sub}</p>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
+      <p className="mt-0.5 text-[10px] font-semibold text-muted">Manage ›</p>
+    </Link>
   );
 }

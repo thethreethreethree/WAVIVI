@@ -458,12 +458,16 @@ export type TravelPlanDestination = {
 };
 
 export type SavedTravelItem = {
-  /** Stable id from the source table (stays.id, places.id, etc.). */
+  /** Stable id from the source table (stays.id, places.id, etc.) — or
+   *  a client-generated uuid for free-text items the user typed in. */
   externalId: string;
   /** Denormalised so the plan still renders if the source row is removed. */
   name: string;
   city: string | null;
   notes: string | null;
+  /** Optional — present when the traveler stars an item on the manage
+   *  page. Stored inside the jsonb so no migration is needed to add it. */
+  favorite?: boolean;
 };
 
 export type ItineraryTimeOfDay = "morning" | "afternoon" | "evening" | "anytime";
@@ -496,6 +500,8 @@ export type TravelPlanRow = {
   open_to_meet_others: boolean;
   saved_hotels: SavedTravelItem[];
   saved_restaurants: SavedTravelItem[];
+  saved_activities: SavedTravelItem[];
+  saved_events: SavedTravelItem[];
   saved_chats: string[];
   itinerary: ItineraryItem[];
   status: TravelPlanStatus;
@@ -519,6 +525,8 @@ export type TravelPlanInsert = {
   open_to_meet_others?: boolean;
   saved_hotels?: SavedTravelItem[];
   saved_restaurants?: SavedTravelItem[];
+  saved_activities?: SavedTravelItem[];
+  saved_events?: SavedTravelItem[];
   saved_chats?: string[];
   itinerary?: ItineraryItem[];
   status?: TravelPlanStatus;

@@ -243,7 +243,41 @@ export async function rematchPlan(
 
 /* ── Saved items + delete (Phase 4) ───────────────────────────────────── */
 
-type SavedItemList = "saved_hotels" | "saved_restaurants";
+export type SavedItemList =
+  | "saved_hotels"
+  | "saved_restaurants"
+  | "saved_activities"
+  | "saved_events";
+
+function patchForList(
+  list: SavedItemList,
+  next: SavedTravelItem[],
+): TravelPlanUpdate {
+  switch (list) {
+    case "saved_hotels":
+      return { saved_hotels: next };
+    case "saved_restaurants":
+      return { saved_restaurants: next };
+    case "saved_activities":
+      return { saved_activities: next };
+    case "saved_events":
+      return { saved_events: next };
+  }
+}
+
+async function readList(
+  planId: string,
+  list: SavedItemList,
+): Promise<SavedTravelItem[] | null> {
+  const supabase = await createClient();
+  const { data: plan } = await supabase
+    .from("travel_plans")
+    .select(list)
+    .eq("id", planId)
+    .maybeSingle();
+  if (!plan) return null;
+  return ((plan as Record<string, unknown>)[list] as SavedTravelItem[]) ?? [];
+}
 
 /**
  * Remove a saved hotel or restaurant from a plan by its externalId.
@@ -255,32 +289,118 @@ export async function removeSavedItem(
   list: SavedItemList,
   externalId: string,
 ): Promise<{ ok: boolean; error: string | null }> {
-  const supabase = await createClient();
-  const { data: plan } = await supabase
-    .from("travel_plans")
-    .select(list)
-    .eq("id", planId)
-    .maybeSingle();
-  if (!plan) return { ok: false, error: "Plan not found." };
-
-  const current =
-    ((plan as Record<string, unknown>)[list] as
-      | SavedTravelItem[]
-      | undefined) ?? [];
+  const current = await readList(planId, list);
+  if (current === null) return { ok: false, error: "Plan not found." };
   const next = current.filter((it) => it.externalId !== externalId);
 
-  const patch: TravelPlanUpdate =
-    list === "saved_hotels"
-      ? { saved_hotels: next }
-      : { saved_restaurants: next };
+  const supabase = await createClient();
   const { error } = await supabase
     .from("travel_plans")
-    .update(patch)
+    .update(patchForList(list, next))
     .eq("id", planId);
   if (error) return { ok: false, error: error.message };
 
   revalidatePath(`/where-to-next/plans/${planId}`);
+  revalidatePath(`/where-to-next/plans/${planId}/saved/${listSlug(list)}`);
   return { ok: true, error: null };
+}
+
+/** Toggle the `favorite` flag on a saved item. */
+export async function toggleFavoriteSavedItem(
+  planId: string,
+  list: SavedItemList,
+  externalId: string,
+): Promise<{ ok: boolean; error: string | null }> {
+  const current = await readList(planId, list);
+  if (current === null) return { ok: false, error: "Plan not found." };
+  const next = current.map((it) =>
+    it.externalId === externalId ? { ...it, favorite: !it.favorite } : it,
+  );
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("travel_plans")
+    .update(patchForList(list, next))
+    .eq("id", planId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/where-to-next/plans/${planId}/saved/${listSlug(list)}`);
+  return { ok: true, error: null };
+}
+
+/** Update the notes attached to a saved item. */
+export async function updateSavedItemNotes(
+  planId: string,
+  list: SavedItemList,
+  externalId: string,
+  notes: string,
+): Promise<{ ok: boolean; error: string | null }> {
+  const current = await readList(planId, list);
+  if (current === null) return { ok: false, error: "Plan not found." };
+  const trimmed = notes.trim();
+  const next = current.map((it) =>
+    it.externalId === externalId
+      ? { ...it, notes: trimmed === "" ? null : trimmed }
+      : it,
+  );
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("travel_plans")
+    .update(patchForList(list, next))
+    .eq("id", planId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/where-to-next/plans/${planId}/saved/${listSlug(list)}`);
+  return { ok: true, error: null };
+}
+
+/** Add a free-text item the user typed (no external row). */
+export async function addFreeTextSavedItem(
+  planId: string,
+  list: SavedItemList,
+  name: string,
+  notes: string | null,
+): Promise<{ ok: boolean; error: string | null }> {
+  const trimmed = name.trim();
+  if (!trimmed) return { ok: false, error: "Add a name." };
+
+  const current = await readList(planId, list);
+  if (current === null) return { ok: false, error: "Plan not found." };
+
+  const next: SavedTravelItem[] = [
+    ...current,
+    {
+      externalId: `user:${crypto.randomUUID()}`,
+      name: trimmed,
+      city: null,
+      notes: notes?.trim() || null,
+    },
+  ];
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("travel_plans")
+    .update(patchForList(list, next))
+    .eq("id", planId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/where-to-next/plans/${planId}/saved/${listSlug(list)}`);
+  return { ok: true, error: null };
+}
+
+/** Map a SavedItemList column to its URL slug. */
+function listSlug(list: SavedItemList): "stay" | "eat" | "do" | "events" {
+  switch (list) {
+    case "saved_hotels":
+      return "stay";
+    case "saved_restaurants":
+      return "eat";
+    case "saved_activities":
+      return "do";
+    case "saved_events":
+      return "events";
+  }
 }
 
 /** Remove a chat id from saved_chats — uses the same RLS path. */
@@ -384,34 +504,23 @@ export async function saveExternalToPlan(
   list: SavedItemList,
   item: SavedTravelItem,
 ): Promise<{ ok: boolean; error: string | null }> {
-  const supabase = await createClient();
-  const { data: plan } = await supabase
-    .from("travel_plans")
-    .select("saved_hotels, saved_restaurants")
-    .eq("id", planId)
-    .maybeSingle();
-  if (!plan) return { ok: false, error: "Plan not found." };
-
-  const current =
-    list === "saved_hotels"
-      ? plan.saved_hotels ?? []
-      : plan.saved_restaurants ?? [];
+  const current = await readList(planId, list);
+  if (current === null) return { ok: false, error: "Plan not found." };
   // No duplicates by externalId — re-saving is a no-op (success).
   if (current.some((it) => it.externalId === item.externalId)) {
     return { ok: true, error: null };
   }
   const next = [...current, item];
-  const patch: TravelPlanUpdate =
-    list === "saved_hotels"
-      ? { saved_hotels: next }
-      : { saved_restaurants: next };
+
+  const supabase = await createClient();
   const { error } = await supabase
     .from("travel_plans")
-    .update(patch)
+    .update(patchForList(list, next))
     .eq("id", planId);
   if (error) return { ok: false, error: error.message };
 
   revalidatePath(`/where-to-next/plans/${planId}`);
+  revalidatePath(`/where-to-next/plans/${planId}/saved/${listSlug(list)}`);
   return { ok: true, error: null };
 }
 
