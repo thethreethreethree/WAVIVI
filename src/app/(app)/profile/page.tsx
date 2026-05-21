@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { CountryFlags } from "@/components/ui/country-flags";
 import { Icon } from "@/components/ui/icon";
+import { flagImage } from "@/lib/travejor/account";
 import {
   InstagramConnectCard,
   InstagramFeed,
@@ -109,6 +110,22 @@ export default async function MyProfilePage() {
               <span className="text-4xl font-bold text-glow">{initial}</span>
             )}
           </span>
+          {profile.home_country && (
+            <span
+              className="wc-frame wc-frame-orange absolute -bottom-1 -right-1 block h-10 w-10 rounded-full p-1"
+              title={profile.home_country}
+            >
+              <span className="relative block h-full w-full overflow-hidden rounded-full bg-white">
+                <Image
+                  src={flagImage(profile.home_country)}
+                  alt={profile.home_country}
+                  fill
+                  sizes="40px"
+                  className="object-cover object-center"
+                />
+              </span>
+            </span>
+          )}
         </span>
         <h2 className="mt-3 text-xl font-bold">{profile.display_name}</h2>
         <p className="mt-0.5 text-sm text-muted">@{profile.username}</p>

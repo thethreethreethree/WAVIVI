@@ -11,7 +11,7 @@ import {
   InstagramShowcase,
 } from "@/features/instagram";
 import type { InstagramIdentity } from "@/features/instagram";
-import { travelerNotes } from "@/lib/travejor/account";
+import { flagImage, travelerNotes } from "@/lib/travejor/account";
 import { getMember } from "@/lib/travejor/members";
 import { photo } from "@/lib/travejor/photo";
 import { getProfileByUsername } from "@/lib/profiles";
@@ -76,6 +76,7 @@ async function loadTraveler(username: string): Promise<DisplayTraveler | null> {
       name: real.display_name,
       avatar: real.avatar_url ?? photo(real.username, 200, 200),
       bio: real.bio ?? "",
+      home_country: real.home_country ?? null,
       countries:
         (real.countries ?? []).length > 0
           ? (real.countries ?? [])
@@ -99,6 +100,7 @@ async function loadTraveler(username: string): Promise<DisplayTraveler | null> {
     name: m.name,
     avatar: m.avatar,
     bio: m.bio,
+    home_country: m.countries?.[0] ?? null,
     countries: m.countries,
     verified: m.verified,
     instagram: m.instagram
@@ -163,6 +165,22 @@ export default async function UserProfilePage({
               className="object-cover"
             />
           </span>
+          {t.home_country && (
+            <span
+              className="wc-frame wc-frame-orange absolute -bottom-1 -right-1 block h-10 w-10 rounded-full p-1"
+              title={t.home_country}
+            >
+              <span className="relative block h-full w-full overflow-hidden rounded-full bg-white">
+                <Image
+                  src={flagImage(t.home_country)}
+                  alt={t.home_country}
+                  fill
+                  sizes="40px"
+                  className="object-cover object-center"
+                />
+              </span>
+            </span>
+          )}
         </span>
         <h2 className="mt-3 flex items-center gap-1.5 text-xl font-bold">
           {t.name}
