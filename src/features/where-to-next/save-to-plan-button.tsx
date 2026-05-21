@@ -64,11 +64,11 @@ export function SaveToPlanButton({
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+          className="fixed inset-0 z-[100] flex items-end justify-center bg-black/40"
           onClick={() => setOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-t-3xl bg-background p-5 shadow-card"
+            className="w-full max-w-md rounded-t-3xl bg-background p-5 pb-[max(7rem,calc(env(safe-area-inset-bottom)+6rem))] shadow-card"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-3 flex items-center justify-between">
