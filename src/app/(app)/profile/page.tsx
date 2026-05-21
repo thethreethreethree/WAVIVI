@@ -112,7 +112,7 @@ export default async function MyProfilePage() {
           </span>
           {profile.home_country && (
             <span
-              className="wc-frame wc-frame-orange absolute -bottom-1 -right-1 block h-10 w-10 rounded-full p-1"
+              className="wc-frame wc-frame-orange absolute bottom-1 right-1 block h-10 w-10 rounded-full p-1"
               title={profile.home_country}
             >
               <span className="relative block h-full w-full overflow-hidden rounded-full bg-white">
