@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import { MatchToggle } from "@/features/where-to-next/match-toggle";
 import { PlanActions } from "@/features/where-to-next/plan-actions";
 import { TripPlanner } from "@/features/where-to-next/trip-planner";
 import { VerificationGate } from "@/features/where-to-next/verification-gate";
@@ -112,9 +113,9 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
               TRAVELING_WITH_LABEL[plan.traveling_with] ?? plan.traveling_with
             }
           />
-          <Row
-            label="Open to meeting others"
-            value={plan.open_to_meet_others ? "Yes" : "Solo mode"}
+          <MatchToggle
+            planId={plan.id}
+            initial={plan.open_to_meet_others}
           />
         </dl>
 

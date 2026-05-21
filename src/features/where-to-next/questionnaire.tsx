@@ -88,7 +88,7 @@ export function Questionnaire() {
   const [travelingWith, setTravelingWith] =
     useState<TravelPlanTravelingWith | null>(null);
   const [openToMeetOthers, setOpenToMeetOthers] = useState(true);
-  const [done, setDone] = useState(false);
+  const [donePlanId, setDonePlanId] = useState<string | null>(null);
 
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
@@ -210,15 +210,12 @@ export function Questionnaire() {
         setError(res.error);
         return;
       }
-      setDone(true);
-      // Stay on a celebration screen briefly; user can tap to continue.
-      // Phase 4 will swap this for a router.push(`/where-to-next/plans/${id}`)
-      // once the detail page exists.
+      setDonePlanId(res.planId);
       router.refresh();
     });
   }
 
-  if (done) return <CelebrationScreen />;
+  if (donePlanId) return <CelebrationScreen planId={donePlanId} />;
 
   return (
     <div className="relative flex flex-1 flex-col px-5 pb-8 pt-[max(2.5rem,calc(env(safe-area-inset-top)+1.5rem))]">
@@ -562,7 +559,7 @@ function DecorativeSplashes({ step }: { step: number }) {
   );
 }
 
-function CelebrationScreen() {
+function CelebrationScreen({ planId }: { planId: string }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-5 text-center">
       <div className="mb-4 text-7xl" aria-hidden>
@@ -572,14 +569,14 @@ function CelebrationScreen() {
         <span className="wc-underline">Plan saved!</span>
       </h1>
       <p className="mt-3 max-w-sm text-sm text-muted">
-        We&apos;ll line up places, eats, and travelers headed your way. Your
-        plan is saved to Upcoming Adventures.
+        We&apos;ve lined up your trip and started matching you with travelers
+        headed the same way.
       </p>
       <Link
-        href="/where-to-next"
+        href={`/where-to-next/plans/${planId}`}
         className="wc-frame wc-frame-sunset mt-6 rounded-full px-6 py-3 text-sm font-bold text-white active:scale-[0.98]"
       >
-        See my plan ›
+        Open my plan ›
       </Link>
     </div>
   );

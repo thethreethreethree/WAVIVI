@@ -233,6 +233,42 @@ export async function removeSavedChat(
   return { ok: true, error: null };
 }
 
+/**
+ * Per-plan matchable toggle. Flipping to ON re-runs matching so the
+ * traveler immediately gets routed into chats; flipping OFF just persists
+ * the flag (we leave existing memberships alone so the user can quietly
+ * stop appearing in new matches without dropping out of chats they're in).
+ */
+export async function setPlanOpenToMeet(
+  planId: string,
+  next: boolean,
+): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("travel_plans")
+    .update({ open_to_meet_others: next })
+    .eq("id", planId);
+  if (error) return { ok: false, error: error.message };
+
+  if (next) {
+    const { data: plan } = await supabase
+      .from("travel_plans")
+      .select("*")
+      .eq("id", planId)
+      .maybeSingle();
+    if (plan) {
+      try {
+        await runMatching(plan as TravelPlanRow);
+      } catch (err) {
+        console.error("[where-to-next] post-toggle match failed", err);
+      }
+    }
+  }
+
+  revalidatePath(`/where-to-next/plans/${planId}`);
+  return { ok: true, error: null };
+}
+
 /* ── Trip Planner ─────────────────────────────────────────────────────── */
 
 export async function addItineraryItem(
