@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import {
   listMyPlans,
   saveExternalToPlan,
+  type SavedItemList,
 } from "@/features/where-to-next/actions";
 import type { SavedTravelItem } from "@/types/supabase";
 
@@ -21,7 +22,7 @@ export function SaveToPlanButton({
   item,
   label = "Save to plan",
 }: {
-  list: "saved_hotels" | "saved_restaurants";
+  list: SavedItemList;
   item: SavedTravelItem;
   label?: string;
 }) {
@@ -35,8 +36,8 @@ export function SaveToPlanButton({
     setOpen(true);
     setError(null);
     if (plans === null) {
-      const list = await listMyPlans();
-      setPlans(list);
+      const fetched = await listMyPlans();
+      setPlans(fetched);
     }
   }
 
