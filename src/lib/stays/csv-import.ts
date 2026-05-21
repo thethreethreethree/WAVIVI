@@ -171,6 +171,8 @@ const AMENITY_ICON_FILENAMES: Record<string, string> = {
   "Kid-friendly": "Kid-friendly.png",
   "Airport shuttle": "Airport Shuttle.png",
   "EV charger": "EV Charger.png",
+  "Beach access": "Beach Access.png",
+  "Wheelchair accessible": "Wheelchair Accessible.png",
 };
 
 export function amenityIconPath(amenity: string): string | null {
