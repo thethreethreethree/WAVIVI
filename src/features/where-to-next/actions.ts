@@ -120,3 +120,76 @@ export async function submitTravelPlan(
   revalidatePath("/where-to-next");
   return { ok: true, planId: data.id };
 }
+
+/* ── Saved items + delete (Phase 4) ───────────────────────────────────── */
+
+type SavedItemList = "saved_hotels" | "saved_restaurants";
+
+/**
+ * Remove a saved hotel or restaurant from a plan by its externalId.
+ * RLS guarantees only the owner can update; we don't pass user_id from
+ * the client.
+ */
+export async function removeSavedItem(
+  planId: string,
+  list: SavedItemList,
+  externalId: string,
+): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createClient();
+  const { data: plan } = await supabase
+    .from("travel_plans")
+    .select(list)
+    .eq("id", planId)
+    .maybeSingle();
+  if (!plan) return { ok: false, error: "Plan not found." };
+
+  const current = (plan[list] as { externalId: string }[]) ?? [];
+  const next = current.filter((it) => it.externalId !== externalId);
+
+  const { error } = await supabase
+    .from("travel_plans")
+    .update({ [list]: next })
+    .eq("id", planId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/where-to-next/plans/${planId}`);
+  return { ok: true, error: null };
+}
+
+/** Remove a chat id from saved_chats — uses the same RLS path. */
+export async function removeSavedChat(
+  planId: string,
+  chatId: string,
+): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createClient();
+  const { data: plan } = await supabase
+    .from("travel_plans")
+    .select("saved_chats")
+    .eq("id", planId)
+    .maybeSingle();
+  if (!plan) return { ok: false, error: "Plan not found." };
+
+  const next = (plan.saved_chats ?? []).filter((id) => id !== chatId);
+  const { error } = await supabase
+    .from("travel_plans")
+    .update({ saved_chats: next })
+    .eq("id", planId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/where-to-next/plans/${planId}`);
+  return { ok: true, error: null };
+}
+
+/** Soft delete a plan (status = 'past'). True delete reserved for admin. */
+export async function deletePlan(
+  planId: string,
+): Promise<{ ok: boolean; error: string | null }> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("travel_plans")
+    .delete()
+    .eq("id", planId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/where-to-next");
+  return { ok: true, error: null };
+}
