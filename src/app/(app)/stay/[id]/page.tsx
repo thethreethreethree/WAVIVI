@@ -165,6 +165,12 @@ export default async function StayDetailPage({ params }: { params: Params }) {
               value={stay.rating ?? stay.backpack_rating}
               favourite={recommended}
             />
+            {stay.review_count > 0 && (
+              <span className="text-xs text-muted">
+                ({stay.review_count.toLocaleString()} review
+                {stay.review_count === 1 ? "" : "s"})
+              </span>
+            )}
             <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-[11px] font-semibold">
               🎒 {stay.backpack_rating.toFixed(1)}
             </span>

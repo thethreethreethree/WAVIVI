@@ -269,6 +269,11 @@ export function StayList({ stays }: { stays: StayRow[] }) {
                         value={s.rating ?? s.backpack_rating}
                         favourite={recommended}
                       />
+                      {s.review_count > 0 && (
+                        <span className="text-[11px] text-muted">
+                          ({s.review_count.toLocaleString()})
+                        </span>
+                      )}
                       {s.price_per_night_usd != null && (
                         <span className="rounded-full bg-cool/15 px-2 py-0.5 text-[11px] font-semibold text-cool">
                           ${s.price_per_night_usd}/night
