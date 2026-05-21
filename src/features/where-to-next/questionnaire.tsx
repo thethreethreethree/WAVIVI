@@ -90,34 +90,69 @@ export function Questionnaire() {
   const [openToMeetOthers, setOpenToMeetOthers] = useState(true);
   const [done, setDone] = useState(false);
 
-  const canAdvance = useMemo(() => {
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  const validation = useMemo<{ ok: boolean; reason: string | null }>(() => {
     switch (step) {
       case 0:
-        return country.trim().length >= 2;
-      case 1:
-        return Boolean(startDate && endDate && endDate >= startDate);
+        return country.trim().length >= 2
+          ? { ok: true, reason: null }
+          : { ok: false, reason: "Add a country to continue." };
+      case 1: {
+        if (!startDate || !endDate) {
+          return { ok: false, reason: "Pick a start and end date." };
+        }
+        if (startDate < today) {
+          return { ok: false, reason: "Start date can't be in the past." };
+        }
+        if (endDate < startDate) {
+          return { ok: false, reason: "End date is before the start date." };
+        }
+        // Catch year-typo (e.g. 0027 instead of 2027).
+        const startYear = Number(startDate.slice(0, 4));
+        const endYear = Number(endDate.slice(0, 4));
+        const thisYear = new Date().getFullYear();
+        if (startYear < thisYear || endYear < thisYear) {
+          return {
+            ok: false,
+            reason: "Check the year on your dates — looks like a typo.",
+          };
+        }
+        return { ok: true, reason: null };
+      }
       case 2:
-        return purpose.length > 0;
+        return purpose.length > 0
+          ? { ok: true, reason: null }
+          : { ok: false, reason: "Pick at least one." };
       case 3:
-        return activities.length > 0 || otherActivity.trim().length > 0;
+        return activities.length > 0 || otherActivity.trim().length > 0
+          ? { ok: true, reason: null }
+          : { ok: false, reason: "Pick at least one activity." };
       case 4:
-        return true; // optional
+        return { ok: true, reason: null };
       case 5:
-        return vibeTags.length > 0;
+        return vibeTags.length > 0
+          ? { ok: true, reason: null }
+          : { ok: false, reason: "Pick at least one vibe." };
       case 6:
-        return budget !== null;
+        return budget !== null
+          ? { ok: true, reason: null }
+          : { ok: false, reason: "Pick a budget tier." };
       case 7:
-        return travelingWith !== null;
+        return travelingWith !== null
+          ? { ok: true, reason: null }
+          : { ok: false, reason: "Pick who's joining." };
       case 8:
-        return true; // toggle has a default
+        return { ok: true, reason: null };
       default:
-        return false;
+        return { ok: false, reason: null };
     }
   }, [
     step,
     country,
     startDate,
     endDate,
+    today,
     purpose,
     activities,
     otherActivity,
@@ -125,6 +160,7 @@ export function Questionnaire() {
     budget,
     travelingWith,
   ]);
+  const canAdvance = validation.ok;
 
   function toggleIn<T extends string>(value: T, list: T[]): T[] {
     return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
@@ -235,6 +271,7 @@ export function Questionnaire() {
             <input
               type="date"
               value={startDate}
+              min={today}
               onChange={(e) => setStartDate(e.target.value)}
               className="wtn-input"
             />
@@ -242,7 +279,7 @@ export function Questionnaire() {
             <input
               type="date"
               value={endDate}
-              min={startDate || undefined}
+              min={startDate || today}
               onChange={(e) => setEndDate(e.target.value)}
               className="wtn-input"
             />
@@ -391,22 +428,37 @@ export function Questionnaire() {
         )}
       </main>
 
-      <footer className="relative mt-6 flex items-center justify-between gap-3">
-        <span className="text-xs font-semibold text-muted">
-          Step {step + 1} of {TOTAL_STEPS}
-        </span>
-        <button
-          type="button"
-          onClick={next}
-          disabled={!canAdvance || pending}
-          className="rounded-full bg-sunset px-6 py-3 text-sm font-bold text-white shadow-card disabled:opacity-50 active:scale-[0.98]"
-        >
-          {pending
-            ? "Building your plan…"
-            : step === TOTAL_STEPS - 1
-              ? "Build my plan ›"
-              : "Next ›"}
-        </button>
+      <footer className="relative mt-6 flex flex-col gap-2">
+        {!canAdvance && validation.reason && (
+          <p className="text-right text-[11px] font-semibold text-heat">
+            {validation.reason}
+          </p>
+        )}
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={back}
+            disabled={step === 0 || pending}
+            className="rounded-full bg-surface px-5 py-3 text-sm font-bold text-foreground ring-1 ring-border disabled:opacity-40 active:scale-[0.98]"
+          >
+            ‹ Back
+          </button>
+          <span className="text-xs font-semibold text-muted">
+            Step {step + 1} of {TOTAL_STEPS}
+          </span>
+          <button
+            type="button"
+            onClick={next}
+            disabled={!canAdvance || pending}
+            className="rounded-full bg-sunset px-6 py-3 text-sm font-bold text-white shadow-card disabled:opacity-50 active:scale-[0.98]"
+          >
+            {pending
+              ? "Building your plan…"
+              : step === TOTAL_STEPS - 1
+                ? "Build my plan ›"
+                : "Next ›"}
+          </button>
+        </div>
       </footer>
     </div>
   );
