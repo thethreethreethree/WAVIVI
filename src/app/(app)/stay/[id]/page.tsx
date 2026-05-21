@@ -202,6 +202,31 @@ export default async function StayDetailPage({ params }: { params: Params }) {
             Backpacker Pick · {stay.thumbs_up}
           </span>
         )}
+        {stay.amenities.length > 0 && (
+          <div className="absolute inset-x-3 bottom-3 z-10 flex gap-2 overflow-x-auto rounded-xl bg-black/45 px-2.5 py-2 backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {stay.amenities.map((a) => {
+              const icon = amenityIconPath(a);
+              return (
+                <span
+                  key={a}
+                  title={a}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white/15 px-2 py-1 text-[10px] font-bold text-white"
+                >
+                  {icon ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={icon}
+                      alt=""
+                      aria-hidden
+                      className="h-4 w-4 object-contain"
+                    />
+                  ) : null}
+                  {a}
+                </span>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-5 px-5 py-5">
@@ -287,30 +312,6 @@ export default async function StayDetailPage({ params }: { params: Params }) {
           </p>
         )}
 
-        {stay.amenities.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {stay.amenities.map((a) => {
-              const icon = amenityIconPath(a);
-              return (
-                <span
-                  key={a}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-[11px] font-semibold text-foreground ring-1 ring-border"
-                >
-                  {icon && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={icon}
-                      alt=""
-                      aria-hidden
-                      className="h-4 w-4 object-contain"
-                    />
-                  )}
-                  {a}
-                </span>
-              );
-            })}
-          </div>
-        )}
 
         {(stay.check_in_time || stay.check_out_time) && (
           <p className="text-xs text-muted">
