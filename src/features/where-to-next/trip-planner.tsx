@@ -63,7 +63,7 @@ export function TripPlanner({ planId, startDate, durationDays, items }: Props) {
       <p className="mt-1 text-xs text-muted">
         Day-by-day plan — pencil in anything you don&apos;t want to forget.
       </p>
-      <div className="wc-frame mt-3 max-h-[28rem] overflow-y-auto rounded-2xl p-3 [scrollbar-width:thin]">
+      <div className="wc-frame mt-3 h-[22rem] overflow-y-auto rounded-2xl p-3 [scrollbar-width:thin]">
         <div className="flex flex-col gap-3">
           {days.map((d) => (
             <DayCard
