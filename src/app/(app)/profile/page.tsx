@@ -113,20 +113,22 @@ export default async function MyProfilePage() {
             </span>
           </span>
           {profile.home_country && (
-            <span
-              className="wc-frame wc-frame-orange absolute bottom-0 right-0 z-10 block h-10 w-10 rounded-full p-1"
+            <div
+              className="pointer-events-none absolute bottom-0 right-0 z-10 h-10 w-10"
               title={profile.home_country}
             >
-              <span className="relative block h-full w-full overflow-hidden rounded-full bg-white">
-                <Image
-                  src={flagImage(profile.home_country)}
-                  alt={profile.home_country}
-                  fill
-                  sizes="40px"
-                  className="object-cover object-center"
-                />
+              <span className="wc-frame wc-frame-orange block h-full w-full rounded-full p-1">
+                <span className="relative block h-full w-full overflow-hidden rounded-full bg-white">
+                  <Image
+                    src={flagImage(profile.home_country)}
+                    alt={profile.home_country}
+                    fill
+                    sizes="40px"
+                    className="object-cover object-center"
+                  />
+                </span>
               </span>
-            </span>
+            </div>
           )}
         </div>
         <h2 className="mt-3 text-xl font-bold">{profile.display_name}</h2>
