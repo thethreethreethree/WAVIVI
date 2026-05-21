@@ -309,11 +309,11 @@ async function ChatsSection({
       <div className="flex justify-end">
         <Link
           href="/meet"
-          className="wc-frame wc-frame-orange-white inline-flex items-center gap-1 rounded-full px-4 py-2 text-xs font-bold text-glow"
+          className="wc-frame wc-frame-orange-white inline-flex items-center gap-2 rounded-full px-6 py-3 text-base font-bold text-glow"
         >
           My group chats
           {chats.length > 0 && (
-            <span className="rounded-full bg-glow px-1.5 text-[10px] text-white">
+            <span className="rounded-full bg-glow px-2 text-xs text-white">
               {chats.length}
             </span>
           )}
