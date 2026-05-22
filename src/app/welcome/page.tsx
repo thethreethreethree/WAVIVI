@@ -81,20 +81,14 @@ export default function WelcomePage() {
 
         {/* Hero */}
         <section className="relative flex flex-1 flex-col items-center justify-center text-center">
-          <span className="wc-frame relative flex h-24 w-24 items-center justify-center rounded-[1.75rem] p-3">
-            <Image
-              src="/icons/icon.svg"
-              alt=""
-              width={96}
-              height={96}
-              priority
-              className="h-full w-full"
-            />
-          </span>
-
-          <h1 className="mt-6 text-5xl tracking-tight text-foreground">
-            {siteConfig.name}
-          </h1>
+          <Image
+            src="/travejor-logo.png"
+            alt="Travejor"
+            width={260}
+            height={260}
+            priority
+            className="h-auto w-56"
+          />
 
           <p className="wc-underline relative mt-5 text-lg font-bold text-foreground">
             Meet. Vibe. Move.

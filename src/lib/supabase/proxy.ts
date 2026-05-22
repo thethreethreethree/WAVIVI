@@ -51,6 +51,29 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  // First-run opening screen: send logged-out newcomers to /welcome the
+  // first time they hit the app home. A cookie (set when /welcome is served)
+  // makes it a one-time greeting — returning guests and signed-in users go
+  // straight to the hub, and "Explore as guest" won't loop back here.
+  const WELCOMED = "travejor-welcomed";
+  if (
+    pathname === "/" &&
+    !user &&
+    !request.cookies.get(WELCOMED)
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/welcome";
+    return NextResponse.redirect(url);
+  }
+  if (pathname === "/welcome") {
+    response.cookies.set(WELCOMED, "1", {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+    });
+    return response;
+  }
+
   if (!user && PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
