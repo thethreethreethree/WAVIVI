@@ -11,7 +11,8 @@ import { photoThumb } from "@/lib/utils/images";
  *
  * `width` requests a downsized image from hosts that support it (see
  * photoThumb) — defaults to a cover-sized 800px. Images lazy-load and decode
- * off the main thread so long lists stay responsive.
+ * off the main thread, and fade in over a shimmer skeleton so long lists
+ * stay responsive and don't pop in abruptly.
  */
 export function StayPhoto({
   src,
@@ -27,6 +28,8 @@ export function StayPhoto({
   width?: number;
 }) {
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
   if (!src || failed) {
     return (
       <span
@@ -39,15 +42,27 @@ export function StayPhoto({
     );
   }
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={photoThumb(src, width)}
-      alt={alt}
-      loading="lazy"
-      decoding="async"
-      referrerPolicy="no-referrer"
-      onError={() => setFailed(true)}
-      className={`h-full w-full object-cover ${className ?? ""}`}
-    />
+    <>
+      {/* Shimmer skeleton — sits behind the image until it decodes. */}
+      {!loaded && (
+        <span
+          className="absolute inset-0 skeleton-shimmer"
+          aria-hidden
+        />
+      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={photoThumb(src, width)}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        onLoad={() => setLoaded(true)}
+        onError={() => setFailed(true)}
+        className={`h-full w-full object-cover transition-opacity duration-500 ${
+          loaded ? "opacity-100" : "opacity-0"
+        } ${className ?? ""}`}
+      />
+    </>
   );
 }
