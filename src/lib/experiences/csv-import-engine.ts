@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   classifyActivityType,
+  classifyCategory,
   type ExperienceCsvRow,
 } from "@/lib/experiences/csv-import";
 import { googleMapsUrl } from "@/lib/toolbox/normalize";
@@ -84,6 +85,11 @@ export async function importExperiencesCsv(
       row.description,
       defaultActivityType,
     );
+    const resolvedCategory = classifyCategory(
+      resolvedType,
+      row.name,
+      row.description,
+    );
 
     // 1) Match by stable Google place ref; 2) fall back to nearest pin.
     let best: ExperienceRow | null = null;
@@ -132,8 +138,10 @@ export async function importExperiencesCsv(
         google_maps_url: mapsUrl,
       };
       // Re-classify on re-import (unless an admin hand-curated the row).
-      if (fresh) update.activity_type = resolvedType;
-      else if (row.activityType && row.activityType.trim()) {
+      if (fresh) {
+        update.activity_type = resolvedType;
+        update.category = resolvedCategory;
+      } else if (row.activityType && row.activityType.trim()) {
         update.activity_type = row.activityType.trim();
       }
       if (row.dayBucket) update.day_bucket = row.dayBucket;
@@ -167,6 +175,7 @@ export async function importExperiencesCsv(
       // --- Insert a new experience -----------------------------------------
       const insert: ExperienceInsert = {
         region_id: regionId,
+        category: resolvedCategory,
         activity_type: resolvedType,
         day_bucket: row.dayBucket,
         name: row.name,

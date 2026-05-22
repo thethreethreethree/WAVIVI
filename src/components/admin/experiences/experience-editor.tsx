@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { EXPERIENCE_CATEGORIES } from "@/lib/experiences/csv-import";
 import type { ExperienceRow } from "@/types/supabase";
 
 const DAY_BUCKETS: { value: string; label: string }[] = [
@@ -21,6 +22,7 @@ interface Props {
 export function ExperienceEditor({ experience, onClose }: Props) {
   const router = useRouter();
   const [name, setName] = useState(experience.name);
+  const [category, setCategory] = useState(experience.category ?? "other");
   const [activityType, setActivityType] = useState(
     experience.activity_type ?? "",
   );
@@ -58,6 +60,7 @@ export function ExperienceEditor({ experience, onClose }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
+          category: category || "other",
           activity_type: activityType.trim() || "Activity",
           day_bucket: dayBucket || null,
           price_per_session_usd: price.trim() === "" ? null : Number(price),
@@ -121,6 +124,19 @@ export function ExperienceEditor({ experience, onClose }: Props) {
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
+            <Field label="Category">
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="admin-input"
+              >
+                {EXPERIENCE_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c === "other" ? "Other" : c}
+                  </option>
+                ))}
+              </select>
+            </Field>
             <Field label="Activity type">
               <input
                 value={activityType}

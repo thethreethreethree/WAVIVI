@@ -23,15 +23,7 @@ function hasChannel(e: ExperienceRow, key: ChannelKey): boolean {
 
 const RATING_STEPS = [0, 1, 2, 3, 4, 4.5] as const;
 
-// Time-of-day bucket → friendly label, used for the filter chips. Rows with
-// no bucket fall under "Unscheduled".
-const BUCKET_LABEL: Record<string, string> = {
-  morning: "🌅 Morning",
-  midday: "🌞 Midday",
-  nighttime: "🌙 Nighttime",
-  none: "Unscheduled",
-};
-const bucketKey = (e: ExperienceRow) => e.day_bucket || "none";
+const categoryKey = (e: ExperienceRow) => e.category || "other";
 
 /** Filterable list of experiences in a region, with edit + delete. */
 export function ExperiencesList({
@@ -40,7 +32,7 @@ export function ExperiencesList({
   experiences: ExperienceRow[];
 }) {
   const router = useRouter();
-  const [bucketFilter, setBucketFilter] = useState<string | "all">("all");
+  const [categoryFilter, setCategoryFilter] = useState<string | "all">("all");
   const [minRating, setMinRating] = useState(0);
   const [needs, setNeeds] = useState<ChannelKey[]>([]);
   const [editing, setEditing] = useState<ExperienceRow | null>(null);
@@ -49,11 +41,11 @@ export function ExperiencesList({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
 
-  // Buckets present in the data, with counts, sorted by frequency.
-  const buckets = useMemo(() => {
+  // Categories present in the data, with counts, sorted by frequency.
+  const categories = useMemo(() => {
     const c = new Map<string, number>();
     for (const e of experiences) {
-      const key = bucketKey(e);
+      const key = categoryKey(e);
       c.set(key, (c.get(key) ?? 0) + 1);
     }
     return Array.from(c.entries()).sort((a, b) => b[1] - a[1]);
@@ -65,12 +57,12 @@ export function ExperiencesList({
   const visible = useMemo(
     () =>
       experiences.filter((e) => {
-        if (bucketFilter !== "all" && bucketKey(e) !== bucketFilter)
+        if (categoryFilter !== "all" && categoryKey(e) !== categoryFilter)
           return false;
         if ((e.backpack_rating ?? 0) < minRating) return false;
         return needs.every((k) => hasChannel(e, k));
       }),
-    [experiences, bucketFilter, minRating, needs],
+    [experiences, categoryFilter, minRating, needs],
   );
 
   async function remove(id: string) {
@@ -154,20 +146,20 @@ export function ExperiencesList({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Time-of-day filter chips */}
+      {/* Category filter chips */}
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Chip
-          active={bucketFilter === "all"}
-          onClick={() => setBucketFilter("all")}
+          active={categoryFilter === "all"}
+          onClick={() => setCategoryFilter("all")}
           label="All"
           count={experiences.length}
         />
-        {buckets.map(([bucket, count]) => (
+        {categories.map(([category, count]) => (
           <Chip
-            key={bucket}
-            active={bucketFilter === bucket}
-            onClick={() => setBucketFilter(bucket)}
-            label={BUCKET_LABEL[bucket] ?? bucket}
+            key={category}
+            active={categoryFilter === category}
+            onClick={() => setCategoryFilter(category)}
+            label={category}
             count={count}
           />
         ))}
@@ -259,7 +251,7 @@ export function ExperiencesList({
 
       {visible.length === 0 ? (
         <p className="rounded-2xl bg-surface px-4 py-8 text-center text-sm text-muted shadow-card ring-1 ring-border">
-          {minRating > 0 || needs.length > 0 || bucketFilter !== "all"
+          {minRating > 0 || needs.length > 0 || categoryFilter !== "all"
             ? "No experiences match these filters."
             : "No experiences in this region yet — import a CSV above."}
         </p>
@@ -299,8 +291,8 @@ export function ExperiencesList({
                   {e.name}
                 </span>
                 <span className="block truncate text-xs text-muted">
-                  {[e.activity_type, BUCKET_LABEL[bucketKey(e)]]
-                    .filter((v) => v && v !== "Unscheduled")
+                  {[e.category, e.activity_type]
+                    .filter((v) => v && v !== "other")
                     .join(" · ")}
                   {e.address ? ` · ${e.address}` : ""}
                 </span>

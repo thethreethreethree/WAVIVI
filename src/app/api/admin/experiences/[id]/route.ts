@@ -13,6 +13,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 const EDITABLE: (keyof ExperienceUpdate)[] = [
   "name",
+  "category",
   "activity_type",
   "day_bucket",
   "latitude",

@@ -90,8 +90,10 @@ export function ExperiencesCsvImport({ regionId }: { regionId: string }) {
       <h2 className="text-sm font-bold">Import experiences from CSV</h2>
       <p className="mt-0.5 text-xs text-muted">
         Upload a CSV — rows match existing experiences in this region by
-        location. Matches refresh rating, reviews, contacts, photo &amp;
-        amenities; new ones are added.
+        location. Auto-detect classifies each row into a broad category
+        (Adventure, Water &amp; Beach, Wellness…) and a specific activity type.
+        Matches refresh rating, reviews, contacts, photo &amp; amenities; new
+        ones are added.
       </p>
 
       <div className="mt-3 flex flex-wrap items-end gap-3">

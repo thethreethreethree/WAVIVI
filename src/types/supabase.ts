@@ -380,6 +380,8 @@ export type StayUpdate = Partial<Omit<StayInsert, "source_ref">>;
 export type ExperienceRow = {
   id: string;
   region_id: string | null;
+  /** Broad theme for filter chips (Adventure, Water & Beach, …). */
+  category: string;
   activity_type: string;
   /** Time-of-day bucket: morning | midday | nighttime | null. */
   day_bucket: string | null;
@@ -420,6 +422,7 @@ export type ExperienceRow = {
 export type ExperienceInsert = {
   id?: string;
   region_id?: string | null;
+  category?: string;
   activity_type?: string;
   day_bucket?: string | null;
   name: string;

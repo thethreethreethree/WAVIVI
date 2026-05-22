@@ -134,6 +134,67 @@ export function classifyActivityType(
   return cell || "other";
 }
 
+/**
+ * Broad category vocabulary — the high-level theme the filter chips group by.
+ * Each specific activity type maps onto exactly one of these.
+ */
+export const EXPERIENCE_CATEGORIES = [
+  "Adventure",
+  "Water & Beach",
+  "Nature & Scenic",
+  "Wellness",
+  "Culture & History",
+  "Nightlife",
+  "Tours & Guides",
+  "Fitness",
+  "Coworking",
+  "other",
+] as const;
+
+/** Specific activity type → broad category. */
+const ACTIVITY_TO_CATEGORY: Record<string, string> = {
+  "Diving Center": "Water & Beach",
+  Snorkeling: "Water & Beach",
+  "Island Hopping": "Water & Beach",
+  Kayaking: "Water & Beach",
+  Surfing: "Water & Beach",
+  Beach: "Water & Beach",
+  "Adventure Sports": "Adventure",
+  "Hiking & Trekking": "Adventure",
+  Waterfall: "Nature & Scenic",
+  "Scenic Viewpoint": "Nature & Scenic",
+  "Cultural & Historic": "Culture & History",
+  "Yoga Studio": "Wellness",
+  "Wellness & Spa": "Wellness",
+  "Gym & Fitness": "Fitness",
+  "Cooking Class": "Culture & History",
+  Nightlife: "Nightlife",
+  "Coworking Space": "Coworking",
+  "Tour Operator": "Tours & Guides",
+  "Travel Agency": "Tours & Guides",
+};
+
+/**
+ * Derive the broad category from an already-resolved activity type (and, as a
+ * backstop, the name/description keywords). Returns "other" when nothing fits.
+ */
+export function classifyCategory(
+  activityType: string,
+  name: string,
+  description: string | null,
+): string {
+  const direct = ACTIVITY_TO_CATEGORY[activityType];
+  if (direct) return direct;
+  const haystack = `${activityType} ${name} ${description ?? ""}`;
+  for (const [re, cat] of ACTIVITY_KEYWORDS) {
+    if (re.test(haystack)) {
+      const mapped = ACTIVITY_TO_CATEGORY[cat];
+      if (mapped) return mapped;
+    }
+  }
+  return "other";
+}
+
 export interface ExperienceCsvRow {
   name: string;
   activityType: string | null;
