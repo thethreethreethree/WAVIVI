@@ -5,24 +5,9 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { ScreenHeader } from "@/components/ui/screen-header";
+import { categoryMeta as metaFor } from "@/lib/travejor/group-meta";
 import { type TravelGroup, travelGroups } from "@/lib/travejor/groups";
 import { photo } from "@/lib/travejor/photo";
-
-/** Per-category flavour — emoji + a soft accent wash for the cover. */
-const CATEGORY_META: Record<
-  string,
-  { emoji: string; tint: string }
-> = {
-  Food: { emoji: "🍜", tint: "from-orange-500/70" },
-  Nightlife: { emoji: "🌃", tint: "from-indigo-600/70" },
-  Culture: { emoji: "🎭", tint: "from-rose-500/70" },
-  Nature: { emoji: "🥾", tint: "from-emerald-600/70" },
-  Beach: { emoji: "🏖️", tint: "from-sky-500/70" },
-};
-
-function metaFor(category: string) {
-  return CATEGORY_META[category] ?? { emoji: "✨", tint: "from-black/60" };
-}
 
 export function MeetList() {
   const [active, setActive] = useState<string>("All");
