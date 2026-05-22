@@ -1,94 +1,93 @@
-"use client";
+import Link from "next/link";
 
-import Image from "next/image";
-import { useState } from "react";
+import { createClient } from "@/lib/supabase/server";
+import type { RegionRow } from "@/types/supabase";
 
-import { travejorEvents } from "@/lib/travejor/events";
+export const dynamic = "force-dynamic";
 
-export default function AdminEventsPage() {
-  const [approved, setApproved] = useState<Record<string, boolean>>(
-    Object.fromEntries(travejorEvents.map((e) => [e.id, true])),
+/** Admin landing for events — pick a region to manage its events. */
+export default async function EventsAdminLandingPage() {
+  const supabase = await createClient();
+
+  const [regionsRes, totalRes] = await Promise.all([
+    supabase
+      .from("regions")
+      .select("*")
+      .order("display_name", { ascending: true }),
+    supabase.from("events").select("*", { count: "exact", head: true }),
+  ]);
+
+  const regions = (regionsRes.data ?? []) as RegionRow[];
+
+  const counts = new Map<string, number>();
+  await Promise.all(
+    regions.map(async (r) => {
+      const { count } = await supabase
+        .from("events")
+        .select("*", { count: "exact", head: true })
+        .eq("region_id", r.id);
+      counts.set(r.id, count ?? 0);
+    }),
   );
-  const [removed, setRemoved] = useState<Record<string, boolean>>({});
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Events</h1>
-        <p className="text-sm text-muted">
-          {travejorEvents.length} live events · approve, edit, or remove.
-        </p>
-      </div>
+    <div className="mx-auto max-w-5xl px-5 py-10">
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Events admin</h1>
+          <p className="mt-1 text-sm text-muted">
+            {totalRes.count ?? 0} events across {regions.length} regions.
+          </p>
+        </div>
+        <Link
+          href="/admin/experiences"
+          className="rounded-full bg-foreground/10 px-4 py-2 text-sm font-bold text-foreground hover:bg-foreground/15"
+        >
+          Experiences admin →
+        </Link>
+      </header>
 
-      <ul className="flex flex-col gap-2.5">
-        {travejorEvents.map((e) => {
-          const isRemoved = removed[e.id];
-          return (
-            <li
-              key={e.id}
-              className={`overflow-hidden rounded-2xl bg-surface shadow-card ring-1 ring-border ${
-                isRemoved ? "opacity-60" : ""
-              }`}
-            >
-              <div className="flex gap-3 p-3">
-                <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl">
-                  <Image
-                    src={e.image}
-                    alt={e.title}
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                  />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start gap-2">
-                    <p className="min-w-0 flex-1 truncate text-sm font-bold">
-                      {e.title}
-                    </p>
-                    {approved[e.id] && !isRemoved && (
-                      <span className="shrink-0 rounded-full bg-cool/15 px-2 py-0.5 text-[10px] font-bold text-cool">
-                        ✓ Approved
-                      </span>
-                    )}
+      <section className="mt-8">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-muted">
+          Regions
+        </h2>
+        <p className="mt-1 text-xs text-muted">
+          Pick a region to manage its events.
+        </p>
+
+        {regions.length === 0 ? (
+          <p className="mt-6 rounded-2xl bg-surface px-4 py-8 text-center text-sm text-muted shadow-card ring-1 ring-border">
+            No regions yet — create one in Toolbox admin first.
+          </p>
+        ) : (
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+            {regions.map((r) => (
+              <li key={r.id}>
+                <Link
+                  href={`/admin/events/${r.id}`}
+                  className="block rounded-2xl bg-surface p-4 shadow-card ring-1 ring-border transition-colors hover:ring-glow/50"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold">
+                        {r.display_name}
+                      </p>
+                      <p className="truncate text-xs text-muted">
+                        {[r.city, r.province, r.country]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-glow/15 px-3 py-1 text-xs font-bold text-glow">
+                      {counts.get(r.id) ?? 0} events
+                    </span>
                   </div>
-                  <p className="truncate text-xs text-muted">
-                    {e.when} · {e.area}
-                  </p>
-                  <p className="text-xs text-muted">{e.attendees} going</p>
-                </div>
-              </div>
-              <div className="flex gap-2 border-t border-border p-2.5">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setApproved((a) => ({ ...a, [e.id]: !a[e.id] }))
-                  }
-                  className="flex-1 rounded-lg border border-border py-1.5 text-xs font-bold text-muted transition-colors hover:text-foreground"
-                >
-                  {approved[e.id] ? "Revoke approval" : "Approve"}
-                </button>
-                <button
-                  type="button"
-                  className="flex-1 rounded-lg border border-border py-1.5 text-xs font-bold text-muted transition-colors hover:text-foreground"
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setRemoved((r) => ({ ...r, [e.id]: !r[e.id] }))
-                  }
-                  className={`flex-1 rounded-lg py-1.5 text-xs font-bold ${
-                    isRemoved ? "bg-cool/10 text-cool" : "bg-heat/10 text-heat"
-                  }`}
-                >
-                  {isRemoved ? "Restore" : "Remove"}
-                </button>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

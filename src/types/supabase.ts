@@ -454,6 +454,83 @@ export type ExperienceInsert = {
 
 export type ExperienceUpdate = Partial<Omit<ExperienceInsert, "source_ref">>;
 
+/* ── Events (socials, nights out, meetups, festivals) ─────────────────── */
+
+export type EventRow = {
+  id: string;
+  region_id: string | null;
+  category: string;
+  day_bucket: string | null;
+  when_text: string | null;
+  name: string;
+  description: string | null;
+  latitude: number;
+  longitude: number;
+  google_maps_url: string;
+  address: string | null;
+  rating: number | null;
+  review_count: number;
+  thumbs_up: number;
+  thumbs_down: number;
+  backpack_rating: number;
+  reliability_score: number;
+  admin_edited: boolean;
+  phone: string | null;
+  website: string | null;
+  email: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  whatsapp: string | null;
+  amenities: string[];
+  photo_url: string | null;
+  photo_urls: string[];
+  source: string;
+  source_ref: string;
+  google_place_id: string | null;
+  claimed_by: string | null;
+  metadata_json: Record<string, unknown>;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type EventInsert = {
+  id?: string;
+  region_id?: string | null;
+  category?: string;
+  day_bucket?: string | null;
+  when_text?: string | null;
+  name: string;
+  description?: string | null;
+  latitude: number;
+  longitude: number;
+  google_maps_url?: string;
+  address?: string | null;
+  rating?: number | null;
+  review_count?: number;
+  thumbs_up?: number;
+  thumbs_down?: number;
+  backpack_rating?: number;
+  reliability_score?: number;
+  admin_edited?: boolean;
+  phone?: string | null;
+  website?: string | null;
+  email?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
+  whatsapp?: string | null;
+  amenities?: string[];
+  photo_url?: string | null;
+  photo_urls?: string[];
+  source?: string;
+  source_ref: string;
+  claimed_by?: string | null;
+  metadata_json?: Record<string, unknown>;
+  active?: boolean;
+};
+
+export type EventUpdate = Partial<Omit<EventInsert, "source_ref">>;
+
 export type StayVoteRow = {
   id: string;
   stay_id: string;
@@ -667,6 +744,7 @@ export type Database = {
         ExperienceInsert,
         ExperienceUpdate
       >;
+      events: TableShape<EventRow, EventInsert, EventUpdate>;
       chat_groups: TableShape<
         ChatGroupRow,
         ChatGroupInsert,
