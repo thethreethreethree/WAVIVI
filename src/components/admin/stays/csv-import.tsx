@@ -149,7 +149,8 @@ export function StaysCsvImport({ regionId }: { regionId: string }) {
         <code>Longitude</code>, <code>Rating</code>, <code>Reviews</code>,{" "}
         <code>Phone</code>, <code>WhatsApp</code>, <code>Instagram</code>,{" "}
         <code>Facebook</code>, <code>Email</code>, <code>Industry</code>,{" "}
-        <code>Address</code>, <code>Website</code>, <code>Photo</code>,{" "}
+        <code>Description</code>, <code>Address</code>, <code>Website</code>,{" "}
+        <code>Photo</code>, <code>Amenities</code>,{" "}
         <code>Google Maps Link</code>. Headers are case-insensitive.
       </p>
     </div>

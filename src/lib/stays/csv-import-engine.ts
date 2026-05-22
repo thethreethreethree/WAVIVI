@@ -129,6 +129,8 @@ export async function importStaysCsv(
         longitude: row.longitude,
         google_maps_url: mapsUrl,
       };
+      if (row.description && (fresh || !best.description))
+        update.description = row.description;
       if (row.website && (fresh || !best.website)) update.website = row.website;
       if (row.address && (fresh || !best.address)) update.address = row.address;
       if (row.phone && (fresh || !best.phone)) update.phone = row.phone;
@@ -161,6 +163,7 @@ export async function importStaysCsv(
         region_id: regionId,
         stay_type: resolvedType,
         name: row.name,
+        description: row.description,
         latitude: row.latitude,
         longitude: row.longitude,
         google_maps_url: mapsUrl,

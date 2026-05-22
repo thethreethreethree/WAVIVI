@@ -16,6 +16,8 @@
  *   Facebook | FB
  *   Email
  *   Industry | Type | Stay Type   — overrides the import's default stay type per row
+ *   Description | Pitch           — short marketing copy shown on the
+ *                                   listing's detail page
  *   Address
  *   Website
  *   Photo | Image | Photo URL
@@ -31,6 +33,7 @@ import type { StayType } from "@/types/supabase";
 export interface StayCsvRow {
   name: string;
   stayType: StayType | null;
+  description: string | null;
   rating: number | null;
   reviewCount: number;
   phone: string | null;
@@ -310,6 +313,7 @@ export function parseStaysCsv(text: string): StayCsvParseResult {
     facebook: col("facebook", "fb"),
     email: col("email", "e-mail"),
     type: col("industry", "type", "stay type", "stay_type"),
+    description: col("description", "pitch", "about"),
     address: col("address"),
     website: col("website"),
     photo: col(
@@ -375,6 +379,7 @@ export function parseStaysCsv(text: string): StayCsvParseResult {
     rows.push({
       name,
       stayType,
+      description: text(idx.description),
       rating,
       reviewCount:
         idx.reviews === -1 ? 0 : Math.max(0, num(f[idx.reviews]) ?? 0),
