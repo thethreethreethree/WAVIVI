@@ -42,6 +42,8 @@ export function StaysList({ stays }: { stays: StayRow[] }) {
   const [editing, setEditing] = useState<StayRow | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -79,6 +81,64 @@ export function StaysList({ stays }: { stays: StayRow[] }) {
       setError(err instanceof Error ? err.message : "Delete failed.");
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  // Whether every currently-visible row is selected.
+  const allVisibleSelected =
+    visible.length > 0 && visible.every((s) => selected.has(s.id));
+
+  function toggleSelectAll() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) {
+        for (const s of visible) next.delete(s.id);
+      } else {
+        for (const s of visible) next.add(s.id);
+      }
+      return next;
+    });
+  }
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function deleteSelected() {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    if (
+      !window.confirm(
+        `Delete ${ids.length} stay${ids.length === 1 ? "" : "s"}? This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+    setBulkBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/stays", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) {
+        const b = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(b?.error ?? `Delete failed (${res.status})`);
+      }
+      setSelected(new Set());
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Bulk delete failed.");
+    } finally {
+      setBulkBusy(false);
     }
   }
 
@@ -154,9 +214,32 @@ export function StaysList({ stays }: { stays: StayRow[] }) {
         )}
       </div>
 
-      <p className="px-1 text-xs font-semibold text-muted">
-        {visible.length} of {stays.length} shown
-      </p>
+      {/* Select-all + bulk delete bar */}
+      <div className="flex flex-wrap items-center gap-3 px-1">
+        <label className="flex items-center gap-2 text-xs font-bold text-muted">
+          <input
+            type="checkbox"
+            checked={allVisibleSelected}
+            onChange={toggleSelectAll}
+            className="h-4 w-4 accent-[var(--color-glow,#f7941d)]"
+          />
+          Select all{visible.length !== stays.length ? " shown" : ""}
+        </label>
+        <span className="text-xs font-semibold text-muted">
+          {visible.length} of {stays.length} shown
+          {selected.size > 0 ? ` · ${selected.size} selected` : ""}
+        </span>
+        {selected.size > 0 && (
+          <button
+            type="button"
+            onClick={deleteSelected}
+            disabled={bulkBusy}
+            className="ml-auto rounded-full bg-heat px-3.5 py-1.5 text-xs font-bold text-white disabled:opacity-60"
+          >
+            {bulkBusy ? "Deleting…" : `Delete ${selected.size} selected`}
+          </button>
+        )}
+      </div>
 
       {error && (
         <p className="rounded-lg bg-heat/15 px-3 py-2 text-xs font-semibold text-heat">
@@ -177,8 +260,15 @@ export function StaysList({ stays }: { stays: StayRow[] }) {
               key={s.id}
               className={`flex items-center gap-3 px-4 py-3 ${
                 i > 0 ? "border-t border-border" : ""
-              }`}
+              } ${selected.has(s.id) ? "bg-glow/5" : ""}`}
             >
+              <input
+                type="checkbox"
+                checked={selected.has(s.id)}
+                onChange={() => toggleOne(s.id)}
+                aria-label={`Select ${s.name}`}
+                className="h-4 w-4 shrink-0 accent-[var(--color-glow,#f7941d)]"
+              />
               {s.photo_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
