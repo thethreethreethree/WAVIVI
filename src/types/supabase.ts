@@ -327,6 +327,9 @@ export type StayRow = {
   photo_urls: string[];
   source: string;
   source_ref: string;
+  /** Generated (migration 0021): the Google place id when source_ref is a
+   *  google: ref, else null. Read-only — DB computes it. */
+  google_place_id: string | null;
   claimed_by: string | null;
   metadata_json: Record<string, unknown>;
   active: boolean;
@@ -403,6 +406,8 @@ export type ExperienceRow = {
   photo_urls: string[];
   source: string;
   source_ref: string;
+  /** Generated (migration 0021) — Google place id, read-only. */
+  google_place_id: string | null;
   claimed_by: string | null;
   metadata_json: Record<string, unknown>;
   active: boolean;

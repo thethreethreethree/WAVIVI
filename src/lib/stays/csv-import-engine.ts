@@ -86,9 +86,19 @@ export async function importStaysCsv(
       best = refMatch;
     } else {
       // 2) Fall back to nearest unclaimed existing stay within radius.
+      const rowHasRef = row.placeRef.startsWith("google:");
       let bestDist = Infinity;
       for (const s of pool) {
         if (claimed.has(s.id)) continue;
+        // Never let proximity merge two DISTINCT known Google places —
+        // if both carry a google ref and they differ, they're separate.
+        if (
+          rowHasRef &&
+          s.source_ref?.startsWith("google:") &&
+          s.source_ref !== row.placeRef
+        ) {
+          continue;
+        }
         const d = distanceM(
           row.latitude,
           row.longitude,

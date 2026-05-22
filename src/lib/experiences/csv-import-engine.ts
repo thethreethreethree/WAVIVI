@@ -83,9 +83,17 @@ export async function importExperiencesCsv(
     if (refMatch && !claimed.has(refMatch.id)) {
       best = refMatch;
     } else {
+      const rowHasRef = row.placeRef.startsWith("google:");
       let bestDist = Infinity;
       for (const e of pool) {
         if (claimed.has(e.id)) continue;
+        if (
+          rowHasRef &&
+          e.source_ref?.startsWith("google:") &&
+          e.source_ref !== row.placeRef
+        ) {
+          continue;
+        }
         const d = distanceM(
           row.latitude,
           row.longitude,
