@@ -72,12 +72,12 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
         </div>
       </div>
 
-      <div className="px-5 pt-5">
+      <div className="px-5 pt-8">
         <p className="text-center text-sm text-muted">
           See who&apos;s already vibing here before you jump in.
         </p>
 
-        <h2 className="mt-6 text-sm font-bold uppercase tracking-wide text-muted">
+        <h2 className="mt-8 text-sm font-bold uppercase tracking-wide text-muted">
           Featured Travelers
         </h2>
         <div className="-mx-5 mt-3 flex gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -113,7 +113,7 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
 
         <Link
           href={`/meet/${group.id}/chat`}
-          className="wc-frame wc-frame-sunset mt-6 block rounded-2xl py-3.5 text-center font-bold text-white active:scale-[0.98]"
+          className="wc-frame wc-frame-sunset mt-10 block rounded-2xl py-3.5 text-center font-bold text-white active:scale-[0.98]"
         >
           ✈️ Join the Group Chat
         </Link>
