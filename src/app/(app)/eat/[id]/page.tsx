@@ -161,7 +161,7 @@ export default async function RestaurantDetailPage({
           <p className="text-sm leading-6 text-foreground/90">{r.description}</p>
         )}
 
-        <
+        <a
           href={`https://www.google.com/maps/dir/?api=1&destination=${r.latitude},${r.longitude}&destination_place_id=${encodeURIComponent(r.name)}&travelmode=driving`}
           target="_blank"
           rel="noreferrer"
