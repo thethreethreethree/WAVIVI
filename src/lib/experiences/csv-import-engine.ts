@@ -1,6 +1,9 @@
 import "server-only";
 
-import type { ExperienceCsvRow } from "@/lib/experiences/csv-import";
+import {
+  classifyActivityType,
+  type ExperienceCsvRow,
+} from "@/lib/experiences/csv-import";
 import { googleMapsUrl } from "@/lib/toolbox/normalize";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
@@ -73,7 +76,14 @@ export async function importExperiencesCsv(
   let skipped = 0;
 
   for (const row of rows) {
-    const resolvedType = (row.activityType?.trim() || defaultActivityType).trim();
+    // Auto-classify into a canonical activity (CSV cell → name/description
+    // keywords → admin fallback). "auto" keeps the row's own label or "other".
+    const resolvedType = classifyActivityType(
+      row.activityType,
+      row.name,
+      row.description,
+      defaultActivityType,
+    );
 
     // 1) Match by stable Google place ref; 2) fall back to nearest pin.
     let best: ExperienceRow | null = null;
@@ -121,7 +131,9 @@ export async function importExperiencesCsv(
         longitude: row.longitude,
         google_maps_url: mapsUrl,
       };
-      if (row.activityType && row.activityType.trim()) {
+      // Re-classify on re-import (unless an admin hand-curated the row).
+      if (fresh) update.activity_type = resolvedType;
+      else if (row.activityType && row.activityType.trim()) {
         update.activity_type = row.activityType.trim();
       }
       if (row.dayBucket) update.day_bucket = row.dayBucket;

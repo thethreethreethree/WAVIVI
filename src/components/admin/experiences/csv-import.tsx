@@ -12,30 +12,28 @@ interface ImportSummary {
 }
 
 /**
- * Common starting points the admin picks for an upload — used as the
- * default when the CSV's Activity Type column is blank on a row. Rows
- * with their own value override this. The list is intentionally open-
- * ended (free-text fallback below) because Google's category strings
- * are wild.
+ * Activity-type options for an upload. "auto" lets the importer classify each
+ * row from its Activity Type cell, then the name/description — so listings
+ * land in a sensible category instead of one forced default. Picking a
+ * specific type makes that the fallback for rows the importer can't classify.
  */
 const ACTIVITY_TYPES = [
-  "Tour operator",
-  "Travel agency",
-  "Diving center",
-  "Adventure sports center",
-  "Beach",
-  "Scenic viewpoint",
-  "Yoga studio",
-  "Wellness center",
-  "Bar",
-  "Restaurant",
-  "Gym",
-  "Coworking space",
-  "Vacation rental",
-  "Hostel",
-  "Hotel",
-  "Resort",
-  "other",
+  { value: "auto", label: "🪄 Auto-detect (recommended)" },
+  { value: "Tour Operator", label: "Tour Operator" },
+  { value: "Travel Agency", label: "Travel Agency" },
+  { value: "Diving Center", label: "Diving Center" },
+  { value: "Snorkeling", label: "Snorkeling" },
+  { value: "Island Hopping", label: "Island Hopping" },
+  { value: "Adventure Sports", label: "Adventure Sports" },
+  { value: "Hiking & Trekking", label: "Hiking & Trekking" },
+  { value: "Beach", label: "Beach" },
+  { value: "Scenic Viewpoint", label: "Scenic Viewpoint" },
+  { value: "Yoga Studio", label: "Yoga Studio" },
+  { value: "Wellness & Spa", label: "Wellness & Spa" },
+  { value: "Gym & Fitness", label: "Gym & Fitness" },
+  { value: "Nightlife", label: "Nightlife" },
+  { value: "Coworking Space", label: "Coworking Space" },
+  { value: "other", label: "Other" },
 ];
 
 /**
@@ -47,7 +45,7 @@ const ACTIVITY_TYPES = [
 export function ExperiencesCsvImport({ regionId }: { regionId: string }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [activityType, setActivityType] = useState<string>("Tour operator");
+  const [activityType, setActivityType] = useState<string>("auto");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportSummary | null>(null);
@@ -98,17 +96,15 @@ export function ExperiencesCsvImport({ regionId }: { regionId: string }) {
 
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-bold text-muted">
-            Default activity type
-          </span>
+          <span className="text-xs font-bold text-muted">Activity type</span>
           <select
             value={activityType}
             onChange={(e) => setActivityType(e.target.value)}
             className="admin-input"
           >
             {ACTIVITY_TYPES.map((a) => (
-              <option key={a} value={a}>
-                {a}
+              <option key={a.value} value={a.value}>
+                {a.label}
               </option>
             ))}
           </select>

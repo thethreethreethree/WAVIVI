@@ -44,6 +44,96 @@ export function normaliseDayBucket(raw: string | undefined): string | null {
   return null;
 }
 
+/**
+ * Canonical activity vocabulary. The importer classifies every row into one
+ * of these (from its Activity Type column, or inferred from the name +
+ * description when blank) so listings land in a sensible category instead of
+ * a single forced default. Open-ended at the end — an unmatched row keeps its
+ * own free-text label.
+ */
+export const ACTIVITY_CATEGORIES = [
+  "Tour Operator",
+  "Travel Agency",
+  "Diving Center",
+  "Snorkeling",
+  "Island Hopping",
+  "Kayaking",
+  "Surfing",
+  "Adventure Sports",
+  "Hiking & Trekking",
+  "Beach",
+  "Scenic Viewpoint",
+  "Waterfall",
+  "Cultural & Historic",
+  "Yoga Studio",
+  "Wellness & Spa",
+  "Gym & Fitness",
+  "Cooking Class",
+  "Nightlife",
+  "Coworking Space",
+  "other",
+] as const;
+
+/**
+ * Keyword → canonical activity. Checked against the raw Activity Type cell
+ * first, then the name + description. Order matters — earlier, more specific
+ * matches win (e.g. "freediving" → Diving Center before "tour" → Tour Operator).
+ */
+const ACTIVITY_KEYWORDS: [RegExp, string][] = [
+  [/dive|diving|scuba|freediv/i, "Diving Center"],
+  [/snorkel/i, "Snorkeling"],
+  [/island hop|island-hop|boat tour|banca/i, "Island Hopping"],
+  [/kayak|canoe|paddle|sup\b/i, "Kayaking"],
+  [/surf/i, "Surfing"],
+  [/zipline|via ferrata|climb|paintball|atv|buggy|adventure/i, "Adventure Sports"],
+  [/hike|hiking|trek|trail|summit|mountain/i, "Hiking & Trekking"],
+  [/waterfall|falls\b/i, "Waterfall"],
+  [/viewpoint|view deck|scenic|lookout|peak/i, "Scenic Viewpoint"],
+  [/beach|lagoon|cove|sandbar/i, "Beach"],
+  [/museum|heritage|historic|temple|church|cultural|shrine/i, "Cultural & Historic"],
+  [/yoga/i, "Yoga Studio"],
+  [/spa|massage|wellness|therm|hot spring/i, "Wellness & Spa"],
+  [/gym|fitness|crossfit|muay|boxing/i, "Gym & Fitness"],
+  [/cooking class|culinary class|cooking school/i, "Cooking Class"],
+  [/\bbar\b|club|nightlife|lounge|pub/i, "Nightlife"],
+  [/cowork|co-work/i, "Coworking Space"],
+  [/travel agency|travel agent/i, "Travel Agency"],
+  [/tour|excursion|expedition|sightsee|guide/i, "Tour Operator"],
+];
+
+/** Map a free-text activity label onto the canonical set, or null. */
+function normaliseActivity(raw: string): string | null {
+  const v = raw.trim();
+  if (!v) return null;
+  const exact = ACTIVITY_CATEGORIES.find(
+    (c) => c.toLowerCase() === v.toLowerCase(),
+  );
+  if (exact) return exact;
+  for (const [re, cat] of ACTIVITY_KEYWORDS) if (re.test(v)) return cat;
+  return null;
+}
+
+/**
+ * Decide an experience's activity type: explicit Activity Type cell first,
+ * then infer from name + description, then the admin-chosen fallback. When the
+ * admin picks "auto", an unclassifiable row keeps its raw cell (or "other").
+ */
+export function classifyActivityType(
+  rawType: string | null,
+  name: string,
+  description: string | null,
+  fallback: string,
+): string {
+  const cell = rawType?.trim() ?? "";
+  const fromCell = cell ? normaliseActivity(cell) : null;
+  if (fromCell) return fromCell;
+  const haystack = `${name} ${description ?? ""}`;
+  for (const [re, cat] of ACTIVITY_KEYWORDS) if (re.test(haystack)) return cat;
+  if (fallback && fallback !== "auto") return fallback;
+  // Auto mode with no match: keep the row's own label if it had one.
+  return cell || "other";
+}
+
 export interface ExperienceCsvRow {
   name: string;
   activityType: string | null;
