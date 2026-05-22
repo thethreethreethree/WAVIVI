@@ -13,6 +13,7 @@ import { scoreCandidatesForPlan } from "@/lib/where-to-next/match-plan";
 import {
   overlapDays as overlapDaysFn,
 } from "@/lib/where-to-next/matching";
+import { photoThumb } from "@/lib/utils/images";
 import type { ChatGroupRow, TravelPlanRow } from "@/types/supabase";
 
 export const dynamic = "force-dynamic";
@@ -170,8 +171,10 @@ async function ActivitiesAndPlaces({ plan }: { plan: TravelPlanRow }) {
                 {s.photo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={s.photo_url}
+                    src={photoThumb(s.photo_url, 320)}
                     alt={s.name}
+                    loading="lazy"
+                    decoding="async"
                     referrerPolicy="no-referrer"
                     className="h-full w-full object-cover"
                   />
@@ -236,8 +239,10 @@ async function SuggestedTravelers({ plan }: { plan: TravelPlanRow }) {
                   {profile.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={profile.avatar_url}
+                      src={photoThumb(profile.avatar_url, 96)}
                       alt={profile.display_name}
+                      loading="lazy"
+                      decoding="async"
                       referrerPolicy="no-referrer"
                       className="h-full w-full object-cover"
                     />

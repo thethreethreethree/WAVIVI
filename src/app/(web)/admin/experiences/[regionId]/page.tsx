@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ExperiencesCsvImport } from "@/components/admin/experiences/csv-import";
+import { ExperiencesList } from "@/components/admin/experiences/experiences-list";
 import { createClient } from "@/lib/supabase/server";
 import type { ExperienceRow, RegionRow } from "@/types/supabase";
 
@@ -66,41 +67,9 @@ export default async function RegionExperiencesPage({
         <h2 className="text-sm font-bold uppercase tracking-wide text-muted">
           Experiences in this region
         </h2>
-        {experiences.length === 0 ? (
-          <p className="mt-3 rounded-2xl bg-surface px-4 py-8 text-center text-sm text-muted shadow-card ring-1 ring-border">
-            None yet — upload a CSV above to get started.
-          </p>
-        ) : (
-          <ul className="mt-3 flex flex-col gap-2">
-            {experiences.map((e) => (
-              <li
-                key={e.id}
-                className="flex items-start justify-between gap-3 rounded-2xl bg-surface p-3 shadow-card ring-1 ring-border"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold">{e.name}</p>
-                  <p className="truncate text-xs text-muted">
-                    {e.activity_type}
-                    {e.address ? ` · ${e.address}` : ""}
-                  </p>
-                  {e.description && (
-                    <p className="mt-1 line-clamp-2 text-xs text-muted">
-                      {e.description}
-                    </p>
-                  )}
-                </div>
-                <div className="shrink-0 text-right text-[11px]">
-                  {e.rating != null && (
-                    <p className="font-bold text-foreground">
-                      ★ {e.rating.toFixed(1)}
-                    </p>
-                  )}
-                  <p className="text-muted">{e.review_count} reviews</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div className="mt-3">
+          <ExperiencesList experiences={experiences} />
+        </div>
       </section>
     </div>
   );
