@@ -7,6 +7,7 @@ import { Rating } from "@/components/ui/rating";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { SearchField } from "@/components/ui/search-field";
 import { StayPhoto } from "@/components/ui/stay-photo";
+import { useStickyState } from "@/hooks/use-sticky-state";
 import {
   SCOOTER_KMH,
   WALK_KMH,
@@ -90,10 +91,13 @@ type UserPos = { lat: number; lng: number };
  * near me" geolocation, sortable by proximity.
  */
 export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useStickyState("exp:q", "");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [minRating, setMinRating] = useState(0);
-  const [bucket, setBucket] = useState<"all" | DayBucket>("all");
+  const [minRating, setMinRating] = useStickyState("exp:minRating", 0);
+  const [bucket, setBucket] = useStickyState<"all" | DayBucket>(
+    "exp:bucket",
+    "all",
+  );
   const [userPos, setUserPos] = useState<UserPos | null>(null);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);

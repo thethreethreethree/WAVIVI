@@ -7,6 +7,7 @@ import { Rating } from "@/components/ui/rating";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { SearchField } from "@/components/ui/search-field";
 import { StayPhoto } from "@/components/ui/stay-photo";
+import { useStickyState } from "@/hooks/use-sticky-state";
 import {
   SCOOTER_KMH,
   WALK_KMH,
@@ -30,10 +31,13 @@ export function RestaurantList({
 }: {
   restaurants: RestaurantRow[];
 }) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useStickyState("eat:q", "");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [minRating, setMinRating] = useState(0);
-  const [cuisine, setCuisine] = useState<"all" | string>("all");
+  const [minRating, setMinRating] = useStickyState("eat:minRating", 0);
+  const [cuisine, setCuisine] = useStickyState<"all" | string>(
+    "eat:cuisine",
+    "all",
+  );
   const [userPos, setUserPos] = useState<UserPos | null>(null);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);

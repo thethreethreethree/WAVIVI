@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { StayPhoto } from "@/components/ui/stay-photo";
+import { useStickyState } from "@/hooks/use-sticky-state";
 import type { EventRow } from "@/types/supabase";
 
 type DayBucket = "morning" | "midday" | "nighttime";
@@ -17,8 +18,11 @@ const DAY_BUCKETS: { id: DayBucket; label: string; emoji: string }[] = [
 ];
 
 export function EventsList({ events }: { events: EventRow[] }) {
-  const [query, setQuery] = useState("");
-  const [bucket, setBucket] = useState<"all" | DayBucket>("all");
+  const [query, setQuery] = useStickyState("events:q", "");
+  const [bucket, setBucket] = useStickyState<"all" | DayBucket>(
+    "events:bucket",
+    "all",
+  );
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();

@@ -7,6 +7,8 @@ import { Rating } from "@/components/ui/rating";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { SearchField } from "@/components/ui/search-field";
 import { StayPhoto } from "@/components/ui/stay-photo";
+import { useStickyState } from "@/hooks/use-sticky-state";
+import { flagImage } from "@/lib/travejor/account";
 import {
   SCOOTER_KMH,
   WALK_KMH,
@@ -36,11 +38,28 @@ const RATING_FILTERS = [
 type CategoryFilter = "all" | StayType;
 type UserPos = { lat: number; lng: number };
 
-export function StayList({ stays }: { stays: StayRow[] }) {
-  const [query, setQuery] = useState("");
+export type StayPicker = {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+  home_country: string | null;
+};
+
+export function StayList({
+  stays,
+  pickersByStay = {},
+}: {
+  stays: StayRow[];
+  pickersByStay?: Record<string, StayPicker[]>;
+}) {
+  const [query, setQuery] = useStickyState("stay:q", "");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [minRating, setMinRating] = useState(0);
-  const [category, setCategory] = useState<CategoryFilter>("all");
+  const [minRating, setMinRating] = useStickyState("stay:minRating", 0);
+  const [category, setCategory] = useStickyState<CategoryFilter>(
+    "stay:category",
+    "all",
+  );
   const [userPos, setUserPos] = useState<UserPos | null>(null);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
@@ -238,6 +257,8 @@ export function StayList({ stays }: { stays: StayRow[] }) {
         <ul className="flex flex-col gap-4 px-5 pb-8 pt-2">
           {results.map(({ s, km }) => {
             const topPick = (s.rating ?? s.backpack_rating) >= 4.7;
+            const pickers = pickersByStay[s.id] ?? [];
+            const overflow = Math.max(0, s.thumbs_up - pickers.length);
             return (
               <li key={s.id}>
                 <Link
@@ -295,6 +316,55 @@ export function StayList({ stays }: { stays: StayRow[] }) {
                       </span>
                     ) : null}
                   </div>
+
+                  {/* Picked by — traveler avatar stack */}
+                  {pickers.length > 0 && (
+                    <div className="flex items-center gap-2 px-3.5 pb-3.5 -mt-1">
+                      <span className="text-[11px] font-semibold text-muted">
+                        Picked by
+                      </span>
+                      <div className="flex -space-x-2">
+                        {pickers.map((p) => (
+                          <div key={p.id} className="relative h-7 w-7">
+                            <span className="block h-full w-full overflow-hidden rounded-full bg-surface ring-2 ring-background">
+                              {p.avatar_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={p.avatar_url}
+                                  alt={p.display_name}
+                                  referrerPolicy="no-referrer"
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <span className="flex h-full w-full items-center justify-center text-[11px] font-bold text-muted">
+                                  {p.display_name.charAt(0).toUpperCase()}
+                                </span>
+                              )}
+                            </span>
+                            {p.home_country && (
+                              <span
+                                className="pointer-events-none absolute -bottom-0.5 -right-0.5 block h-3.5 w-3.5 overflow-hidden rounded-full bg-white ring-2 ring-background"
+                                title={p.home_country}
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={flagImage(p.home_country)}
+                                  alt={p.home_country}
+                                  referrerPolicy="no-referrer"
+                                  className="h-full w-full object-cover"
+                                />
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {overflow > 0 && (
+                        <span className="text-[11px] font-semibold text-muted">
+                          +{overflow} more
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </Link>
               </li>
             );
