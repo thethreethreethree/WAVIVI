@@ -531,6 +531,81 @@ export type EventInsert = {
 
 export type EventUpdate = Partial<Omit<EventInsert, "source_ref">>;
 
+/* ── Restaurants (Where to Eat, in-app) ───────────────────────────────── */
+
+export type RestaurantRow = {
+  id: string;
+  region_id: string | null;
+  cuisine: string;
+  name: string;
+  description: string | null;
+  latitude: number;
+  longitude: number;
+  google_maps_url: string;
+  address: string | null;
+  rating: number | null;
+  review_count: number;
+  thumbs_up: number;
+  thumbs_down: number;
+  backpack_rating: number;
+  reliability_score: number;
+  admin_edited: boolean;
+  phone: string | null;
+  website: string | null;
+  email: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  whatsapp: string | null;
+  price_range: string | null;
+  amenities: string[];
+  photo_url: string | null;
+  photo_urls: string[];
+  source: string;
+  source_ref: string;
+  google_place_id: string | null;
+  claimed_by: string | null;
+  metadata_json: Record<string, unknown>;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RestaurantInsert = {
+  id?: string;
+  region_id?: string | null;
+  cuisine?: string;
+  name: string;
+  description?: string | null;
+  latitude: number;
+  longitude: number;
+  google_maps_url?: string;
+  address?: string | null;
+  rating?: number | null;
+  review_count?: number;
+  thumbs_up?: number;
+  thumbs_down?: number;
+  backpack_rating?: number;
+  reliability_score?: number;
+  admin_edited?: boolean;
+  phone?: string | null;
+  website?: string | null;
+  email?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
+  whatsapp?: string | null;
+  price_range?: string | null;
+  amenities?: string[];
+  photo_url?: string | null;
+  photo_urls?: string[];
+  source?: string;
+  source_ref: string;
+  claimed_by?: string | null;
+  metadata_json?: Record<string, unknown>;
+  active?: boolean;
+};
+
+export type RestaurantUpdate = Partial<Omit<RestaurantInsert, "source_ref">>;
+
 export type StayVoteRow = {
   id: string;
   stay_id: string;
@@ -745,6 +820,11 @@ export type Database = {
         ExperienceUpdate
       >;
       events: TableShape<EventRow, EventInsert, EventUpdate>;
+      restaurants: TableShape<
+        RestaurantRow,
+        RestaurantInsert,
+        RestaurantUpdate
+      >;
       chat_groups: TableShape<
         ChatGroupRow,
         ChatGroupInsert,

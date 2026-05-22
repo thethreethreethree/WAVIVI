@@ -12,10 +12,13 @@ export const dynamic = "force-dynamic";
 export default async function PartnersAdminPage() {
   const supabase = await createClient();
 
-  // Live count for Stays (the only partner surface with a real table today).
-  const { count: stayCount } = await supabase
-    .from("stays")
-    .select("*", { count: "exact", head: true });
+  // Live counts across all four partner surfaces.
+  const [staysC, expC, eventsC, eatC] = await Promise.all([
+    supabase.from("stays").select("*", { count: "exact", head: true }),
+    supabase.from("experiences").select("*", { count: "exact", head: true }),
+    supabase.from("events").select("*", { count: "exact", head: true }),
+    supabase.from("restaurants").select("*", { count: "exact", head: true }),
+  ]);
 
   const dashboards = [
     {
@@ -24,18 +27,18 @@ export default async function PartnersAdminPage() {
       blurb: "Hostels, hotels, guesthouses, resorts — partner lodging.",
       href: "/admin/stays",
       status: "live" as const,
-      count: stayCount ?? 0,
+      count: staysC.count ?? 0,
       countLabel: "stays",
       icon: "🏠",
     },
     {
       slug: "experiences",
       title: "Experiences",
-      blurb: "Tours, boat trips, classes — partner-led activities.",
+      blurb: "Tours, dives, kayak rentals, viewpoints — what to do.",
       href: "/admin/experiences",
-      status: "coming" as const,
-      count: null,
-      countLabel: "",
+      status: "live" as const,
+      count: expC.count ?? 0,
+      countLabel: "experiences",
       icon: "🌊",
     },
     {
@@ -44,9 +47,19 @@ export default async function PartnersAdminPage() {
       blurb: "Pub crawls, meetups, parties, concerts.",
       href: "/admin/events",
       status: "live" as const,
-      count: null,
-      countLabel: "",
+      count: eventsC.count ?? 0,
+      countLabel: "events",
       icon: "🎉",
+    },
+    {
+      slug: "eat",
+      title: "Where to Eat",
+      blurb: "Restaurants, cafes, bars — places to eat (in-app for now).",
+      href: "/admin/eat",
+      status: "live" as const,
+      count: eatC.count ?? 0,
+      countLabel: "restaurants",
+      icon: "🍜",
     },
   ] as const;
 
