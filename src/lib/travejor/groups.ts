@@ -22,7 +22,7 @@ export const travelGroups: TravelGroup[] = [
     category: "Food",
     description: "Discover the best street food and local restaurants together!",
     travelerCount: 8,
-    coverImage: photo("bangkok-food", 200, 200),
+    coverImage: photo("bangkok-food", 640, 360),
     memberSeeds: ["m1", "m2", "m3"],
   },
   {
@@ -32,7 +32,7 @@ export const travelGroups: TravelGroup[] = [
     category: "Nightlife",
     description: "Experience the vibrant nightlife scene with fellow travelers!",
     travelerCount: 12,
-    coverImage: photo("medellin-night", 200, 200),
+    coverImage: photo("medellin-night", 640, 360),
     memberSeeds: ["m4", "m5", "m6"],
   },
   {
@@ -42,7 +42,7 @@ export const travelGroups: TravelGroup[] = [
     category: "Culture",
     description: "Visit temples, museums, and cultural sites together!",
     travelerCount: 6,
-    coverImage: photo("tokyo-culture", 200, 200),
+    coverImage: photo("tokyo-culture", 640, 360),
     memberSeeds: ["m7", "m8", "m9"],
   },
   {
@@ -52,7 +52,7 @@ export const travelGroups: TravelGroup[] = [
     category: "Nature",
     description: "Explore waterfalls, rice terraces, and jungle trails!",
     travelerCount: 16,
-    coverImage: photo("bali-nature", 200, 200),
+    coverImage: photo("bali-nature", 640, 360),
     memberSeeds: ["m10", "m11", "m12"],
   },
   {
@@ -62,7 +62,7 @@ export const travelGroups: TravelGroup[] = [
     category: "Beach",
     description: "Enjoy sunset views and beach activities together!",
     travelerCount: 9,
-    coverImage: photo("santorini-beach", 200, 200),
+    coverImage: photo("santorini-beach", 640, 360),
     memberSeeds: ["m13", "m14", "m15"],
   },
 ];
