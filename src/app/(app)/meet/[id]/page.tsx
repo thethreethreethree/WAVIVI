@@ -6,7 +6,6 @@ import { notFound } from "next/navigation";
 import { categoryMeta } from "@/lib/travejor/group-meta";
 import { getGroup } from "@/lib/travejor/groups";
 import { members } from "@/lib/travejor/members";
-import { photo } from "@/lib/travejor/photo";
 
 type Params = Promise<{ id: string }>;
 
@@ -112,44 +111,9 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
           ))}
         </div>
 
-        <div className="wc-frame mt-5 rounded-2xl p-4 text-center">
-          <p className="text-sm font-semibold">
-            {group.travelerCount} travelers are already here — sharing spots,
-            laughs, and plans.
-          </p>
-          <div className="mt-3 flex justify-center gap-1.5 text-lg">
-            <span>🌍</span>
-            <span>✈️</span>
-            <span>📸</span>
-            <span>🎒</span>
-            <span>🍜</span>
-          </div>
-          <div className="mt-3 flex justify-center">
-            <div className="flex -space-x-2">
-              {group.memberSeeds.concat(["mx1", "mx2"]).map((seed) => (
-                <span
-                  key={seed}
-                  className="relative h-9 w-9 overflow-hidden rounded-full ring-2 ring-background"
-                >
-                  <Image
-                    src={photo(seed, 64, 64)}
-                    alt=""
-                    fill
-                    sizes="36px"
-                    className="object-cover"
-                  />
-                </span>
-              ))}
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-glow text-xs font-bold text-white ring-2 ring-background">
-                +{group.travelerCount}
-              </span>
-            </div>
-          </div>
-        </div>
-
         <Link
           href={`/meet/${group.id}/chat`}
-          className="wc-frame wc-frame-sunset mt-5 block rounded-2xl py-3.5 text-center font-bold text-white active:scale-[0.98]"
+          className="wc-frame wc-frame-sunset mt-6 block rounded-2xl py-3.5 text-center font-bold text-white active:scale-[0.98]"
         >
           ✈️ Join the Group Chat
         </Link>
