@@ -237,45 +237,72 @@ export function RestaurantList({
           to Eat admin.
         </p>
       ) : (
-        <ul className="flex flex-col gap-3 px-5 pb-8 pt-2">
-          {results.map(({ r, km }) => (
-            <li key={r.id}>
-              <Link
-                href={`/eat/${r.id}`}
-                className="wc-frame flex gap-3 rounded-2xl p-3"
-              >
-                <div className="wc-frame relative h-20 w-20 shrink-0 rounded-xl p-1.5">
-                  <span className="relative block h-full w-full overflow-hidden rounded-lg">
-                    <StayPhoto src={r.photo_url} alt={r.name} />
-                  </span>
-                </div>
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <p className="truncate font-bold">{r.name}</p>
-                  <p className="truncate text-xs text-muted">
-                    {[r.cuisine, r.price_range].filter(Boolean).join(" · ")}
-                  </p>
-                  {r.address && (
-                    <p className="truncate text-xs text-muted">{r.address}</p>
-                  )}
-                  {km != null && (
-                    <div className="wc-frame wc-frame-orange mt-1 flex flex-wrap gap-x-2.5 gap-y-0.5 rounded-lg px-2 py-1 text-[10px] font-bold text-foreground">
-                      <span>📍 {fmtKm(km)} away</span>
-                      <span>🚶 {fmtMins((km / WALK_KMH) * 60)}</span>
-                      <span>🛵 {fmtMins((km / SCOOTER_KMH) * 60)}</span>
-                    </div>
-                  )}
-                  <div className="mt-auto flex items-center gap-2 pt-1.5">
-                    <Rating value={r.rating ?? r.backpack_rating} />
-                    {r.review_count > 0 && (
-                      <span className="text-[11px] text-muted">
-                        ({r.review_count.toLocaleString()})
+        <ul className="flex flex-col gap-4 px-5 pb-8 pt-2">
+          {results.map(({ r, km }) => {
+            const topPick = (r.rating ?? r.backpack_rating) >= 4.7;
+            return (
+              <li key={r.id}>
+                <Link
+                  href={`/eat/${r.id}`}
+                  className="wc-frame block overflow-hidden rounded-3xl p-0 transition active:scale-[0.99]"
+                >
+                  {/* Cover banner */}
+                  <div className="relative h-40 w-full">
+                    <StayPhoto src={r.photo_url} alt={r.name} emojiSize="text-4xl" />
+                    <span
+                      className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent"
+                      aria-hidden
+                    />
+                    {/* Cuisine pill — top-left */}
+                    {r.cuisine && (
+                      <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold capitalize text-foreground">
+                        🍽️ {r.cuisine}
                       </span>
                     )}
+                    {/* Top pick — top-right */}
+                    {topPick && (
+                      <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-glow px-2.5 py-1 text-[11px] font-bold text-white shadow-card">
+                        ⭐ Top pick
+                      </span>
+                    )}
+                    {/* Distance pill (when located) — sits above the title */}
+                    {km != null && (
+                      <span className="absolute bottom-12 left-4 inline-flex items-center gap-2 rounded-full bg-black/45 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur">
+                        <span>📍 {fmtKm(km)}</span>
+                        <span>🚶 {fmtMins((km / WALK_KMH) * 60)}</span>
+                        <span>🛵 {fmtMins((km / SCOOTER_KMH) * 60)}</span>
+                      </span>
+                    )}
+                    {/* Title overlaid bottom-left */}
+                    <h2 className="absolute bottom-3 left-4 right-4 truncate text-xl font-bold text-white drop-shadow">
+                      {r.name}
+                    </h2>
                   </div>
-                </div>
-              </Link>
-            </li>
-          ))}
+
+                  {/* Body */}
+                  <div className="flex items-center justify-between gap-2 p-3.5">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Rating value={r.rating ?? r.backpack_rating} />
+                      {r.review_count > 0 && (
+                        <span className="text-[11px] text-muted">
+                          ({r.review_count.toLocaleString()})
+                        </span>
+                      )}
+                    </div>
+                    {r.price_range ? (
+                      <span className="shrink-0 rounded-full bg-cool/15 px-2.5 py-1 text-xs font-bold text-cool">
+                        {r.price_range}
+                      </span>
+                    ) : r.address ? (
+                      <span className="min-w-0 truncate text-[11px] text-muted">
+                        {r.address}
+                      </span>
+                    ) : null}
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
           {results.length === 0 && (
             <p className="py-10 text-center text-sm text-muted">
               Nothing matches your filters.

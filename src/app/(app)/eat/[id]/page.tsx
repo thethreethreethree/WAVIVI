@@ -94,6 +94,43 @@ export default async function RestaurantDetailPage({
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </Link>
+        {r.thumbs_up > 0 && (
+          <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-glow px-2.5 py-1 text-[11px] font-bold text-white shadow-card">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/orange/thumbs_up_orange.png"
+              alt=""
+              aria-hidden
+              className="h-3.5 w-3.5 object-contain"
+            />
+            Backpacker Pick · {r.thumbs_up}
+          </span>
+        )}
+        {r.amenities.length > 0 && (
+          <div className="absolute inset-x-3 bottom-3 z-10 flex gap-2 overflow-x-auto rounded-xl bg-black/45 px-2.5 py-2 backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {r.amenities.map((a) => {
+              const icon = amenityIconPath(a);
+              return (
+                <span
+                  key={a}
+                  title={a}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white/15 px-2 py-1 text-[10px] font-bold text-white"
+                >
+                  {icon ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={icon}
+                      alt=""
+                      aria-hidden
+                      className="h-4 w-4 object-contain"
+                    />
+                  ) : null}
+                  {a}
+                </span>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-5 px-5 py-5">
@@ -109,6 +146,14 @@ export default async function RestaurantDetailPage({
                 ({r.review_count.toLocaleString()} reviews)
               </span>
             )}
+            <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-[11px] font-semibold">
+              🎒 {r.backpack_rating.toFixed(1)}
+            </span>
+            {r.price_range && (
+              <span className="rounded-full bg-cool/15 px-2 py-0.5 text-[11px] font-semibold text-cool">
+                {r.price_range}
+              </span>
+            )}
           </div>
         </div>
 
@@ -116,27 +161,7 @@ export default async function RestaurantDetailPage({
           <p className="text-sm leading-6 text-foreground/90">{r.description}</p>
         )}
 
-        {r.amenities.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {r.amenities.map((a) => {
-              const icon = amenityIconPath(a);
-              return (
-                <span
-                  key={a}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-[11px] font-semibold text-foreground ring-1 ring-border"
-                >
-                  {icon && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={icon} alt="" aria-hidden className="h-4 w-4 object-contain" />
-                  )}
-                  {a}
-                </span>
-              );
-            })}
-          </div>
-        )}
-
-        <a
+        <
           href={`https://www.google.com/maps/dir/?api=1&destination=${r.latitude},${r.longitude}&destination_place_id=${encodeURIComponent(r.name)}&travelmode=driving`}
           target="_blank"
           rel="noreferrer"
