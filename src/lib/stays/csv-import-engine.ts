@@ -62,6 +62,13 @@ export async function importStaysCsv(
     .eq("region_id", regionId);
 
   const pool = (existing ?? []) as StayRow[];
+  // Stable-identity index: the Google place ref (google:ChIJ…) is the same
+  // across every export of a place, so it's the reliable re-import key.
+  // Location is only a fallback for rows that have no usable ref.
+  const byRef = new Map<string, StayRow>();
+  for (const s of pool) {
+    if (s.source_ref?.startsWith("google:")) byRef.set(s.source_ref, s);
+  }
   const claimed = new Set<string>();
   let added = 0;
   let updated = 0;
@@ -70,23 +77,41 @@ export async function importStaysCsv(
   for (const row of rows) {
     const resolvedType: StayType = row.stayType ?? defaultStayType;
 
-    // Nearest unclaimed existing stay.
+    // 1) Match by stable Google place ref first.
     let best: StayRow | null = null;
-    let bestDist = Infinity;
-    for (const s of pool) {
-      if (claimed.has(s.id)) continue;
-      const d = distanceM(row.latitude, row.longitude, s.latitude, s.longitude);
-      if (d < bestDist) {
-        bestDist = d;
-        best = s;
+    const refMatch = row.placeRef.startsWith("google:")
+      ? byRef.get(row.placeRef)
+      : undefined;
+    if (refMatch && !claimed.has(refMatch.id)) {
+      best = refMatch;
+    } else {
+      // 2) Fall back to nearest unclaimed existing stay within radius.
+      let bestDist = Infinity;
+      for (const s of pool) {
+        if (claimed.has(s.id)) continue;
+        const d = distanceM(
+          row.latitude,
+          row.longitude,
+          s.latitude,
+          s.longitude,
+        );
+        if (d < bestDist) {
+          bestDist = d;
+          best = s;
+        }
       }
+      if (!best || bestDist > MATCH_RADIUS_M) best = null;
     }
 
     const mapsUrl = googleMapsUrl(row.latitude, row.longitude);
 
-    if (best && bestDist <= MATCH_RADIUS_M) {
+    if (best) {
       // --- Update an existing stay -----------------------------------------
       claimed.add(best.id);
+      // Google data is the source of truth on re-import — refresh it,
+      // EXCEPT on rows an admin/partner has hand-curated (admin_edited),
+      // where we only fill blanks so we never clobber their edits.
+      const fresh = !best.admin_edited;
       const update: StayUpdate = {
         rating: row.rating,
         review_count: row.reviewCount,
@@ -94,22 +119,22 @@ export async function importStaysCsv(
         longitude: row.longitude,
         google_maps_url: mapsUrl,
       };
-      if (row.website && !best.website) update.website = row.website;
-      if (row.address && !best.address) update.address = row.address;
-      if (row.phone && !best.phone) update.phone = row.phone;
-      if (row.whatsapp && !best.whatsapp) update.whatsapp = row.whatsapp;
-      if (row.instagram && !best.instagram) update.instagram = row.instagram;
-      if (row.facebook && !best.facebook) update.facebook = row.facebook;
-      if (row.email && !best.email) update.email = row.email;
+      if (row.website && (fresh || !best.website)) update.website = row.website;
+      if (row.address && (fresh || !best.address)) update.address = row.address;
+      if (row.phone && (fresh || !best.phone)) update.phone = row.phone;
+      if (row.whatsapp && (fresh || !best.whatsapp))
+        update.whatsapp = row.whatsapp;
+      if (row.instagram && (fresh || !best.instagram))
+        update.instagram = row.instagram;
+      if (row.facebook && (fresh || !best.facebook))
+        update.facebook = row.facebook;
+      if (row.email && (fresh || !best.email)) update.email = row.email;
       // CSV photos always win — admins are usually re-uploading with art.
       if (row.photoUrl) update.photo_url = row.photoUrl;
-      // CSV amenities replace the stored list when present — Google's
-      // amenity scrape is the source of truth, and admin edits to
-      // amenities flow through the partner dashboard, not re-import.
+      // CSV amenities replace the stored list when present.
       if (row.amenities.length > 0) update.amenities = row.amenities;
-      // Re-snap backpack rating from Google rating — unless an admin
-      // already hand-edited this stay.
-      if (row.rating != null && !best.admin_edited) {
+      // Re-snap backpack rating from Google rating — unless hand-edited.
+      if (row.rating != null && fresh) {
         update.backpack_rating = snapHalf(row.rating);
         update.reliability_score = Math.min(10, row.rating * 2);
       }

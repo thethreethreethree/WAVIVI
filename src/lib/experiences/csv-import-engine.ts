@@ -63,6 +63,10 @@ export async function importExperiencesCsv(
     .eq("region_id", regionId);
 
   const pool = (existing ?? []) as ExperienceRow[];
+  const byRef = new Map<string, ExperienceRow>();
+  for (const e of pool) {
+    if (e.source_ref?.startsWith("google:")) byRef.set(e.source_ref, e);
+  }
   const claimed = new Set<string>();
   let added = 0;
   let updated = 0;
@@ -71,23 +75,37 @@ export async function importExperiencesCsv(
   for (const row of rows) {
     const resolvedType = (row.activityType?.trim() || defaultActivityType).trim();
 
-    // Nearest unclaimed existing experience.
+    // 1) Match by stable Google place ref; 2) fall back to nearest pin.
     let best: ExperienceRow | null = null;
-    let bestDist = Infinity;
-    for (const e of pool) {
-      if (claimed.has(e.id)) continue;
-      const d = distanceM(row.latitude, row.longitude, e.latitude, e.longitude);
-      if (d < bestDist) {
-        bestDist = d;
-        best = e;
+    const refMatch = row.placeRef.startsWith("google:")
+      ? byRef.get(row.placeRef)
+      : undefined;
+    if (refMatch && !claimed.has(refMatch.id)) {
+      best = refMatch;
+    } else {
+      let bestDist = Infinity;
+      for (const e of pool) {
+        if (claimed.has(e.id)) continue;
+        const d = distanceM(
+          row.latitude,
+          row.longitude,
+          e.latitude,
+          e.longitude,
+        );
+        if (d < bestDist) {
+          bestDist = d;
+          best = e;
+        }
       }
+      if (!best || bestDist > MATCH_RADIUS_M) best = null;
     }
 
     const mapsUrl = googleMapsUrl(row.latitude, row.longitude);
 
-    if (best && bestDist <= MATCH_RADIUS_M) {
+    if (best) {
       // --- Update an existing experience ----------------------------------
       claimed.add(best.id);
+      const fresh = !best.admin_edited;
       const update: ExperienceUpdate = {
         rating: row.rating,
         review_count: row.reviewCount,
@@ -98,19 +116,22 @@ export async function importExperiencesCsv(
       if (row.activityType && row.activityType.trim()) {
         update.activity_type = row.activityType.trim();
       }
-      if (row.description && !best.description) {
+      if (row.description && (fresh || !best.description)) {
         update.description = row.description;
       }
-      if (row.website && !best.website) update.website = row.website;
-      if (row.address && !best.address) update.address = row.address;
-      if (row.phone && !best.phone) update.phone = row.phone;
-      if (row.whatsapp && !best.whatsapp) update.whatsapp = row.whatsapp;
-      if (row.instagram && !best.instagram) update.instagram = row.instagram;
-      if (row.facebook && !best.facebook) update.facebook = row.facebook;
-      if (row.email && !best.email) update.email = row.email;
+      if (row.website && (fresh || !best.website)) update.website = row.website;
+      if (row.address && (fresh || !best.address)) update.address = row.address;
+      if (row.phone && (fresh || !best.phone)) update.phone = row.phone;
+      if (row.whatsapp && (fresh || !best.whatsapp))
+        update.whatsapp = row.whatsapp;
+      if (row.instagram && (fresh || !best.instagram))
+        update.instagram = row.instagram;
+      if (row.facebook && (fresh || !best.facebook))
+        update.facebook = row.facebook;
+      if (row.email && (fresh || !best.email)) update.email = row.email;
       if (row.photoUrl) update.photo_url = row.photoUrl;
       if (row.amenities.length > 0) update.amenities = row.amenities;
-      if (row.rating != null && !best.admin_edited) {
+      if (row.rating != null && fresh) {
         update.backpack_rating = snapHalf(row.rating);
         update.reliability_score = Math.min(10, row.rating * 2);
       }
