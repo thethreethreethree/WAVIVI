@@ -20,6 +20,95 @@
 
 import { cleanPhone, parseAmenitiesCell } from "@/lib/stays/csv-import";
 
+/**
+ * Canonical cuisine vocabulary the app filters against. The importer
+ * classifies every row into one of these (from its Cuisine column, or
+ * inferred from the name/description when blank) so listings always land
+ * in a sensible category instead of a single forced default.
+ */
+export const CUISINE_CATEGORIES = [
+  "Filipino",
+  "Seafood",
+  "Italian",
+  "Pizza",
+  "BBQ & Grill",
+  "Cafe",
+  "Bakery",
+  "Bar",
+  "Vegan",
+  "Asian",
+  "Japanese",
+  "Korean",
+  "Thai",
+  "Indian",
+  "Mexican",
+  "Mediterranean",
+  "Fast Food",
+  "Desserts",
+  "International",
+  "other",
+] as const;
+
+/**
+ * Keyword → canonical cuisine. Checked against the raw Cuisine cell first,
+ * then the name + description. Order matters — earlier, more specific
+ * matches win (e.g. "pizzeria" → Pizza before "italian" → Italian).
+ */
+const CUISINE_KEYWORDS: [RegExp, string][] = [
+  [/pizz/i, "Pizza"],
+  [/sushi|ramen|izakaya|japanese|teppan/i, "Japanese"],
+  [/korean|bibimbap|kimchi|bbq korean/i, "Korean"],
+  [/thai|pad thai/i, "Thai"],
+  [/indian|curry house|tandoor/i, "Indian"],
+  [/mexican|taco|burrito|cantina/i, "Mexican"],
+  [/mediterran|greek|kebab|shawarma|falafel/i, "Mediterranean"],
+  [/seafood|fish|grill.*seafood|oyster|crab|prawn/i, "Seafood"],
+  [/vegan|plant-based|plant based/i, "Vegan"],
+  [/veg(etarian)?\b/i, "Vegan"],
+  [/bakery|bake shop|patisserie|bread/i, "Bakery"],
+  [/dessert|gelato|ice cream|cake shop|sweets/i, "Desserts"],
+  [/coffee|cafe|café|espresso|brew/i, "Cafe"],
+  [/\bbar\b|pub|cocktail|lounge|brewery|beer/i, "Bar"],
+  [/bbq|barbe|grill|steak|smokehouse/i, "BBQ & Grill"],
+  [/fast food|burger|fried chicken|takeaway/i, "Fast Food"],
+  [/filipino|lutong|carinderia|sisig|adobo|inasal/i, "Filipino"],
+  [/italian|trattoria|osteria|pasta/i, "Italian"],
+  [/asian|noodle|dimsum|dim sum|chinese|vietnam|pho/i, "Asian"],
+];
+
+/** Map a free-text cuisine label onto the canonical set, or null. */
+function normaliseCuisine(raw: string): string | null {
+  const v = raw.trim();
+  if (!v) return null;
+  // Exact (case-insensitive) match to a canonical value.
+  const exact = CUISINE_CATEGORIES.find(
+    (c) => c.toLowerCase() === v.toLowerCase(),
+  );
+  if (exact) return exact;
+  // Keyword scan.
+  for (const [re, cat] of CUISINE_KEYWORDS) if (re.test(v)) return cat;
+  return null;
+}
+
+/**
+ * Decide a restaurant's cuisine: explicit Cuisine cell first, then infer
+ * from name + description, then the admin-chosen fallback. When the admin
+ * picks "auto", an unclassifiable row becomes "other".
+ */
+export function classifyCuisine(
+  rawCuisine: string | null,
+  name: string,
+  description: string | null,
+  fallback: string,
+): string {
+  const fromCell = rawCuisine ? normaliseCuisine(rawCuisine) : null;
+  if (fromCell) return fromCell;
+  const haystack = `${name} ${description ?? ""}`;
+  for (const [re, cat] of CUISINE_KEYWORDS) if (re.test(haystack)) return cat;
+  if (fallback && fallback !== "auto") return fallback;
+  return "other";
+}
+
 export interface RestaurantCsvRow {
   name: string;
   cuisine: string | null;

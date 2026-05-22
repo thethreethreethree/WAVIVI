@@ -1,6 +1,9 @@
 import "server-only";
 
-import type { RestaurantCsvRow } from "@/lib/restaurants/csv-import";
+import {
+  classifyCuisine,
+  type RestaurantCsvRow,
+} from "@/lib/restaurants/csv-import";
 import { googleMapsUrl } from "@/lib/toolbox/normalize";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
@@ -53,7 +56,14 @@ export async function importRestaurantsCsv(
   let skipped = 0;
 
   for (const row of rows) {
-    const resolvedCuisine = (row.cuisine?.trim() || defaultCuisine).trim();
+    // Auto-classify into a canonical cuisine (CSV cell → name/description
+    // keywords → admin fallback). "auto" makes unclassifiable rows "other".
+    const resolvedCuisine = classifyCuisine(
+      row.cuisine,
+      row.name,
+      row.description,
+      defaultCuisine,
+    );
 
     let best: RestaurantRow | null = null;
     const refMatch = row.placeRef.startsWith("google:")
@@ -94,7 +104,8 @@ export async function importRestaurantsCsv(
         longitude: row.longitude,
         google_maps_url: mapsUrl,
       };
-      if (row.cuisine && row.cuisine.trim()) update.cuisine = row.cuisine.trim();
+      // Re-classify on re-import (unless an admin hand-curated the row).
+      if (fresh) update.cuisine = resolvedCuisine;
       if (row.priceRange && (fresh || !best.price_range))
         update.price_range = row.priceRange;
       if (row.description && (fresh || !best.description))

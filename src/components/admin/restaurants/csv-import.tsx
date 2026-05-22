@@ -12,23 +12,26 @@ interface ImportSummary {
 }
 
 const CUISINES = [
-  "Filipino",
-  "Seafood",
-  "Italian",
-  "Cafe",
-  "Bar & Grill",
-  "Vegan",
-  "Asian",
-  "International",
-  "Bakery",
-  "other",
+  { value: "auto", label: "🪄 Auto-detect (recommended)" },
+  { value: "Filipino", label: "Filipino" },
+  { value: "Seafood", label: "Seafood" },
+  { value: "Italian", label: "Italian" },
+  { value: "Pizza", label: "Pizza" },
+  { value: "BBQ & Grill", label: "BBQ & Grill" },
+  { value: "Cafe", label: "Cafe" },
+  { value: "Bakery", label: "Bakery" },
+  { value: "Bar", label: "Bar" },
+  { value: "Vegan", label: "Vegan" },
+  { value: "Asian", label: "Asian" },
+  { value: "International", label: "International" },
+  { value: "other", label: "Other" },
 ];
 
 /** Admin Restaurants CSV importer — mirrors the other admin importers. */
 export function RestaurantsCsvImport({ regionId }: { regionId: string }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [cuisine, setCuisine] = useState<string>("Filipino");
+  const [cuisine, setCuisine] = useState<string>("auto");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportSummary | null>(null);
@@ -78,15 +81,15 @@ export function RestaurantsCsvImport({ regionId }: { regionId: string }) {
 
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-bold text-muted">Default cuisine</span>
+          <span className="text-xs font-bold text-muted">Cuisine</span>
           <select
             value={cuisine}
             onChange={(e) => setCuisine(e.target.value)}
             className="admin-input"
           >
             {CUISINES.map((c) => (
-              <option key={c} value={c}>
-                {c}
+              <option key={c.value} value={c.value}>
+                {c.label}
               </option>
             ))}
           </select>
