@@ -4,6 +4,12 @@
 -- (YumYumPo integration returns later). Same shape as experiences with a
 -- `cuisine` label instead of activity_type. No day_bucket — eating isn't a
 -- morning/midday/nighttime thing here.
+--
+-- Defensive drop: an earlier/partial `restaurants` table (missing the
+-- `active` column) caused the index step to fail with "column active does
+-- not exist". Dropping first guarantees a clean schema. Safe — this is a
+-- fresh feature with no production data yet.
+drop table if exists public.restaurants cascade;
 
 create table if not exists public.restaurants (
   id                    uuid primary key default gen_random_uuid(),
