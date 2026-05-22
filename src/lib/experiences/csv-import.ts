@@ -31,11 +31,23 @@
  * from Google "Tourist attraction · 597X+9C", etc.).
  */
 
-import { parseAmenitiesCell } from "@/lib/stays/csv-import";
+import { cleanPhone, parseAmenitiesCell } from "@/lib/stays/csv-import";
+
+/** Normalise a Category cell to morning | midday | nighttime | null. */
+export function normaliseDayBucket(raw: string | undefined): string | null {
+  const v = (raw ?? "").trim().toLowerCase();
+  if (!v) return null;
+  if (v.includes("morning")) return "morning";
+  if (v.includes("midday") || v.includes("noon") || v.includes("afternoon"))
+    return "midday";
+  if (v.includes("night") || v.includes("evening")) return "nighttime";
+  return null;
+}
 
 export interface ExperienceCsvRow {
   name: string;
   activityType: string | null;
+  dayBucket: string | null;
   description: string | null;
   rating: number | null;
   reviewCount: number;
@@ -130,8 +142,9 @@ export function parseExperiencesCsv(text: string): ExperienceCsvParseResult {
   };
   const idx = {
     title: col("title", "name"),
-    activityType: col("activity type", "type", "category"),
-    description: col("description"),
+    activityType: col("activity type", "activitytype", "type"),
+    dayBucket: col("category", "day", "day bucket", "time", "bucket"),
+    description: col("description", "pitch", "about"),
     rating: col("rating"),
     reviews: col("reviews", "review count", "reviewcount"),
     phone: col("phone", "phone number"),
@@ -208,11 +221,13 @@ export function parseExperiencesCsv(text: string): ExperienceCsvParseResult {
     rows.push({
       name,
       activityType: text(idx.activityType),
+      dayBucket:
+        idx.dayBucket === -1 ? null : normaliseDayBucket(f[idx.dayBucket]),
       description: text(idx.description),
       rating,
       reviewCount:
         idx.reviews === -1 ? 0 : Math.max(0, num(f[idx.reviews]) ?? 0),
-      phone: text(idx.phone),
+      phone: cleanPhone(text(idx.phone)),
       whatsapp: text(idx.whatsapp),
       instagram: text(idx.instagram),
       facebook: text(idx.facebook),

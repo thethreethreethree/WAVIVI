@@ -381,6 +381,8 @@ export type ExperienceRow = {
   id: string;
   region_id: string | null;
   activity_type: string;
+  /** Time-of-day bucket: morning | midday | nighttime | null. */
+  day_bucket: string | null;
   name: string;
   description: string | null;
   latitude: number;
@@ -419,6 +421,7 @@ export type ExperienceInsert = {
   id?: string;
   region_id?: string | null;
   activity_type?: string;
+  day_bucket?: string | null;
   name: string;
   description?: string | null;
   latitude: number;

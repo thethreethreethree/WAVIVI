@@ -118,10 +118,20 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
     );
   }
 
+  // Explicit CSV bucket (day_bucket) wins; otherwise infer from the
+  // activity type so older imports still slot somewhere sensible.
+  const bucketOf = (e: ExperienceRow): DayBucket => {
+    const explicit = (e.day_bucket ?? "").toLowerCase();
+    if (explicit === "morning" || explicit === "midday" || explicit === "nighttime") {
+      return explicit as DayBucket;
+    }
+    return bucketForActivity(e.activity_type);
+  };
+
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = experiences.filter((e) => {
-      if (bucket !== "all" && bucketForActivity(e.activity_type) !== bucket) {
+      if (bucket !== "all" && bucketOf(e) !== bucket) {
         return false;
       }
       const rating = e.rating ?? e.backpack_rating;

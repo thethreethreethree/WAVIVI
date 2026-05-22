@@ -124,6 +124,7 @@ export async function importExperiencesCsv(
       if (row.activityType && row.activityType.trim()) {
         update.activity_type = row.activityType.trim();
       }
+      if (row.dayBucket) update.day_bucket = row.dayBucket;
       if (row.description && (fresh || !best.description)) {
         update.description = row.description;
       }
@@ -155,6 +156,7 @@ export async function importExperiencesCsv(
       const insert: ExperienceInsert = {
         region_id: regionId,
         activity_type: resolvedType,
+        day_bucket: row.dayBucket,
         name: row.name,
         description: row.description,
         latitude: row.latitude,

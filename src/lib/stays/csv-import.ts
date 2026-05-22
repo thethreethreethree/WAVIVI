@@ -258,6 +258,18 @@ const num = (v: string | undefined): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
+/**
+ * Spreadsheets often mangle phone numbers into floats ("9952294563.0")
+ * and drop the leading zero. Strip a trailing ".0" and restore the
+ * leading 0 for 10-digit PH mobiles (9XXXXXXXXX → 09XXXXXXXXX).
+ */
+export const cleanPhone = (v: string | null): string | null => {
+  if (!v) return v;
+  let s = v.trim().replace(/\.0$/, "");
+  if (/^9\d{9}$/.test(s)) s = `0${s}`;
+  return s || null;
+};
+
 const KNOWN_STAY_TYPES = new Set<StayType>([
   "hostel",
   "hotel",
@@ -383,7 +395,7 @@ export function parseStaysCsv(text: string): StayCsvParseResult {
       rating,
       reviewCount:
         idx.reviews === -1 ? 0 : Math.max(0, num(f[idx.reviews]) ?? 0),
-      phone: text(idx.phone),
+      phone: cleanPhone(text(idx.phone)),
       whatsapp: text(idx.whatsapp),
       instagram: text(idx.instagram),
       facebook: text(idx.facebook),
