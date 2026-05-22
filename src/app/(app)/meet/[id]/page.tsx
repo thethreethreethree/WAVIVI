@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { BackButton } from "@/components/ui/back-button";
 import { categoryMeta } from "@/lib/travejor/group-meta";
 import { getGroup } from "@/lib/travejor/groups";
 import { members } from "@/lib/travejor/members";
@@ -43,22 +44,10 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
           className={`absolute inset-0 bg-gradient-to-t ${meta.tint} via-black/30 to-black/10`}
           aria-hidden
         />
-        <Link
-          href="/meet"
-          aria-label="Back"
-          className="absolute left-4 top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            className="h-5 w-5"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </Link>
+        <BackButton
+          fallback="/meet"
+          className="absolute left-4 top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] flex h-11 w-11 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur transition-transform active:scale-95"
+        />
         <span className="absolute right-4 top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-foreground">
           {meta.emoji} {group.category}
         </span>

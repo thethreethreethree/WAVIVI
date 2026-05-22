@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { BackButton } from "@/components/ui/back-button";
 import { Rating } from "@/components/ui/rating";
 import { StayPhoto } from "@/components/ui/stay-photo";
 import { SaveToPlanButton } from "@/features/where-to-next/save-to-plan-button";
@@ -78,22 +79,10 @@ export default async function RestaurantDetailPage({
           <StayPhoto src={r.photo_url} alt={r.name} emojiSize="text-5xl" />
           <span className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
         </span>
-        <Link
-          href="/eat"
-          aria-label="Back"
-          className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            className="h-5 w-5"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </Link>
+        <BackButton
+          fallback="/eat"
+          className="absolute left-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur transition-transform active:scale-95"
+        />
         {r.thumbs_up > 0 && (
           <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-glow px-2.5 py-1 text-[11px] font-bold text-white shadow-card">
             {/* eslint-disable-next-line @next/next/no-img-element */}
