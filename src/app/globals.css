@@ -196,6 +196,15 @@ h3 {
   color: var(--color-muted);
 }
 
+/* Route fade-in — replaces the framer-motion page transition. */
+@keyframes pageFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.page-fade {
+  animation: pageFade 0.22s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

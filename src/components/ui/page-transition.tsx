@@ -1,21 +1,19 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { motion } from "motion/react";
 
-/** Page transition — each route gently fades in. */
+/**
+ * Page transition — each route gently fades in. Implemented with a CSS
+ * keyframe (see `.page-fade` in globals.css) rather than framer-motion, so
+ * list/detail routes don't pull the animation library into their bundle.
+ * `key={pathname}` remounts the wrapper on navigation to replay the fade.
+ */
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <motion.div
-      key={pathname}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.55, ease: "easeOut" }}
-      className="flex flex-1 flex-col"
-    >
+    <div key={pathname} className="page-fade flex flex-1 flex-col">
       {children}
-    </motion.div>
+    </div>
   );
 }

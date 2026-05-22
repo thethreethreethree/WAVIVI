@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { StayEditor } from "./stay-editor";
+import { photoThumb } from "@/lib/utils/images";
 import type { StayRow, StayType } from "@/types/supabase";
 
 const STAY_TYPE_LABEL: Record<StayType, string> = {
@@ -272,8 +273,11 @@ export function StaysList({ stays }: { stays: StayRow[] }) {
               {s.photo_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={s.photo_url}
+                  src={photoThumb(s.photo_url, 96)}
                   alt=""
+                  loading="lazy"
+                  decoding="async"
+                  referrerPolicy="no-referrer"
                   className="h-12 w-12 shrink-0 rounded-xl object-cover ring-1 ring-border"
                 />
               ) : (

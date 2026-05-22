@@ -9,6 +9,7 @@ import { SearchField } from "@/components/ui/search-field";
 import { StayPhoto } from "@/components/ui/stay-photo";
 import { useStickyState } from "@/hooks/use-sticky-state";
 import { flagImage } from "@/lib/travejor/account";
+import { photoThumb } from "@/lib/utils/images";
 import {
   SCOOTER_KMH,
   WALK_KMH,
@@ -330,8 +331,10 @@ export function StayList({
                               {p.avatar_url ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
-                                  src={p.avatar_url}
+                                  src={photoThumb(p.avatar_url, 64)}
                                   alt={p.display_name}
+                                  loading="lazy"
+                                  decoding="async"
                                   referrerPolicy="no-referrer"
                                   className="h-full w-full object-cover"
                                 />

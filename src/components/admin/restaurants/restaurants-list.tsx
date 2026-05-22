@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { RestaurantEditor } from "./restaurant-editor";
+import { photoThumb } from "@/lib/utils/images";
 import type { RestaurantRow } from "@/types/supabase";
 
 const CHANNELS = [
@@ -271,8 +272,11 @@ export function RestaurantsList({
               {r.photo_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={r.photo_url}
+                  src={photoThumb(r.photo_url, 96)}
                   alt=""
+                  loading="lazy"
+                  decoding="async"
+                  referrerPolicy="no-referrer"
                   className="h-12 w-12 shrink-0 rounded-xl object-cover ring-1 ring-border"
                 />
               ) : (
