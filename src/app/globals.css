@@ -205,6 +205,33 @@ h3 {
   animation: pageFade 0.22s ease-out both;
 }
 
+/* Nav map attribution — restyle the default Leaflet credit strip so it
+   blends with the watercolor brand instead of stamping a Web-1.0 white pill
+   on the map. We keep OSM + CARTO attribution visible (they're required by
+   the tile licence) but drop the Leaflet flag glyph for a cleaner look. */
+#nav-map .leaflet-control-attribution {
+  background: color-mix(in srgb, var(--surface) 88%, transparent) !important;
+  color: var(--muted) !important;
+  font-family: var(--font-hand), sans-serif !important;
+  font-size: 0.65rem !important;
+  font-weight: 700 !important;
+  padding: 1px 8px !important;
+  border-top-left-radius: 10px !important;
+  box-shadow: 0 2px 6px -4px rgba(120, 78, 30, 0.4);
+}
+#nav-map .leaflet-control-attribution a {
+  color: var(--accent-glow) !important;
+  text-decoration: none !important;
+}
+#nav-map .leaflet-control-attribution a:hover {
+  text-decoration: underline !important;
+}
+/* Hide the Leaflet flag glyph — attribution to Leaflet itself is optional
+   under their licence; the OSM + CARTO credits we keep. */
+#nav-map .leaflet-attribution-flag {
+  display: none !important;
+}
+
 /* Navigation map pins — used on /nav. The destination pin is a sunset
    bubble (drop-shape); the user pin is a glowing white disc that pulses so
    live position reads as alive on the map. */
