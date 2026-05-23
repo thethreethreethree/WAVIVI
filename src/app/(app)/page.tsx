@@ -65,7 +65,7 @@ export default async function Home() {
     <>
       <AppTopBar />
 
-      <section className="relative flex flex-col items-center px-6 pb-6 pt-8">
+      <section className="relative flex flex-col items-center px-6 pb-6 pt-14">
         {/* Drifting watercolor washes — same palette as before, now alive. */}
         {WASHES.map((w, i) => (
           <span
