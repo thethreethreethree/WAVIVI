@@ -1,112 +1,96 @@
 "use client";
 
-import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useMemo } from "react";
 
 import { BackButton } from "@/components/ui/back-button";
 
 /**
- * Travejor → Google Maps handoff screen.
+ * Travejor in-app directions view.
  *
- * Get Directions used to open Google Maps in a new tab directly, leaving the
- * user with no Travejor affordance once they were inside Maps. This page
- * stands between: a small Travejor-branded screen that launches Maps in a
- * new tab and keeps the obvious "← Back to Travejor" button right here so
- * the user can always come back without hunting tabs.
+ * Google Maps lives inside an iframe so the user stays inside Travejor —
+ * there's no hop to a new tab and no "where do I go back?" moment. The
+ * watercolor top bar carries the place name and a real history-based back
+ * button; an "Open in Google Maps" pill lets power users hand off to the
+ * native app when they want turn-by-turn nav.
+ *
+ * Uses the keyless `maps.google.com/maps?...&output=embed` URL so this works
+ * without provisioning a Google Maps Embed API key — good enough for the
+ * "see where it is + get directions" use case.
  */
-export default function DirectionsHandoffPage() {
+export default function DirectionsPage() {
   return (
     <Suspense fallback={<div className="flex flex-1" />}>
-      <DirectionsHandoff />
+      <DirectionsView />
     </Suspense>
   );
 }
 
-function DirectionsHandoff() {
+function DirectionsView() {
   const params = useSearchParams();
   const lat = params.get("lat");
   const lng = params.get("lng");
-  const name = params.get("name") ?? "this place";
-  const [opened, setOpened] = useState(false);
-  // Try to auto-launch on mount. Browsers usually allow it because we got
-  // here via a user-gesture click; if blocked, the button below still works.
-  const triedAuto = useRef(false);
+  const name = params.get("name") ?? "Destination";
 
-  const mapsUrl = useMemo(() => {
-    if (!lat || !lng) return null;
-    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=${encodeURIComponent(name)}&travelmode=driving`;
+  const { embedSrc, openInMapsUrl } = useMemo(() => {
+    if (!lat || !lng) return { embedSrc: null, openInMapsUrl: null };
+    // `daddr` = destination; the embed asks the browser for the origin so
+    // directions auto-route from the user's location. `output=embed` is the
+    // keyless variant that works inside an iframe.
+    const q = `${lat},${lng}(${encodeURIComponent(name)})`;
+    return {
+      embedSrc: `https://maps.google.com/maps?daddr=${q}&z=14&output=embed`,
+      openInMapsUrl: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=${encodeURIComponent(name)}&travelmode=driving`,
+    };
   }, [lat, lng, name]);
 
-  useEffect(() => {
-    if (triedAuto.current || !mapsUrl) return;
-    triedAuto.current = true;
-    const w = window.open(mapsUrl, "_blank", "noopener,noreferrer");
-    if (w) setOpened(true);
-  }, [mapsUrl]);
-
   return (
-    <div className="flex flex-1 flex-col px-6 pb-10 pt-[max(3.5rem,calc(env(safe-area-inset-top)+2.5rem))]">
-      <div className="flex flex-col items-center text-center">
-        <Image
-          src="/travejor-logo.png"
-          alt="Travejor"
-          width={180}
-          height={180}
-          priority
-          className="h-auto w-40"
-        />
-        <h1 className="mt-3 text-2xl font-bold tracking-tight text-foreground">
-          Get directions
-        </h1>
-        <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted">
-          {opened
-            ? `Google Maps just opened in a new tab with directions to ${name}. When you're done, come back here.`
-            : `Tap below to open turn-by-turn directions to ${name} in Google Maps.`}
-        </p>
-      </div>
-
-      <div className="mt-8 flex flex-col gap-3">
-        {mapsUrl ? (
-          <a
-            href={mapsUrl}
-            target="_blank"
-            rel="noreferrer"
-            onClick={() => setOpened(true)}
-            className="wc-frame wc-frame-sunset block w-full rounded-2xl py-3.5 text-center text-base font-bold text-white active:scale-[0.98]"
-          >
-            {opened ? "Open Google Maps again ↗" : "Open in Google Maps ↗"}
-          </a>
-        ) : (
-          <p className="rounded-2xl bg-heat/15 px-4 py-3 text-center text-sm font-semibold text-heat">
-            Missing destination — go back and try again.
-          </p>
-        )}
-
+    <div className="relative flex flex-1 flex-col">
+      {/* Top bar — back button + truncated place name. Floats over the map
+          so the embed uses the full viewport behind it. */}
+      <header className="absolute inset-x-0 top-0 z-10 flex items-center gap-3 px-4 pb-3 pt-[max(2.75rem,calc(env(safe-area-inset-top)+1.5rem))]">
         <BackButton
           fallback="/"
-          ariaLabel="Back to Travejor"
-          className="wc-frame flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-base font-bold text-foreground active:scale-[0.98]"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-5 w-5"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-          Back to Travejor
-        </BackButton>
-      </div>
+          className="wc-frame wc-frame-orange-white flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-glow shadow-card transition-transform active:scale-95"
+        />
+        <div className="wc-frame min-w-0 flex-1 rounded-2xl bg-surface/95 px-3 py-2 shadow-card backdrop-blur">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-muted">
+            Directions to
+          </p>
+          <p className="truncate text-sm font-bold text-foreground">{name}</p>
+        </div>
+      </header>
 
-      <p className="mt-6 text-center text-[11px] text-muted">
-        Travejor opens Google Maps in a new tab — closing that tab returns
-        you straight here.
-      </p>
+      {/* Map embed */}
+      {embedSrc ? (
+        <iframe
+          src={embedSrc}
+          title={`Map directions to ${name}`}
+          loading="eager"
+          referrerPolicy="no-referrer-when-downgrade"
+          allow="geolocation"
+          className="h-[calc(100dvh-6.75rem)] w-full border-0"
+        />
+      ) : (
+        <div className="flex flex-1 items-center justify-center px-6 text-center">
+          <p className="rounded-2xl bg-heat/15 px-4 py-3 text-sm font-semibold text-heat">
+            Missing destination — go back and try again.
+          </p>
+        </div>
+      )}
+
+      {/* "Open in Google Maps" — for users who want native turn-by-turn nav.
+          Sits above the bottom nav with a comfortable margin. */}
+      {openInMapsUrl && (
+        <a
+          href={openInMapsUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="wc-frame wc-frame-sunset absolute inset-x-5 bottom-[max(7.5rem,calc(env(safe-area-inset-bottom)+7.25rem))] z-10 rounded-2xl py-3 text-center text-sm font-bold text-white shadow-card active:scale-[0.98]"
+        >
+          Open in Google Maps app ↗
+        </a>
+      )}
     </div>
   );
 }
