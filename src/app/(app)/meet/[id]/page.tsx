@@ -62,12 +62,12 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
         </div>
       </div>
 
-      <div className="px-5 pt-16">
+      <div className="px-5 pt-6">
         <p className="text-center text-sm text-muted">
           See who&apos;s already vibing here before you jump in.
         </p>
 
-        <h2 className="mt-10 text-sm font-bold uppercase tracking-wide text-muted">
+        <h2 className="mt-5 text-sm font-bold uppercase tracking-wide text-muted">
           Featured Travelers
         </h2>
         <div className="-mx-5 mt-3 flex gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
