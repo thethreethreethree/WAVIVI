@@ -76,12 +76,28 @@ export function NavMap({ start, end, destinationName, route }: Props) {
       );
       layersRef.current.dest = destMarker;
       mapRef.current = map;
+
+      // Leaflet caches the container size on init; if the container was
+      // mid-layout when we initialised, the tiles can render with the wrong
+      // origin and look blank/grey. invalidateSize() forces a re-measure.
+      // We also re-run on resize for orientation changes.
+      const invalidate = () => map.invalidateSize();
+      // Two ticks: one after this microtask, one after the next paint.
+      setTimeout(invalidate, 0);
+      setTimeout(invalidate, 250);
+      const ro = new ResizeObserver(invalidate);
+      ro.observe(el);
+      (map as unknown as { __ro?: ResizeObserver }).__ro = ro;
     })();
     return () => {
       cancelled = true;
-      // Clean up Leaflet on unmount to avoid "already initialized" on
-      // back-and-forward navigation.
-      mapRef.current?.remove();
+      // Clean up Leaflet + the size observer on unmount to avoid the
+      // "already initialized" error on back/forward navigation.
+      const m = mapRef.current as
+        | (L.Map & { __ro?: ResizeObserver })
+        | null;
+      m?.__ro?.disconnect();
+      m?.remove();
       mapRef.current = null;
       layersRef.current = {};
     };

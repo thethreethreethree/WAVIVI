@@ -280,8 +280,10 @@ function NavView() {
         </p>
       )}
 
-      {/* Map — fills remaining vertical space between header and footer. */}
-      <div className="relative flex-1">
+      {/* Map — explicit min-height so Leaflet always gets a non-zero canvas
+          to render into. The app shell uses min-h-dvh (not h-dvh), so
+          flex-1 alone can collapse to zero before content fills out. */}
+      <div className="relative flex-1 min-h-[50dvh]">
         {hasDest ? (
           <NavMap
             start={userPos}
