@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useMemo } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { BackButton } from "@/components/ui/back-button";
 
@@ -11,12 +11,14 @@ import { BackButton } from "@/components/ui/back-button";
  * Google Maps lives inside an iframe so the user stays inside Travejor —
  * there's no hop to a new tab and no "where do I go back?" moment. The
  * watercolor top bar carries the place name and a real history-based back
- * button; an "Open in Google Maps" pill lets power users hand off to the
+ * button; an "Open in Google Maps app" pill lets power users hand off to the
  * native app when they want turn-by-turn nav.
  *
- * Uses the keyless `maps.google.com/maps?...&output=embed` URL so this works
- * without provisioning a Google Maps Embed API key — good enough for the
- * "see where it is + get directions" use case.
+ * To actually draw the route line (the blue path in Maps), the embed needs
+ * both an origin and a destination. We ask the browser for the user's
+ * location once on mount and feed `saddr=lat,lng&daddr=lat,lng` into the
+ * keyless embed URL — Maps then plots the route with the ETA bubble. If the
+ * user denies geolocation, we fall back to a destination-pin view.
  */
 export default function DirectionsPage() {
   return (
@@ -26,23 +28,49 @@ export default function DirectionsPage() {
   );
 }
 
+type Pos = { lat: number; lng: number };
+
 function DirectionsView() {
   const params = useSearchParams();
   const lat = params.get("lat");
   const lng = params.get("lng");
   const name = params.get("name") ?? "Destination";
 
+  const [userPos, setUserPos] = useState<Pos | null>(null);
+  const [geoState, setGeoState] = useState<"idle" | "asking" | "denied">(
+    "idle",
+  );
+
+  // Ask for the browser location on mount. We need it to plot the blue route
+  // line; without it Maps just shows the destination pin.
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setGeoState("denied");
+      return;
+    }
+    setGeoState("asking");
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setUserPos({ lat: p.coords.latitude, lng: p.coords.longitude });
+        setGeoState("idle");
+      },
+      () => setGeoState("denied"),
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+  }, []);
+
   const { embedSrc, openInMapsUrl } = useMemo(() => {
     if (!lat || !lng) return { embedSrc: null, openInMapsUrl: null };
-    // `daddr` = destination; the embed asks the browser for the origin so
-    // directions auto-route from the user's location. `output=embed` is the
-    // keyless variant that works inside an iframe.
-    const q = `${lat},${lng}(${encodeURIComponent(name)})`;
+    // With an origin: full route line + ETA bubble. Without: destination pin.
+    const dest = `${lat},${lng}`;
+    const src = userPos
+      ? `https://maps.google.com/maps?saddr=${userPos.lat},${userPos.lng}&daddr=${dest}&output=embed`
+      : `https://maps.google.com/maps?q=${dest}(${encodeURIComponent(name)})&z=15&output=embed`;
     return {
-      embedSrc: `https://maps.google.com/maps?daddr=${q}&z=14&output=embed`,
-      openInMapsUrl: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=${encodeURIComponent(name)}&travelmode=driving`,
+      embedSrc: src,
+      openInMapsUrl: `https://www.google.com/maps/dir/?api=1&destination=${dest}&destination_place_id=${encodeURIComponent(name)}&travelmode=driving`,
     };
-  }, [lat, lng, name]);
+  }, [lat, lng, name, userPos]);
 
   return (
     <div className="relative flex flex-1 flex-col">
@@ -64,6 +92,9 @@ function DirectionsView() {
       {/* Map embed */}
       {embedSrc ? (
         <iframe
+          // `userPos` flips the URL once we have coords, which remounts the
+          // iframe and replots the route — the natural way to refresh.
+          key={embedSrc}
           src={embedSrc}
           title={`Map directions to ${name}`}
           loading="eager"
@@ -76,6 +107,16 @@ function DirectionsView() {
           <p className="rounded-2xl bg-heat/15 px-4 py-3 text-sm font-semibold text-heat">
             Missing destination — go back and try again.
           </p>
+        </div>
+      )}
+
+      {/* Location nudge — only when the browser refused / hasn't shared.
+          Without coords the route line can't be drawn; surface why and offer
+          a quick retry. */}
+      {embedSrc && geoState === "denied" && (
+        <div className="absolute inset-x-4 top-[max(7.5rem,calc(env(safe-area-inset-top)+5.5rem))] z-10 rounded-2xl bg-surface/95 px-3 py-2 text-[11px] font-semibold text-foreground shadow-card backdrop-blur ring-1 ring-border">
+          📍 Allow location to plot the route from where you are. Showing the
+          destination only.
         </div>
       )}
 
