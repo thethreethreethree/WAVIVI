@@ -95,7 +95,7 @@ export default async function Home() {
               height: b.size,
               animation: `balloonFloat ${b.duration}s ease-in-out infinite`,
               animationDelay: b.delay,
-              opacity: 0.85,
+              opacity: 0.35,
             }}
             aria-hidden
           >
