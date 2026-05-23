@@ -5,7 +5,7 @@ import { PartnerShell } from "@/components/partner/partner-shell";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Travejor Partner Dashboard",
+  title: "Wondavu Partner Dashboard",
   robots: { index: false, follow: false },
 };
 

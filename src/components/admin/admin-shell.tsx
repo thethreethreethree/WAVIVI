@@ -14,7 +14,7 @@ const SECTIONS = [
   { href: "/admin/logs", label: "Logs" },
 ];
 
-/** Chrome for the Travejor Admin app — dark header + section nav. */
+/** Chrome for the Wondavu Admin app — dark header + section nav. */
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isActive = (href: string) =>
@@ -33,7 +33,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <path d="M2 12l19-9-9 19-2-8-8-2z" />
             </svg>
             <span className="font-mono text-sm font-semibold uppercase tracking-[0.2em] text-white">
-              Travejor
+              Wondavu
             </span>
             <span className="rounded-full bg-glow px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
               Admin

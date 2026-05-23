@@ -1,7 +1,7 @@
 /**
  * Social notifications.
  *
- * Travejor is group-chat-first by design — there are no private DMs.
+ * Wondavu is group-chat-first by design — there are no private DMs.
  * All traveler-to-traveler interaction happens in shared group chats.
  */
 

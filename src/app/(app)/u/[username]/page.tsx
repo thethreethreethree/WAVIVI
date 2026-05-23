@@ -211,7 +211,7 @@ export default async function UserProfilePage({
           </Link>
         </div>
         <p className="mt-2 text-center text-[11px] text-muted">
-          Travejor connects travelers through group chats — no private DMs.
+          Wondavu connects travelers through group chats — no private DMs.
         </p>
       </div>
 

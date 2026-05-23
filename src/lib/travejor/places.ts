@@ -14,7 +14,7 @@ export interface Place {
   image: string;
   /** Eat only — whether the venue is currently open. */
   open?: boolean;
-  /** WAVIVI vibe score (0-100) folded into Travejor places. */
+  /** Wondavu vibe score (0-100) folded into Wondavu places. */
   vibe: number;
   recommended: boolean;
 }

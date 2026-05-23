@@ -2,7 +2,7 @@ import { BackButton } from "./back-button";
 
 /**
  * Sub-screen header — a back arrow, a title, and an optional right action.
- * `accent` renders the title in the brand orange (Travejor style).
+ * `accent` renders the title in the brand orange (Wondavu style).
  *
  * The back arrow uses real browser history (router.back()) so navigating
  * deeper into a section and tapping back returns to the exact previous view.

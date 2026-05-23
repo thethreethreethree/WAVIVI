@@ -91,7 +91,7 @@ export function AuthForm({
       <p className="mt-2 text-center text-sm text-muted">
         {mode === "login" ? (
           <>
-            New to WAVIVI?{" "}
+            New to Wondavu?{" "}
             <Link
               href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"}
               className="text-glow hover:underline"

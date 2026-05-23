@@ -48,7 +48,7 @@ export default async function PartnerHomePage() {
         </h1>
         <p className="mt-1 text-sm text-muted">
           Update photos, contact info, pricing, amenities, and your
-          listing&apos;s story. Travejor admins approve any changes that
+          listing&apos;s story. Wondavu admins approve any changes that
           affect ratings.
         </p>
       </header>
@@ -62,8 +62,8 @@ export default async function PartnerHomePage() {
             No listings linked to this account yet.
           </h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-            Travejor admins assign listings to your account so you can
-            self-manage them. Send your account email to your Travejor
+            Wondavu admins assign listings to your account so you can
+            self-manage them. Send your account email to your Wondavu
             admin contact — they&apos;ll link your listing within a day.
           </p>
           <p className="mx-auto mt-4 max-w-md break-all text-xs text-muted">

@@ -16,7 +16,7 @@ export default function AdminDashboard() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-sm text-muted">
-          Live view of the Travejor traveler ecosystem.
+          Live view of the Wondavu traveler ecosystem.
         </p>
       </div>
 

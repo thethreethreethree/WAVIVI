@@ -1,7 +1,7 @@
 /**
  * Admin console data.
  *
- * Mocked analytics + operational data for the Travejor Admin app. Reads
+ * Mocked analytics + operational data for the Wondavu Admin app. Reads
  * counts from the live mock datasets; swap for Supabase aggregate queries
  * once the backend is connected.
  */
@@ -163,7 +163,7 @@ export interface AuditEntry {
 
 export const auditLog: AuditEntry[] = [
   { id: "a1", admin: "you", action: "Approved verification for @sarahmitchell", time: "18 min ago" },
-  { id: "a2", admin: "you", action: "Marked Rooftop Social Night as Travejor Approved", time: "1 hour ago" },
+  { id: "a2", admin: "you", action: "Marked Rooftop Social Night as Wondavu Approved", time: "1 hour ago" },
   { id: "a3", admin: "ops_kelly", action: "Suspended account @drifter_92", time: "3 hours ago" },
   { id: "a4", admin: "ops_kelly", action: "Edited event: Street Food Crawl", time: "Yesterday" },
   { id: "a5", admin: "you", action: "Published announcement: Safety reminder", time: "2 days ago" },

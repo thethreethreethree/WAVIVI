@@ -3,7 +3,7 @@ import { WebFooter } from "@/components/web/web-footer";
 import { WebHeader } from "@/components/web/web-header";
 import { requireAdmin } from "@/lib/toolbox/admin";
 
-/** Public shell for the Travejor partner webapp — cinematic dark identity. */
+/** Public shell for the Wondavu partner webapp — cinematic dark identity. */
 export default async function WebSiteLayout({
   children,
 }: {

@@ -10,7 +10,7 @@ const NAV = [
   { href: "/discover/events", label: "Events Nearby" },
 ];
 
-/** Cinematic glass navigation for the Travejor partner webapp. */
+/** Cinematic glass navigation for the Wondavu partner webapp. */
 export function WebHeader({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -27,7 +27,7 @@ export function WebHeader({ isAdmin = false }: { isAdmin?: boolean }) {
               </svg>
             </span>
             <span className="font-mono text-sm font-bold uppercase tracking-[0.22em]">
-              Travejor
+              Wondavu
             </span>
           </Link>
 
@@ -61,7 +61,7 @@ export function WebHeader({ isAdmin = false }: { isAdmin?: boolean }) {
               href="/list-with-travejor"
               className="hidden rounded-full bg-sunset px-4 py-2 text-sm font-bold text-white shadow-[0_8px_24px_-8px_rgba(255,122,24,0.7)] transition-transform hover:scale-105 md:inline-block"
             >
-              List with Travejor
+              List with Wondavu
             </Link>
             <Link
               href="/?app=1"
@@ -100,7 +100,7 @@ export function WebHeader({ isAdmin = false }: { isAdmin?: boolean }) {
               onClick={() => setOpen(false)}
               className="mt-1 rounded-full bg-sunset px-4 py-2.5 text-center text-sm font-bold text-white"
             >
-              List with Travejor
+              List with Wondavu
             </Link>
             <Link
               href="/?app=1"

@@ -91,8 +91,8 @@ function escapeHtml(s: string): string {
 }
 
 /**
- * Travejor Vibe Map — Leaflet map of live traveler social density.
- * Layout and behaviour mirror YumYumPo's Vibe Map; styled in Travejor's brand.
+ * Wondavu Vibe Map — Leaflet map of live traveler social density.
+ * Layout and behaviour mirror YumYumPo's Vibe Map; styled in Wondavu's brand.
  */
 export function VibeMap() {
   const router = useRouter();

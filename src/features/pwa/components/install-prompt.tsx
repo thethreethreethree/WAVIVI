@@ -12,7 +12,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 const DISMISSED_KEY = "wavivi:install-dismissed";
 
-/** A dismissable banner that offers to install WAVIVI as a PWA. */
+/** A dismissable banner that offers to install Wondavu as a PWA. */
 export function InstallPrompt() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
     null,

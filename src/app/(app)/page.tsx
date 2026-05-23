@@ -73,7 +73,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Folded-in WAVIVI feature — AI "For you" recommendations */}
+      {/* Folded-in Wondavu feature — AI "For you" recommendations */}
       <section className="px-5 pb-8">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-base font-bold">Recommended for you</h2>

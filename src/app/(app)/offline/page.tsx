@@ -13,7 +13,7 @@ export default function OfflinePage() {
         You&apos;re offline
       </h1>
       <p className="mt-2 max-w-xs text-sm text-muted">
-        WAVIVI needs a connection to load live travelers, chats, and events.
+        Wondavu needs a connection to load live travelers, chats, and events.
         Reconnect and try again.
       </p>
       <Link

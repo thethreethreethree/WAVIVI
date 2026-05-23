@@ -55,9 +55,9 @@ export default async function PartnerStayPage({
       <section className="rounded-2xl bg-surface p-4 text-xs text-muted shadow-card ring-1 ring-border">
         <p className="font-bold text-foreground">What you can&apos;t change here</p>
         <p className="mt-1">
-          Travejor admins curate Google rating, the backpack score,
+          Wondavu admins curate Google rating, the backpack score,
           location and stay type to keep listings consistent for
-          travelers. If something there is wrong, contact your Travejor
+          travelers. If something there is wrong, contact your Wondavu
           admin and they&apos;ll update it.
         </p>
       </section>

@@ -5,7 +5,7 @@ import { useEffect } from "react";
 /**
  * True Instagram embed via Instagram's embed.js.
  *
- * Travejor downloads no media — the embed renders client-side from
+ * Wondavu downloads no media — the embed renders client-side from
  * Instagram's own infrastructure. Use this in production when you want
  * real embedded posts; the lighter `InstagramShowcase` preview cards are
  * the default for fast loads on weak hostel WiFi.

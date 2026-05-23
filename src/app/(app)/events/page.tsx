@@ -6,7 +6,7 @@ import type { EventRow } from "@/types/supabase";
 
 export const metadata: Metadata = {
   title: "Events Nearby",
-  description: "Discover local events, social spots, and Travejor hubs.",
+  description: "Discover local events, social spots, and Wondavu hubs.",
 };
 export const dynamic = "force-dynamic";
 

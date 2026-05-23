@@ -1,7 +1,7 @@
 /**
  * Instagram input validation.
  *
- * Travejor only ever stores usernames and post URLs — never media.
+ * Wondavu only ever stores usernames and post URLs — never media.
  */
 
 const USERNAME_RE = /^[a-zA-Z0-9._]+$/;

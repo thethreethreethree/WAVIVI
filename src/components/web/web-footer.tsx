@@ -12,13 +12,13 @@ const COLUMNS = [
   {
     title: "Partners",
     links: [
-      { href: "/list-with-travejor", label: "List with Travejor" },
+      { href: "/list-with-travejor", label: "List with Wondavu" },
       { href: "/list-with-travejor", label: "Partner support" },
       { href: "/admin", label: "Admin console" },
     ],
   },
   {
-    title: "Travejor",
+    title: "Wondavu",
     links: [
       { href: "/?app=1", label: "Get the app" },
       { href: "/discover", label: "How it works" },
@@ -26,7 +26,7 @@ const COLUMNS = [
   },
 ];
 
-/** Cinematic dark footer for the Travejor partner webapp. */
+/** Cinematic dark footer for the Wondavu partner webapp. */
 export function WebFooter() {
   return (
     <footer className="relative mt-10 border-t border-border">
@@ -39,7 +39,7 @@ export function WebFooter() {
               </svg>
             </span>
             <span className="font-mono text-sm font-bold uppercase tracking-[0.22em]">
-              Travejor
+              Wondavu
             </span>
           </div>
           <p className="mt-3 max-w-xs text-sm text-muted">
@@ -70,7 +70,7 @@ export function WebFooter() {
       </div>
       <div className="border-t border-border">
         <p className="mx-auto max-w-6xl px-5 py-5 text-xs text-muted">
-          © {new Date().getFullYear()} Travejor — Meet. Vibe. Move.
+          © {new Date().getFullYear()} Wondavu — Meet. Vibe. Move.
         </p>
       </div>
     </footer>

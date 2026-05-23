@@ -9,7 +9,7 @@ interface Props {
 
 /**
  * Lightweight wrapper for the partner dashboard — a warm header with the
- * Travejor wordmark, the signed-in email, and a "Back to app" link.
+ * Wondavu wordmark, the signed-in email, and a "Back to app" link.
  */
 export function PartnerShell({ email, children }: Props) {
   return (
@@ -24,7 +24,7 @@ export function PartnerShell({ email, children }: Props) {
               <path d="M2 12l19-9-9 19-2-8-8-2z" />
             </svg>
             <span className="font-mono text-sm font-semibold uppercase tracking-[0.2em] text-white">
-              Travejor
+              Wondavu
             </span>
             <span className="rounded-full bg-glow px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
               Partner

@@ -68,7 +68,7 @@ export default async function PartnersAdminPage() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-muted">
-            Travejor Admin
+            Wondavu Admin
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight">
             Partners

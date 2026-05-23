@@ -1,7 +1,7 @@
 import { photo } from "@/lib/travejor/photo";
 
 /** A social event / spot shown on Where to Next and the Events list. */
-export interface TravejorEvent {
+export interface WondavuEvent {
   id: string;
   title: string;
   area: string;
@@ -13,7 +13,7 @@ export interface TravejorEvent {
   attendees: number;
 }
 
-export const travejorEvents: TravejorEvent[] = [
+export const travejorEvents: WondavuEvent[] = [
   {
     id: "rooftop-social",
     title: "Rooftop Social Night",
@@ -66,6 +66,6 @@ export const travejorEvents: TravejorEvent[] = [
   },
 ];
 
-export function getEvent(id: string): TravejorEvent | undefined {
+export function getEvent(id: string): WondavuEvent | undefined {
   return travejorEvents.find((e) => e.id === id);
 }

@@ -27,7 +27,7 @@ const MODES: { id: NavMode; label: string; emoji: string }[] = [
 ];
 
 /**
- * Travejor in-app navigation page.
+ * Wondavu in-app navigation page.
  *
  * Built on Leaflet + CARTO Voyager tiles + the public OSRM routing service.
  * Plots a sunset-orange route from the user's current location to a

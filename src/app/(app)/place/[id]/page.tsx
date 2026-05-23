@@ -95,7 +95,7 @@ export default async function PlaceDetailPage({
           </div>
         </div>
 
-        {/* Folded-in WAVIVI vibe reading */}
+        {/* Folded-in Wondavu vibe reading */}
         <div className="wc-frame rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold">Live vibe</p>

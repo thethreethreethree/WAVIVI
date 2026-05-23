@@ -17,7 +17,7 @@ interface HubLink {
   icon: IconName;
 }
 
-/** The five Travejor radial destinations, ordered clockwise from the top. */
+/** The five Wondavu radial destinations, ordered clockwise from the top. */
 const HUB_LINKS: HubLink[] = [
   {
     href: "/meet",
@@ -55,7 +55,7 @@ const HUB_LINKS: HubLink[] = [
 const RING_RADIUS = 39;
 
 /**
- * The "Where to Next?" radial hub — Travejor's signature home control,
+ * The "Where to Next?" radial hub — Wondavu's signature home control,
  * painted in a watercolor style: organic edges, soft washes, warm glow.
  *
  * When the traveler already has at least one saved travel plan, the

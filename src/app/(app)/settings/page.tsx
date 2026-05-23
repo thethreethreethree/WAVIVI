@@ -82,7 +82,7 @@ export default async function SettingsPage() {
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-bold">Admin Console</span>
               <span className="block text-xs text-white/70">
-                Switch to the Travejor management app
+                Switch to the Wondavu management app
               </span>
             </span>
             <span className="text-lg">›</span>

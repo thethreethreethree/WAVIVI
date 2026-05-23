@@ -85,7 +85,7 @@ export function PartnerSignupForm() {
         Submit application
       </button>
       <p className="text-center text-[11px] text-muted">
-        By applying you agree to Travejor&apos;s partner terms.
+        By applying you agree to Wondavu&apos;s partner terms.
       </p>
     </form>
   );

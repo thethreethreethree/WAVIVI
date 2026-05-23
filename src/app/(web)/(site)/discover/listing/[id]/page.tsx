@@ -172,7 +172,7 @@ export default async function ListingDetailPage({
         {/* Sidebar */}
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <div className="glass-strong rounded-2xl p-5 shadow-card">
-            <p className="text-sm font-semibold">Plan it with Travejor</p>
+            <p className="text-sm font-semibold">Plan it with Wondavu</p>
             <p className="mt-1 text-xs text-muted">
               See live traveler activity, vibe, and who&apos;s going — right
               inside the app.
@@ -181,7 +181,7 @@ export default async function ListingDetailPage({
               href="/?app=1"
               className="mt-4 block rounded-xl bg-sunset py-3 text-center font-bold text-white"
             >
-              Open in the Travejor app
+              Open in the Wondavu app
             </Link>
             <button
               type="button"
@@ -190,7 +190,7 @@ export default async function ListingDetailPage({
               {listing.kind === "events" ? "RSVP" : "Request to book"}
             </button>
             <p className="mt-3 text-center text-[11px] text-muted">
-              ✓ Verified Travejor partner
+              ✓ Verified Wondavu partner
             </p>
           </div>
         </aside>
@@ -211,7 +211,7 @@ export default async function ListingDetailPage({
       {/* Nearby */}
       <section className="mt-10">
         <div className="flex items-end justify-between">
-          <h2 className="text-xl font-bold tracking-tight">Nearby on Travejor</h2>
+          <h2 className="text-xl font-bold tracking-tight">Nearby on Wondavu</h2>
           <Link href="/discover" className="text-sm font-semibold text-glow">
             Browse all
           </Link>

@@ -1,7 +1,7 @@
 /**
  * Webapp listing adapter.
  *
- * Maps Travejor's place + event datasets into the directory shape the
+ * Maps Wondavu's place + event datasets into the directory shape the
  * partner webapp renders. The mobile app and webapp share one source of
  * truth — swap for partner-submitted Supabase rows when the backend lands.
  */
@@ -58,7 +58,7 @@ export interface WebListing {
   rating: number;
   reviews: number;
   tags: string[];
-  /** Optional corner badge, e.g. "Travejor Approved". */
+  /** Optional corner badge, e.g. "Wondavu Approved". */
   badge?: string;
 }
 
@@ -115,7 +115,7 @@ function eventListings(): WebListing[] {
     rating: 4.4 + ((i * 13) % 6) / 10,
     reviews: e.attendees + i * 11,
     tags: tagsFor("events", i),
-    badge: "Travejor Approved",
+    badge: "Wondavu Approved",
   }));
 }
 
@@ -145,7 +145,7 @@ export function getListingDetail(id: string): WebListingDetail | null {
       ...base,
       description:
         kind === "stays"
-          ? "A traveler-favourite stay with a social atmosphere, verified by Travejor and loved by the community. Real reviews, real people, and a live read on the vibe before you book."
+          ? "A traveler-favourite stay with a social atmosphere, verified by Wondavu and loved by the community. Real reviews, real people, and a live read on the vibe before you book."
           : "A standout local experience, curated for travelers who want more than the tourist trail. Small groups, great guides, and memories worth the trip.",
       gallery: [1, 2, 3].map((n) => photo(`${place.id}-g${n}`, 600, 400)),
       highlights:

@@ -48,7 +48,7 @@ const PREWARM_ROUTES = [
 /** Bottom-nav icons + paper backgrounds we want decoded before first use. */
 const PREWARM_IMAGES = [
   "/icons/icon.svg",
-  "/travejor-logo.png",
+  "/wondavu-logo.png",
   "/backgrounds/cute/bg-01.png",
   "/backgrounds/orange/bg.png",
 ];

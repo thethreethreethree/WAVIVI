@@ -5,9 +5,9 @@ import { PartnerSignupForm } from "@/components/web/partner-signup-form";
 import { photo } from "@/lib/travejor/photo";
 
 export const metadata: Metadata = {
-  title: "List with Travejor",
+  title: "List with Wondavu",
   description:
-    "List your hostel, hotel, stay, experience, or event on Travejor.",
+    "List your hostel, hotel, stay, experience, or event on Wondavu.",
 };
 
 const PARTNER_TYPES = [
@@ -19,15 +19,15 @@ const PARTNER_TYPES = [
 const BENEFITS = [
   {
     title: "Reach travelers in the moment",
-    body: "Travejor surfaces your listing to travelers right when they land — searching for where to stay and what to do.",
+    body: "Wondavu surfaces your listing to travelers right when they land — searching for where to stay and what to do.",
   },
   {
     title: "Linked into the live app",
-    body: "Your listing flows straight into the Travejor mobile app, beside live traveler activity and group chats.",
+    body: "Your listing flows straight into the Wondavu mobile app, beside live traveler activity and group chats.",
   },
   {
     title: "Verified partner trust",
-    body: "Verified partners get a Travejor Approved badge — the trust signal travelers look for.",
+    body: "Verified partners get a Wondavu Approved badge — the trust signal travelers look for.",
   },
   {
     title: "Real traveler demand",
@@ -41,7 +41,7 @@ const STEPS = [
   "Go live across the app and webapp",
 ];
 
-export default function ListWithTravejorPage() {
+export default function ListWithWondavuPage() {
   return (
     <>
       {/* Hero */}
@@ -50,10 +50,10 @@ export default function ListWithTravejorPage() {
         <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-5 py-16 md:grid-cols-[1.1fr_0.9fr] md:py-20">
           <div className="text-white">
             <span className="inline-flex rounded-full bg-white/20 px-3 py-1 text-xs font-extrabold uppercase tracking-wider">
-              Travejor for Partners
+              Wondavu for Partners
             </span>
             <h1 className="mt-4 text-4xl font-extrabold leading-[1.05] tracking-tight md:text-5xl">
-              List your stay, experience, or event on Travejor.
+              List your stay, experience, or event on Wondavu.
             </h1>
             <p className="mt-4 max-w-xl text-white/90">
               Get in front of travelers the moment they arrive — and let your
@@ -84,7 +84,7 @@ export default function ListWithTravejorPage() {
       {/* Partner types */}
       <section className="mx-auto max-w-6xl px-5 py-14">
         <h2 className="text-2xl font-bold tracking-tight">
-          Who lists on Travejor
+          Who lists on Wondavu
         </h2>
         <div className="mt-6 grid gap-5 md:grid-cols-3">
           {PARTNER_TYPES.map((p) => (
@@ -104,7 +104,7 @@ export default function ListWithTravejorPage() {
       <section className="bg-surface">
         <div className="mx-auto max-w-6xl px-5 py-14">
           <h2 className="text-2xl font-bold tracking-tight">
-            Why partner with Travejor
+            Why partner with Wondavu
           </h2>
           <div className="mt-6 grid gap-5 sm:grid-cols-2">
             {BENEFITS.map((b) => (

@@ -38,7 +38,7 @@ export default async function LoginPage({
       </h1>
       <p className="mb-5 text-sm text-muted">
         {goingToAdmin
-          ? "Sign in with your Travejor admin account."
+          ? "Sign in with your Wondavu admin account."
           : "Sign in to pick up where you left off."}
       </p>
       <AuthForm mode="login" next={next} />

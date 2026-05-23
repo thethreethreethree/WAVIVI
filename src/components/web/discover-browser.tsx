@@ -144,7 +144,7 @@ export function DiscoverBrowser({
           <div className="grid items-center gap-10 md:grid-cols-[1.05fr_0.95fr]">
             <div>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-glow/12 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-glow">
-                ✦ Travejor Directory
+                ✦ Wondavu Directory
               </span>
               <h1 className="mt-4 text-4xl font-extrabold leading-[1.04] tracking-tight md:text-[3.4rem]">
                 Discover stays, experiences &amp;{" "}

@@ -53,7 +53,7 @@ const FEATURES = [
 /**
  * The app's opening screen — a branded welcome shown to new arrivals.
  * Lives outside the (app) shell so there's no bottom nav: just the
- * WAVIVI mark, tagline, value props, and a clear way in.
+ * Wondavu mark, tagline, value props, and a clear way in.
  */
 export default function WelcomePage() {
   return (
@@ -82,8 +82,8 @@ export default function WelcomePage() {
         {/* Hero */}
         <section className="relative flex flex-1 flex-col items-center justify-center text-center">
           <Image
-            src="/travejor-logo.png"
-            alt="Travejor"
+            src="/wondavu-logo.png"
+            alt="Wondavu"
             width={260}
             height={260}
             priority

@@ -7,7 +7,7 @@ import { signOut } from "@/features/auth/actions";
 import { requireAdmin } from "@/lib/toolbox/admin";
 
 export const metadata: Metadata = {
-  title: "Travejor Admin",
+  title: "Wondavu Admin",
   robots: { index: false, follow: false },
 };
 

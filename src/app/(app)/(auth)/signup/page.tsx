@@ -31,7 +31,7 @@ export default async function SignupPage({
 
   return (
     <div className="pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
-      <h1 className="mb-1 text-lg font-semibold">Join WAVIVI</h1>
+      <h1 className="mb-1 text-lg font-semibold">Join Wondavu</h1>
       <p className="mb-5 text-sm text-muted">
         Create an account to find your people on the map.
       </p>

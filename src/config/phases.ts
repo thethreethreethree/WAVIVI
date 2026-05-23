@@ -1,5 +1,5 @@
 /**
- * WAVIVI delivery roadmap. Drives the Phase 1 status page and serves as the
+ * Wondavu delivery roadmap. Drives the Phase 1 status page and serves as the
  * single source of truth for build order.
  */
 export type PhaseStatus = "done" | "in-progress" | "planned";

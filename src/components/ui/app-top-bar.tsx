@@ -1,14 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 
-/** Home-screen top bar — Travejor logo plus notification and group-chat shortcuts. */
+/** Home-screen top bar — Wondavu logo plus notification and group-chat shortcuts. */
 export function AppTopBar() {
   return (
     <header className="flex items-center justify-between px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
-      <Link href="/" aria-label="Travejor home" className="flex items-center">
+      <Link href="/" aria-label="Wondavu home" className="flex items-center">
         <Image
-          src="/travejor-logo.png"
-          alt="Travejor"
+          src="/wondavu-logo.png"
+          alt="Wondavu"
           width={180}
           height={180}
           priority

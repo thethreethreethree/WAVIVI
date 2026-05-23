@@ -9,7 +9,7 @@ const KIND_LABEL: Record<string, string> = {
   events: "Event",
 };
 
-/** Cinematic glass listing tile for the Travejor webapp directory. */
+/** Cinematic glass listing tile for the Wondavu webapp directory. */
 export function ListingCard({ listing }: { listing: WebListing }) {
   return (
     <Link
