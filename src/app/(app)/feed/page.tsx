@@ -23,16 +23,22 @@ export default function FeedPage() {
         <button
           type="button"
           aria-label="Share"
-          className="wc-frame flex h-9 w-9 items-center justify-center rounded-full text-glow active:scale-95"
+          className="wc-frame flex h-12 w-12 items-center justify-center rounded-full active:scale-95"
         >
-          <svg
-            viewBox="0 0 24 24"
-            className="h-4 w-4"
-            fill="currentColor"
-            aria-hidden
+          <span
+            className="inline-block"
+            style={{
+              animation: "balloonFloat 6s ease-in-out infinite",
+            }}
           >
-            <path d="M2 12l19-9-9 19-2-8-8-2z" />
-          </svg>
+            <Image
+              src="/decor/balloon-floater.png"
+              alt=""
+              width={40}
+              height={40}
+              className="h-8 w-8 object-contain"
+            />
+          </span>
         </button>
       </header>
 
