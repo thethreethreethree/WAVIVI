@@ -35,6 +35,10 @@ export type ProfileRow = {
    *  Travelers search by phone. User-entered string; search normalises
    *  to digits for matching. (Migration 0029) */
   whatsapp_number: string | null;
+  /** Digits-only generated column from whatsapp_number. Drives the
+   *  WhatsApp search filter so phone formatting doesn't matter.
+   *  (Migration 0031) */
+  whatsapp_digits: string;
   created_at: string;
   updated_at: string;
 };

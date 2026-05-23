@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { ScreenHeader } from "@/components/ui/screen-header";
+import { MeetUserSearch } from "@/features/meet/meet-user-search";
 import type { PublicChatGroup } from "@/lib/chat";
 import { categoryMeta as metaFor } from "@/lib/travejor/group-meta";
 import { getGroup } from "@/lib/travejor/groups";
@@ -36,6 +37,10 @@ export function MeetList({ groups }: { groups: PublicChatGroup[] }) {
   return (
     <div className="flex flex-1 flex-col">
       <ScreenHeader title="Meet Travelers" accent />
+
+      {/* Find a specific traveler — by Wondavu @username, Instagram
+          handle, or WhatsApp number. */}
+      <MeetUserSearch />
 
       {/* Category filter strip */}
       <div className="-mx-0 flex gap-2 overflow-x-auto px-5 pb-1 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
