@@ -227,7 +227,9 @@ function NavView() {
   }, [hasDest, lat, lng, name, mode]);
 
   return (
-    <div className="relative flex flex-1 flex-col">
+    // Explicit height (viewport minus bottom-nav reservation) so flex-1
+    // children — notably the Leaflet map — get a real, measurable canvas.
+    <div className="relative flex h-[calc(100dvh-6.75rem)] flex-col overflow-hidden">
       {/* Header — back button + place name + mode chips */}
       <header className="relative z-10 flex flex-col gap-2 px-4 pb-2 pt-[max(2.75rem,calc(env(safe-area-inset-top)+1.5rem))]">
         <div className="flex items-center gap-3">
@@ -280,10 +282,10 @@ function NavView() {
         </p>
       )}
 
-      {/* Map — explicit min-height so Leaflet always gets a non-zero canvas
-          to render into. The app shell uses min-h-dvh (not h-dvh), so
-          flex-1 alone can collapse to zero before content fills out. */}
-      <div className="relative flex-1 min-h-[50dvh]">
+      {/* Map fills the remaining space between header and footer. The
+          outer container's explicit height (above) is what makes flex-1
+          here actually compute to a real number for Leaflet to render into. */}
+      <div className="relative flex-1">
         {hasDest ? (
           <NavMap
             start={userPos}
