@@ -1,10 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { SusenAvatar } from "@/components/ui/susen-avatar";
-import { joinGroup, sendMessage } from "@/features/chat/actions";
+import { joinGroup, leaveGroup, sendMessage } from "@/features/chat/actions";
 import type { ChatMessage } from "@/lib/chat";
 import { createClient } from "@/lib/supabase/client";
 
@@ -37,12 +39,47 @@ export function ChatThread({
   initialMessages: ChatMessage[];
   showAuthors: boolean;
 }) {
+  const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [draft, setDraft] = useState("");
   const [joined, setJoined] = useState(joinedProp);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [menuOpen, setMenuOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const menuWrapRef = useRef<HTMLDivElement>(null);
+
+  // Close the kebab menu on outside-click and on Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDown(e: MouseEvent) {
+      if (!menuWrapRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
+  function onLeave() {
+    if (!currentUserId) return;
+    if (!window.confirm("Leave this group? You can rejoin anytime.")) return;
+    setMenuOpen(false);
+    setError(null);
+    startTransition(async () => {
+      const res = await leaveGroup(groupId);
+      if (res.error) setError(res.error);
+      else {
+        setJoined(false);
+        router.push(`/meet/${groupId}`);
+      }
+    });
+  }
 
   // Auto-scroll on new messages.
   useEffect(() => {
@@ -126,7 +163,10 @@ export function ChatThread({
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    // Explicit height (viewport minus bottom-nav reservation) so the
+    // messages area below gets a real flex-1 number to scroll within and
+    // the composer stays pinned at the bottom regardless of message count.
+    <div className="flex h-[calc(100dvh-6.75rem)] flex-col overflow-hidden">
       <header className="flex items-center gap-3 border-b border-border px-5 pb-3 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
         <Link href={back} aria-label="Back" className="text-foreground">
           <svg
@@ -140,10 +180,63 @@ export function ChatThread({
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </Link>
-        <span className="min-w-0">
+        <span className="min-w-0 flex-1">
           <span className="block truncate font-bold">{title}</span>
           <span className="block truncate text-xs text-muted">{subtitle}</span>
         </span>
+
+        {/* Chat settings — kebab menu top-right. Shows the painted icon
+            from the brand asset kit; opens a small popover anchored under
+            the button with View Members + (when joined) Leave Group. */}
+        <div ref={menuWrapRef} className="relative">
+          <button
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-label="Chat settings"
+            onClick={() => setMenuOpen((o) => !o)}
+            className="flex h-9 w-9 items-center justify-center rounded-full transition-transform active:scale-95 hover:bg-foreground/5"
+          >
+            <Image
+              src="/icons/orange/menu_kebab.png"
+              alt=""
+              width={28}
+              height={28}
+              className="h-7 w-7 object-contain"
+            />
+          </button>
+          {menuOpen && (
+            <div
+              role="menu"
+              className="wc-frame absolute right-0 top-11 z-30 w-48 overflow-hidden rounded-2xl bg-surface shadow-card"
+            >
+              <Link
+                href={`/meet/${groupId}/members`}
+                onClick={() => setMenuOpen(false)}
+                className="block px-4 py-2.5 text-left text-sm font-semibold text-foreground hover:bg-foreground/5"
+              >
+                👥 View members
+              </Link>
+              <Link
+                href={`/meet/${groupId}`}
+                onClick={() => setMenuOpen(false)}
+                className="block border-t border-border px-4 py-2.5 text-left text-sm font-semibold text-foreground hover:bg-foreground/5"
+              >
+                🪐 Group info
+              </Link>
+              {joined && (
+                <button
+                  type="button"
+                  onClick={onLeave}
+                  disabled={pending}
+                  className="block w-full border-t border-border px-4 py-2.5 text-left text-sm font-semibold text-heat hover:bg-heat/5 disabled:opacity-60"
+                >
+                  🚪 Leave group
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </header>
 
       <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
