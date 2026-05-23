@@ -109,12 +109,9 @@ export default async function Home() {
           </span>
         ))}
 
-        {/* Hero block — small eyebrow, bigger motto with the gradient on
-            "Vibe.", and the brand tagline underneath. */}
+        {/* Hero block — motto with the gradient accent on "Vibe.", and the
+            brand tagline underneath with the watercolor underline. */}
         <div className="relative z-10 mb-7 flex flex-col items-center gap-1.5 text-center">
-          <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-muted">
-            Today on Wondavu
-          </p>
           <h1 className="text-3xl leading-tight tracking-tight text-foreground">
             <span>Meet.&nbsp;</span>
             <span className="text-sunset">Vibe.</span>
