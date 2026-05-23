@@ -61,8 +61,12 @@ export async function saveInstagramUsername(
   const username = cleanUsername(trimmed);
   const { error } = await updateProfile({ instagram_username: username });
   if (error) {
-    if (/duplicate|unique/i.test(error)) {
-      return { error: "That Instagram handle is already linked.", username: null };
+    if (/duplicate|unique|profiles_instagram_username_unique/i.test(error)) {
+      return {
+        error:
+          "That Instagram handle is already linked to another Wondavu account. Each @handle can only be claimed once.",
+        username: null,
+      };
     }
     return { error, username: null };
   }
@@ -208,6 +212,17 @@ export async function confirmInstagramVerification(): Promise<ConfirmVerifyResul
 
   const { error } = await updateProfile(profileUpdate);
   if (error) {
+    // 0030 — one Instagram handle, one Wondavu profile. Surface the unique-
+    // index violation as a clean message instead of leaking the Postgres
+    // error string.
+    if (/unique|duplicate|profiles_instagram_username_unique/i.test(error)) {
+      return {
+        error:
+          "That Instagram handle is already linked to another Wondavu account. Each @handle can only be claimed once.",
+        verified: false,
+        username: null,
+      };
+    }
     return { error, verified: false, username: null };
   }
   revalidatePath("/profile");
