@@ -237,47 +237,86 @@ export default async function UserProfilePage({
         )}
       </div>
 
-      {/* Countries traveled */}
-      {t.countries.length > 0 && (
-        <section className="mt-6 px-5">
-          <h3 className="text-sm font-bold">Countries Traveled</h3>
-          <div className="mt-3">
+      {/* Countries traveled — always rendered, even when empty, so the
+          profile page structure is consistent across travelers. Empty
+          state nudges the owner to fill it in. */}
+      <section className="mt-6 px-5">
+        <h3 className="text-sm font-bold">Countries Traveled</h3>
+        <div className="mt-3">
+          {t.countries.length > 0 ? (
             <CountryFlags countries={t.countries} showLabels />
-          </div>
-        </section>
-      )}
-
-      {/* Travel Identity — Instagram social layer.
-          Split the post list so Featured Moments (first 6) and the Travel
-          Feed (subsequent posts) never share the same artwork. */}
-      {t.instagram && (
-        <>
-          <section className="mt-6 px-5">
-            <h3 className="text-base font-bold">Travel Identity</h3>
-            <div className="mt-3 flex flex-col gap-3">
-              <InstagramProfileBadge identity={t.instagram} />
-              {t.instagram.posts.length > 0 && (
-                <div>
-                  <h3 className="mb-3 text-base font-bold">
-                    Featured Travel Moments
-                  </h3>
-                  <InstagramShowcase posts={t.instagram.posts} />
-                </div>
-              )}
-            </div>
-          </section>
-
-          {t.feedPosts.length > 0 && (
-            <section className="mt-6 px-5">
-              <h3 className="mb-3 text-base font-bold">Travel Feed</h3>
-              <InstagramFeed
-                posts={t.feedPosts}
-                username={t.instagram.username}
-              />
-            </section>
+          ) : (
+            <ProfileEmpty
+              text={
+                isOwnProfile
+                  ? "No countries yet — add the places you've traveled."
+                  : `${t.name.split(" ")[0]} hasn't listed any countries yet.`
+              }
+              cta={isOwnProfile ? { href: "/profile/edit", label: "Edit profile" } : null}
+            />
           )}
-        </>
-      )}
+        </div>
+      </section>
+
+      {/* Travel Identity — Instagram social layer. Always rendered; the
+          badge handles its own "not linked" empty state and the post grids
+          fall back to placeholders when the lists are empty. */}
+      <section className="mt-6 px-5">
+        <h3 className="text-base font-bold">Travel Identity</h3>
+        <div className="mt-3 flex flex-col gap-3">
+          {t.instagram ? (
+            <InstagramProfileBadge identity={t.instagram} />
+          ) : (
+            <ProfileEmpty
+              text={
+                isOwnProfile
+                  ? "Link your Instagram to verify your traveler identity."
+                  : `${t.name.split(" ")[0]} hasn't linked an Instagram yet.`
+              }
+              cta={
+                isOwnProfile
+                  ? { href: "/profile/edit", label: "Link Instagram" }
+                  : null
+              }
+            />
+          )}
+        </div>
+      </section>
+
+      <section className="mt-6 px-5">
+        <h3 className="mb-3 text-base font-bold">Featured Travel Moments</h3>
+        {t.instagram && t.instagram.posts.length > 0 ? (
+          <InstagramShowcase posts={t.instagram.posts} />
+        ) : (
+          <ProfileEmpty
+            text={
+              isOwnProfile
+                ? "Featured posts will appear once your Instagram is linked."
+                : "No featured posts yet."
+            }
+            cta={null}
+          />
+        )}
+      </section>
+
+      <section className="mt-6 px-5">
+        <h3 className="mb-3 text-base font-bold">Travel Feed</h3>
+        {t.instagram && t.feedPosts.length > 0 ? (
+          <InstagramFeed
+            posts={t.feedPosts}
+            username={t.instagram.username}
+          />
+        ) : (
+          <ProfileEmpty
+            text={
+              isOwnProfile
+                ? "Your latest Instagram posts will land here automatically."
+                : "Travel feed is empty for now."
+            }
+            cta={null}
+          />
+        )}
+      </section>
 
       {/* Traveler notes — real peer references, addressed to this profile. */}
       <section className="mt-6 px-5 pb-8">
@@ -359,6 +398,30 @@ export default async function UserProfilePage({
           )}
         </div>
       </section>
+    </div>
+  );
+}
+
+/** Empty-state pill used inside profile sections so the structure stays
+ *  consistent for every traveler — even ones who haven't filled out yet. */
+function ProfileEmpty({
+  text,
+  cta,
+}: {
+  text: string;
+  cta: { href: string; label: string } | null;
+}) {
+  return (
+    <div className="wc-frame flex flex-col items-center gap-2 rounded-2xl px-4 py-6 text-center">
+      <p className="text-sm text-muted">{text}</p>
+      {cta && (
+        <Link
+          href={cta.href}
+          className="rounded-full bg-glow px-3.5 py-1.5 text-xs font-bold text-white"
+        >
+          {cta.label}
+        </Link>
+      )}
     </div>
   );
 }

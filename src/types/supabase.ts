@@ -31,6 +31,10 @@ export type ProfileRow = {
   instagram_verify_token: string | null;
   instagram_verify_handle: string | null;
   instagram_verify_expires_at: string | null;
+  /** Optional WhatsApp number — surfaces the traveler in the Meet
+   *  Travelers search by phone. User-entered string; search normalises
+   *  to digits for matching. (Migration 0029) */
+  whatsapp_number: string | null;
   created_at: string;
   updated_at: string;
 };
