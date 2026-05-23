@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Rating } from "@/components/ui/rating";
 import { ScreenHeader } from "@/components/ui/screen-header";
@@ -10,6 +10,7 @@ import { StayPhoto } from "@/components/ui/stay-photo";
 import { useStickyState } from "@/hooks/use-sticky-state";
 import { flagImage } from "@/lib/travejor/account";
 import { photoThumb } from "@/lib/utils/images";
+import { preloadImage, preloadImages } from "@/lib/utils/preload-images";
 import {
   SCOOTER_KMH,
   WALK_KMH,
@@ -262,8 +263,11 @@ export function StayList({
             const overflow = Math.max(0, s.thumbs_up - pickers.length);
             return (
               <li key={s.id}>
-                <Link
+                <PreloadingLink
                   href={`/stay/${s.id}`}
+                  photos={[s.photo_url, ...(s.photo_urls ?? [])].filter(
+                    (u): u is string => Boolean(u),
+                  )}
                   className="wc-frame block overflow-hidden rounded-3xl p-0 transition active:scale-[0.99]"
                 >
                   {/* Cover banner */}
@@ -368,7 +372,7 @@ export function StayList({
                       )}
                     </div>
                   )}
-                </Link>
+                </PreloadingLink>
               </li>
             );
           })}
@@ -380,5 +384,70 @@ export function StayList({
         </ul>
       )}
     </div>
+  );
+}
+
+/**
+ * Card link that warms the browser image cache so opening the stay detail
+ * feels instant — IG-CDN photos are usually the slowest thing on that page.
+ *
+ *   • When the card scrolls into the viewport (~200px ahead), preload the
+ *     first photo. Fires once per card.
+ *   • When the user shows intent (hover / focus / touchstart), preload the
+ *     remaining gallery photos.
+ *
+ * Honours data-saver / 2G connections — the helper skips both phases there.
+ */
+function PreloadingLink({
+  href,
+  photos,
+  className,
+  children,
+}: {
+  href: string;
+  photos: string[];
+  className: string;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLAnchorElement | null>(null);
+  const primed = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || photos.length === 0 || typeof IntersectionObserver === "undefined")
+      return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            preloadImage(photos[0]);
+            obs.disconnect();
+            break;
+          }
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [photos]);
+
+  function primeGallery() {
+    if (primed.current) return;
+    primed.current = true;
+    preloadImages(photos);
+  }
+
+  return (
+    <Link
+      ref={ref}
+      href={href}
+      className={className}
+      onMouseEnter={primeGallery}
+      onFocus={primeGallery}
+      onTouchStart={primeGallery}
+    >
+      {children}
+    </Link>
   );
 }
