@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ChatThread } from "@/components/ui/chat-thread";
-import { getChatGroup, getChatMessages, isMember } from "@/lib/chat";
+import {
+  getChatAuthors,
+  getChatGroup,
+  getChatMessages,
+  isMember,
+} from "@/lib/chat";
 import { createClient } from "@/lib/supabase/server";
 import { getGroup } from "@/lib/travejor/groups";
 
@@ -35,6 +40,14 @@ export default async function GroupChatPage({ params }: { params: Params }) {
 
   const joined = user ? await isMember(id) : false;
   const initialMessages = joined ? await getChatMessages(id) : [];
+  // Fetch profile info for every unique author in the initial set so each
+  // message renders with its author's avatar + home-country flag + a click
+  // through to /u/[username]. Realtime new messages with an unknown author
+  // fall back to the denormalised author_name only — acceptable, the page
+  // refreshes on next mount.
+  const authorsById = joined
+    ? await getChatAuthors(initialMessages.map((m) => m.user_id))
+    : {};
 
   return (
     <ChatThread
@@ -45,6 +58,7 @@ export default async function GroupChatPage({ params }: { params: Params }) {
       currentUserId={user?.id ?? null}
       joined={joined}
       initialMessages={initialMessages}
+      authorsById={authorsById}
       showAuthors
     />
   );

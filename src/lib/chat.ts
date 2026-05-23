@@ -108,6 +108,46 @@ export async function getChatGroupMemberCount(groupId: string): Promise<number> 
   return count ?? 0;
 }
 
+/** Compact profile info we attach to chat messages so each author renders
+ *  with their avatar + home-country flag + a click-through to /u/username. */
+export interface ChatAuthor {
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+  home_country: string | null;
+}
+
+/** Pull profile rows for the unique authors of a message set, keyed by
+ *  user_id. Used by the chat page to enrich incoming messages with a
+ *  clickable avatar + flag. */
+export async function getChatAuthors(
+  userIds: string[],
+): Promise<Record<string, ChatAuthor>> {
+  if (userIds.length === 0) return {};
+  const supabase = await createClient();
+  const ids = Array.from(new Set(userIds));
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, username, display_name, avatar_url, home_country")
+    .in("id", ids);
+  const out: Record<string, ChatAuthor> = {};
+  for (const r of (data ?? []) as Array<{
+    id: string;
+    username: string;
+    display_name: string;
+    avatar_url: string | null;
+    home_country: string | null;
+  }>) {
+    out[r.id] = {
+      username: r.username,
+      display_name: r.display_name,
+      avatar_url: r.avatar_url,
+      home_country: r.home_country,
+    };
+  }
+  return out;
+}
+
 /** True if the signed-in user belongs to the group. */
 export async function isMember(groupId: string): Promise<boolean> {
   const supabase = await createClient();

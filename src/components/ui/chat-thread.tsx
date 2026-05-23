@@ -5,10 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
+import { BackButton } from "@/components/ui/back-button";
 import { SusenAvatar } from "@/components/ui/susen-avatar";
 import { joinGroup, leaveGroup, sendMessage } from "@/features/chat/actions";
-import type { ChatMessage } from "@/lib/chat";
+import type { ChatAuthor, ChatMessage } from "@/lib/chat";
 import { createClient } from "@/lib/supabase/client";
+import { flagImage } from "@/lib/travejor/account";
 
 /**
  * Realtime group chat thread.
@@ -26,6 +28,7 @@ export function ChatThread({
   currentUserId,
   joined: joinedProp,
   initialMessages,
+  authorsById,
   showAuthors,
 }: {
   title: string;
@@ -37,6 +40,11 @@ export function ChatThread({
   /** Server-rendered membership state; toggles after a successful join. */
   joined: boolean;
   initialMessages: ChatMessage[];
+  /** Author profile lookup keyed by user_id — populated server-side from
+   *  the initial messages. Drives the avatar + flag chip next to each
+   *  incoming message. Realtime messages from unknown authors fall back
+   *  to plain text. */
+  authorsById?: Record<string, ChatAuthor>;
   showAuthors: boolean;
 }) {
   const router = useRouter();
@@ -168,18 +176,10 @@ export function ChatThread({
     // the composer stays pinned at the bottom regardless of message count.
     <div className="flex h-[calc(100dvh-6.75rem)] flex-col overflow-hidden">
       <header className="flex items-center gap-3 border-b border-border px-5 pb-3 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
-        <Link href={back} aria-label="Back" className="text-foreground">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            className="h-5 w-5"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </Link>
+        <BackButton
+          fallback={back}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-foreground/5 active:scale-95"
+        />
         <span className="min-w-0 flex-1">
           <span className="block truncate font-bold">{title}</span>
           <span className="block truncate text-xs text-muted">{subtitle}</span>
@@ -247,15 +247,63 @@ export function ChatThread({
         )}
         {messages.map((m) => {
           const own = m.user_id === currentUserId;
+          // Pull profile info for incoming messages so the author chip
+          // shows avatar + home-country flag and clicks through to /u/...
+          // Realtime new messages from authors not in the map render with
+          // text-only fallback (refresh fills in the avatar next mount).
+          const author = !own ? authorsById?.[m.user_id] : undefined;
           return (
             <div
               key={m.id}
               className={`flex flex-col ${own ? "items-end" : "items-start"}`}
             >
               {showAuthors && !own && (
-                <span className="mb-0.5 text-xs font-medium text-muted">
-                  {m.author_name}
-                </span>
+                author ? (
+                  <Link
+                    href={`/u/${author.username}`}
+                    className="mb-0.5 flex items-center gap-1.5 text-xs font-medium text-muted hover:text-foreground"
+                  >
+                    <span className="relative inline-block h-6 w-6">
+                      <span className="block h-full w-full overflow-hidden rounded-full bg-surface ring-1 ring-border">
+                        {author.avatar_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={author.avatar_url}
+                            alt={author.display_name}
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="flex h-full w-full items-center justify-center text-[10px] font-bold text-glow">
+                            {author.display_name.slice(0, 1).toUpperCase()}
+                          </span>
+                        )}
+                      </span>
+                      {author.home_country && (
+                        <span
+                          className="pointer-events-none absolute -bottom-0.5 -right-0.5 block h-3 w-3 overflow-hidden rounded-full bg-white ring-1 ring-background"
+                          title={author.home_country}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={flagImage(author.home_country)}
+                            alt={author.home_country}
+                            referrerPolicy="no-referrer"
+                            className="h-full w-full object-cover"
+                          />
+                        </span>
+                      )}
+                    </span>
+                    <span className="truncate">
+                      {author.display_name || m.author_name}
+                    </span>
+                  </Link>
+                ) : (
+                  <span className="mb-0.5 text-xs font-medium text-muted">
+                    {m.author_name}
+                  </span>
+                )
               )}
               <div
                 className={`wc-frame max-w-[78%] px-3.5 py-2 text-sm ${
