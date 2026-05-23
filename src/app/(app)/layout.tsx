@@ -1,3 +1,4 @@
+import { AppPrewarm } from "@/components/ui/app-prewarm";
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { PageTransition } from "@/components/ui/page-transition";
 import { InstallPrompt, ServiceWorkerRegister } from "@/features/pwa";
@@ -22,6 +23,7 @@ export default function AppLayout({
       <BottomNav />
       <ServiceWorkerRegister />
       <InstallPrompt />
+      <AppPrewarm />
     </div>
   );
 }
