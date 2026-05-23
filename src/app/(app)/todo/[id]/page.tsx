@@ -139,7 +139,7 @@ export default async function ExperienceDetailPage({
         )}
 
         <Link
-          href={`/directions?lat=${exp.latitude}&lng=${exp.longitude}&name=${encodeURIComponent(exp.name)}`}
+          href={`/directions?lat=${exp.latitude}&lng=${exp.longitude}&name=${encodeURIComponent(exp.name)}&type=experience&id=${exp.id}`}
           className="rounded-2xl bg-sunset py-3 text-center font-bold text-white shadow-card active:scale-[0.98]"
         >
           Get Directions

@@ -151,7 +151,7 @@ export default async function RestaurantDetailPage({
         )}
 
         <Link
-          href={`/directions?lat=${r.latitude}&lng=${r.longitude}&name=${encodeURIComponent(r.name)}`}
+          href={`/directions?lat=${r.latitude}&lng=${r.longitude}&name=${encodeURIComponent(r.name)}&type=restaurant&id=${r.id}`}
           className="rounded-2xl bg-sunset py-3 text-center font-bold text-white shadow-card active:scale-[0.98]"
         >
           Get Directions

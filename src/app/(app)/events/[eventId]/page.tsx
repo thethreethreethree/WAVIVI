@@ -132,7 +132,7 @@ export default async function EventDetailPage({ params }: { params: Params }) {
         )}
 
         <Link
-          href={`/directions?lat=${event.latitude}&lng=${event.longitude}&name=${encodeURIComponent(event.name)}`}
+          href={`/directions?lat=${event.latitude}&lng=${event.longitude}&name=${encodeURIComponent(event.name)}&type=event&id=${event.id}`}
           className="rounded-2xl bg-sunset py-3 text-center font-bold text-white shadow-card active:scale-[0.98]"
         >
           Get Directions
