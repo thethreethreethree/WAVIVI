@@ -51,6 +51,8 @@ export async function getChatMessages(
 export interface ChatGroupMember {
   user_id: string;
   joined_at: string;
+  /** Admin-curated; shown in the Featured Travelers strip on /meet/[id]. */
+  featured: boolean;
   username: string;
   display_name: string;
   avatar_url: string | null;
@@ -68,15 +70,20 @@ export async function getChatGroupMembers(
   let q = supabase
     .from("chat_group_members")
     .select(
-      "user_id, joined_at, profiles!inner(username, display_name, avatar_url, home_country, bio)",
+      "user_id, joined_at, featured, profiles!inner(username, display_name, avatar_url, home_country, bio)",
     )
     .eq("group_id", groupId)
+    // Featured members first, then newest joiners — admin curation wins
+    // for the Group Vibes strip; ordering is harmless on the member admin
+    // page (and useful: featured travelers float to the top).
+    .order("featured", { ascending: false })
     .order("joined_at", { ascending: false });
   if (limit) q = q.limit(limit);
   const { data } = await q;
   type Row = {
     user_id: string;
     joined_at: string;
+    featured: boolean;
     profiles: {
       username: string;
       display_name: string;
@@ -90,12 +97,78 @@ export async function getChatGroupMembers(
     .map((r) => ({
       user_id: r.user_id,
       joined_at: r.joined_at,
+      featured: r.featured,
       username: r.profiles!.username,
       display_name: r.profiles!.display_name,
       avatar_url: r.profiles!.avatar_url,
       home_country: r.profiles!.home_country,
       bio: r.profiles!.bio,
     }));
+}
+
+/** Admin-scoped chat group with a denormalised member count. Used on the
+ *  /admin/groups list so the table can show "N travelers" without an
+ *  extra query per row. */
+export interface AdminChatGroup {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  cover_image: string | null;
+  destination_city: string | null;
+  destination_country: string | null;
+  featured: boolean;
+  archived: boolean;
+  member_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * List every chat group + its member count. Uses the admin client so the
+ * count isn't filtered by RLS, and returns the full row regardless of the
+ * archived flag — the admin UI surfaces archived groups under a chip.
+ */
+export async function listChatGroups(): Promise<AdminChatGroup[]> {
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("chat_groups")
+    .select(
+      "id, name, description, category, cover_image, destination_city, destination_country, featured, archived, created_at, updated_at, chat_group_members(count)",
+    )
+    .order("featured", { ascending: false })
+    .order("archived", { ascending: true })
+    .order("created_at", { ascending: false });
+
+  type Row = {
+    id: string;
+    name: string;
+    description: string | null;
+    category: string | null;
+    cover_image: string | null;
+    destination_city: string | null;
+    destination_country: string | null;
+    featured: boolean;
+    archived: boolean;
+    created_at: string;
+    updated_at: string;
+    chat_group_members?: Array<{ count: number }>;
+  };
+  return ((data as unknown as Row[] | null) ?? []).map((g) => ({
+    id: g.id,
+    name: g.name,
+    description: g.description,
+    category: g.category,
+    cover_image: g.cover_image,
+    destination_city: g.destination_city,
+    destination_country: g.destination_country,
+    featured: g.featured,
+    archived: g.archived,
+    created_at: g.created_at,
+    updated_at: g.updated_at,
+    member_count: g.chat_group_members?.[0]?.count ?? 0,
+  }));
 }
 
 /** Total member count for a group — used for "N travelers" labels. */
