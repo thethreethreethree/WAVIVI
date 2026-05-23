@@ -138,12 +138,14 @@ export default async function ExperienceDetailPage({
           </div>
         )}
 
-        <Link
-          href={`/directions?lat=${exp.latitude}&lng=${exp.longitude}&name=${encodeURIComponent(exp.name)}&type=experience&id=${exp.id}`}
+        <a
+          href={`https://www.google.com/maps/dir/?api=1&destination=${exp.latitude},${exp.longitude}&destination_place_id=${encodeURIComponent(exp.name)}&travelmode=driving&dir_action=navigate`}
+          target="_blank"
+          rel="noreferrer"
           className="rounded-2xl bg-sunset py-3 text-center font-bold text-white shadow-card active:scale-[0.98]"
         >
           Get Directions
-        </Link>
+        </a>
 
         {user && (
           <div className="flex justify-center">

@@ -311,12 +311,14 @@ export default async function StayDetailPage({ params }: { params: Params }) {
           </p>
         )}
 
-        <Link
-          href={`/directions?lat=${stay.latitude}&lng=${stay.longitude}&name=${encodeURIComponent(stay.name)}&type=stay&id=${stay.id}`}
+        <a
+          href={`https://www.google.com/maps/dir/?api=1&destination=${stay.latitude},${stay.longitude}&destination_place_id=${encodeURIComponent(stay.name)}&travelmode=driving&dir_action=navigate`}
+          target="_blank"
+          rel="noreferrer"
           className="rounded-2xl bg-sunset py-3 text-center font-bold text-white shadow-card active:scale-[0.98]"
         >
           Get Directions
-        </Link>
+        </a>
 
         <BackpackerPickButton
           stayId={stay.id}

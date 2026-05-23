@@ -28,6 +28,3 @@ export function fmtMins(min: number): string {
 /** Same assumptions as the map's nearby-utilities pill. */
 export const WALK_KMH = 4.8;
 export const SCOOTER_KMH = 25;
-/** Average local driving speed — calibrated against Google ETAs in El Nido
- * (~6 km / 12 min ≈ 30 km/h on small-town roads). Good enough for ballpark. */
-export const CAR_KMH = 35;
