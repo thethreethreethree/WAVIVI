@@ -9,10 +9,10 @@ export function AppTopBar() {
         <Image
           src="/wondavu-logo-v2.png"
           alt="Wondavu"
-          width={180}
-          height={180}
+          width={240}
+          height={240}
           priority
-          className="h-18 w-auto"
+          className="h-24 w-auto"
         />
       </Link>
 
