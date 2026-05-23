@@ -131,14 +131,12 @@ export default async function EventDetailPage({ params }: { params: Params }) {
           </div>
         )}
 
-        <a
-          href={`https://www.google.com/maps/dir/?api=1&destination=${event.latitude},${event.longitude}&travelmode=driving&dir_action=navigate`}
-          target="_blank"
-          rel="noreferrer"
+        <Link
+          href={`/nav?lat=${event.latitude}&lng=${event.longitude}&name=${encodeURIComponent(event.name)}`}
           className="rounded-2xl bg-sunset py-3 text-center font-bold text-white shadow-card active:scale-[0.98]"
         >
           Get Directions
-        </a>
+        </Link>
 
         {user && (
           <div className="flex justify-center">

@@ -150,14 +150,12 @@ export default async function RestaurantDetailPage({
           <p className="text-sm leading-6 text-foreground/90">{r.description}</p>
         )}
 
-        <a
-          href={`https://www.google.com/maps/dir/?api=1&destination=${r.latitude},${r.longitude}&destination_place_id=${encodeURIComponent(r.name)}&travelmode=driving&dir_action=navigate`}
-          target="_blank"
-          rel="noreferrer"
+        <Link
+          href={`/nav?lat=${r.latitude}&lng=${r.longitude}&name=${encodeURIComponent(r.name)}`}
           className="rounded-2xl bg-sunset py-3 text-center font-bold text-white shadow-card active:scale-[0.98]"
         >
           Get Directions
-        </a>
+        </Link>
 
         {user && (
           <div className="flex justify-center">
