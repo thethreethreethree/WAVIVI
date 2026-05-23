@@ -28,7 +28,10 @@ interface DisplayTraveler {
   userId: string | null;
   username: string;
   name: string;
-  avatar: string;
+  /** null when the real account hasn't set one — render the initial fallback
+   *  instead of a random nature stock photo. Mock members always carry a real
+   *  avatar URL from the seed roster. */
+  avatar: string | null;
   bio: string;
   home_country: string | null;
   countries: string[];
@@ -82,7 +85,7 @@ async function loadTraveler(username: string): Promise<DisplayTraveler | null> {
       userId: real.id,
       username: real.username,
       name: real.display_name,
-      avatar: real.avatar_url ?? photo(real.username, 200, 200),
+      avatar: real.avatar_url ?? null,
       bio: real.bio ?? "",
       home_country: real.home_country ?? null,
       countries:
@@ -176,14 +179,20 @@ export default async function UserProfilePage({
       <div className="flex flex-col items-center px-5">
         <div className="relative h-28 w-28">
           <span className="wc-frame wc-frame-orange block h-28 w-28 rounded-full p-1.5">
-            <span className="relative block h-full w-full overflow-hidden rounded-full">
-              <Image
-                src={t.avatar}
-                alt={t.name}
-                fill
-                sizes="112px"
-                className="object-cover"
-              />
+            <span className="relative block h-full w-full overflow-hidden rounded-full bg-surface">
+              {t.avatar ? (
+                <Image
+                  src={t.avatar}
+                  alt={t.name}
+                  fill
+                  sizes="112px"
+                  className="object-cover"
+                />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-3xl font-bold text-glow">
+                  {t.name.slice(0, 1).toUpperCase()}
+                </span>
+              )}
             </span>
           </span>
           {t.home_country && (
