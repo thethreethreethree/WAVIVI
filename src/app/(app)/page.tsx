@@ -145,29 +145,35 @@ export default async function Home() {
               href={`/place/${place.id}`}
               className="group w-44 shrink-0"
             >
-              <div className="wc-frame relative h-36 w-44 overflow-hidden rounded-2xl p-0 transition active:scale-[0.98]">
-                <Image
-                  src={place.image}
-                  alt={place.name}
-                  fill
-                  sizes="176px"
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <span
-                  className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent"
-                  aria-hidden
-                />
-                {place.recommended && (
-                  <span className="absolute right-2 top-2 rounded-full bg-glow px-1.5 py-0.5 text-[9px] font-bold text-white shadow-card">
-                    ⭐ pick
-                  </span>
-                )}
-                <span className="absolute bottom-2 left-2.5 right-2.5 text-white">
-                  <span className="block truncate text-sm font-bold drop-shadow">
-                    {place.name}
-                  </span>
-                  <span className="block truncate text-[11px] opacity-90">
-                    {place.category}
+              {/* wc-frame wraps the photo with a painted edge (the ::before
+                  in globals.css carries the watercolor displacement filter).
+                  p-1.5 reveals that worn edge as a painted "matt" around the
+                  image — same pattern as the rest of the brand cards. */}
+              <div className="wc-frame relative h-36 w-44 rounded-2xl p-1.5 transition active:scale-[0.98]">
+                <span className="relative block h-full w-full overflow-hidden rounded-xl">
+                  <Image
+                    src={place.image}
+                    alt={place.name}
+                    fill
+                    sizes="176px"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <span
+                    className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent"
+                    aria-hidden
+                  />
+                  {place.recommended && (
+                    <span className="absolute right-2 top-2 rounded-full bg-glow px-1.5 py-0.5 text-[9px] font-bold text-white shadow-card">
+                      ⭐ pick
+                    </span>
+                  )}
+                  <span className="absolute bottom-2 left-2.5 right-2.5 text-white">
+                    <span className="block truncate text-sm font-bold drop-shadow">
+                      {place.name}
+                    </span>
+                    <span className="block truncate text-[11px] opacity-90">
+                      {place.category}
+                    </span>
                   </span>
                 </span>
               </div>
