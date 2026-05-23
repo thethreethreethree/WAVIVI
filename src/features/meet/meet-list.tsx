@@ -5,24 +5,32 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { ScreenHeader } from "@/components/ui/screen-header";
+import type { PublicChatGroup } from "@/lib/chat";
 import { categoryMeta as metaFor } from "@/lib/travejor/group-meta";
-import { type TravelGroup, travelGroups } from "@/lib/travejor/groups";
-import { photo } from "@/lib/travejor/photo";
+import { getGroup } from "@/lib/travejor/groups";
 
-export function MeetList() {
+/**
+ * Public Meet Travelers list. Renders the real chat_groups table (active
+ * rows only — archived groups are filtered server-side). Each card pulls
+ * cover image / distance from the matching mock travel-group when one
+ * exists, so seed groups keep their hand-picked photo/distance metadata;
+ * brand-new groups created via /admin/groups render with their DB-stored
+ * cover (or a fallback) and the destination city as the "distance" line.
+ */
+export function MeetList({ groups }: { groups: PublicChatGroup[] }) {
   const [active, setActive] = useState<string>("All");
 
   const categories = useMemo(() => {
-    const set = new Set(travelGroups.map((g) => g.category));
+    const set = new Set(groups.map((g) => g.category ?? "Other"));
     return ["All", ...Array.from(set)];
-  }, []);
+  }, [groups]);
 
-  const groups = useMemo(
+  const visible = useMemo(
     () =>
       active === "All"
-        ? travelGroups
-        : travelGroups.filter((g) => g.category === active),
-    [active],
+        ? groups
+        : groups.filter((g) => (g.category ?? "Other") === active),
+    [active, groups],
   );
 
   return (
@@ -53,35 +61,40 @@ export function MeetList() {
       </div>
 
       <ul className="flex flex-col gap-4 px-5 pb-28 pt-3">
-        {groups.map((group) => (
+        {visible.map((group) => (
           <GroupCard key={group.id} group={group} />
         ))}
-        {groups.length === 0 && (
+        {visible.length === 0 && (
           <p className="py-10 text-center text-sm text-muted">
-            No groups in {active} near you yet.
+            No groups in {active} yet.
           </p>
         )}
       </ul>
-
-      <Link
-        href="/meet"
-        aria-label="Create a group"
-        className="wc-frame wc-frame-sunset fixed bottom-28 left-1/2 z-30 ml-[8.5rem] flex h-14 w-14 items-center justify-center rounded-full text-3xl font-bold text-white shadow-card active:scale-95"
-      >
-        +
-      </Link>
     </div>
   );
 }
 
-function GroupCard({ group }: { group: TravelGroup }) {
-  const meta = metaFor(group.category);
+function GroupCard({ group }: { group: PublicChatGroup }) {
+  // Pull mock fall-backs only for the visual fields that aren't on the DB
+  // yet (cover, distance). Seeded groups keep their hand-picked metadata.
+  const mock = getGroup(group.id);
+  const category = group.category ?? "Other";
+  const meta = metaFor(category);
+  const cover =
+    group.cover_image ?? mock?.coverImage ?? "/decor/balloon-floater.png";
+  const distance =
+    mock?.distance ??
+    [group.destination_city, group.destination_country]
+      .filter(Boolean)
+      .join(", ") ??
+    "Nearby";
+
   return (
     <li className="wc-frame overflow-hidden rounded-3xl p-0">
       {/* Cover banner with overlaid title */}
       <div className="relative h-36 w-full">
         <Image
-          src={group.coverImage}
+          src={cover}
           alt={group.name}
           fill
           sizes="448px"
@@ -93,12 +106,17 @@ function GroupCard({ group }: { group: TravelGroup }) {
         />
         {/* Distance — frosted pill, top-left */}
         <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur">
-          📍 {group.distance}
+          📍 {distance}
         </span>
         {/* Category — top-right */}
         <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-foreground">
-          {meta.emoji} {group.category}
+          {meta.emoji} {category}
         </span>
+        {group.featured && (
+          <span className="absolute left-3 bottom-14 inline-flex items-center gap-1 rounded-full bg-glow px-2 py-0.5 text-[10px] font-bold text-white shadow-card">
+            ⭐ Featured
+          </span>
+        )}
         {/* Title — bottom-left over the gradient */}
         <h2 className="absolute bottom-3 left-4 right-4 text-xl font-bold leading-tight text-white drop-shadow">
           {group.name}
@@ -107,29 +125,40 @@ function GroupCard({ group }: { group: TravelGroup }) {
 
       {/* Body */}
       <div className="p-4">
-        <p className="text-sm text-foreground/90">{group.description}</p>
+        {group.description && (
+          <p className="text-sm text-foreground/90">{group.description}</p>
+        )}
 
         <div className="mt-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <div className="flex -space-x-2">
-              {group.memberSeeds.map((seed) => (
-                <span
-                  key={seed}
-                  className="relative h-8 w-8 overflow-hidden rounded-full ring-2 ring-background"
-                >
-                  <Image
-                    src={photo(seed, 60, 60)}
-                    alt=""
-                    fill
-                    sizes="32px"
-                    className="object-cover"
-                  />
-                </span>
-              ))}
-            </div>
+            {group.preview_avatars.length > 0 && (
+              <div className="flex -space-x-2">
+                {group.preview_avatars.map((url, i) => (
+                  <span
+                    key={i}
+                    className="relative h-8 w-8 overflow-hidden rounded-full bg-surface ring-2 ring-background"
+                  >
+                    {url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={url}
+                        alt=""
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center text-xs font-bold text-glow">
+                        🌍
+                      </span>
+                    )}
+                  </span>
+                ))}
+              </div>
+            )}
             <span className="flex items-center gap-1 text-xs font-semibold text-muted">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              {group.travelerCount} travelers
+              {group.member_count} traveler{group.member_count === 1 ? "" : "s"}
             </span>
           </div>
           <Link

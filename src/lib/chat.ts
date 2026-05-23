@@ -106,6 +106,90 @@ export async function getChatGroupMembers(
     }));
 }
 
+/** Shape used by the public /meet list. Real chat_groups rows plus a
+ *  handful of preview avatars (most-recent members) for the card. */
+export interface PublicChatGroup {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  cover_image: string | null;
+  destination_city: string | null;
+  destination_country: string | null;
+  featured: boolean;
+  member_count: number;
+  /** Up to 3 member avatar URLs (or null when the member has no avatar). */
+  preview_avatars: (string | null)[];
+}
+
+/** Active (not archived) chat groups for the public /meet discover list.
+ *  Sorted by featured DESC then created_at DESC, with up to 3 preview
+ *  avatars per group fetched in a single follow-up query. */
+export async function listPublicChatGroups(): Promise<PublicChatGroup[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("chat_groups")
+    .select(
+      "id, name, description, category, cover_image, destination_city, destination_country, featured, chat_group_members(count)",
+    )
+    .eq("archived", false)
+    .order("featured", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  type Row = {
+    id: string;
+    name: string;
+    description: string | null;
+    category: string | null;
+    cover_image: string | null;
+    destination_city: string | null;
+    destination_country: string | null;
+    featured: boolean;
+    chat_group_members?: Array<{ count: number }>;
+  };
+  const groups = ((data as unknown as Row[] | null) ?? []).map((g) => ({
+    id: g.id,
+    name: g.name,
+    description: g.description,
+    category: g.category,
+    cover_image: g.cover_image,
+    destination_city: g.destination_city,
+    destination_country: g.destination_country,
+    featured: g.featured,
+    member_count: g.chat_group_members?.[0]?.count ?? 0,
+  }));
+
+  // Fetch the preview avatars for every group in one query — most-recent
+  // joiners first, capped to ~3 per group on the client side.
+  const ids = groups.map((g) => g.id);
+  if (ids.length === 0) {
+    return groups.map((g) => ({ ...g, preview_avatars: [] }));
+  }
+  const { data: memberRows } = await supabase
+    .from("chat_group_members")
+    .select(
+      "group_id, joined_at, profiles!inner(avatar_url)",
+    )
+    .in("group_id", ids)
+    .order("joined_at", { ascending: false });
+  type MemberRow = {
+    group_id: string;
+    profiles: { avatar_url: string | null } | null;
+  };
+  const previewByGroup = new Map<string, (string | null)[]>();
+  for (const r of (memberRows as unknown as MemberRow[] | null) ?? []) {
+    const list = previewByGroup.get(r.group_id) ?? [];
+    if (list.length < 3) {
+      list.push(r.profiles?.avatar_url ?? null);
+      previewByGroup.set(r.group_id, list);
+    }
+  }
+  return groups.map((g) => ({
+    ...g,
+    preview_avatars: previewByGroup.get(g.id) ?? [],
+  }));
+}
+
 /** Admin-scoped chat group with a denormalised member count. Used on the
  *  /admin/groups list so the table can show "N travelers" without an
  *  extra query per row. */
