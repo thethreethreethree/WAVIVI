@@ -53,6 +53,7 @@ export default async function GroupChatPage({ params }: { params: Params }) {
     <ChatThread
       title={name}
       subtitle={subtitle}
+      coverImage={dbGroup?.cover_image ?? mockGroup?.coverImage ?? null}
       back={`/meet/${id}`}
       groupId={id}
       currentUserId={user?.id ?? null}

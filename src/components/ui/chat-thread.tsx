@@ -23,6 +23,7 @@ import { flagImage } from "@/lib/travejor/account";
 export function ChatThread({
   title,
   subtitle,
+  coverImage,
   back,
   groupId,
   currentUserId,
@@ -33,6 +34,10 @@ export function ChatThread({
 }: {
   title: string;
   subtitle: string;
+  /** Group cover photo — rendered as a small circle in the header so the
+   *  chat carries the same identity as the Group Vibes page. Falls back
+   *  to a watercolor balloon glyph when missing. */
+  coverImage?: string | null;
   back: string;
   groupId: string;
   /** null when the visitor isn't signed in. */
@@ -180,8 +185,34 @@ export function ChatThread({
           fallback={back}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-foreground/5 active:scale-95"
         />
+        {/* Group cover circle — matches the brand identity. Falls back to the
+            balloon glyph when the group has no cover, so the avatar slot is
+            never empty / shifty. */}
+        <span className="wc-frame wc-frame-orange relative block h-10 w-10 shrink-0 rounded-full p-1">
+          <span className="relative block h-full w-full overflow-hidden rounded-full bg-surface">
+            {coverImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={coverImage}
+                alt=""
+                referrerPolicy="no-referrer"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <Image
+                src="/decor/balloon-floater.png"
+                alt=""
+                width={32}
+                height={32}
+                className="h-full w-full object-contain p-1"
+              />
+            )}
+          </span>
+        </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-bold">{title}</span>
+          <span className="block truncate font-bold">
+            <span className="wc-underline">{title}</span>
+          </span>
           <span className="block truncate text-xs text-muted">{subtitle}</span>
         </span>
 
@@ -239,84 +270,135 @@ export function ChatThread({
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
+      <div className="relative flex flex-1 flex-col overflow-y-auto px-5 py-4">
+        {/* Faint balloon decor drifting behind the thread — pure mood,
+            doesn't compete with the messages. Hidden when there are no
+            messages (the empty state has its own visual centre). */}
+        {messages.length > 0 && (
+          <>
+            <Image
+              src="/decor/balloon-floater.png"
+              alt=""
+              width={40}
+              height={40}
+              aria-hidden
+              className="pointer-events-none absolute right-3 top-6 h-10 w-10 opacity-15"
+              style={{
+                animation: "balloonFloat 9s ease-in-out infinite",
+              }}
+            />
+            <Image
+              src="/decor/balloon-floater.png"
+              alt=""
+              width={32}
+              height={32}
+              aria-hidden
+              className="pointer-events-none absolute bottom-24 left-4 h-8 w-8 opacity-10"
+              style={{
+                animation: "balloonFloat 11s ease-in-out infinite 2s",
+              }}
+            />
+          </>
+        )}
+
         {messages.length === 0 && (
           <p className="my-auto text-center text-sm text-muted">
             No messages yet — say hi 👋
           </p>
         )}
-        {messages.map((m) => {
+        {messages.map((m, i) => {
           const own = m.user_id === currentUserId;
+          const prev = i > 0 ? messages[i - 1] : null;
+          // Run-grouping: tighten gap + suppress author chip when the
+          // previous message is from the same user within ~5 min.
+          const sameRun =
+            prev != null &&
+            prev.user_id === m.user_id &&
+            new Date(m.created_at).getTime() -
+              new Date(prev.created_at).getTime() <
+              5 * 60_000;
+          // Day divider when the calendar date flips (or this is the first
+          // message). Renders before the message itself.
+          const showDay =
+            !prev || !sameDay(prev.created_at, m.created_at);
           // Pull profile info for incoming messages so the author chip
           // shows avatar + home-country flag and clicks through to /u/...
           // Realtime new messages from authors not in the map render with
           // text-only fallback (refresh fills in the avatar next mount).
           const author = !own ? authorsById?.[m.user_id] : undefined;
           return (
-            <div
-              key={m.id}
-              className={`flex flex-col ${own ? "items-end" : "items-start"}`}
-            >
-              {showAuthors && !own && (
-                author ? (
-                  <Link
-                    href={`/u/${author.username}`}
-                    className="mb-0.5 flex items-center gap-1.5 text-xs font-medium text-muted hover:text-foreground"
-                  >
-                    <span className="relative inline-block h-6 w-6">
-                      <span className="block h-full w-full overflow-hidden rounded-full bg-surface ring-1 ring-border">
-                        {author.avatar_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={author.avatar_url}
-                            alt={author.display_name}
-                            loading="lazy"
-                            referrerPolicy="no-referrer"
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="flex h-full w-full items-center justify-center text-[10px] font-bold text-glow">
-                            {author.display_name.slice(0, 1).toUpperCase()}
+            <div key={m.id}>
+              {showDay && <DayDivider iso={m.created_at} />}
+              <div
+                className={`relative z-10 flex flex-col ${
+                  sameRun ? "mt-0.5" : "mt-3"
+                } ${own ? "items-end" : "items-start"}`}
+              >
+                {!sameRun && showAuthors && !own && (
+                  author ? (
+                    <Link
+                      href={`/u/${author.username}`}
+                      className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted hover:text-foreground"
+                    >
+                      <span className="relative inline-block h-7 w-7">
+                        <span className="block h-full w-full overflow-hidden rounded-full bg-surface ring-1 ring-border">
+                          {author.avatar_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={author.avatar_url}
+                              alt={author.display_name}
+                              loading="lazy"
+                              referrerPolicy="no-referrer"
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="flex h-full w-full items-center justify-center text-[10px] font-bold text-glow">
+                              {author.display_name.slice(0, 1).toUpperCase()}
+                            </span>
+                          )}
+                        </span>
+                        {author.home_country && (
+                          <span
+                            className="pointer-events-none absolute -bottom-0.5 -right-0.5 block h-3.5 w-3.5 overflow-hidden rounded-full bg-white ring-1 ring-background"
+                            title={author.home_country}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={flagImage(author.home_country)}
+                              alt={author.home_country}
+                              referrerPolicy="no-referrer"
+                              className="h-full w-full object-cover"
+                            />
                           </span>
                         )}
                       </span>
-                      {author.home_country && (
-                        <span
-                          className="pointer-events-none absolute -bottom-0.5 -right-0.5 block h-3 w-3 overflow-hidden rounded-full bg-white ring-1 ring-background"
-                          title={author.home_country}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={flagImage(author.home_country)}
-                            alt={author.home_country}
-                            referrerPolicy="no-referrer"
-                            className="h-full w-full object-cover"
-                          />
-                        </span>
-                      )}
+                      <span className="truncate">
+                        {author.display_name || m.author_name}
+                      </span>
+                    </Link>
+                  ) : (
+                    <span className="mb-1 text-xs font-medium text-muted">
+                      {m.author_name}
                     </span>
-                    <span className="truncate">
-                      {author.display_name || m.author_name}
-                    </span>
-                  </Link>
-                ) : (
-                  <span className="mb-0.5 text-xs font-medium text-muted">
-                    {m.author_name}
+                  )
+                )}
+                <div
+                  className={`wc-frame max-w-[78%] px-3.5 py-2 text-sm leading-snug shadow-card ${
+                    own
+                      ? `wc-frame-sunset rounded-2xl text-white ${sameRun ? "rounded-tr-2xl" : "rounded-tr-sm"}`
+                      : `rounded-2xl text-foreground ${sameRun ? "rounded-tl-2xl" : "rounded-tl-sm"}`
+                  }`}
+                >
+                  {m.body}
+                </div>
+                {/* Timestamp only on the last message of a run — keeps long
+                    bursts compact and the time still visible per cluster. */}
+                {!isMidRun(messages, i) && (
+                  <span className="mt-1 text-[10px] text-muted">
+                    {fmtTime(m.created_at)}
                   </span>
-                )
-              )}
-              <div
-                className={`wc-frame max-w-[78%] px-3.5 py-2 text-sm ${
-                  own
-                    ? "wc-frame-sunset rounded-2xl rounded-tr-sm text-white"
-                    : "rounded-2xl rounded-tl-sm text-foreground"
-                }`}
-              >
-                {m.body}
+                )}
               </div>
-              <span className="mt-0.5 text-[10px] text-muted">
-                {fmtTime(m.created_at)}
-              </span>
             </div>
           );
         })}
@@ -354,22 +436,35 @@ export function ChatThread({
       ) : (
         <form
           onSubmit={onSend}
-          className="flex items-center gap-2 border-t border-border px-4 py-3"
+          className="flex items-center gap-2 border-t border-border bg-surface/60 px-4 py-3 backdrop-blur"
         >
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Message…"
-            disabled={pending}
-            className="wc-frame flex-1 rounded-full bg-transparent px-4 py-2.5
-                       text-sm outline-none placeholder:text-muted focus-visible:border-glow"
-          />
+          <span className="wc-frame flex flex-1 items-center rounded-full bg-background px-2 py-1">
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="Say something nice…"
+              disabled={pending}
+              className="flex-1 bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-muted"
+            />
+          </span>
           <button
             type="submit"
+            aria-label="Send"
             disabled={!draft.trim() || pending}
-            className="rounded-full bg-glow px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+            className="wc-frame wc-frame-sunset flex h-10 w-10 items-center justify-center rounded-full text-white shadow-card transition-transform active:scale-95 disabled:opacity-40"
           >
-            {pending ? "…" : "Send"}
+            {pending ? (
+              <span className="text-xs">…</span>
+            ) : (
+              <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="h-4 w-4"
+                aria-hidden
+              >
+                <path d="M2 12l19-9-9 19-2-8-8-2z" />
+              </svg>
+            )}
           </button>
         </form>
       )}
@@ -386,4 +481,62 @@ function fmtTime(iso: string): string {
   } catch {
     return "";
   }
+}
+
+/** True when two timestamps fall on the same calendar day (local time). */
+function sameDay(aIso: string, bIso: string): boolean {
+  try {
+    const a = new Date(aIso);
+    const b = new Date(bIso);
+    return (
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate()
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** True when the message at i is part of a run AND the next message is also
+ *  by the same user within ~5min — i.e. it's in the middle of a run, so its
+ *  timestamp can be suppressed. */
+function isMidRun(messages: ChatMessage[], i: number): boolean {
+  const next = messages[i + 1];
+  if (!next) return false;
+  if (next.user_id !== messages[i].user_id) return false;
+  return (
+    new Date(next.created_at).getTime() -
+      new Date(messages[i].created_at).getTime() <
+    5 * 60_000
+  );
+}
+
+/** Soft watercolor pill that breaks up the thread into Today / Yesterday /
+ *  full date sections so long histories are skimmable. */
+function DayDivider({ iso }: { iso: string }) {
+  const label = (() => {
+    try {
+      const d = new Date(iso);
+      const now = new Date();
+      const ms = now.setHours(0, 0, 0, 0) - new Date(d).setHours(0, 0, 0, 0);
+      const days = Math.round(ms / 86_400_000);
+      if (days === 0) return "Today";
+      if (days === 1) return "Yesterday";
+      return new Date(iso).toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      });
+    } catch {
+      return "";
+    }
+  })();
+  return (
+    <div className="relative z-10 my-4 flex items-center justify-center">
+      <span className="wc-frame rounded-full bg-surface px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-muted shadow-card">
+        {label}
+      </span>
+    </div>
+  );
 }
