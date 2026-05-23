@@ -635,6 +635,10 @@ export type ChatGroupRow = {
   window_end: string | null;
   theme_tags: string[];
   is_auto_generated: boolean;
+  /* Admin control flags (migration 0028). */
+  featured: boolean;
+  archived: boolean;
+  updated_at: string;
 };
 export type ChatGroupInsert = {
   id: string;
@@ -649,17 +653,22 @@ export type ChatGroupInsert = {
   window_end?: string | null;
   theme_tags?: string[];
   is_auto_generated?: boolean;
+  featured?: boolean;
+  archived?: boolean;
 };
 export type ChatGroupUpdate = Partial<Omit<ChatGroupInsert, "id">>;
 
 export type ChatGroupMemberRow = {
   group_id: string;
   user_id: string;
+  /** Admin-curated — appears in the Group Vibes "Featured Travelers" strip. */
+  featured: boolean;
   joined_at: string;
 };
 export type ChatGroupMemberInsert = {
   group_id: string;
   user_id: string;
+  featured?: boolean;
 };
 export type ChatGroupMemberUpdate = Partial<ChatGroupMemberInsert>;
 
