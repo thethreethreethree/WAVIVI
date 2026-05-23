@@ -103,6 +103,19 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* iOS Safari auto-zooms into any text input rendered smaller than 16px and
+   doesn't restore the zoom on blur — the page ends up scaled up, with
+   chrome/nav hidden off-screen. Force a 16px baseline on every text-y
+   control for touch / coarse-pointer devices (visual size still scales via
+   Tailwind classes that override on desktop). */
+@media (hover: none) and (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 /* Display typeface — bold, characterful headings. */
 h1,
 h2,
