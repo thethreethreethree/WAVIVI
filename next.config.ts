@@ -14,6 +14,10 @@ const nextConfig: NextConfig = {
       // Instagram CDN — thumbnails come from many regional subdomains.
       { protocol: "https", hostname: "**.cdninstagram.com" },
       { protocol: "https", hostname: "**.fbcdn.net" },
+      // Supabase Storage — avatars bucket (migration 0032). Subdomain
+      // is the project ref (e.g. lgdbcowtsasjyrzmylzv.supabase.co), so
+      // wildcard captures any project we deploy against.
+      { protocol: "https", hostname: "**.supabase.co" },
     ],
   },
   // Security headers applied to every route.

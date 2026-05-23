@@ -6,6 +6,7 @@ import { CountryPicker } from "@/components/ui/country-picker";
 import { InstagramPostManager } from "@/features/instagram";
 import { postShortcode } from "@/features/instagram/validation";
 import { saveProfile, type ProfileFormState } from "@/features/profile/actions";
+import { AvatarUpload } from "@/features/profile/avatar-upload";
 import { photo } from "@/lib/travejor/photo";
 import type { ProfileRow } from "@/types/supabase";
 
@@ -33,16 +34,10 @@ export function EditProfileForm({ profile }: { profile: ProfileRow }) {
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
-      <div className="flex flex-col items-center">
-        <span className="wc-frame relative h-20 w-20 rounded-full p-1">
-          <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-surface-elevated text-2xl font-bold text-glow">
-            {initial}
-          </span>
-        </span>
-        <span className="mt-2 text-xs text-muted">
-          Photo upload coming soon
-        </span>
-      </div>
+      <AvatarUpload
+        initialUrl={profile.avatar_url}
+        fallbackInitial={initial}
+      />
 
       <label className="flex flex-col gap-1.5">
         <span className="text-sm font-bold text-foreground">Display name</span>
