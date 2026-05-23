@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { BackButton } from "@/components/ui/back-button";
 import {
@@ -65,6 +65,17 @@ function NavView() {
   const [routing, setRouting] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
   const [stepsOpen, setStepsOpen] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(false);
+  // Index of the next step the user hasn't reached yet. Advanced as the
+  // user passes each maneuver. Reset whenever a fresh route lands.
+  const stepIdxRef = useRef(0);
+  // Keys of phrases we've already spoken, so we don't repeat the same warn.
+  const spokenRef = useRef<Set<string>>(new Set());
+  // Live tracking of next-turn UI (distance + step shown above the map).
+  const [nextTurn, setNextTurn] = useState<{
+    text: string;
+    distanceM: number;
+  } | null>(null);
 
   // Watch the browser's geolocation — first fix gives us a routing origin;
   // continued updates move the live marker as the user travels.
@@ -113,6 +124,97 @@ function NavView() {
     return () => ctrl.abort();
   }, [routingOrigin, hasDest, lat, lng, mode]);
 
+  // Reset step tracker + spoken-phrase log every time we get a fresh route.
+  useEffect(() => {
+    stepIdxRef.current = 0;
+    spokenRef.current = new Set();
+    setNextTurn(null);
+  }, [route]);
+
+  // Voice cues + next-turn UI. Each user-position update walks forward
+  // through the step list until we find the next un-passed maneuver, then
+  // announces:
+  //   • "In {dist}, {instruction}" once when ~250m out
+  //   • "{instruction}"          once when ~40m out (and advances past it)
+  // Depart fires on the first tick; arrive fires within ~30m.
+  useEffect(() => {
+    if (!route || !userPos) return;
+    let idx = stepIdxRef.current;
+    let upcoming: { text: string; distanceM: number } | null = null;
+
+    while (idx < route.steps.length) {
+      const step = route.steps[idx];
+      const dM =
+        haversineMeters(userPos, { lat: step.location[1], lng: step.location[0] });
+      const text = formatStep(step, name);
+
+      if (step.type === "depart") {
+        const key = `${idx}-depart`;
+        if (voiceOn && !spokenRef.current.has(key)) {
+          spokenRef.current.add(key);
+          speak(text);
+        }
+        idx++;
+        continue;
+      }
+
+      if (step.type === "arrive") {
+        const key = `${idx}-arrive`;
+        upcoming = { text, distanceM: dM };
+        if (dM < 30 && voiceOn && !spokenRef.current.has(key)) {
+          spokenRef.current.add(key);
+          speak(text);
+          idx++;
+        }
+        break;
+      }
+
+      // Mid-route maneuver — show in the next-turn pill regardless of voice.
+      upcoming = { text, distanceM: dM };
+
+      const warnKey = `${idx}-warn`;
+      const nowKey = `${idx}-now`;
+      if (voiceOn && dM < 250 && !spokenRef.current.has(warnKey)) {
+        spokenRef.current.add(warnKey);
+        speak(`In ${fmtMeters(dM)}, ${lowerFirst(text)}`);
+      }
+      if (dM < 40 && !spokenRef.current.has(nowKey)) {
+        if (voiceOn) {
+          spokenRef.current.add(nowKey);
+          speak(text);
+        } else {
+          // Even with voice off, mark the step as passed so the next-turn
+          // pill advances when the user crosses the maneuver.
+          spokenRef.current.add(nowKey);
+        }
+        idx++;
+        continue;
+      }
+      break; // still approaching this step
+    }
+
+    stepIdxRef.current = idx;
+    setNextTurn(upcoming);
+  }, [userPos, route, voiceOn, name]);
+
+  // Toggling voice should also clear the queue of any pending utterances —
+  // and the first tap doubles as the user gesture iOS Safari needs before
+  // it will speak (we prime the synth with a silent utterance).
+  function toggleVoice() {
+    if (typeof window === "undefined") return;
+    const next = !voiceOn;
+    setVoiceOn(next);
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    synth.cancel();
+    if (next) {
+      // Prime — silent utterance counts as the user-gesture unlock.
+      const u = new SpeechSynthesisUtterance(" ");
+      u.volume = 0;
+      synth.speak(u);
+    }
+  }
+
   const gmapsHandoff = useMemo(() => {
     if (!hasDest) return null;
     const profile =
@@ -140,7 +242,7 @@ function NavView() {
             <p className="truncate text-sm font-bold text-foreground">{name}</p>
           </div>
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex items-center gap-1.5">
           {MODES.map((m) => (
             <button
               key={m.id}
@@ -156,6 +258,19 @@ function NavView() {
               {m.label}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={toggleVoice}
+            aria-pressed={voiceOn}
+            aria-label={voiceOn ? "Mute voice guidance" : "Enable voice guidance"}
+            className={`ml-auto inline-flex h-8 w-8 items-center justify-center rounded-full text-base font-bold transition-colors ${
+              voiceOn
+                ? "wc-frame wc-frame-sunset text-white"
+                : "wc-frame wc-frame-orange-white text-foreground"
+            }`}
+          >
+            {voiceOn ? "🔊" : "🔇"}
+          </button>
         </div>
       </header>
 
@@ -179,6 +294,23 @@ function NavView() {
             <p className="rounded-2xl bg-heat/15 px-4 py-3 text-sm font-semibold text-heat">
               Missing destination — go back and try again.
             </p>
+          </div>
+        )}
+
+        {/* Next-turn pill — the current upcoming maneuver. Lives near the
+            top of the map; this is the on-screen counterpart to the voice
+            cue, so users always know what's next even with voice muted. */}
+        {nextTurn && !routing && (
+          <div className="pointer-events-none absolute inset-x-3 top-3 z-10 flex justify-center">
+            <span className="wc-frame max-w-[calc(100%-1.5rem)] truncate rounded-2xl bg-surface/95 px-3 py-1.5 text-[12px] font-bold text-foreground shadow-card backdrop-blur">
+              <span className="text-glow">
+                {nextTurn.distanceM < 40
+                  ? "Now"
+                  : `In ${fmtMeters(nextTurn.distanceM)}`}
+              </span>
+              {" · "}
+              {nextTurn.text}
+            </span>
           </div>
         )}
 
@@ -301,4 +433,36 @@ function haversineKm(
     Math.sin(dLat / 2) ** 2 +
     Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+function haversineMeters(
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number },
+): number {
+  return haversineKm(a, b) * 1000;
+}
+
+/** Format a meter distance for voice — "200 metres" / "1.2 kilometres". */
+function fmtMeters(m: number): string {
+  if (m < 1000) return `${Math.round(m / 10) * 10} metres`;
+  return `${(m / 1000).toFixed(1)} kilometres`;
+}
+
+function lowerFirst(s: string): string {
+  return s.length > 0 ? s[0].toLowerCase() + s.slice(1) : s;
+}
+
+/** Speak a phrase via the browser's free Web Speech API. Cancels any
+ * still-queued utterance first so a closer "now" announcement supersedes
+ * a stale "in 200 m" cue. No-op when the browser doesn't support it. */
+function speak(text: string) {
+  if (typeof window === "undefined") return;
+  const synth = window.speechSynthesis;
+  if (!synth) return;
+  synth.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 1.0;
+  u.pitch = 1.0;
+  u.volume = 1.0;
+  synth.speak(u);
 }
