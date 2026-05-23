@@ -687,6 +687,14 @@ h3 {
   color: #fff;
   text-decoration: none;
 }
+/* Secondary CTA in the popup — cream pill with an orange ring. */
+.vm-pop-btn-ghost {
+  margin-top: 6px;
+  background-image: none;
+  background-color: var(--surface);
+  color: var(--accent-glow);
+  border: 1.5px solid var(--accent-glow);
+}
 
 .vm-leaflet {
   background: #aadaff;

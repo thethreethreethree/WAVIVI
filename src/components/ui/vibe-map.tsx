@@ -498,5 +498,6 @@ function buildPopup(
       <div class="vm-pop-tags">${tags}</div>
       ${distRow}
       <a class="vm-pop-btn" href="${spot.href}">View &amp; join</a>
+      <a class="vm-pop-btn vm-pop-btn-ghost" href="/nav?lat=${spot.lat}&lng=${spot.lng}&name=${encodeURIComponent(spot.name)}">🧭 Navigate here</a>
     </div>`;
 }

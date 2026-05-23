@@ -62,6 +62,10 @@ function NavView() {
    *  is moving fast enough for the OS to report it, otherwise from the device
    *  orientation sensor when available. null = unknown. */
   const [heading, setHeading] = useState<number | null>(null);
+  /** iOS Safari requires DeviceOrientationEvent.requestPermission() from a
+   *  user gesture before the deviceorientation event fires. We detect that
+   *  scenario and show a small "Enable compass" pill the user can tap. */
+  const [needsCompassGrant, setNeedsCompassGrant] = useState(false);
   const [geoState, setGeoState] = useState<"idle" | "asking" | "denied">(
     "idle",
   );
@@ -121,7 +125,11 @@ function NavView() {
     const ios = (
       window as unknown as { DeviceOrientationEvent?: IOSOrientation }
     ).DeviceOrientationEvent;
-    ios?.requestPermission?.().catch(() => {});
+    // If iOS's permission gate exists we cannot silently invoke it — it must
+    // come from a user gesture. Surface a button (handler below) instead.
+    if (typeof ios?.requestPermission === "function") {
+      setNeedsCompassGrant(true);
+    }
     function onOrient(e: DeviceOrientationEvent & { webkitCompassHeading?: number }) {
       // iOS gives a direct compass heading; everyone else gives alpha
       // (rotation around z-axis) which we convert to compass-from-north.
@@ -240,6 +248,27 @@ function NavView() {
     setNextTurn(upcoming);
   }, [userPos, route, voiceOn, name]);
 
+  /**
+   * Request iOS Safari's compass permission. Only meaningful when
+   * needsCompassGrant is true; safe no-op everywhere else. Called from the
+   * "Enable compass" pill (a user gesture, which iOS demands).
+   */
+  async function enableCompass() {
+    if (typeof window === "undefined") return;
+    type IOSOrientation = {
+      requestPermission?: () => Promise<"granted" | "denied">;
+    };
+    const ios = (
+      window as unknown as { DeviceOrientationEvent?: IOSOrientation }
+    ).DeviceOrientationEvent;
+    try {
+      const result = await ios?.requestPermission?.();
+      if (result === "granted") setNeedsCompassGrant(false);
+    } catch {
+      /* user dismissed — leave the pill visible so they can retry */
+    }
+  }
+
   // Toggling voice should also clear the queue of any pending utterances —
   // and the first tap doubles as the user gesture iOS Safari needs before
   // it will speak (we prime the synth with a silent utterance).
@@ -323,6 +352,24 @@ function NavView() {
         <p className="mx-4 mt-1 rounded-2xl bg-heat/15 px-3 py-2 text-[11px] font-semibold text-heat">
           Allow location access to plot the route from where you are.
         </p>
+      )}
+
+      {/* iOS-only — enable compass so the directional arrow works while
+          standing still. Browsers without the permission gate (Android,
+          desktop) don't show this. Auto-hides once a heading is known. */}
+      {needsCompassGrant && heading == null && (
+        <div className="mx-4 mt-1 flex items-center justify-between gap-2 rounded-2xl bg-surface/95 px-3 py-2 text-[11px] font-semibold shadow-card ring-1 ring-border">
+          <span className="text-foreground">
+            🧭 Enable the compass so the arrow knows which way you're facing.
+          </span>
+          <button
+            type="button"
+            onClick={enableCompass}
+            className="shrink-0 rounded-full bg-sunset px-2.5 py-1 text-[11px] font-bold text-white active:scale-95"
+          >
+            Enable
+          </button>
+        </div>
       )}
 
       {/* Map fills the remaining space between header and footer. The

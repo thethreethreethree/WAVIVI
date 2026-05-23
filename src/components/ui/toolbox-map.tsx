@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -781,13 +782,12 @@ function UtilityCard({
 
           {/* Action buttons */}
           <div className="mt-2.5 flex gap-1.5">
-            <button
-              type="button"
-              onClick={() => window.open(utility.google_maps_url, "_blank")}
-              className="wc-frame wc-frame-sunset flex-1 rounded-full px-3 py-2 text-xs font-bold text-white active:scale-[0.98]"
+            <Link
+              href={`/nav?lat=${utility.latitude}&lng=${utility.longitude}&name=${encodeURIComponent(utility.name)}`}
+              className="wc-frame wc-frame-sunset flex-1 rounded-full px-3 py-2 text-center text-xs font-bold text-white active:scale-[0.98]"
             >
               Directions
-            </button>
+            </Link>
             <button
               type="button"
               onClick={() => setShowReport((s) => !s)}
