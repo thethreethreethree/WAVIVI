@@ -680,6 +680,23 @@ export type ChatMessageInsert = {
 };
 export type ChatMessageUpdate = Partial<Omit<ChatMessageInsert, "id">>;
 
+/* ── Traveler Notes (peer references shown on /u/[username]) ──────────── */
+
+export type TravelerNoteRow = {
+  id: string;
+  author_id: string;
+  recipient_id: string;
+  body: string;
+  created_at: string;
+};
+export type TravelerNoteInsert = {
+  id?: string;
+  author_id: string;
+  recipient_id: string;
+  body: string;
+};
+export type TravelerNoteUpdate = Partial<TravelerNoteInsert>;
+
 /* ── Where to Next (travel plans + match audit) ───────────────────────── */
 
 export type TravelPlanBudget = "shoestring" | "mid" | "premium" | "luxury";
@@ -842,6 +859,11 @@ export type Database = {
         ChatMessageRow,
         ChatMessageInsert,
         ChatMessageUpdate
+      >;
+      traveler_notes: TableShape<
+        TravelerNoteRow,
+        TravelerNoteInsert,
+        TravelerNoteUpdate
       >;
       travel_plans: TableShape<
         TravelPlanRow,

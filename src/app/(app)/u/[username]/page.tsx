@@ -4,22 +4,28 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AddFriendButton } from "@/components/ui/add-friend-button";
+import { BackButton } from "@/components/ui/back-button";
 import { CountryFlags } from "@/components/ui/country-flags";
+import { LeaveNoteForm } from "@/features/notes/components/leave-note-form";
 import {
   InstagramFeed,
   InstagramProfileBadge,
   InstagramShowcase,
 } from "@/features/instagram";
 import type { InstagramIdentity } from "@/features/instagram";
-import { flagImage, travelerNotes } from "@/lib/travejor/account";
+import { getNotesForRecipient, hasNotedRecipient } from "@/lib/notes";
+import { getProfileByUsername } from "@/lib/profiles";
+import { createClient } from "@/lib/supabase/server";
+import { flagImage } from "@/lib/travejor/account";
 import { getMember } from "@/lib/travejor/members";
 import { photo } from "@/lib/travejor/photo";
-import { getProfileByUsername } from "@/lib/profiles";
 
 type Params = Promise<{ username: string }>;
 
 /** Unified view of a traveler, sourced from the real profile or the mock roster. */
 interface DisplayTraveler {
+  /** Auth user id when the profile is real — null for mock-only entries. */
+  userId: string | null;
   username: string;
   name: string;
   avatar: string;
@@ -73,6 +79,7 @@ async function loadTraveler(username: string): Promise<DisplayTraveler | null> {
         )
       : [];
     return {
+      userId: real.id,
       username: real.username,
       name: real.display_name,
       avatar: real.avatar_url ?? photo(real.username, 200, 200),
@@ -97,6 +104,7 @@ async function loadTraveler(username: string): Promise<DisplayTraveler | null> {
   const splitAt =
     allPosts.length > 6 ? 6 : Math.ceil(allPosts.length / 2);
   return {
+    userId: null,
     username: m.username,
     name: m.name,
     avatar: m.avatar,
@@ -121,6 +129,8 @@ export async function generateMetadata({
   return { title: t ? t.name : "User Profile" };
 }
 
+export const dynamic = "force-dynamic";
+
 export default async function UserProfilePage({
   params,
 }: {
@@ -130,29 +140,37 @@ export default async function UserProfilePage({
   const t = await loadTraveler(username);
   if (!t) notFound();
 
+  // Notes are only meaningful for real profiles (need a recipient user id).
+  // Mock-only entries (legacy seed data) show an empty notes section.
+  const supabase = await createClient();
+  const {
+    data: { user: viewer },
+  } = await supabase.auth.getUser();
+  const isOwnProfile = !!(viewer && t.userId && viewer.id === t.userId);
+  const notes = t.userId ? await getNotesForRecipient(t.userId, 20) : [];
+  const alreadyLeftNote = t.userId ? await hasNotedRecipient(t.userId) : false;
+
   return (
     <div className="flex flex-1 flex-col">
       <header className="flex items-center gap-3 px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
-        <Link href="/meet" aria-label="Back" className="text-foreground">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            className="h-5 w-5"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </Link>
+        <BackButton
+          fallback="/meet"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-foreground/5 active:scale-95"
+        />
         <h1 className="flex-1 text-lg font-bold">User Profile</h1>
-        <span className="text-muted">
-          <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-            <circle cx="12" cy="5" r="1.6" />
-            <circle cx="12" cy="12" r="1.6" />
-            <circle cx="12" cy="19" r="1.6" />
-          </svg>
-        </span>
+        <button
+          type="button"
+          aria-label="More"
+          className="flex h-9 w-9 items-center justify-center rounded-full transition-transform active:scale-95 hover:bg-foreground/5"
+        >
+          <Image
+            src="/icons/orange/menu_kebab.png"
+            alt=""
+            width={24}
+            height={24}
+            className="h-6 w-6 object-contain"
+          />
+        </button>
       </header>
 
       <div className="flex flex-col items-center px-5">
@@ -201,18 +219,22 @@ export default async function UserProfilePage({
           </p>
         )}
 
-        <div className="mt-4 flex gap-2">
-          <AddFriendButton />
-          <Link
-            href="/meet"
-            className="rounded-full border border-foreground/20 px-5 py-2 text-sm font-semibold"
-          >
-            Invite to Chat
-          </Link>
-        </div>
-        <p className="mt-2 text-center text-[11px] text-muted">
-          Wondavu connects travelers through group chats — no private DMs.
-        </p>
+        {!isOwnProfile && (
+          <>
+            <div className="mt-4 flex gap-2">
+              <AddFriendButton />
+              <Link
+                href="/meet"
+                className="rounded-full border border-foreground/20 px-5 py-2 text-sm font-semibold"
+              >
+                Invite to Chat
+              </Link>
+            </div>
+            <p className="mt-2 text-center text-[11px] text-muted">
+              Wondavu connects travelers through group chats — no private DMs.
+            </p>
+          </>
+        )}
       </div>
 
       {/* Countries traveled */}
@@ -257,41 +279,103 @@ export default async function UserProfilePage({
         </>
       )}
 
-      {/* Traveler notes */}
+      {/* Traveler notes — real peer references, addressed to this profile. */}
       <section className="mt-6 px-5 pb-8">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold">Traveler Notes</h3>
-          <Link href="/notes" className="text-xs font-medium text-glow">
-            See all
-          </Link>
+          <span className="text-xs text-muted">
+            {notes.length} {notes.length === 1 ? "note" : "notes"}
+          </span>
         </div>
+
+        {/* "Leave a note" form — only when signed in, not your own profile,
+            and the profile is a real (not mock) user. Hidden after you've
+            left one so the form doesn't double-post on refresh. */}
+        {viewer && t.userId && !isOwnProfile && !alreadyLeftNote && (
+          <div className="mt-3">
+            <LeaveNoteForm
+              recipientId={t.userId}
+              recipientUsername={t.username}
+              recipientName={t.name}
+            />
+          </div>
+        )}
+        {viewer && alreadyLeftNote && !isOwnProfile && (
+          <p className="mt-3 rounded-2xl bg-cool/10 px-3 py-2 text-center text-[11px] font-semibold text-cool">
+            🎒 You&apos;ve already left a note for {t.name.split(" ")[0]}.
+          </p>
+        )}
+
         <div className="mt-3 flex flex-col gap-2">
-          {travelerNotes.slice(0, 2).map((note) => (
-            <div
-              key={note.id}
-              className="wc-frame flex items-start gap-2 rounded-2xl p-3"
-            >
-              <span className="wc-frame relative h-8 w-8 shrink-0 rounded-full p-1">
-                <span className="relative block h-full w-full overflow-hidden rounded-full">
-                  <Image
-                    src={note.fromAvatar}
-                    alt={note.from}
-                    fill
-                    sizes="28px"
-                    className="object-cover"
-                  />
-                </span>
-              </span>
-              <p className="text-sm text-foreground/90">
-                {note.text}{" "}
-                <span className="text-xs text-muted">
-                  — {note.from} · {note.time}
-                </span>
-              </p>
-            </div>
-          ))}
+          {notes.length === 0 ? (
+            <p className="rounded-2xl bg-surface/70 px-4 py-6 text-center text-sm text-muted ring-1 ring-border">
+              No notes yet — be the first to leave one.
+            </p>
+          ) : (
+            notes.map((n) => (
+              <div
+                key={n.id}
+                className="wc-frame flex items-start gap-2 rounded-2xl p-3"
+              >
+                <Link
+                  href={`/u/${n.author_username}`}
+                  className="shrink-0"
+                  aria-label={n.author_display_name}
+                >
+                  <span className="wc-frame relative block h-8 w-8 rounded-full p-1">
+                    <span className="relative block h-full w-full overflow-hidden rounded-full bg-surface">
+                      {n.author_avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={n.author_avatar_url}
+                          alt={n.author_display_name}
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center text-[11px] font-bold text-glow">
+                          {n.author_display_name.slice(0, 1).toUpperCase()}
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                </Link>
+                <p className="text-sm text-foreground/90">
+                  &ldquo;{n.body}&rdquo;{" "}
+                  <span className="block text-xs text-muted">
+                    —{" "}
+                    <Link
+                      href={`/u/${n.author_username}`}
+                      className="font-semibold hover:underline"
+                    >
+                      {n.author_display_name}
+                    </Link>{" "}
+                    · {fmtRelative(n.created_at)}
+                  </span>
+                </p>
+              </div>
+            ))
+          )}
         </div>
       </section>
     </div>
   );
+}
+
+/** "3 days ago" / "just now" — same style as the rest of the app's feeds. */
+function fmtRelative(iso: string): string {
+  try {
+    const ms = Date.now() - new Date(iso).getTime();
+    const m = Math.floor(ms / 60_000);
+    if (m < 1) return "just now";
+    if (m < 60) return `${m} min ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h / 24);
+    if (d < 7) return `${d}d ago`;
+    return new Date(iso).toLocaleDateString();
+  } catch {
+    return "";
+  }
 }
