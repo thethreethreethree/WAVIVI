@@ -95,9 +95,13 @@ function DirectionsView() {
     const src = userPos
       ? `https://maps.google.com/maps?saddr=${userPos.lat},${userPos.lng}&daddr=${dest}&output=embed`
       : `https://maps.google.com/maps?q=${dest}(${encodeURIComponent(name)})&z=15&output=embed`;
+    // `dir_action=navigate` makes Google Maps open already in nav mode — on
+    // mobile this deep-links into the Maps app with turn-by-turn started,
+    // skipping the "preview → Start" step. On desktop it lands on the Maps
+    // directions page primed to navigate.
     return {
       embedSrc: src,
-      openInMapsUrl: `https://www.google.com/maps/dir/?api=1&destination=${dest}&destination_place_id=${encodeURIComponent(name)}&travelmode=driving`,
+      openInMapsUrl: `https://www.google.com/maps/dir/?api=1&destination=${dest}&destination_place_id=${encodeURIComponent(name)}&travelmode=driving&dir_action=navigate`,
     };
   }, [hasDest, lat, lng, name, userPos]);
 
@@ -173,17 +177,23 @@ function DirectionsView() {
         </div>
       )}
 
-      {/* Hand-off to the native Google Maps app for full turn-by-turn nav. */}
+      {/* Hand-off to the native Google Maps app for full turn-by-turn nav.
+          Real-time navigation can't run inside an iframe — this deep-links
+          straight into nav mode (dir_action=navigate) so the user skips the
+          Maps "Start" step. */}
       {openInMapsUrl && (
-        <div className="px-5 py-3">
+        <div className="flex flex-col items-center gap-1 px-5 py-3">
           <a
             href={openInMapsUrl}
             target="_blank"
             rel="noreferrer"
-            className="wc-frame wc-frame-sunset mx-auto block w-full max-w-xs rounded-2xl py-3 text-center text-sm font-bold text-white shadow-card active:scale-[0.98]"
+            className="wc-frame wc-frame-sunset block w-full max-w-xs rounded-2xl py-3.5 text-center text-base font-bold text-white shadow-card active:scale-[0.98]"
           >
-            Open in Google Maps app ↗
+            ▶ Start Navigation
           </a>
+          <p className="text-[10px] text-muted">
+            Turn-by-turn opens in Google Maps
+          </p>
         </div>
       )}
     </div>
