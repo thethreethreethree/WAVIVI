@@ -12,6 +12,10 @@ type Pos = { lat: number; lng: number };
 interface Props {
   /** User location — drives the live "you are here" marker. May be null. */
   start: Pos | null;
+  /** Compass heading in degrees from North (0–360). null = unknown
+   *  (typically because the user isn't moving). When known, the user
+   *  marker grows a directional cone like Google Maps' nav arrow. */
+  heading: number | null;
   /** Destination coordinates — fixed for the life of the page. */
   end: Pos;
   /** Display name shown in the destination popup. */
@@ -28,7 +32,13 @@ interface Props {
  * Leaflet itself isn't SSR-safe (depends on window), so we initialise inside
  * useEffect after a dynamic import.
  */
-export function NavMap({ start, end, destinationName, route }: Props) {
+export function NavMap({
+  start,
+  heading,
+  end,
+  destinationName,
+  route,
+}: Props) {
   const mapRef = useRef<L.Map | null>(null);
   const Lref = useRef<typeof L | null>(null);
   const layersRef = useRef<{
@@ -116,13 +126,36 @@ export function NavMap({ start, end, destinationName, route }: Props) {
       layersRef.current.user = Lm.marker([start.lat, start.lng], {
         icon: Lm.divIcon({
           className: "",
-          html: `<div class="nav-pin nav-pin-user">🧭</div>`,
-          iconSize: [34, 34],
-          iconAnchor: [17, 17],
+          // The wrapper rotates with `--heading`; an inner cone fades in
+          // when we actually know the direction.
+          html: `
+            <div class="nav-pin-user-wrap" style="--heading:0deg">
+              <span class="nav-pin-user-cone" aria-hidden></span>
+              <span class="nav-pin-user-dot" aria-hidden></span>
+            </div>
+          `,
+          iconSize: [44, 44],
+          iconAnchor: [22, 22],
         }),
       }).addTo(map);
     }
   }, [start]);
+
+  // --- Heading — rotate the user-marker wrapper in place. Done by
+  // mutating the existing element so we never re-create the marker mid-flight. ---
+  useEffect(() => {
+    const m = layersRef.current.user;
+    if (!m) return;
+    const el = m.getElement();
+    const wrap = el?.querySelector(".nav-pin-user-wrap") as HTMLElement | null;
+    if (!wrap) return;
+    if (heading == null || Number.isNaN(heading)) {
+      wrap.classList.remove("has-heading");
+      return;
+    }
+    wrap.style.setProperty("--heading", `${heading}deg`);
+    wrap.classList.add("has-heading");
+  }, [heading, start]);
 
   // --- Route polyline — redrawn whenever the route changes. ---
   useEffect(() => {

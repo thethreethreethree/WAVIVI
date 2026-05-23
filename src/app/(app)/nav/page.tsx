@@ -58,6 +58,10 @@ function NavView() {
 
   const [mode, setMode] = useState<NavMode>(initialMode);
   const [userPos, setUserPos] = useState<Pos | null>(null);
+  /** Compass heading (deg from North). Sourced from geolocation when the user
+   *  is moving fast enough for the OS to report it, otherwise from the device
+   *  orientation sensor when available. null = unknown. */
+  const [heading, setHeading] = useState<number | null>(null);
   const [geoState, setGeoState] = useState<"idle" | "asking" | "denied">(
     "idle",
   );
@@ -89,11 +93,50 @@ function NavView() {
       (p) => {
         setUserPos({ lat: p.coords.latitude, lng: p.coords.longitude });
         setGeoState("idle");
+        // coords.heading is degrees clockwise from true north — only present
+        // when the device is moving fast enough for the OS to compute one.
+        // When stationary it's null/NaN; we let the device-orientation
+        // listener (below) supply heading in that case.
+        const h = p.coords.heading;
+        if (typeof h === "number" && !Number.isNaN(h)) {
+          setHeading(h);
+        }
       },
       () => setGeoState("denied"),
       { enableHighAccuracy: true, timeout: 15_000, maximumAge: 5_000 },
     );
     return () => navigator.geolocation.clearWatch(id);
+  }, []);
+
+  // Device-orientation compass — fills in heading when the user is standing
+  // still. Browsers vary: Chrome / Android Firefox / desktop Chrome with a
+  // magnetometer get it for free; iOS Safari needs an explicit permission
+  // call (DeviceOrientationEvent.requestPermission), which only succeeds
+  // from a user gesture. We attempt to request silently and ignore failures.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    type IOSOrientation = {
+      requestPermission?: () => Promise<"granted" | "denied">;
+    };
+    const ios = (
+      window as unknown as { DeviceOrientationEvent?: IOSOrientation }
+    ).DeviceOrientationEvent;
+    ios?.requestPermission?.().catch(() => {});
+    function onOrient(e: DeviceOrientationEvent & { webkitCompassHeading?: number }) {
+      // iOS gives a direct compass heading; everyone else gives alpha
+      // (rotation around z-axis) which we convert to compass-from-north.
+      const compass =
+        typeof e.webkitCompassHeading === "number"
+          ? e.webkitCompassHeading
+          : typeof e.alpha === "number"
+            ? (360 - e.alpha) % 360
+            : null;
+      if (compass != null && !Number.isNaN(compass)) {
+        setHeading(compass);
+      }
+    }
+    window.addEventListener("deviceorientation", onOrient);
+    return () => window.removeEventListener("deviceorientation", onOrient);
   }, []);
 
   // Fetch the route whenever we have both endpoints + a mode. Re-running
@@ -289,6 +332,7 @@ function NavView() {
         {hasDest ? (
           <NavMap
             start={userPos}
+            heading={heading}
             end={{ lat, lng }}
             destinationName={name}
             route={route}
