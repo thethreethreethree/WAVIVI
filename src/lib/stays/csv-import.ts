@@ -44,6 +44,9 @@ export interface StayCsvRow {
   address: string | null;
   website: string | null;
   photoUrl: string | null;
+  /** Up to 6 Instagram gallery photos from IG_Img_1..6 columns. Stored in
+   *  the stays.photo_urls array and shown as a swipeable hero gallery. */
+  photoUrls: string[];
   amenities: string[];
   latitude: number;
   longitude: number;
@@ -337,6 +340,12 @@ export function parseStaysCsv(text: string): StayCsvParseResult {
       "image_url",
     ),
     amenities: col("amenities", "amenity", "features", "perks"),
+    igImg1: col("ig_img_1", "ig img 1", "instagram_img_1", "instagram img 1"),
+    igImg2: col("ig_img_2", "ig img 2", "instagram_img_2", "instagram img 2"),
+    igImg3: col("ig_img_3", "ig img 3", "instagram_img_3", "instagram img 3"),
+    igImg4: col("ig_img_4", "ig img 4", "instagram_img_4", "instagram img 4"),
+    igImg5: col("ig_img_5", "ig img 5", "instagram_img_5", "instagram img 5"),
+    igImg6: col("ig_img_6", "ig img 6", "instagram_img_6", "instagram img 6"),
     lat: col("latitude", "lat"),
     lng: col("longitude", "lng", "lon"),
     link: col("google maps link", "google maps url", "link", "url"),
@@ -379,6 +388,23 @@ export function parseStaysCsv(text: string): StayCsvParseResult {
     const photoUrl =
       photoRaw && /^https?:\/\//i.test(photoRaw) ? photoRaw : null;
 
+    // Up to 6 Instagram gallery photos. Skip blanks and anything that isn't
+    // a proper http(s) URL — the Instagram CDN frequently returns very long
+    // signed URLs which we keep verbatim. Dedupe so the same image doesn't
+    // appear twice if a column was filled with the cover URL.
+    const galleryCandidates = [
+      idx.igImg1,
+      idx.igImg2,
+      idx.igImg3,
+      idx.igImg4,
+      idx.igImg5,
+      idx.igImg6,
+    ]
+      .filter((i) => i !== -1)
+      .map((i) => (f[i] ?? "").trim())
+      .filter((u) => u && /^https?:\/\//i.test(u));
+    const photoUrls = Array.from(new Set(galleryCandidates));
+
     const stayType =
       idx.type === -1 ? null : normaliseStayType(f[idx.type] ?? "");
 
@@ -403,6 +429,7 @@ export function parseStaysCsv(text: string): StayCsvParseResult {
       address: text(idx.address),
       website: text(idx.website),
       photoUrl,
+      photoUrls,
       amenities:
         idx.amenities === -1 ? [] : parseAmenitiesCell(f[idx.amenities]),
       latitude: lat,

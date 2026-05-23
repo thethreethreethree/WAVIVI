@@ -143,6 +143,9 @@ export async function importStaysCsv(
       if (row.email && (fresh || !best.email)) update.email = row.email;
       // CSV photos always win — admins are usually re-uploading with art.
       if (row.photoUrl) update.photo_url = row.photoUrl;
+      // Replace the IG gallery whenever the CSV supplies one; it's the only
+      // source of truth for the swipeable hero photos.
+      if (row.photoUrls.length > 0) update.photo_urls = row.photoUrls;
       // CSV amenities replace the stored list when present.
       if (row.amenities.length > 0) update.amenities = row.amenities;
       // Re-snap backpack rating from Google rating — unless hand-edited.
@@ -175,6 +178,7 @@ export async function importStaysCsv(
         facebook: row.facebook,
         email: row.email,
         photo_url: row.photoUrl,
+        photo_urls: row.photoUrls,
         amenities: row.amenities,
         rating: row.rating,
         review_count: row.reviewCount,

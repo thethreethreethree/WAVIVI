@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { BackButton } from "@/components/ui/back-button";
 import { Rating } from "@/components/ui/rating";
-import { StayPhoto } from "@/components/ui/stay-photo";
+import { StayPhotoGallery } from "@/components/ui/stay-photo-gallery";
 import { BackpackerPickButton } from "@/features/stays/backpacker-pick-button";
 import { SaveToPlanButton } from "@/features/where-to-next/save-to-plan-button";
 import { amenityIconPath } from "@/lib/stays/csv-import";
@@ -173,8 +173,21 @@ export default async function StayDetailPage({ params }: { params: Params }) {
     <div className="flex flex-1 flex-col pt-[max(2.5rem,calc(env(safe-area-inset-top)+1.5rem))]">
       <div className="wc-frame relative h-60 w-full rounded-2xl p-2">
         <span className="relative block h-full w-full overflow-hidden rounded-xl">
-          <StayPhoto src={stay.photo_url} alt={stay.name} emojiSize="text-5xl" />
-          <span className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
+          {/* Build a deduped photo set: hero cover first, then the IG gallery
+              loaded by the CSV import. When there's only one image the
+              gallery component falls back to a static StayPhoto. */}
+          <StayPhotoGallery
+            photos={Array.from(
+              new Set(
+                [stay.photo_url, ...(stay.photo_urls ?? [])].filter(
+                  (u): u is string => Boolean(u),
+                ),
+              ),
+            )}
+            alt={stay.name}
+            emojiSize="text-5xl"
+          />
+          <span className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/45 to-transparent" />
         </span>
         <BackButton
           fallback="/stay"

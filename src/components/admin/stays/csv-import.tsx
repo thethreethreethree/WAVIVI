@@ -151,7 +151,10 @@ export function StaysCsvImport({ regionId }: { regionId: string }) {
         <code>Facebook</code>, <code>Email</code>, <code>Industry</code>,{" "}
         <code>Description</code>, <code>Address</code>, <code>Website</code>,{" "}
         <code>Photo</code>, <code>Amenities</code>,{" "}
-        <code>Google Maps Link</code>. Headers are case-insensitive.
+        <code>Google Maps Link</code>, <code>IG_Img_1</code>…
+        <code>IG_Img_6</code>. The six IG columns populate the swipeable photo
+        gallery on the stay's detail page (cover photo first, then up to 6
+        Instagram shots). Headers are case-insensitive.
       </p>
     </div>
   );
