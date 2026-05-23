@@ -29,7 +29,7 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
   const featured = members.slice(0, 5);
 
   return (
-    <div className="flex flex-1 flex-col pb-8">
+    <div className="flex flex-1 flex-col pb-8 pt-[max(2.5rem,calc(env(safe-area-inset-top)+1.5rem))]">
       {/* Hero banner */}
       <div className="relative h-52 w-full">
         <Image
