@@ -30,8 +30,9 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
 
   return (
     <div className="flex flex-1 flex-col pb-8 pt-[max(2.5rem,calc(env(safe-area-inset-top)+1.5rem))]">
-      {/* Hero banner */}
-      <div className="relative h-52 w-full">
+      {/* Hero banner — taller for now so the cover fills the headroom.
+          Becomes a rolling autoplay thumbnail of participant photos later. */}
+      <div className="relative h-80 w-full">
         <Image
           src={group.coverImage}
           alt={group.name}
