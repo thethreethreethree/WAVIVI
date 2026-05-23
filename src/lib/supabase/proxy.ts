@@ -45,9 +45,14 @@ export async function updateSession(request: NextRequest) {
   );
 
   // IMPORTANT: do not run code between client creation and getUser().
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // We race the call against a 3-second timeout: if Supabase is slow or
+  // unreachable, the page renders as if the visitor were signed out instead
+  // of stalling the entire app behind a frozen middleware. This is a
+  // fail-open guard — auth-gated routes still 404/login on a real visit.
+  const user = await Promise.race([
+    supabase.auth.getUser().then((r) => r.data.user),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+  ]);
 
   const { pathname } = request.nextUrl;
 
