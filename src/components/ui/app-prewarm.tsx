@@ -48,7 +48,7 @@ const PREWARM_ROUTES = [
 /** Bottom-nav icons + paper backgrounds we want decoded before first use. */
 const PREWARM_IMAGES = [
   "/icons/icon.svg",
-  "/wondavu-logo.png",
+  "/wondavu-logo-v2.png",
   "/backgrounds/cute/bg-01.png",
   "/backgrounds/orange/bg.png",
 ];

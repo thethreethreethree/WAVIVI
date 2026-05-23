@@ -7,7 +7,7 @@ export function AppTopBar() {
     <header className="flex items-center justify-between px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
       <Link href="/" aria-label="Wondavu home" className="flex items-center">
         <Image
-          src="/wondavu-logo.png"
+          src="/wondavu-logo-v2.png"
           alt="Wondavu"
           width={180}
           height={180}

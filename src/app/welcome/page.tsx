@@ -82,7 +82,7 @@ export default function WelcomePage() {
         {/* Hero */}
         <section className="relative flex flex-1 flex-col items-center justify-center text-center">
           <Image
-            src="/wondavu-logo.png"
+            src="/wondavu-logo-v2.png"
             alt="Wondavu"
             width={260}
             height={260}
