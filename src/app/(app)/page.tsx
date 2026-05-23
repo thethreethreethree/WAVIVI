@@ -35,14 +35,15 @@ const WASHES = [
   },
 ];
 
-/** Faint decorative map pins scattered behind the hub. */
-const PINS = [
-  { top: "8%", left: "14%", delay: "0s" },
-  { top: "18%", left: "84%", delay: "1.2s" },
-  { top: "60%", left: "8%", delay: "2.4s" },
-  { top: "72%", left: "90%", delay: "0.6s" },
-  { top: "40%", left: "94%", delay: "1.8s" },
-  { top: "6%", left: "56%", delay: "3.0s" },
+/** Decorative balloon floaters scattered behind the hub — varied sizes +
+ *  drift delays so the cluster reads as a hand-painted scene, not a grid. */
+const FLOATERS = [
+  { top: "5%", left: "12%", size: 56, delay: "0s", duration: 7 },
+  { top: "16%", left: "82%", size: 44, delay: "1.4s", duration: 8 },
+  { top: "58%", left: "6%", size: 60, delay: "2.6s", duration: 9 },
+  { top: "70%", left: "88%", size: 40, delay: "0.8s", duration: 7.5 },
+  { top: "38%", left: "92%", size: 36, delay: "2s", duration: 6.5 },
+  { top: "4%", left: "55%", size: 32, delay: "3.2s", duration: 8.5 },
 ];
 
 export default async function Home() {
@@ -80,20 +81,31 @@ export default async function Home() {
           />
         ))}
 
-        {/* Drifting decorative pins. */}
-        {PINS.map((pin, i) => (
+        {/* Floating balloon decor — the painted asset from the brand kit,
+            replacing the old 📍 pins. Each balloon floats on its own loop
+            so the cluster feels alive rather than animated in lockstep. */}
+        {FLOATERS.map((b, i) => (
           <span
             key={i}
-            className="pointer-events-none absolute text-base opacity-30"
+            className="pointer-events-none absolute"
             style={{
-              top: pin.top,
-              left: pin.left,
-              animation: `drift ${10 + (i % 3) * 3}s ease-in-out infinite`,
-              animationDelay: pin.delay,
+              top: b.top,
+              left: b.left,
+              width: b.size,
+              height: b.size,
+              animation: `balloonFloat ${b.duration}s ease-in-out infinite`,
+              animationDelay: b.delay,
+              opacity: 0.85,
             }}
             aria-hidden
           >
-            📍
+            <Image
+              src="/decor/balloon-floater.png"
+              alt=""
+              width={b.size}
+              height={b.size}
+              className="h-full w-full select-none object-contain drop-shadow-md"
+            />
           </span>
         ))}
 
