@@ -60,50 +60,68 @@ export interface ChatGroupMember {
   bio: string | null;
 }
 
-/** Members of a chat group with their profile info, newest joined first.
- *  Used by the Group Vibes page (Featured Travelers) and the members list. */
+/** Members of a chat group with their profile info, featured-first then
+ *  newest joined first. Used by the Group Vibes page (Featured Travelers)
+ *  and the members list.
+ *
+ *  Implemented as two explicit queries instead of a PostgREST embed: the
+ *  embed needs an inferable FK relationship between chat_group_members
+ *  and profiles, and our schema only links them through auth.users, which
+ *  PostgREST can't always traverse — leading to silent empty results.
+ *  Two queries is more reliable and only adds one round-trip. */
 export async function getChatGroupMembers(
   groupId: string,
   limit?: number,
 ): Promise<ChatGroupMember[]> {
   const supabase = await createClient();
-  let q = supabase
+  let memberQ = supabase
     .from("chat_group_members")
-    .select(
-      "user_id, joined_at, featured, profiles!inner(username, display_name, avatar_url, home_country, bio)",
-    )
+    .select("user_id, joined_at, featured")
     .eq("group_id", groupId)
-    // Featured members first, then newest joiners — admin curation wins
-    // for the Group Vibes strip; ordering is harmless on the member admin
-    // page (and useful: featured travelers float to the top).
     .order("featured", { ascending: false })
     .order("joined_at", { ascending: false });
-  if (limit) q = q.limit(limit);
-  const { data } = await q;
-  type Row = {
-    user_id: string;
-    joined_at: string;
-    featured: boolean;
-    profiles: {
-      username: string;
-      display_name: string;
-      avatar_url: string | null;
-      home_country: string | null;
-      bio: string | null;
-    } | null;
+  if (limit) memberQ = memberQ.limit(limit);
+  const { data: memberRows } = await memberQ;
+  const rows =
+    (memberRows as
+      | { user_id: string; joined_at: string; featured: boolean }[]
+      | null) ?? [];
+  if (rows.length === 0) return [];
+
+  const ids = rows.map((r) => r.user_id);
+  const { data: profileRows } = await supabase
+    .from("profiles")
+    .select("id, username, display_name, avatar_url, home_country, bio")
+    .in("id", ids);
+  type Profile = {
+    id: string;
+    username: string;
+    display_name: string;
+    avatar_url: string | null;
+    home_country: string | null;
+    bio: string | null;
   };
-  return ((data as unknown as Row[] | null) ?? [])
-    .filter((r) => r.profiles)
-    .map((r) => ({
-      user_id: r.user_id,
-      joined_at: r.joined_at,
-      featured: r.featured,
-      username: r.profiles!.username,
-      display_name: r.profiles!.display_name,
-      avatar_url: r.profiles!.avatar_url,
-      home_country: r.profiles!.home_country,
-      bio: r.profiles!.bio,
-    }));
+  const profileById = new Map<string, Profile>();
+  for (const p of (profileRows as Profile[] | null) ?? []) {
+    profileById.set(p.id, p);
+  }
+
+  return rows
+    .map((r) => {
+      const p = profileById.get(r.user_id);
+      if (!p) return null;
+      return {
+        user_id: r.user_id,
+        joined_at: r.joined_at,
+        featured: r.featured,
+        username: p.username,
+        display_name: p.display_name,
+        avatar_url: p.avatar_url,
+        home_country: p.home_country,
+        bio: p.bio,
+      } satisfies ChatGroupMember;
+    })
+    .filter((m): m is ChatGroupMember => m !== null);
 }
 
 /** Shape used by the public /meet list. Real chat_groups rows plus a
