@@ -24,7 +24,7 @@ export function AppTopBar() {
         >
           <span
             aria-hidden
-            className="absolute inset-0 rounded-full bg-[#fdf4e2]/85 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.18)]"
+            className="wc-edge-soft absolute inset-0 rounded-full bg-[#fdf4e2] ring-[1.5px] ring-[#3d1f06]/55 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.22)]"
           />
           <Image
             src="/icons/orange/bell.png"
@@ -41,7 +41,7 @@ export function AppTopBar() {
         >
           <span
             aria-hidden
-            className="absolute inset-0 rounded-full bg-[#fdf4e2]/85 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.18)]"
+            className="wc-edge-soft absolute inset-0 rounded-full bg-[#fdf4e2] ring-[1.5px] ring-[#3d1f06]/55 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.22)]"
           />
           <Image
             src="/icons/orange/group_join.png"

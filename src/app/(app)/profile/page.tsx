@@ -80,12 +80,12 @@ export default async function MyProfilePage() {
   return (
     <div className="flex flex-1 flex-col">
       <header className="flex items-center px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
-        <span className="w-10" />
+        <span className="w-12" />
         <h1 className="flex-1 text-center text-lg font-bold">My Profile</h1>
         <Link
           href="/settings"
           aria-label="Settings"
-          className="text-glow transition-transform active:scale-90"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-[#fdf4e2] ring-2 ring-[#3d1f06]/55 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.30)] text-foreground transition-transform active:scale-90"
         >
           <Icon
             name="settings"
