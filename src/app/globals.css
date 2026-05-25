@@ -6,40 +6,41 @@
    colours, so toggling the `.dark` class on <html> re-themes the whole app.
 --------------------------------------------------------------------------- */
 :root {
-  /* Warm watercolor-paper palette — tuned to the REFIND ASSET V1 icon set:
-     soft terracotta primary, honey-amber mids, peach washes on cream paper.
-     Less neon than the previous candy-orange. */
-  --background: #f6ecd6;
-  --surface: #fdf6e7;
-  --surface-elevated: #fffaf0;
-  --foreground: #3d2410;
-  --muted: #a08566;
-  --border: #ebd3a8;
+  /* Light Rustic — warm hand-painted watercolor palette, tuned to the REFIND
+     ASSET V1 icon set: peach paper, terracotta primary, honey mids. */
+  --background: #fbe2bd;
+  --surface: #fdefd1;
+  --surface-elevated: #fff7e0;
+  --foreground: #3d1f06;
+  --muted: #a47844;
+  --border: #ecbf7f;
 
-  --accent-heat: #c8552f;  /* warnings / destructive */
-  --accent-cool: #2aa089;  /* verified / positive */
-  --accent-glow: #d27839;  /* PRIMARY — refined terracotta */
+  --accent-heat: #b54d20;
+  --accent-cool: #1aa3c4;
+  --accent-glow: #cf7339;
 
-  --gradient-sunset: linear-gradient(135deg, #c8703a 0%, #de8d4b 48%, #ebac74 100%);
-  --shadow-card: 0 8px 22px -12px rgba(184, 90, 37, 0.30);
-  --hub-core: #2a1808;
+  --gradient-sunset: linear-gradient(135deg, #c46d2e 0%, #db8a48 48%, #e8a965 100%);
+  --shadow-card: 0 10px 26px -12px rgba(168, 69, 26, 0.36);
+  --hub-core: #2a1304;
 }
 
 .dark {
-  --background: #1a1410;
-  --surface: #251c16;
-  --surface-elevated: #2d231c;
-  --foreground: #f4ead8;
-  --muted: #a08e75;
-  --border: #3a2c20;
+  /* Dark Rustic — deep warm browns with the same terracotta/honey accents
+     so painted icons stay coherent against the dark surfaces. */
+  --background: #1a120a;
+  --surface: #251a10;
+  --surface-elevated: #2e2114;
+  --foreground: #f6e6cb;
+  --muted: #b59875;
+  --border: #3d2c1b;
 
-  --accent-heat: #e07051;
+  --accent-heat: #d96638;
   --accent-cool: #45c0a2;
-  --accent-glow: #e89055;
+  --accent-glow: #e08a4a;
 
-  --gradient-sunset: linear-gradient(135deg, #c66a30 0%, #e89055 48%, #f5c084 100%);
+  --gradient-sunset: linear-gradient(135deg, #c46d2e 0%, #e08a4a 48%, #efb27d 100%);
   --shadow-card: 0 8px 26px -12px rgba(0, 0, 0, 0.7);
-  --hub-core: #0a0604;
+  --hub-core: #050302;
 }
 
 /* Cute mode — a brighter, softer, playful watercolor theme. Pairs with the
@@ -877,14 +878,19 @@ h3 {
    Cute Mode — watercolor icon swap + parchment background.
 =========================================================================== */
 
-/* Icon swap: line SVGs by default, watercolor PNGs under `.cute` / `.orange`.
-   The SVG is only hidden for a theme that actually has a painted alternative
-   (`.has-cute` / `.has-orange`), so icons without art still render. */
-.tj-icon-img,
-.tj-icon-img-orange {
+/* Icon swap: refined Rustic PNGs are the universal default. The line SVG
+   only renders when no painted alternative exists. The `.cute` <img> stays
+   defined so future themes can opt back in, but is hidden by default. */
+.tj-icon-img {
   display: none;
-  /* The PNGs are already hand-painted — never apply edge/paint filters. */
   filter: none !important;
+}
+.tj-icon-img-orange {
+  display: inline-block;
+  filter: none !important;
+}
+.tj-icon-svg.has-orange {
+  display: none;
 }
 .cute .tj-icon-svg.has-cute {
   display: none;
@@ -892,26 +898,18 @@ h3 {
 .cute .tj-icon-img {
   display: inline-block;
 }
-.orange .tj-icon-svg.has-orange {
+.cute .tj-icon-img-orange {
   display: none;
-}
-.orange .tj-icon-img-orange {
-  display: inline-block;
 }
 
 /* Painted-icon swap for components that supply their own watercolor art
-   (radial hub, bottom nav). `tj-line` = crisp SVG, `tj-paint` = painted PNG;
-   the PNG shows in any painted theme (Cute or Orange). */
+   (radial hub, bottom nav). `tj-paint` is the universal default; the line
+   `tj-line` is suppressed. */
 .tj-paint {
-  display: none;
+  display: inline-block;
   filter: none !important;
 }
-.cute .tj-paint,
-.orange .tj-paint {
-  display: inline-block;
-}
-.cute .tj-line,
-.orange .tj-line {
+.tj-line {
   display: none;
 }
 
@@ -1016,9 +1014,10 @@ h3 {
   mix-blend-mode: normal;
 }
 
-/* Rustic parchment — fixed, full-viewport warm watercolor backdrop. Same
-   technique as .cute .app-paper-bg, just a different image. */
-.orange .app-paper-bg {
+/* Rustic parchment — universal default. Light mode shows the warm paper
+   image as painted; Dark Rustic dims + warms it so the foreground stays
+   readable against deep brown UI. */
+.app-paper-bg {
   position: fixed;
   inset: 0;
   width: 100vw;
@@ -1032,6 +1031,11 @@ h3 {
   opacity: 1;
   mix-blend-mode: normal;
 }
+.dark .app-paper-bg {
+  filter: brightness(0.32) saturate(0.85);
+}
+/* The Cute parchment is still applied when the .cute theme class is set —
+   it overrides the rustic image above with the original cute backdrop. */
 
 /* Watercolor wash — soft pigment blob with an organic, bleeding edge. */
 .watercolor-wash {

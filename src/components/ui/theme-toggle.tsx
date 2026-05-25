@@ -2,14 +2,12 @@
 
 import { useEffect, useState } from "react";
 
-/** The four app themes. */
+/** The two app themes — both Rustic, light and dark variants. */
 export type Theme = "light" | "dark" | "cute" | "orange";
 
 const OPTIONS: { value: Theme; label: string; icon: string }[] = [
-  { value: "light", label: "Light", icon: "☀️" },
-  { value: "dark", label: "Dark", icon: "🌙" },
-  { value: "cute", label: "Cute", icon: "🎨" },
-  { value: "orange", label: "Rustic", icon: "🍂" },
+  { value: "light", label: "Light Rustic", icon: "🍂" },
+  { value: "dark", label: "Dark Rustic", icon: "🌙" },
 ];
 
 /** Reads the theme currently applied to <html>. */
