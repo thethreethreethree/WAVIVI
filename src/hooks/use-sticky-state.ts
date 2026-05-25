@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 /**
  * useState that survives client-side navigation (back/forward) by mirroring
@@ -19,10 +19,6 @@ export function useStickyState<T>(
   initial: T,
 ): [T, (next: T | ((prev: T) => T)) => void] {
   const [value, setValue] = useState<T>(initial);
-  // Latest value, so the setter can resolve functional updates without
-  // re-creating itself on every change.
-  const ref = useRef(value);
-  ref.current = value;
 
   // Restore once on mount (sessionStorage isn't available during SSR, so we
   // can't read it in the initializer without risking a hydration mismatch).
@@ -30,9 +26,8 @@ export function useStickyState<T>(
     try {
       const raw = sessionStorage.getItem(key);
       if (raw != null) {
-        const restored = JSON.parse(raw) as T;
-        ref.current = restored;
-        setValue(restored);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing sessionStorage → React on mount
+        setValue(JSON.parse(raw) as T);
       }
     } catch {
       /* ignore malformed / unavailable storage */
@@ -41,17 +36,22 @@ export function useStickyState<T>(
 
   const set = useCallback(
     (next: T | ((prev: T) => T)) => {
-      const resolved =
-        typeof next === "function"
-          ? (next as (prev: T) => T)(ref.current)
-          : next;
-      ref.current = resolved;
-      setValue(resolved);
-      try {
-        sessionStorage.setItem(key, JSON.stringify(resolved));
-      } catch {
-        /* ignore */
-      }
+      // Resolve through React's functional updater so functional updates
+      // always see the freshest committed state (no separate ref to keep
+      // in sync). Writing to sessionStorage inside the updater is safe:
+      // it's idempotent under StrictMode's double-invocation.
+      setValue((prev) => {
+        const resolved =
+          typeof next === "function"
+            ? (next as (prev: T) => T)(prev)
+            : next;
+        try {
+          sessionStorage.setItem(key, JSON.stringify(resolved));
+        } catch {
+          /* ignore */
+        }
+        return resolved;
+      });
     },
     [key],
   );

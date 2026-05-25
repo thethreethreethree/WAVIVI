@@ -66,8 +66,11 @@ function NavView() {
    *  user gesture before the deviceorientation event fires. We detect that
    *  scenario and show a small "Enable compass" pill the user can tap. */
   const [needsCompassGrant, setNeedsCompassGrant] = useState(false);
+  // Starts as "asking" — the geolocation effect below either confirms a fix
+  // (→ "idle"), denies (→ "denied"), or, if the API is missing entirely,
+  // skips straight to "denied" on mount.
   const [geoState, setGeoState] = useState<"idle" | "asking" | "denied">(
-    "idle",
+    "asking",
   );
   const [route, setRoute] = useState<NavRoute | null>(null);
   const [routing, setRouting] = useState(false);
@@ -89,10 +92,10 @@ function NavView() {
   // continued updates move the live marker as the user travels.
   useEffect(() => {
     if (!navigator.geolocation) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- browser capability fallback; cannot read `navigator` during render (SSR)
       setGeoState("denied");
       return;
     }
-    setGeoState("asking");
     const id = navigator.geolocation.watchPosition(
       (p) => {
         setUserPos({ lat: p.coords.latitude, lng: p.coords.longitude });
@@ -128,6 +131,7 @@ function NavView() {
     // If iOS's permission gate exists we cannot silently invoke it — it must
     // come from a user gesture. Surface a button (handler below) instead.
     if (typeof ios?.requestPermission === "function") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- iOS-only capability detection; can't run during SSR render
       setNeedsCompassGrant(true);
     }
     function onOrient(e: DeviceOrientationEvent & { webkitCompassHeading?: number }) {
@@ -156,6 +160,10 @@ function NavView() {
   useEffect(() => {
     if (!hasDest || !routingOrigin) return;
     const ctrl = new AbortController();
+    // Standard "kick off an async fetch when deps change" pattern: flip
+    // loading + clear stale error before the request, then resolve in the
+    // promise callbacks (which the lint rule doesn't flag).
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-fetch UI reset
     setRouting(true);
     setRouteError(null);
     fetchRoute(routingOrigin, { lat, lng }, mode, ctrl.signal)
@@ -176,9 +184,12 @@ function NavView() {
   }, [routingOrigin, hasDest, lat, lng, mode]);
 
   // Reset step tracker + spoken-phrase log every time we get a fresh route.
+  // (Moving this to a `key` on the component would force a full Map remount,
+  // which is too heavy.)
   useEffect(() => {
     stepIdxRef.current = 0;
     spokenRef.current = new Set();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- derived reset on route change; key-based remount would re-init the map
     setNextTurn(null);
   }, [route]);
 
@@ -360,7 +371,7 @@ function NavView() {
       {needsCompassGrant && heading == null && (
         <div className="mx-4 mt-1 flex items-center justify-between gap-2 rounded-2xl bg-surface/95 px-3 py-2 text-[11px] font-semibold shadow-card ring-1 ring-border">
           <span className="text-foreground">
-            🧭 Enable the compass so the arrow knows which way you're facing.
+            🧭 Enable the compass so the arrow knows which way you&apos;re facing.
           </span>
           <button
             type="button"
@@ -507,6 +518,7 @@ function useStableOrigin(pos: { lat: number; lng: number } | null) {
   );
   useEffect(() => {
     if (!pos) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- threshold-debounce of an external (GPS) signal; functional update keeps it correct under concurrent ticks
     setOrigin((prev) => {
       if (!prev) return pos;
       const dKm = haversineKm(prev, pos);

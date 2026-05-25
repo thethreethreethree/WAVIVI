@@ -27,11 +27,6 @@ export function StayPhotoGallery({
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [active, setActive] = useState(0);
 
-  // Single-photo case — bypass the carousel chrome entirely.
-  if (photos.length <= 1) {
-    return <StayPhoto src={photos[0] ?? null} alt={alt} emojiSize={emojiSize} />;
-  }
-
   // Track which slide is currently in view. Run on scroll + mount so the
   // dots stay correct as the user swipes.
   const updateActive = useCallback(() => {
@@ -44,6 +39,12 @@ export function StayPhotoGallery({
   useEffect(() => {
     updateActive();
   }, [updateActive]);
+
+  // Single-photo case — bypass the carousel chrome entirely. Placed after
+  // hooks so the hook order stays stable across renders.
+  if (photos.length <= 1) {
+    return <StayPhoto src={photos[0] ?? null} alt={alt} emojiSize={emojiSize} />;
+  }
 
   function jumpTo(i: number) {
     const el = scrollerRef.current;

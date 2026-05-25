@@ -1,7 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+
+// External-store subscribe that never notifies — history.length is read once
+// per render and we only care about the post-mount value.
+const noopSubscribe = () => () => {};
 
 /**
  * Back button — goes to the previous page in browser history, so navigating
@@ -24,12 +28,13 @@ export function BackButton({
   children?: React.ReactNode;
 }) {
   const router = useRouter();
-  // Track on the client whether there's anything to go back to. SSR assumes
-  // there is, so the button never disables prematurely on first paint.
-  const [hasHistory, setHasHistory] = useState(true);
-  useEffect(() => {
-    setHasHistory(window.history.length > 1);
-  }, []);
+  // SSR assumes history exists so the button never disables prematurely on
+  // first paint; the client read replaces it after hydration.
+  const hasHistory = useSyncExternalStore(
+    noopSubscribe,
+    () => window.history.length > 1,
+    () => true,
+  );
 
   return (
     <button

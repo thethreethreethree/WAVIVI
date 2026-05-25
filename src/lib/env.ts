@@ -16,6 +16,7 @@ function required(name: string, value: string | undefined): string {
 export const publicEnv = {
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
 };
 
 /** Server-only secrets. Throws if accessed without being configured. */
@@ -26,6 +27,10 @@ export const serverEnv = {
       process.env.SUPABASE_SERVICE_ROLE_KEY,
     );
   },
+  /** Optional shared secret for /api/cron/scan. When set, the route
+   *  requires `Authorization: Bearer <secret>` (Vercel Cron sends this
+   *  automatically). Empty string disables the check. */
+  cronSecret: process.env.CRON_SECRET ?? "",
   /** Optional Cloudflare Worker that proxies Instagram public-profile
    *  fetches — used because Vercel data-center IPs are routinely
    *  rate-limited / login-walled by IG. Empty string disables it. */

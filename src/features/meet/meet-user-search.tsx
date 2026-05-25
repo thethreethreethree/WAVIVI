@@ -49,15 +49,14 @@ export function MeetUserSearch() {
     };
   }, []);
 
-  // Debounced fetch.
+  // Debounced fetch. Short queries simply don't run; stale `hits`/`error`
+  // stay in state but the dropdown is gated on `q.trim().length >= 2`, so
+  // they aren't rendered. The next fetch overwrites them.
   useEffect(() => {
     const trimmed = q.trim();
-    if (trimmed.length < 2) {
-      setHits([]);
-      setError(null);
-      return;
-    }
+    if (trimmed.length < 2) return;
     const ctrl = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-fetch UI flag for the debounced async lookup below
     setLoading(true);
     const t = setTimeout(async () => {
       try {

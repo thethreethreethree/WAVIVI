@@ -54,7 +54,7 @@ export default async function AdminGroupMembersPage({
 
       <p className="rounded-2xl bg-surface px-4 py-3 text-xs text-muted shadow-card ring-1 ring-border">
         <strong className="text-foreground">Featured</strong> members appear in
-        the Group Vibes "Featured Travelers" strip on{" "}
+        the Group Vibes &ldquo;Featured Travelers&rdquo; strip on{" "}
         <code className="rounded bg-background px-1">/meet/{id}</code>.{" "}
         <strong className="text-foreground">Kick</strong> removes the member —
         they can rejoin later from the group page.
