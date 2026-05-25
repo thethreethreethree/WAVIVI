@@ -946,6 +946,17 @@ h3 {
   animation: susen-bob 3.2s ease-in-out infinite;
 }
 
+/* Hub centre breathing — slow, ambient scale pulse on the "where to next"
+   blob so the focal point feels alive without being distracting. */
+@keyframes hub-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.045); }
+}
+.hub-breathe {
+  animation: hub-breathe 4.5s ease-in-out infinite;
+  transform-origin: center;
+}
+
 /* Back-button wiggle — a subtle attention-getting micro-shake that runs
    every few seconds so the user spots the affordance. */
 @keyframes back-wiggle {

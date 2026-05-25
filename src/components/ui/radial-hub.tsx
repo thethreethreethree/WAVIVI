@@ -105,7 +105,7 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
           onClick={onClick}
           className="group relative block h-full w-full touch-pan-x active:scale-95"
         >
-          <span className="wc-edge absolute inset-0 rounded-full bg-sunset" aria-hidden />
+          <span className="hub-breathe wc-edge absolute inset-0 rounded-full bg-sunset" aria-hidden />
           <span className="relative flex h-full w-full items-center justify-center px-5">
             <span className="text-center text-lg font-bold uppercase leading-[1.15] tracking-[0.1em] text-white">
               {centerLabel}
