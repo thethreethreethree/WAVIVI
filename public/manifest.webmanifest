@@ -1,7 +1,7 @@
 {
   "name": "Wondavu",
   "short_name": "Wondavu",
-  "description": "A live social map for travelers — find your people, wherever you wander.",
+  "description": "A live social map for travelers — find your people, wherever you wonder.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

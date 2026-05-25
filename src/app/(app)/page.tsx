@@ -76,7 +76,7 @@ export default async function Home() {
             <span>&nbsp;Move.</span>
           </h1>
           <p className="wc-underline relative mt-1 text-sm text-muted">
-            Find your people, wherever you wander.
+            Find your people, wherever you wonder.
           </p>
         </div>
 
