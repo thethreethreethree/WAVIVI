@@ -6,7 +6,7 @@
  * changes, so they can never go stale. The cache is just an offline safety
  * net, never a source of stale code or images. */
 
-const CACHE = "wavivi-v3";
+const CACHE = "wavivi-v4";
 const OFFLINE_URL = "/offline";
 
 self.addEventListener("install", (event) => {

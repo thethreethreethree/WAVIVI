@@ -392,7 +392,7 @@ export function ToolboxMap({
               type="button"
               onClick={() => router.back()}
               aria-label="Go back"
-              className="relative flex h-10 w-10 items-center justify-center rounded-full ring-2 ring-white/85 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.25)] active:scale-90"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#fdf4e2]/85 ring-2 ring-white/85 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.25)] active:scale-90"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img

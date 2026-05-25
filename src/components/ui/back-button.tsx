@@ -39,8 +39,12 @@ export function BackButton({
   // Base look — painted back_arrow.png inside a soft white ring, with a
   // periodic wiggle so the affordance reads. `className` from callers is
   // appended for positioning (absolute / left-4 / etc.), not for restyling.
+  // No `position` utility here — callers append `absolute …` for hero
+  // overlays. (See memory: relative vs. absolute conflict on the same node
+  // resolves to `relative` in Tailwind's output order, which would break the
+  // overlay positioning on stay/eat/todo/events/meet detail pages.)
   const baseClass =
-    "relative flex h-10 w-10 items-center justify-center rounded-full ring-2 ring-white/85 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.25)] active:scale-95";
+    "flex h-10 w-10 items-center justify-center rounded-full bg-[#fdf4e2]/85 ring-2 ring-white/85 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.25)] active:scale-95";
   return (
     <button
       type="button"

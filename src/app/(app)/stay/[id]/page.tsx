@@ -189,9 +189,9 @@ export default async function StayDetailPage({ params }: { params: Params }) {
           />
           <span className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/45 to-transparent" />
         </span>
-        <BackButton fallback="/stay" className="absolute left-4 top-4" />
+        <BackButton fallback="/stay" className="absolute right-4 top-4 z-20" />
         {stay.thumbs_up > 0 && (
-          <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-glow px-2.5 py-1 text-[11px] font-bold text-white shadow-card">
+          <span className="absolute left-4 top-4 z-20 inline-flex items-center gap-1 rounded-full bg-glow px-2.5 py-1 text-[11px] font-bold text-white shadow-card">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/icons/orange/thumbs_up_orange.png"
