@@ -49,7 +49,7 @@ trust (auth, real data, chat, notifications, observability).
 
 ### Design system
 - [x] Watercolor frames + edge SVG filters (`wc-frame`, `wc-edge`, `wc-torn`)
-- [x] Four themes: **Light · Dark · Cute · FUEGO!** with 4-way toggle
+- [x] Four themes: **Light · Dark · Cute · Rustic** with 4-way toggle
 - [x] Hand-painted icon sets (`cute-v2`, `orange`) with theme-aware swap
 - [x] Bottom nav (floating, animated label, oversized Home)
 - [x] Susen orb with bob animation

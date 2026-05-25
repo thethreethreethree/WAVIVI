@@ -20,13 +20,13 @@ const TABS: Tab[] = [
     href: "/?app=1",
     label: "Home",
     icon: <path d="M3 11l9-8 9 8M5 10v10h14V10M9 20v-6h6v6" />,
-    image: "/icons/cute-v2/house.png",
+    image: "/icons/orange/nav_home.png",
   },
   {
     href: "/tools",
     label: "Tools",
     icon: <path d="M4 7h16v13H4zM9 7V4h6v3M4 12h16" />,
-    image: "/icons/cute-v2/toolbox.png",
+    image: "/icons/orange/nav_tools.png",
   },
   {
     href: "/feed",
@@ -37,7 +37,7 @@ const TABS: Tab[] = [
         <circle cx="12" cy="12" r="3.5" />
       </>
     ),
-    image: "/icons/cute-v2/camera.png",
+    image: "/icons/orange/nav_feed.png",
   },
   {
     href: "/profile",
@@ -48,7 +48,7 @@ const TABS: Tab[] = [
         <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
       </>
     ),
-    image: "/icons/cute-v2/profile.png",
+    image: "/icons/orange/nav_profile.png",
   },
 ];
 
@@ -134,7 +134,7 @@ export function BottomNav() {
           <Link
             href={t.href}
             aria-label={t.label}
-            className={`wc-frame flex items-center justify-center rounded-full text-glow/75 transition-transform active:scale-95 ${
+            className={`flex items-center justify-center text-glow/75 active:scale-95 ${
               big ? "h-16 w-16" : "h-13 w-13"
             }`}
           >

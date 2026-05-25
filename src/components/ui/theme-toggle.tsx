@@ -9,7 +9,7 @@ const OPTIONS: { value: Theme; label: string; icon: string }[] = [
   { value: "light", label: "Light", icon: "☀️" },
   { value: "dark", label: "Dark", icon: "🌙" },
   { value: "cute", label: "Cute", icon: "🎨" },
-  { value: "orange", label: "FUEGO!", icon: "🔥" },
+  { value: "orange", label: "Rustic", icon: "🍂" },
 ];
 
 /** Reads the theme currently applied to <html>. */

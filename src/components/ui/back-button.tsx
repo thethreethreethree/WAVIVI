@@ -36,6 +36,11 @@ export function BackButton({
     () => true,
   );
 
+  // Base look — painted back_arrow.png inside a soft white ring, with a
+  // periodic wiggle so the affordance reads. `className` from callers is
+  // appended for positioning (absolute / left-4 / etc.), not for restyling.
+  const baseClass =
+    "relative flex h-10 w-10 items-center justify-center rounded-full ring-2 ring-white/85 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.25)] active:scale-95";
   return (
     <button
       type="button"
@@ -44,20 +49,18 @@ export function BackButton({
         if (hasHistory) router.back();
         else router.push(fallback);
       }}
-      className={className}
+      className={className ? `${baseClass} ${className}` : baseClass}
     >
       {children ?? (
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-6 w-6"
-        >
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/orange/back_arrow.png"
+            alt=""
+            aria-hidden
+            className="back-wiggle h-7 w-7 object-contain"
+          />
+        </>
       )}
     </button>
   );

@@ -79,10 +79,7 @@ export default async function RestaurantDetailPage({
           <StayPhoto src={r.photo_url} alt={r.name} emojiSize="text-5xl" />
           <span className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
         </span>
-        <BackButton
-          fallback="/eat"
-          className="absolute left-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur transition-transform active:scale-95"
-        />
+        <BackButton fallback="/eat" className="absolute left-4 top-4" />
         {r.thumbs_up > 0 && (
           <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-glow px-2.5 py-1 text-[11px] font-bold text-white shadow-card">
             {/* eslint-disable-next-line @next/next/no-img-element */}

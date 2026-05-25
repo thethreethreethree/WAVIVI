@@ -26,10 +26,7 @@ export default async function GroupMembersPage({
   return (
     <div className="flex flex-1 flex-col px-5 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
       <header className="flex items-center gap-3">
-        <BackButton
-          fallback={`/meet/${id}`}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-foreground/5 active:scale-95"
-        />
+        <BackButton fallback={`/meet/${id}`} className="shrink-0" />
       </header>
 
       <h1 className="mt-2 text-2xl font-bold text-glow">Group Travelers</h1>

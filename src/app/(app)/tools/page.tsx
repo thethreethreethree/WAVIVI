@@ -70,7 +70,7 @@ export default function ToolsPage() {
 
       {/* Services grid */}
       <div className="mt-6 grid grid-cols-3 gap-x-3 gap-y-7 pb-8">
-        {services.map((service, i) => (
+        {services.map((service) => (
           <Link
             key={service.id}
             href={`/tools/map?category=${
@@ -78,11 +78,13 @@ export default function ToolsPage() {
             }`}
             className="group flex flex-col items-center gap-2"
           >
-            <span
-              className={`wc-stop-motion-${(i % 5) + 1} wc-frame wc-frame-orange flex h-[68px] w-[68px] items-center justify-center rounded-full text-glow`}
-              style={{ animationDelay: `${-i * 0.29}s` }}
-            >
-              <Icon name={service.icon} className="h-12 w-12" />
+            <span className="relative flex h-[68px] w-[68px] items-center justify-center text-glow">
+              {/* Soft tan/white wash so the icon pops on the parchment bg. */}
+              <span
+                aria-hidden
+                className="absolute inset-0 rounded-full bg-[#fdf4e2]/85 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.18)]"
+              />
+              <Icon name={service.icon} className="relative h-16 w-16" />
             </span>
             <span className="text-center text-sm font-semibold">
               {service.label}

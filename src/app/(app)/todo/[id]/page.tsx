@@ -81,10 +81,7 @@ export default async function ExperienceDetailPage({
           <StayPhoto src={exp.photo_url} alt={exp.name} emojiSize="text-5xl" />
           <span className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
         </span>
-        <BackButton
-          fallback="/todo"
-          className="absolute left-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur transition-transform active:scale-95"
-        />
+        <BackButton fallback="/todo" className="absolute left-4 top-4" />
       </div>
 
       <div className="flex flex-col gap-5 px-5 py-5">

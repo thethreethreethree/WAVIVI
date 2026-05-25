@@ -156,10 +156,7 @@ export default async function UserProfilePage({
   return (
     <div className="flex flex-1 flex-col">
       <header className="flex items-center gap-3 px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
-        <BackButton
-          fallback="/meet"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-foreground/5 active:scale-95"
-        />
+        <BackButton fallback="/meet" className="shrink-0" />
         <h1 className="flex-1 text-lg font-bold">User Profile</h1>
         <button
           type="button"

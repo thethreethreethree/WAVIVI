@@ -71,10 +71,7 @@ export default async function EventDetailPage({ params }: { params: Params }) {
           <StayPhoto src={event.photo_url} alt={event.name} emojiSize="text-5xl" />
           <span className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
         </span>
-        <BackButton
-          fallback="/events"
-          className="absolute left-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur transition-transform active:scale-95"
-        />
+        <BackButton fallback="/events" className="absolute left-4 top-4" />
         {event.day_bucket && (
           <span className="absolute right-4 top-4 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold capitalize text-foreground">
             {event.day_bucket}

@@ -8,33 +8,6 @@ import { places } from "@/lib/travejor/places";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Drifting watercolor washes behind the hero. The existing `drift` keyframe
- * in globals.css gives each blob a slow, organic float — staggered delays
- * stop them moving in lockstep.
- */
-const WASHES = [
-  { className: "-left-20 -top-12 h-72 w-72", color: "#ff9d6b", opacity: 0.45, delay: "0s" },
-  {
-    className: "-right-24 top-1/4 h-80 w-80",
-    color: "#ffb9a0",
-    opacity: 0.42,
-    delay: "3s",
-  },
-  {
-    className: "-bottom-16 left-1/4 h-64 w-64",
-    color: "#f7c98f",
-    opacity: 0.4,
-    delay: "6s",
-  },
-  {
-    className: "right-1/3 -top-2 h-44 w-44",
-    color: "#ff7a18",
-    opacity: 0.2,
-    delay: "9s",
-  },
-];
-
 /** Decorative balloon floaters scattered behind the hub — varied sizes +
  *  drift delays so the cluster reads as a hand-painted scene, not a grid. */
 const FLOATERS = [
@@ -66,21 +39,6 @@ export default async function Home() {
       <AppTopBar />
 
       <section className="relative flex flex-col items-center px-6 pb-6 pt-8">
-        {/* Drifting watercolor washes — same palette as before, now alive. */}
-        {WASHES.map((w, i) => (
-          <span
-            key={i}
-            className={`watercolor-wash pointer-events-none absolute rounded-full ${w.className}`}
-            style={{
-              background: w.color,
-              opacity: w.opacity,
-              animation: `drift ${14 + i * 2}s ease-in-out infinite`,
-              animationDelay: w.delay,
-            }}
-            aria-hidden
-          />
-        ))}
-
         {/* Floating balloon decor — the painted asset from the brand kit,
             replacing the old 📍 pins. Each balloon floats on its own loop
             so the cluster feels alive rather than animated in lockstep. */}

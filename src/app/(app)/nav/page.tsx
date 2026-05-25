@@ -316,10 +316,7 @@ function NavView() {
       {/* Header — back button + place name + mode chips */}
       <header className="relative z-10 flex flex-col gap-2 px-4 pb-2 pt-[max(2.75rem,calc(env(safe-area-inset-top)+1.5rem))]">
         <div className="flex items-center gap-3">
-          <BackButton
-            fallback="/"
-            className="wc-frame wc-frame-orange-white flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-glow shadow-card transition-transform active:scale-95"
-          />
+          <BackButton fallback="/" className="shrink-0" />
           <div className="wc-frame min-w-0 flex-1 rounded-2xl bg-surface/95 px-3 py-2 shadow-card backdrop-blur">
             <p className="text-[10px] font-bold uppercase tracking-wide text-muted">
               Navigate to

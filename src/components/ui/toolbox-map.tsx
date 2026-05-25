@@ -99,7 +99,7 @@ function BackpackGlyph({ className }: { className?: string }) {
 }
 
 /** Watercolor icon markup for each category marker (used in divIcon).
-   Renders both a default (cute) image and a FUEGO/orange image; CSS
+   Renders both a default (cute) image and a Rustic/orange image; CSS
    toggles which one shows based on the active theme. Inline width/height
    guarantee sizing even if cached CSS is stale. */
 const CATEGORY_GLYPH: Record<CategoryId, string> = Object.fromEntries(
@@ -392,20 +392,15 @@ export function ToolboxMap({
               type="button"
               onClick={() => router.back()}
               aria-label="Go back"
-              className="wc-frame wc-frame-orange relative flex h-9 w-9 items-center justify-center rounded-full text-glow transition-transform active:scale-90"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full ring-2 ring-white/85 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.25)] active:scale-90"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/icons/orange/back_arrow.png"
+                alt=""
                 aria-hidden
-              >
-                <path d="M15 19l-7-7 7-7" />
-              </svg>
+                className="back-wiggle h-7 w-7 object-contain"
+              />
             </button>
           </div>
         </div>

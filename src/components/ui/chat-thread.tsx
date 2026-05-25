@@ -181,10 +181,7 @@ export function ChatThread({
     // the composer stays pinned at the bottom regardless of message count.
     <div className="flex h-[calc(100dvh-6.75rem)] flex-col overflow-hidden">
       <header className="flex items-center gap-3 border-b border-border px-5 pb-3 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
-        <BackButton
-          fallback={back}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-foreground/5 active:scale-95"
-        />
+        <BackButton fallback={back} className="shrink-0" />
         {/* Group cover circle — matches the brand identity. Falls back to the
             balloon glyph when the group has no cover, so the avatar slot is
             never empty / shifty. */}

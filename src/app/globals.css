@@ -6,78 +6,80 @@
    colours, so toggling the `.dark` class on <html> re-themes the whole app.
 --------------------------------------------------------------------------- */
 :root {
-  /* Warm watercolor-paper palette. */
-  --background: #f4ecdd;
-  --surface: #fdf9f0;
-  --surface-elevated: #ffffff;
-  --foreground: #2c2318;
-  --muted: #948b7c;
-  --border: #e6dac3;
+  /* Warm watercolor-paper palette — tuned to the REFIND ASSET V1 icon set:
+     soft terracotta primary, honey-amber mids, peach washes on cream paper.
+     Less neon than the previous candy-orange. */
+  --background: #f6ecd6;
+  --surface: #fdf6e7;
+  --surface-elevated: #fffaf0;
+  --foreground: #3d2410;
+  --muted: #a08566;
+  --border: #ebd3a8;
 
-  --accent-heat: #ef5d3c;  /* warnings / destructive */
-  --accent-cool: #12a07a;  /* verified / positive */
-  --accent-glow: #f7941d;  /* PRIMARY — Travejor orange */
+  --accent-heat: #c8552f;  /* warnings / destructive */
+  --accent-cool: #2aa089;  /* verified / positive */
+  --accent-glow: #d27839;  /* PRIMARY — refined terracotta */
 
-  --gradient-sunset: linear-gradient(135deg, #ff7a18 0%, #f7941d 52%, #ffb347 100%);
-  --shadow-card: 0 6px 22px -12px rgba(24, 22, 19, 0.28);
-  --hub-core: #1b1916;
+  --gradient-sunset: linear-gradient(135deg, #c8703a 0%, #de8d4b 48%, #ebac74 100%);
+  --shadow-card: 0 8px 22px -12px rgba(184, 90, 37, 0.30);
+  --hub-core: #2a1808;
 }
 
 .dark {
-  --background: #131110;
-  --surface: #1e1b18;
-  --surface-elevated: #272320;
-  --foreground: #f4efe6;
-  --muted: #9a938a;
-  --border: #322d27;
+  --background: #1a1410;
+  --surface: #251c16;
+  --surface-elevated: #2d231c;
+  --foreground: #f4ead8;
+  --muted: #a08e75;
+  --border: #3a2c20;
 
-  --accent-heat: #ff7a5c;
-  --accent-cool: #2bc79a;
-  --accent-glow: #ff9d2e;
+  --accent-heat: #e07051;
+  --accent-cool: #45c0a2;
+  --accent-glow: #e89055;
 
-  --gradient-sunset: linear-gradient(135deg, #ff8a2b 0%, #ff9d2e 52%, #ffc06b 100%);
+  --gradient-sunset: linear-gradient(135deg, #c66a30 0%, #e89055 48%, #f5c084 100%);
   --shadow-card: 0 8px 26px -12px rgba(0, 0, 0, 0.7);
-  --hub-core: #060504;
+  --hub-core: #0a0604;
 }
 
 /* Cute mode — a brighter, softer, playful watercolor theme. Pairs with the
    hand-painted icon set. Toggled via the `.cute` class on <html>. */
 .cute {
-  /* Tuned to the Cute V2 watercolor icon set — warm honey-gold washes
-     on a soft cream paper. */
-  --background: #fdeed6;
-  --surface: #fff8ec;
-  --surface-elevated: #fffdf8;
-  --foreground: #4a3621;
-  --muted: #a8927a;
-  --border: #f2d9b4;
+  /* Warm honey/peach watercolor washes on soft cream paper. */
+  --background: #fbe7c6;
+  --surface: #fff3df;
+  --surface-elevated: #fffaf0;
+  --foreground: #4a3018;
+  --muted: #a88b6a;
+  --border: #ecc998;
 
-  --accent-heat: #f08a3c;
+  --accent-heat: #d76838;
   --accent-cool: #2bb89a;
-  --accent-glow: #f5a623;
+  --accent-glow: #d9923f;
 
-  --gradient-sunset: linear-gradient(135deg, #f59230 0%, #f5a623 48%, #ffcf6b 100%);
+  --gradient-sunset: linear-gradient(135deg, #ce8033 0%, #e09a4d 48%, #f0bc7a 100%);
   --shadow-card: 0 8px 24px -12px rgba(168, 108, 36, 0.34);
-  --hub-core: #2a2218;
+  --hub-core: #2a1c0e;
 }
 
-/* Orange mode — bold, glowing, high-energy. Pairs with the vivid
-   orange-watercolor icon set. Toggled via the `.orange` class on <html>. */
+/* Orange mode — warm hand-painted watercolor sunset. Tuned to match the
+   REFIND ASSET V1 icon set: terracotta primaries, honey mids, peach paper.
+   The previous neon orange is gone in favor of a softer, painterly palette. */
 .orange {
-  --background: #fff0db;
-  --surface: #fffaf0;
-  --surface-elevated: #ffffff;
-  --foreground: #4a2606;
-  --muted: #bb8a55;
-  --border: #ffd9a3;
+  --background: #fbe2bd;
+  --surface: #fdefd1;
+  --surface-elevated: #fff7e0;
+  --foreground: #3d1f06;
+  --muted: #a47844;
+  --border: #ecbf7f;
 
-  --accent-heat: #ff5a1f;
+  --accent-heat: #b54d20;
   --accent-cool: #1aa3c4;
-  --accent-glow: #ff7a00;
+  --accent-glow: #cf7339;
 
-  --gradient-sunset: linear-gradient(135deg, #ff6a00 0%, #ff8a00 48%, #ffb443 100%);
-  --shadow-card: 0 10px 26px -12px rgba(255, 110, 0, 0.42);
-  --hub-core: #3a1f04;
+  --gradient-sunset: linear-gradient(135deg, #c46d2e 0%, #db8a48 48%, #e8a965 100%);
+  --shadow-card: 0 10px 26px -12px rgba(168, 69, 26, 0.36);
+  --hub-core: #2a1304;
 }
 
 @theme inline {
@@ -450,7 +452,7 @@ h3 {
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
 }
 /* Theme-conditional toolbox marker icon. Default (light/dark/cute) shows
-   the cute image; FUEGO swaps to the orange map-icon set. */
+   the cute image; Rustic swaps to the orange map-icon set. */
 .tb-pin-img-orange {
   display: none;
 }
@@ -946,6 +948,20 @@ h3 {
   animation: susen-bob 3.2s ease-in-out infinite;
 }
 
+/* Back-button wiggle — a subtle attention-getting micro-shake that runs
+   every few seconds so the user spots the affordance. */
+@keyframes back-wiggle {
+  0%, 88%, 100% { transform: translateX(0) rotate(0); }
+  90% { transform: translateX(-2px) rotate(-4deg); }
+  92% { transform: translateX(2px) rotate(4deg); }
+  94% { transform: translateX(-2px) rotate(-3deg); }
+  96% { transform: translateX(1px) rotate(2deg); }
+}
+.back-wiggle {
+  animation: back-wiggle 4s ease-in-out infinite;
+  transform-origin: center;
+}
+
 /* Active bottom-nav label — floats up, holds, then fades away after ~2s. */
 @keyframes nav-label-rise {
   0% {
@@ -1000,14 +1016,14 @@ h3 {
   mix-blend-mode: normal;
 }
 
-/* FUEGO! parchment — fixed, full-viewport bold orange backdrop. Same
+/* Rustic parchment — fixed, full-viewport warm watercolor backdrop. Same
    technique as .cute .app-paper-bg, just a different image. */
 .orange .app-paper-bg {
   position: fixed;
   inset: 0;
   width: 100vw;
   height: 100dvh;
-  background-image: url("/backgrounds/orange/bg.png");
+  background-image: url("/backgrounds/orange/bg.jpeg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

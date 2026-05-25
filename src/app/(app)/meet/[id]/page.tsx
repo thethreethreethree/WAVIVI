@@ -78,7 +78,7 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
         />
         <BackButton
           fallback="/meet"
-          className="absolute left-4 top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] flex h-11 w-11 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur transition-transform active:scale-95"
+          className="absolute left-4 top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))]"
         />
         <span className="absolute right-4 top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-foreground">
           {meta.emoji} {category}
