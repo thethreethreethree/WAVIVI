@@ -53,6 +53,11 @@ const yumyumpo = Space_Grotesk({
 /** Applies the saved/system theme (light · dark · cute · orange) before paint. */
 const themeScript = `(function(){try{var t=localStorage.getItem('wavivi-theme');var theme=t||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');var c=document.documentElement.classList;if(theme==='dark')c.add('dark');else if(theme==='cute')c.add('cute');else if(theme==='orange')c.add('orange');}catch(e){}})();`;
 
+/** Marks the document so the opening splash CSS is hidden for return
+ *  visitors before first paint — otherwise SSR renders the splash markup
+ *  and the user gets a frame of home before JS hides it. */
+const splashScript = `(function(){try{if(sessionStorage.getItem('wavivi:opening-shown'))document.documentElement.classList.add('splash-hide');}catch(e){}})();`;
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
@@ -109,6 +114,7 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: splashScript }} />
       </head>
       <body className="min-h-full">
         {/* Watercolor edge filters — referenced via `filter: url(#wc-edge)`. */}

@@ -954,6 +954,13 @@ h3 {
   transform-origin: center;
 }
 
+/* Opening splash — hidden for return visitors by a synchronous inline
+   <head> script that adds `.splash-hide` to <html> before first paint.
+   First-time visitors get the splash painted from the very first frame. */
+.splash-hide .opening-splash {
+  display: none !important;
+}
+
 /* Back-button wiggle — a subtle attention-getting micro-shake that runs
    every few seconds so the user spots the affordance. */
 @keyframes back-wiggle {

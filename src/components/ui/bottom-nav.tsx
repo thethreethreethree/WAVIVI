@@ -98,36 +98,16 @@ export function BottomNav() {
     const active = isActive(t.href);
     return (
       <li key={t.href}>
-        {active ? (
-          <Link
-            href={t.href}
-            aria-current="page"
-            className="relative flex flex-col items-center"
-          >
-            {/* Floating label — floats up above the button, then fades. */}
-            <span
-              key={t.href}
-              className="wc-frame wc-frame-orange-white pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-center text-sm font-extrabold tracking-wide text-[#b8480a]"
-            >
-              {t.label}
-            </span>
-            <span className="relative flex h-13 w-13 items-center justify-center rounded-full text-white">
-              <span
-                className="wc-edge absolute inset-0 rounded-full bg-sunset"
-                aria-hidden
-              />
-              {iconSvg(t)}
-            </span>
-          </Link>
-        ) : (
-          <Link
-            href={t.href}
-            aria-label={t.label}
-            className="flex h-13 w-13 items-center justify-center text-glow/75"
-          >
-            {iconSvg(t)}
-          </Link>
-        )}
+        <Link
+          href={t.href}
+          aria-label={t.label}
+          aria-current={active ? "page" : undefined}
+          className={`flex h-13 w-13 items-center justify-center ${
+            active ? "text-glow" : "text-glow/75"
+          }`}
+        >
+          {iconSvg(t)}
+        </Link>
       </li>
     );
   };
@@ -139,24 +119,14 @@ export function BottomNav() {
       >
         {TABS.slice(0, 2).map(tab)}
 
-        {/* Susen — centre action, same footprint as the other tabs so the
-            row reads as a single aligned line. Breathes in place. */}
+        {/* Susen — centre action, same footprint as the other tabs. */}
         <li>
           <Link
             href="/susen"
             aria-label="Ask Susen"
             aria-current={susenActive ? "page" : undefined}
-            className="relative flex h-13 w-13 flex-col items-center justify-center"
+            className="flex h-13 w-13 items-center justify-center"
           >
-            {/* Floating label — same logic as the other nav tabs */}
-            {susenActive && (
-              <span
-                key="susen-label"
-                className="wc-frame wc-frame-orange-white pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-center text-sm font-extrabold tracking-wide text-[#b8480a]"
-              >
-                Susen
-              </span>
-            )}
             <SusenAvatar
               className={`h-13 w-13 shadow-card ring-2 ring-surface ${
                 susenActive ? "ring-glow/40" : ""
