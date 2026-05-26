@@ -1,5 +1,6 @@
 import { AppPrewarm } from "@/components/ui/app-prewarm";
 import { BottomNav } from "@/components/ui/bottom-nav";
+import { OpeningSplash } from "@/components/ui/opening-splash";
 import { PageTransition } from "@/components/ui/page-transition";
 import { ServiceWorkerRegister } from "@/features/pwa";
 
@@ -21,6 +22,7 @@ export default function AppLayout({
         </div>
       </div>
       <BottomNav />
+      <OpeningSplash />
       <ServiceWorkerRegister />
       <AppPrewarm />
     </div>
