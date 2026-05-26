@@ -1,20 +1,27 @@
 import Image from "next/image";
 import Link from "next/link";
 
-/** Home-screen top bar — Wondavu logo plus notification and group-chat shortcuts. */
-export function AppTopBar() {
+import { InstallPill } from "@/features/pwa";
+
+/** Home-screen top bar — Wondavu logo plus notification and group-chat shortcuts.
+ *  `showInstallPill` is set to true for unauthenticated visitors so they get
+ *  a soft nudge to install the PWA. Signed-in travelers never see it. */
+export function AppTopBar({ showInstallPill = false }: { showInstallPill?: boolean }) {
   return (
-    <header className="flex items-center justify-between px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
-      <Link href="/" aria-label="Wondavu home" className="flex items-center">
-        <Image
-          src="/wondavu-logo-v2.png"
-          alt="Wondavu"
-          width={240}
-          height={240}
-          priority
-          className="h-24 w-auto"
-        />
-      </Link>
+    <header className="flex items-start justify-between px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
+      <div className="flex flex-col items-start gap-2">
+        <Link href="/" aria-label="Wondavu home" className="flex items-center">
+          <Image
+            src="/wondavu-logo-v2.png"
+            alt="Wondavu"
+            width={240}
+            height={240}
+            priority
+            className="h-24 w-auto"
+          />
+        </Link>
+        {showInstallPill && <InstallPill />}
+      </div>
 
       <div className="flex items-center gap-2">
         <Link

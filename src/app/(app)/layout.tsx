@@ -1,7 +1,7 @@
 import { AppPrewarm } from "@/components/ui/app-prewarm";
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { PageTransition } from "@/components/ui/page-transition";
-import { InstallPrompt, ServiceWorkerRegister } from "@/features/pwa";
+import { ServiceWorkerRegister } from "@/features/pwa";
 
 /** Mobile app shell — phone-width frame + floating bottom nav. */
 export default function AppLayout({
@@ -22,7 +22,6 @@ export default function AppLayout({
       </div>
       <BottomNav />
       <ServiceWorkerRegister />
-      <InstallPrompt />
       <AppPrewarm />
     </div>
   );

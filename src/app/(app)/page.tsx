@@ -34,9 +34,16 @@ export default async function Home() {
     .select("id", { count: "exact", head: true });
   const hasPlans = (count ?? 0) > 0;
 
+  // First-time / anonymous visitors get the "install Wondavu" nudge next
+  // to the logo. Signed-in travelers never see it.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const showInstallPill = !user;
+
   return (
     <>
-      <AppTopBar />
+      <AppTopBar showInstallPill={showInstallPill} />
 
       <section className="relative flex flex-col items-center px-6 pb-6 pt-8">
         {/* Floating balloon decor — the painted asset from the brand kit,
