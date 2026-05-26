@@ -56,6 +56,7 @@ export function OpeningSplash() {
     >
       <video
         src="/decor/opening.mp4"
+        poster="/decor/opening-poster.jpg"
         autoPlay
         muted
         playsInline

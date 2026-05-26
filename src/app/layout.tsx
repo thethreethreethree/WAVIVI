@@ -55,8 +55,10 @@ const themeScript = `(function(){try{var t=localStorage.getItem('wavivi-theme');
 
 /** Marks the document so the opening splash CSS is hidden for return
  *  visitors before first paint — otherwise SSR renders the splash markup
- *  and the user gets a frame of home before JS hides it. */
-const splashScript = `(function(){try{if(sessionStorage.getItem('wavivi:opening-shown'))document.documentElement.classList.add('splash-hide');}catch(e){}})();`;
+ *  and the user gets a frame of home before JS hides it. Also kicks off
+ *  a high-priority video preload for first-time visitors so the splash
+ *  video data arrives in parallel with HTML/CSS rather than after. */
+const splashScript = `(function(){try{if(sessionStorage.getItem('wavivi:opening-shown')){document.documentElement.classList.add('splash-hide');return;}var l=document.createElement('link');l.rel='preload';l.as='video';l.href='/decor/opening.mp4';l.type='video/mp4';document.head.appendChild(l);}catch(e){}})();`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -115,6 +117,9 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script dangerouslySetInnerHTML={{ __html: splashScript }} />
+        {/* First-frame poster so the splash paints something on the
+            very first frame, before the video data arrives. */}
+        <link rel="preload" as="image" href="/decor/opening-poster.jpg" />
       </head>
       <body className="min-h-full">
         {/* Watercolor edge filters — referenced via `filter: url(#wc-edge)`. */}
