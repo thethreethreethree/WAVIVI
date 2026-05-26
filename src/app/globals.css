@@ -932,18 +932,15 @@ h3 {
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'><path d='M0 4 C10 3 20 5 30 4 S50 5 60 4 S80 3 100 4' stroke='%23f08a3c' stroke-width='2' fill='none' stroke-linecap='round'/></svg>");
 }
 
-/* Susen centre-nav avatar — a slow, gentle up-and-down bob. */
-@keyframes susen-bob {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-7px);
-  }
+/* Susen centre-nav avatar — slow, gentle in-place breathing pulse so the
+   orb feels alive without translating up-and-down. */
+@keyframes susen-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
 }
-.susen-bob {
-  animation: susen-bob 3.2s ease-in-out infinite;
+.susen-breathe {
+  animation: susen-breathe 3.6s ease-in-out infinite;
+  transform-origin: center;
 }
 
 /* Hub centre breathing — slow, ambient scale pulse on the "where to next"

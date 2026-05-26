@@ -69,7 +69,7 @@ export function BottomNav() {
 
   // Crisp SVG in Light/Dark; watercolor PNG in Cute/Orange. Both render —
   // CSS (.tj-line / .tj-paint) shows only the active theme's version.
-  const iconSvg = (t: Tab, big = false) => (
+  const iconSvg = (t: Tab) => (
     <>
       <svg
         viewBox="0 0 24 24"
@@ -78,9 +78,7 @@ export function BottomNav() {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className={`tj-line wc-edge-soft relative ${
-          big ? "h-[2.4rem] w-[2.4rem]" : "h-[1.9rem] w-[1.9rem]"
-        }`}
+        className="tj-line wc-edge-soft relative h-[1.9rem] w-[1.9rem]"
       >
         {t.icon}
       </svg>
@@ -90,9 +88,7 @@ export function BottomNav() {
           src={t.image}
           alt=""
           aria-hidden
-          className={`tj-paint relative object-contain ${
-            big ? "h-[3.4rem] w-[3.4rem]" : "h-[2.6rem] w-[2.6rem]"
-          }`}
+          className="tj-paint relative h-[2.6rem] w-[2.6rem] object-contain"
         />
       ) : null}
     </>
@@ -100,9 +96,6 @@ export function BottomNav() {
 
   const tab = (t: Tab) => {
     const active = isActive(t.href);
-    // Home is the primary, most-tapped destination — give it a bigger,
-    // friendlier target.
-    const big = t.href === "/";
     return (
       <li key={t.href}>
         {active ? (
@@ -114,31 +107,25 @@ export function BottomNav() {
             {/* Floating label — floats up above the button, then fades. */}
             <span
               key={t.href}
-              className="nav-label-rise wc-frame wc-frame-orange-white pointer-events-none absolute -top-9 left-1/2 whitespace-nowrap rounded-full px-3 py-1 text-center text-sm font-extrabold tracking-wide text-[#b8480a]"
+              className="wc-frame wc-frame-orange-white pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-center text-sm font-extrabold tracking-wide text-[#b8480a]"
             >
               {t.label}
             </span>
-            <span
-              className={`relative flex items-center justify-center rounded-full text-white transition-transform active:scale-95 ${
-                big ? "h-16 w-16" : "h-13 w-13"
-              }`}
-            >
+            <span className="relative flex h-13 w-13 items-center justify-center rounded-full text-white">
               <span
                 className="wc-edge absolute inset-0 rounded-full bg-sunset"
                 aria-hidden
               />
-              {iconSvg(t, big)}
+              {iconSvg(t)}
             </span>
           </Link>
         ) : (
           <Link
             href={t.href}
             aria-label={t.label}
-            className={`flex items-center justify-center text-glow/75 active:scale-95 ${
-              big ? "h-16 w-16" : "h-13 w-13"
-            }`}
+            className="flex h-13 w-13 items-center justify-center text-glow/75"
           >
-            {iconSvg(t, big)}
+            {iconSvg(t)}
           </Link>
         )}
       </li>
@@ -148,31 +135,30 @@ export function BottomNav() {
   return (
     <nav className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2">
       <ul
-        className="wc-frame flex items-center gap-2.5 rounded-full p-2.5 shadow-card"
+        className="wc-frame flex items-center gap-2 rounded-full px-3 py-1.5 shadow-card"
       >
         {TABS.slice(0, 2).map(tab)}
 
-        {/* Susen — elevated centre action */}
-        <li className="-mt-5 mx-1">
+        {/* Susen — centre action, same footprint as the other tabs so the
+            row reads as a single aligned line. Breathes in place. */}
+        <li>
           <Link
             href="/susen"
             aria-label="Ask Susen"
             aria-current={susenActive ? "page" : undefined}
-            className={`relative flex flex-col items-center transition-transform active:scale-95 ${
-              susenActive ? "scale-105" : ""
-            }`}
+            className="relative flex h-13 w-13 flex-col items-center justify-center"
           >
             {/* Floating label — same logic as the other nav tabs */}
             {susenActive && (
               <span
                 key="susen-label"
-                className="nav-label-rise wc-frame wc-frame-orange-white pointer-events-none absolute -top-9 left-1/2 whitespace-nowrap rounded-full px-3 py-1 text-center text-sm font-extrabold tracking-wide text-[#b8480a]"
+                className="wc-frame wc-frame-orange-white pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-center text-sm font-extrabold tracking-wide text-[#b8480a]"
               >
                 Susen
               </span>
             )}
             <SusenAvatar
-              className={`susen-bob h-17 w-17 shadow-card ring-4 ring-surface ${
+              className={`h-13 w-13 shadow-card ring-2 ring-surface ${
                 susenActive ? "ring-glow/40" : ""
               }`}
             />
