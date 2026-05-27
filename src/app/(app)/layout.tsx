@@ -1,3 +1,5 @@
+import { DesignEditor } from "@/components/dev/design-editor";
+import { DesignOverridesRuntime } from "@/components/dev/design-overrides-runtime";
 import { AppPrewarm } from "@/components/ui/app-prewarm";
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { OpeningSplash } from "@/components/ui/opening-splash";
@@ -26,7 +28,9 @@ export default function AppLayout({
       <OpeningSplash />
       <ServiceWorkerRegister />
       <ThemeImgSwap />
+      <DesignOverridesRuntime />
       <AppPrewarm />
+      <DesignEditor />
     </div>
   );
 }
