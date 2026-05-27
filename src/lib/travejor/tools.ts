@@ -17,7 +17,7 @@ export const travelerServices: TravelerService[] = [
   { id: "wifi", label: "Public Wi-Fi", icon: "wifi", blurb: "Free connection spots" },
   {
     id: "currency",
-    label: "Currency Exchange",
+    label: "Exchange",
     icon: "currency",
     blurb: "Exchange money at fair rates",
   },
