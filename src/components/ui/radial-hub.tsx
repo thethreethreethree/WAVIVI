@@ -105,7 +105,18 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
           onClick={onClick}
           className="group relative block h-full w-full touch-pan-x active:scale-95"
         >
-          <span className="hub-breathe wc-edge absolute inset-0 rounded-full bg-sunset" aria-hidden />
+          {/* Hand-painted CHARCOAL sketch_circle asset as the centre blob,
+              replacing the flat painted disc. Breathing scale stays on the
+              outer wrapper so the painted edge animates with it. */}
+          <span className="hub-breathe absolute inset-0" aria-hidden>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/decor/frames/sketch_circle.png"
+              alt=""
+              aria-hidden
+              className="h-full w-full select-none object-contain"
+            />
+          </span>
           <span className="relative flex h-full w-full items-center justify-center px-5">
             <span className="text-center text-lg font-bold uppercase leading-[1.15] tracking-[0.1em] text-white">
               {centerLabel}
