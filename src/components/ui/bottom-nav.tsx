@@ -78,7 +78,7 @@ export function BottomNav() {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="tj-line wc-edge-soft relative h-[1.9rem] w-[1.9rem]"
+        className="tj-line wc-edge-soft relative h-[2.2rem] w-[2.2rem]"
       >
         {t.icon}
       </svg>
@@ -88,7 +88,7 @@ export function BottomNav() {
           src={t.image}
           alt=""
           aria-hidden
-          className="tj-paint relative h-[2.6rem] w-[2.6rem] object-contain"
+          className="tj-paint relative h-[3.1rem] w-[3.1rem] object-contain"
         />
       ) : null}
     </>
@@ -102,7 +102,7 @@ export function BottomNav() {
           href={t.href}
           aria-label={t.label}
           aria-current={active ? "page" : undefined}
-          className={`flex h-13 w-13 items-center justify-center ${
+          className={`flex h-15 w-15 items-center justify-center ${
             active ? "text-glow" : "text-glow/75"
           }`}
         >
@@ -125,10 +125,10 @@ export function BottomNav() {
             href="/susen"
             aria-label="Ask Susen"
             aria-current={susenActive ? "page" : undefined}
-            className="flex h-13 w-13 items-center justify-center"
+            className="flex h-15 w-15 items-center justify-center"
           >
             <SusenAvatar
-              className={`h-13 w-13 shadow-card ring-2 ring-surface ${
+              className={`h-15 w-15 shadow-card ring-2 ring-surface ${
                 susenActive ? "ring-glow/40" : ""
               }`}
             />
