@@ -57,16 +57,19 @@ export default function ToolsPage() {
           frame asset is the visual; content sits absolutely on top. */}
       <Link
         href="/susen"
-        className="relative -mx-3 mt-5 block w-[calc(100%+1.5rem)] active:scale-[0.99]"
+        className="relative mt-4 block w-full active:scale-[0.99]"
       >
+        {/* Frame asset visually overflows past the Link box (negative
+            inset + max-w-none) so the painted frame reads bigger without
+            forcing the inner content area to grow. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/decor/frames/frame3.png"
           alt=""
           aria-hidden
-          className="block h-auto w-full select-none"
+          className="pointer-events-none absolute -inset-x-4 -inset-y-3 h-auto w-[calc(100%+2rem)] max-w-none select-none"
         />
-        <span className="absolute inset-0 flex items-center gap-3 px-5">
+        <span className="relative flex items-center gap-3 p-4">
           <SusenAvatar className="h-10 w-10 ring-2 ring-white/40" />
           <span className="min-w-0 flex-1">
             <span className="block text-base font-bold text-white">
