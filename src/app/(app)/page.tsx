@@ -45,7 +45,7 @@ export default async function Home() {
     <>
       <AppTopBar showInstallPill={showInstallPill} />
 
-      <section className="relative -mt-6 flex flex-col items-center px-6 pb-6 pt-0">
+      <section className="relative -mt-14 flex flex-col items-center px-6 pb-6 pt-0">
         {/* Floating balloon decor — the painted asset from the brand kit,
             replacing the old 📍 pins. Each balloon floats on its own loop
             so the cluster feels alive rather than animated in lockstep. */}
