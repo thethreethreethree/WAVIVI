@@ -45,7 +45,7 @@ export default async function Home() {
     <>
       <AppTopBar showInstallPill={showInstallPill} />
 
-      <section className="relative -mt-14 flex flex-col items-center px-6 pb-6 pt-0">
+      <section className="relative flex flex-col items-center px-6 pb-6 pt-8">
         {/* Floating balloon decor — the painted asset from the brand kit,
             replacing the old 📍 pins. Each balloon floats on its own loop
             so the cluster feels alive rather than animated in lockstep. */}
@@ -76,7 +76,7 @@ export default async function Home() {
 
         {/* Hero block — motto with the gradient accent on "Vibe.", and the
             brand tagline underneath with the watercolor underline. */}
-        <div className="relative z-10 mb-4 flex flex-col items-center gap-1.5 text-center">
+        <div className="relative z-10 -mt-10 mb-7 flex flex-col items-center gap-1.5 text-center">
           <h1 className="text-3xl leading-tight tracking-tight text-foreground">
             <span>Meet.&nbsp;</span>
             <span className="text-sunset">Vibe.</span>
