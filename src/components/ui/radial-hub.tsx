@@ -114,7 +114,7 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
               src="/decor/frames/sketch_circle.png"
               alt=""
               aria-hidden
-              style={{ filter: "none", transform: "translateY(20%) scale(1.5)" }}
+              style={{ filter: "none", transform: "translateY(30%) scale(1.65)" }}
               className="h-full w-full select-none object-contain"
             />
           </span>
