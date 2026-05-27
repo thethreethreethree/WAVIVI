@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import {
+  Covered_By_Your_Grace,
   Geist_Mono,
-  Permanent_Marker,
   Quicksand,
-  Reenie_Beanie,
   Space_Grotesk,
 } from "next/font/google";
 
@@ -20,22 +19,20 @@ const body = Quicksand({
   display: "swap",
 });
 
-// Handwriting voice — used sparingly for character moments (display titles,
-// journal entries, pull quotes, decorative accents). Never the default.
-const handwriting = Reenie_Beanie({
+// Handwriting voice — Covered By Your Grace by Kimberly Geswein. Picked for
+// readability at small sizes while keeping the hand-painted journal feel.
+// Used for character moments (display titles, journal entries, pull quotes,
+// section eyebrows, marker-style headings).
+const handwriting = Covered_By_Your_Grace({
   variable: "--font-handwriting",
   subsets: ["latin"],
   weight: "400",
   display: "swap",
 });
 
-// Bold marker face — kept for the "MEET. VIBE. MOVE." brand wordmark and a
-// handful of marker-style display headings in the mobile shell.
-const marker = Permanent_Marker({
-  variable: "--font-marker",
-  subsets: ["latin"],
-  weight: "400",
-});
+// `--font-marker` is aliased to `--font-handwriting` in globals.css so the
+// wordmark + marker-style mobile headings inherit Covered By Your Grace
+// without changing every consumer.
 
 // YumYumPo brand typeface — used on the partner handoff screen.
 const yumyumpo = Space_Grotesk({
@@ -112,7 +109,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${body.variable} ${handwriting.variable} ${marker.variable} ${yumyumpo.variable} ${codeMono.variable} h-full antialiased`}
+      className={`${body.variable} ${handwriting.variable} ${yumyumpo.variable} ${codeMono.variable} h-full antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
