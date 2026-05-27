@@ -1,13 +1,24 @@
 /**
  * Stays CSV import — admin-uploaded CSV of hostels / hotels / etc.
  *
- * Same parser shape as the toolbox-utility import. Header names are matched
- * case-insensitively; column order and blank spacer columns don't matter.
+ * Aligned with the REFINED partner data CSV
+ * (ASSETS SOURCE/PARTNERS DATA/HOSTEL REFINED DATA.csv):
  *
- * Recognised headers (all optional unless flagged required):
+ *   Category, Title, Rating, Reviews, Phone, WhatsApp, Instagram, Facebook,
+ *   Industry, Address, Website, Image, Amenities, Pitch, Latitude,
+ *   Longitude, Google Maps Link
+ *
+ * Header names are matched case-insensitively; column order and blank
+ * spacer columns don't matter. Recognised headers (all optional unless
+ * flagged required):
+ *
  *   Title* | Name                 — required
  *   Latitude* | Lat               — required
  *   Longitude* | Lng | Lon        — required
+ *   Category | Industry | Type    — stay type per row. The refined CSV
+ *      | Stay Type | Stay_Type      uses `Category` (e.g. HOSTEL); legacy
+ *                                   imports used `Industry`. Either works,
+ *                                   with `Category` taking precedence.
  *   Rating
  *   Reviews | Review Count
  *   Phone
@@ -15,17 +26,20 @@
  *   Instagram | IG | Instagram Handle
  *   Facebook | FB
  *   Email
- *   Industry | Type | Stay Type   — overrides the import's default stay type per row
- *   Description | Pitch           — short marketing copy shown on the
+ *   Pitch | Description | About   — short marketing copy shown on the
  *                                   listing's detail page
  *   Address
  *   Website
- *   Photo | Image | Photo URL
+ *   Image | Photo | Photo URL     — cover image URL
  *   Amenities                       — quoted comma-separated list, normalised
  *                                     to a canonical set (Free Wi-Fi, Outdoor
  *                                     pool, Air conditioning, …); unknown
  *                                     entries are kept verbatim.
  *   Google Maps Link | Google Maps URL | Link | URL
+ *
+ * Legacy-only — still accepted for backwards compat with older imports:
+ *   IG_Img_1 … IG_Img_6           — Instagram gallery photos. The refined
+ *                                   CSV no longer includes these.
  */
 
 import type { StayType } from "@/types/supabase";
@@ -327,8 +341,11 @@ export function parseStaysCsv(text: string): StayCsvParseResult {
     instagram: col("instagram", "ig", "instagram handle"),
     facebook: col("facebook", "fb"),
     email: col("email", "e-mail"),
-    type: col("industry", "type", "stay type", "stay_type"),
-    description: col("description", "pitch", "about"),
+    // The refined partner CSV uses `Category` (e.g. HOSTEL) as the type
+    // column; legacy imports used `Industry`. Either works — Category wins
+    // when both are present.
+    type: col("category", "industry", "type", "stay type", "stay_type"),
+    description: col("pitch", "description", "about"),
     address: col("address"),
     website: col("website"),
     photo: col(
