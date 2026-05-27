@@ -966,15 +966,18 @@ h3 {
   transform-origin: center;
 }
 
-/* Hub centre — slow continuous spin on the painted sketch ring so the
-   focal point feels alive. Linear timing for smooth rotation. */
-@keyframes hub-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+/* Hub centre — gentle pendulum sway, like a real balloon on a string.
+   Pivot anchored at the bottom of the wrapper (≈ where a hand would hold
+   the string), so the ring at the top swings in the widest arc. Slight
+   asymmetry in keyframe distribution avoids the perfect metronome feel. */
+@keyframes hub-sway {
+  0%   { transform: rotate(-3deg); }
+  50%  { transform: rotate(3deg); }
+  100% { transform: rotate(-3deg); }
 }
-.hub-spin {
-  animation: hub-spin 18s linear infinite;
-  transform-origin: center;
+.hub-sway {
+  animation: hub-sway 5.5s ease-in-out infinite;
+  transform-origin: 50% 100%;
 }
 
 /* Opening splash — hidden for return visitors by a synchronous inline
