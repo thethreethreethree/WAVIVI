@@ -22,7 +22,7 @@ const HUB_LINKS: HubLink[] = [
 ];
 
 /** Radius of the satellite ring, as a percentage of the container. */
-const RING_RADIUS = 47;
+const RING_RADIUS = 43;
 
 /**
  * The "Where to Next?" radial hub — Wondavu's signature home control,
