@@ -434,15 +434,39 @@ function EditorPanel({
         </Field>
 
         <Field label={`Font size (${computed.fontSize})`}>
-          <input
-            data-wv-design-chrome="1"
-            type="range"
-            min={8}
-            max={96}
-            defaultValue={parseFloat(computed.fontSize) || 16}
-            onChange={(e) => onChange("font-size", `${e.target.value}px`)}
-            className="w-full"
-          />
+          <div className="flex items-center gap-2">
+            <input
+              data-wv-design-chrome="1"
+              type="range"
+              min={8}
+              max={120}
+              defaultValue={parseFloat(computed.fontSize) || 16}
+              onChange={(e) => {
+                onChange("font-size", `${e.target.value}px`);
+                const num = e.currentTarget.nextElementSibling as
+                  | HTMLInputElement
+                  | null;
+                if (num) num.value = e.target.value;
+              }}
+              className="flex-1"
+            />
+            <input
+              data-wv-design-chrome="1"
+              type="number"
+              min={1}
+              max={400}
+              step={0.5}
+              defaultValue={parseFloat(computed.fontSize) || 16}
+              onChange={(e) => {
+                onChange("font-size", `${e.target.value}px`);
+                const range = e.currentTarget
+                  .previousElementSibling as HTMLInputElement | null;
+                if (range) range.value = e.target.value;
+              }}
+              className="w-16 rounded border border-slate-300 px-1.5 py-0.5 text-right text-xs"
+            />
+            <span className="text-[10px] text-slate-500">px</span>
+          </div>
         </Field>
 
         <Field label="Weight">
