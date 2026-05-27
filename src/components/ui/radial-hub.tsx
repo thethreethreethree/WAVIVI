@@ -127,11 +127,11 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
         <div
           key={item.href}
           style={{ left: `${item.x}%`, top: `${item.y}%` }}
-          className="absolute flex w-[88px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5"
+          className="absolute flex w-[112px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5"
         >
           <Link
             href={item.href}
-            className="relative block h-[72px] w-[72px] active:scale-95"
+            className="relative block h-[96px] w-[96px] active:scale-95"
           >
             {/* Soft tan/white wash behind the icon so it pops against the
                 busy parchment background. */}
@@ -142,8 +142,8 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
             <Image
               src={item.image}
               alt=""
-              width={144}
-              height={144}
+              width={192}
+              height={192}
               className="relative h-full w-full object-contain"
             />
           </Link>

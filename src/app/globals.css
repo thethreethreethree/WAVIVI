@@ -63,6 +63,25 @@
   --hub-core: #2a1c0e;
 }
 
+/* Sketch — ink on paper. Cool clean white background, dark ink foreground,
+   muted slate accents. Pairs with the SKETCH STYLE asset set. */
+.sketch {
+  --background: #f4ecd8;
+  --surface: #fbf6e7;
+  --surface-elevated: #fffaf0;
+  --foreground: #2a2114;
+  --muted: #7a6a55;
+  --border: #d9c9a8;
+
+  --accent-heat: #a8421c;
+  --accent-cool: #2a7a8c;
+  --accent-glow: #7a4520;
+
+  --gradient-sunset: linear-gradient(135deg, #7a4520 0%, #a06030 48%, #c89060 100%);
+  --shadow-card: 0 6px 18px -10px rgba(60, 38, 18, 0.30);
+  --hub-core: #1d140a;
+}
+
 /* Orange mode — warm hand-painted watercolor sunset. Tuned to match the
    REFIND ASSET V1 icon set: terracotta primaries, honey mids, peach paper.
    The previous neon orange is gone in favor of a softer, painterly palette. */
@@ -1049,6 +1068,14 @@ h3 {
 .dark .app-paper-bg {
   filter: brightness(0.32) saturate(0.85);
 }
+/* Sketch parchment — clean white-paper sketch backdrop. */
+.sketch .app-paper-bg {
+  background-image: url("/backgrounds/sketch/bg.jpeg");
+}
+/* Sketch theme — icon source swap. Because <img src> can't be rewritten
+   via CSS, we run a tiny client effect (see ThemeImgSwap component) that
+   retargets every /icons/orange/* to /icons/sketch/* whenever the .sketch
+   class is on <html>. */
 /* The Cute parchment is still applied when the .cute theme class is set —
    it overrides the rustic image above with the original cute backdrop. */
 
