@@ -363,12 +363,16 @@ export function ToolboxMap({
   const totalCount = utilities.length;
 
   return (
-    <div className="bg-sunset flex flex-1 flex-col">
-      {/* Top bar — watercolor sunset orange, matching the app's brand */}
-      <div className="bg-sunset relative z-20 flex flex-col gap-2.5 px-4 pb-3 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))] shadow-card">
-        <span
-          className="paper-grain-coarse pointer-events-none absolute inset-0"
+    <div className="flex flex-1 flex-col">
+      {/* Top bar — hand-painted CHARCOAL nav background asset behind the
+          controls, replacing the flat sunset orange. */}
+      <div className="relative z-20 flex flex-col gap-2.5 px-4 pb-3 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/decor/frames/nav_background1.png"
+          alt=""
           aria-hidden
+          className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover"
         />
         <div className="relative flex items-center justify-between gap-3">
           <h1 className="text-2xl font-bold tracking-tight text-white">
