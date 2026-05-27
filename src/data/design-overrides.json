@@ -15,5 +15,27 @@
     "font-size": "25px",
     "font-weight": "700",
     "color": "#87502c"
+  },
+  "div:1>div:0>div:1>div:0>div:0>a:0": {
+    "font-size": "17px",
+    "font-weight": "500"
+  },
+  "div:0>a:0": {
+    "textContent": "Plan a new trip ›"
+  },
+  "div:1>div:0>div:1>div:0>div:0": {
+    "font-weight": "700"
+  },
+  "div:1>div:0>div:1>div:0>div:0>header:0>p:0": {
+    "font-size": "22px"
+  },
+  "div:1>div:0>div:1>div:0>div:0>div:0": {
+    "color": "#3b2d1f"
+  },
+  "div:1>div:0>div:1>div:0>div:0>div:0>h1:0": {
+    "color": "",
+    "font-family": "var(--font-handwriting), cursive",
+    "font-weight": "700",
+    "font-size": "37px"
   }
 }

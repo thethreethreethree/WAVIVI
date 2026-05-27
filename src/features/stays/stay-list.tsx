@@ -133,7 +133,7 @@ export function StayList({
           <button
             type="button"
             onClick={() => setFiltersOpen((o) => !o)}
-            className="wc-frame inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-foreground"
+            className="wc-frame inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-base font-bold text-foreground"
           >
             <svg
               viewBox="0 0 24 24"
@@ -156,7 +156,7 @@ export function StayList({
             type="button"
             onClick={findNearMe}
             disabled={locating}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-base font-bold ${
               userPos
                 ? "bg-glow text-white"
                 : "wc-frame text-foreground"
@@ -173,7 +173,7 @@ export function StayList({
             <button
               type="button"
               onClick={() => setUserPos(null)}
-              className="text-[11px] font-semibold text-muted underline"
+              className="text-sm font-semibold text-muted underline"
             >
               clear
             </button>
@@ -241,7 +241,7 @@ export function StayList({
                   setMinRating(0);
                   setCategory("all");
                 }}
-                className="self-start text-[11px] font-semibold text-muted underline"
+                className="self-start text-sm font-semibold text-muted underline"
               >
                 Reset filters
               </button>
@@ -278,12 +278,12 @@ export function StayList({
                       aria-hidden
                     />
                     {/* Type pill — top-left */}
-                    <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-foreground">
+                    <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-base font-bold text-foreground">
                       🏠 {STAY_TYPE_LABEL[s.stay_type] ?? "Stay"}
                     </span>
                     {/* Top pick — top-right */}
                     {topPick && (
-                      <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-glow px-2.5 py-1 text-[11px] font-bold text-white shadow-card">
+                      <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-glow px-2.5 py-1 text-sm font-bold text-white shadow-card">
                         ⭐ Top pick
                       </span>
                     )}
@@ -302,11 +302,11 @@ export function StayList({
                   </div>
 
                   {/* Body */}
-                  <div className="flex items-center justify-between gap-2 p-3.5">
-                    <div className="flex min-w-0 items-center gap-2">
+                  <div className="flex items-center justify-between gap-3 p-3.5">
+                    <div className="flex shrink-0 items-center gap-2">
                       <Rating value={s.rating ?? s.backpack_rating} />
                       {s.review_count > 0 && (
-                        <span className="text-[11px] text-muted">
+                        <span className="text-sm text-muted">
                           ({s.review_count.toLocaleString()})
                         </span>
                       )}
@@ -316,7 +316,7 @@ export function StayList({
                         ${s.price_per_night_usd}/night
                       </span>
                     ) : s.address ? (
-                      <span className="min-w-0 truncate text-[11px] text-muted">
+                      <span className="min-w-0 truncate text-sm text-muted">
                         {s.address}
                       </span>
                     ) : null}
@@ -325,7 +325,7 @@ export function StayList({
                   {/* Picked by — traveler avatar stack */}
                   {pickers.length > 0 && (
                     <div className="flex items-center gap-2 px-3.5 pb-3.5 -mt-1">
-                      <span className="text-[11px] font-semibold text-muted">
+                      <span className="text-sm font-semibold text-muted">
                         Picked by
                       </span>
                       <div className="flex -space-x-2">
@@ -366,7 +366,7 @@ export function StayList({
                         ))}
                       </div>
                       {overflow > 0 && (
-                        <span className="text-[11px] font-semibold text-muted">
+                        <span className="text-sm font-semibold text-muted">
                           +{overflow} more
                         </span>
                       )}

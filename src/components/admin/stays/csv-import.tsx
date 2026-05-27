@@ -145,17 +145,16 @@ export function StaysCsvImport({ regionId }: { regionId: string }) {
       )}
 
       <p className="mt-3 text-[11px] text-muted">
-        Refined partner CSV format: <code>Category</code>, <code>Title</code>,{" "}
-        <code>Rating</code>, <code>Reviews</code>, <code>Phone</code>,{" "}
-        <code>WhatsApp</code>, <code>Instagram</code>, <code>Facebook</code>,{" "}
-        <code>Industry</code>, <code>Address</code>, <code>Website</code>,{" "}
-        <code>Image</code>, <code>Amenities</code>, <code>Pitch</code>,{" "}
-        <code>Latitude</code>, <code>Longitude</code>,{" "}
-        <code>Google Maps Link</code>. <code>Category</code> sets the stay
-        type per row (HOSTEL, HOTEL, etc.) and overrides the dropdown above.
-        Headers are case-insensitive; legacy <code>IG_Img_1</code>…
-        <code>IG_Img_6</code> columns still feed the photo gallery if
-        present.
+        Expected columns: <code>Title</code>, <code>Latitude</code>,{" "}
+        <code>Longitude</code>, <code>Rating</code>, <code>Reviews</code>,{" "}
+        <code>Phone</code>, <code>WhatsApp</code>, <code>Instagram</code>,{" "}
+        <code>Facebook</code>, <code>Email</code>, <code>Industry</code>,{" "}
+        <code>Description</code>, <code>Address</code>, <code>Website</code>,{" "}
+        <code>Photo</code>, <code>Amenities</code>,{" "}
+        <code>Google Maps Link</code>, <code>IG_Img_1</code>…
+        <code>IG_Img_6</code>. The six IG columns populate the swipeable photo
+        gallery on the stay&apos;s detail page (cover photo first, then up to 6
+        Instagram shots). Headers are case-insensitive.
       </p>
     </div>
   );

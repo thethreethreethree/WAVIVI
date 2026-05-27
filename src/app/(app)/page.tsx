@@ -77,15 +77,12 @@ export default async function Home() {
         {/* Hero block — motto with the gradient accent on "Vibe.", and the
             brand tagline underneath with the watercolor underline. */}
         <div className="relative z-10 mb-7 flex -translate-y-10 flex-col items-center gap-1.5 text-center">
-          <h1 className="text-4xl font-bold leading-tight tracking-tight text-foreground">
+          <h1 className="text-4xl leading-tight tracking-tight text-foreground">
             <span>Meet.&nbsp;</span>
-            <span style={{ color: "#bf5b25" }}>Vibe.</span>
+            <span className="text-sunset">Vibe.</span>
             <span>&nbsp;Move.</span>
           </h1>
-          <p
-            className="wc-underline relative mt-1 text-lg font-bold"
-            style={{ color: "#bf5b25" }}
-          >
+          <p className="wc-underline relative mt-1 text-2xl font-bold text-foreground">
             Find your people, wherever you wonder.
           </p>
         </div>
@@ -101,16 +98,16 @@ export default async function Home() {
       <section className="relative px-5 pb-8">
         <div className="mb-3 flex items-end justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted">
+            <p className="text-lg font-bold uppercase tracking-[0.25em] text-muted">
               Curated for you
             </p>
-            <h2 className="text-lg font-bold tracking-tight">
+            <h2 className="text-2xl font-bold tracking-tight">
               Recommended for you
             </h2>
           </div>
           <Link
             href="/todo"
-            className="text-xs font-bold text-glow hover:underline"
+            className="text-xl font-bold text-glow hover:underline"
           >
             See all →
           </Link>
@@ -140,15 +137,15 @@ export default async function Home() {
                     aria-hidden
                   />
                   {place.recommended && (
-                    <span className="absolute right-2 top-2 rounded-full bg-glow px-1.5 py-0.5 text-[9px] font-bold text-white shadow-card">
+                    <span className="absolute right-2 top-2 rounded-full bg-glow px-1.5 py-0.5 text-xs font-bold text-white shadow-card">
                       ⭐ pick
                     </span>
                   )}
                   <span className="absolute bottom-2 left-2.5 right-2.5 text-white">
-                    <span className="block truncate text-sm font-bold drop-shadow">
+                    <span className="block truncate text-base font-bold drop-shadow">
                       {place.name}
                     </span>
-                    <span className="block truncate text-[11px] opacity-90">
+                    <span className="block truncate text-sm opacity-90">
                       {place.category}
                     </span>
                   </span>

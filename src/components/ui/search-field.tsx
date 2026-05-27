@@ -36,7 +36,7 @@ export function SearchField({
         placeholder={placeholder}
         value={value}
         onChange={onChange ? (e) => onChange(e.target.value) : undefined}
-        className="w-full bg-transparent text-base outline-none placeholder:text-muted"
+        className="w-full bg-transparent text-xl outline-none placeholder:text-muted"
       />
     </div>
   );

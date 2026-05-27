@@ -141,7 +141,7 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
         <div
           key={item.href}
           style={{ left: `${item.x}%`, top: `${item.y}%` }}
-          className="absolute flex w-[112px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5"
+          className="absolute z-20 flex w-[112px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5"
         >
           <Link
             href={item.href}
@@ -161,7 +161,7 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
               className="relative h-full w-full object-contain"
             />
           </Link>
-          <span className="text-center text-sm font-semibold text-foreground">
+          <span className="text-center text-xl font-semibold text-foreground">
             {item.label}
           </span>
         </div>
