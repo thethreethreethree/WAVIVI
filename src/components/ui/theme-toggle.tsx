@@ -16,6 +16,7 @@ const OPTIONS: { value: Theme; label: string; icon: string }[] = [
 /** Reads the theme currently applied to <html>. */
 function currentTheme(): Theme {
   const c = document.documentElement.classList;
+  if (c.contains("sketch")) return "sketch";
   if (c.contains("cute")) return "cute";
   if (c.contains("orange")) return "orange";
   if (c.contains("dark")) return "dark";
@@ -37,7 +38,7 @@ export function ThemeToggle() {
   function choose(next: Theme) {
     setTheme(next);
     const c = document.documentElement.classList;
-    c.remove("dark", "cute", "orange");
+    c.remove("dark", "cute", "orange", "sketch");
     if (next !== "light") c.add(next);
     try {
       localStorage.setItem("wavivi-theme", next);
