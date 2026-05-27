@@ -23,7 +23,7 @@ export function AppTopBar({ showInstallPill = false }: { showInstallPill?: boole
         {showInstallPill && <InstallPill />}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3.5">
         <Link
           href="/notifications"
           aria-label="Notifications"
