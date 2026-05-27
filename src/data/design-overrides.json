@@ -1,7 +1,4 @@
 {
-  "div:1>div:0>div:1>div:0>section:0>div:1>div:0>div:0>a:0>span:0>span:0>span:0": {
-    "color": "#b3501e"
-  },
   "div:1>div:0>div:1>div:0>section:0>div:0>p:0": {
     "font-size": "19px",
     "font-weight": "700"
@@ -11,5 +8,8 @@
   },
   "div:1>div:0>div:1>div:0>section:0>div:0>h1:0>span:1": {
     "color": "#df6a08"
+  },
+  "div:1>div:0>div:1>div:0>section:0>div:1>div:0>div:0>a:0>span:0>span:0>span:0": {
+    "color": "#bf5b25"
   }
 }

@@ -3,18 +3,24 @@
 /**
  * Runtime applier for design overrides committed via the dev editor.
  * Runs in BOTH dev and production — reads the JSON file at
- * `src/data/design-overrides.json` (statically imported so it ships
- * with the bundle), walks the DOM after hydration, and applies each
- * override to its matching element by fingerprint.
+ * `src/data/design-overrides.json` (statically imported so it ships with
+ * the bundle), walks the DOM after hydration, and applies each override
+ * to its matching element.
  *
- * The fingerprint format MUST stay in sync with design-editor.tsx.
+ * Key formats supported:
+ *  - "wv:UUID"          → querySelector('[data-wv-id="UUID"]'). Bulletproof
+ *                          across refactors. Created when the dev editor
+ *                          successfully patches the source JSX.
+ *  - "tag:idx>tag:idx…" → legacy DOM-path fingerprint. Fragile across
+ *                          refactors; falls back when no source location
+ *                          could be captured.
  */
 
 import { useEffect } from "react";
 
 import overrides from "@/data/design-overrides.json";
 
-function findByFingerprint(fp: string): HTMLElement | null {
+function findByPathFingerprint(fp: string): HTMLElement | null {
   const parts = fp.split(">");
   let cur: Element | null = document.body;
   for (const part of parts) {
@@ -31,10 +37,21 @@ function findByFingerprint(fp: string): HTMLElement | null {
   return cur instanceof HTMLElement ? cur : null;
 }
 
+function findByKey(key: string): HTMLElement | null {
+  if (key.startsWith("wv:")) {
+    const id = key.slice(3);
+    const el = document.querySelector<HTMLElement>(
+      `[data-wv-id="${CSS.escape(id)}"]`,
+    );
+    return el;
+  }
+  return findByPathFingerprint(key);
+}
+
 function apply() {
   const map = overrides as Record<string, Record<string, string>>;
-  for (const [fp, styles] of Object.entries(map)) {
-    const el = findByFingerprint(fp);
+  for (const [key, styles] of Object.entries(map)) {
+    const el = findByKey(key);
     if (!el) continue;
     for (const [k, v] of Object.entries(styles)) {
       if (k === "textContent") el.innerText = v;
@@ -45,9 +62,7 @@ function apply() {
 
 export function DesignOverridesRuntime() {
   useEffect(() => {
-    // First pass after hydration.
     requestAnimationFrame(apply);
-    // Re-apply when the DOM grows (route change, list loads, etc.).
     const obs = new MutationObserver(() => apply());
     obs.observe(document.body, { childList: true, subtree: true });
     return () => obs.disconnect();

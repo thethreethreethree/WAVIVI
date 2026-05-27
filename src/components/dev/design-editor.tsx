@@ -23,7 +23,12 @@ const ENABLED_KEY = "wavivi:design-editor-enabled";
 const OUTLINE_CLASS = "wv-design-hover-outline";
 const SELECTED_CLASS = "wv-design-selected-outline";
 
-type Overrides = Record<string, Record<string, string>>;
+type StyleMap = Record<string, string>;
+type Overrides = Record<string, StyleMap>;
+/** Captured source locations for fingerprint-keyed overrides — sent up at
+ *  save time so the server can patch JSX and convert the key to a stable
+ *  `wv:UUID` anchor. */
+type SourceMap = Record<string, FiberSource>;
 
 const FONTS: { label: string; value: string }[] = [
   { label: "Body (Quicksand)", value: "var(--font-body), sans-serif" },
@@ -46,8 +51,11 @@ const COLORS: { label: string; value: string }[] = [
   { label: "Black", value: "#000000" },
 ];
 
-/** Build a stable-ish DOM path so we can re-apply overrides after reload. */
+/** Build a key for the element. Prefer a stable data-wv-id (anchored to
+ *  source on a prior save); fall back to a DOM-path fingerprint. */
 function fingerprintOf(el: Element): string {
+  const wvId = el.getAttribute("data-wv-id");
+  if (wvId) return `wv:${wvId}`;
   const path: string[] = [];
   let cur: Element | null = el;
   while (cur && cur !== document.body) {
@@ -63,6 +71,29 @@ function fingerprintOf(el: Element): string {
     cur = parent;
   }
   return path.join(">");
+}
+
+/** Pull the source location React stored on the fiber for this DOM node
+ *  (only present in dev builds; production strips `_debugSource`). Returns
+ *  the nearest ancestor fiber that has source info. */
+interface FiberSource {
+  fileName: string;
+  lineNumber: number;
+  columnNumber?: number;
+}
+function fiberSourceOf(el: HTMLElement): FiberSource | null {
+  const fiberKey = Object.keys(el).find((k) => k.startsWith("__reactFiber$"));
+  if (!fiberKey) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let fiber: any = (el as unknown as Record<string, unknown>)[fiberKey];
+  while (fiber) {
+    const src = fiber._debugSource as FiberSource | undefined;
+    if (src && typeof src.fileName === "string" && typeof src.lineNumber === "number") {
+      return src;
+    }
+    fiber = fiber.return;
+  }
+  return null;
 }
 
 /** Walk the DOM body and find the element matching the given fingerprint. */
@@ -101,11 +132,19 @@ function saveOverrides(o: Overrides) {
 
 function applyToElement(el: HTMLElement, styles: Record<string, string>) {
   for (const [k, v] of Object.entries(styles)) {
-    if (k === "textContent") {
-      el.textContent = v;
-    } else {
-      el.style.setProperty(k, v);
-    }
+    applyStyleToElement(el, k, v);
+  }
+}
+
+/** Single-property write — extracted so callers within React components
+ *  don't trip the react-hooks/immutability lint rule on state-derived refs. */
+function applyStyleToElement(el: HTMLElement, prop: string, value: string) {
+  if (value === "") {
+    el.style.removeProperty(prop);
+  } else if (prop === "textContent") {
+    el.innerText = value;
+  } else {
+    el.style.setProperty(prop, value);
   }
 }
 
@@ -127,6 +166,7 @@ function DesignEditorInner() {
   const [enabled, setEnabled] = useState(false);
   const [selected, setSelected] = useState<HTMLElement | null>(null);
   const overridesRef = useRef<Overrides>({});
+  const sourcesRef = useRef<SourceMap>({});
   const lastHoverRef = useRef<HTMLElement | null>(null);
 
   // Bootstrap — load persisted overrides and apply, restore enabled flag.
@@ -211,20 +251,16 @@ function DesignEditorInner() {
   const updateStyle = useCallback(
     (prop: string, value: string) => {
       if (!selected) return;
-      const el: HTMLElement = selected;
-      // The rule treats `selected` as React state, but it's a DOM ref —
-      // mutating its style/textContent is the only way to apply edits.
-      /* eslint-disable react-hooks/immutability */
-      if (value === "") {
-        el.style.removeProperty(prop);
-      } else if (prop === "textContent") {
-        el.innerText = value;
-      } else {
-        el.style.setProperty(prop, value);
-      }
-      /* eslint-enable react-hooks/immutability */
-      const fp = fingerprintOf(el);
+      // Route the mutation through an external helper so the
+      // react-hooks/immutability rule (which treats the `selected` state
+      // as immutable) doesn't false-positive on DOM writes.
+      applyStyleToElement(selected, prop, value);
+      const fp = fingerprintOf(selected);
       persist(fp, { [prop]: value });
+      if (!sourcesRef.current[fp]) {
+        const src = fiberSourceOf(selected);
+        if (src) sourcesRef.current[fp] = src;
+      }
     },
     [selected, persist],
   );
@@ -258,12 +294,28 @@ function DesignEditorInner() {
       const res = await fetch("/api/design-overrides", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(overridesRef.current),
+        body: JSON.stringify({
+          overrides: overridesRef.current,
+          sources: sourcesRef.current,
+        }),
       });
-      const json = (await res.json()) as { ok?: boolean; error?: string; count?: number };
+      const json = (await res.json()) as {
+        ok?: boolean;
+        error?: string;
+        count?: number;
+        anchored?: number;
+        skipped?: number;
+        overrides?: Overrides;
+      };
       if (json.ok) {
+        // Server returns the rewritten override map (fingerprint keys may
+        // have been converted to wv:UUID anchors after patching source).
+        if (json.overrides) {
+          overridesRef.current = json.overrides;
+          saveOverrides(json.overrides);
+        }
         alert(
-          `Saved ${json.count ?? 0} overrides to src/data/design-overrides.json — commit + push to ship.`,
+          `Saved ${json.count ?? 0} overrides. Anchored ${json.anchored ?? 0} to source (${json.skipped ?? 0} kept as fingerprint).\nCommit + push to ship.`,
         );
       } else {
         alert(`Save failed: ${json.error ?? res.status}`);
