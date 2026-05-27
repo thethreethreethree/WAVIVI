@@ -57,7 +57,7 @@ export default function ToolsPage() {
           frame asset is the visual; content sits absolutely on top. */}
       <Link
         href="/susen"
-        className="relative mt-4 block w-full active:scale-[0.99]"
+        className="relative -mx-3 mt-5 block w-[calc(100%+1.5rem)] active:scale-[0.99]"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
