@@ -721,7 +721,8 @@ h3 {
   text-align: center;
   font-size: 0.76rem;
   font-weight: 800;
-  background-image: var(--gradient-sunset);
+  background-image: none;
+  background-color: var(--accent-glow);
   color: #fff;
   text-decoration: none;
 }
@@ -1188,9 +1189,9 @@ h3 {
   border: 1.5px solid var(--border);
   filter: url(#wc-edge-soft);
 }
-/* Filled sunset variant — painted orange frame (buttons, accents). */
+/* Filled sunset variant — flat accent-glow (gradient removed). */
 .wc-frame-sunset::before {
-  background: var(--gradient-sunset);
+  background: var(--accent-glow);
   border-color: transparent;
 }
 /* Outline variant — painted orange ring, no fill. */
