@@ -118,15 +118,25 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
               className="h-full w-full select-none object-contain"
             />
           </span>
-          <span className="relative flex h-full w-full items-center justify-center px-5">
-            <span className="text-center text-lg font-bold uppercase leading-[1.15] tracking-[0.1em] text-white">
+          <span className="relative flex h-full w-full -translate-y-[10%] items-center justify-center px-5">
+            <span
+              className="text-center text-lg font-bold uppercase leading-[1.15] tracking-[0.1em] text-white"
+              style={{
+                // Hand-drawn orange outline via stacked text-shadows so the
+                // label reads against the parchment + balloon.
+                WebkitTextStroke: "1.5px var(--accent-glow)",
+                textShadow:
+                  "0 1px 0 var(--accent-glow), 0 0 4px rgba(0,0,0,0.18)",
+                paintOrder: "stroke fill",
+              }}
+            >
               {centerLabel}
             </span>
           </span>
           {hasPlans && (
             <span
               aria-hidden
-              className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-bold text-white/80"
+              className="absolute bottom-2 left-1/2 -translate-x-1/2 text-sm font-bold text-white/85"
             >
               swipe ↕
             </span>
