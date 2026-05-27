@@ -966,14 +966,14 @@ h3 {
   transform-origin: center;
 }
 
-/* Hub centre breathing — slow, ambient scale pulse on the "where to next"
-   blob so the focal point feels alive without being distracting. */
-@keyframes hub-breathe {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.045); }
+/* Hub centre — slow continuous spin on the painted sketch ring so the
+   focal point feels alive. Linear timing for smooth rotation. */
+@keyframes hub-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
-.hub-breathe {
-  animation: hub-breathe 4.5s ease-in-out infinite;
+.hub-spin {
+  animation: hub-spin 18s linear infinite;
   transform-origin: center;
 }
 

@@ -108,7 +108,7 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
           {/* Hand-drawn CHARCOAL sketch circle as the centre blob. PNG with
               a transparent background so the parchment shows through; the
               breathing scale keeps the focal point feeling alive. */}
-          <span className="hub-breathe absolute inset-0" aria-hidden>
+          <span className="hub-spin absolute inset-0" aria-hidden>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/decor/frames/sketch_circle.png"
