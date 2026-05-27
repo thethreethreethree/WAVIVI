@@ -1,10 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import {
-  Fredoka,
-  Geist,
   Geist_Mono,
-  Kalam,
   Permanent_Marker,
+  Quicksand,
+  Reenie_Beanie,
   Space_Grotesk,
 } from "next/font/google";
 
@@ -12,31 +11,26 @@ import { siteConfig } from "@/config/site";
 
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Body & UI typeface — rounded, friendly, highly legible. Used for every
+// paragraph, heading, button, label, and form control in the app.
+const body = Quicksand({
+  variable: "--font-body",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+// Handwriting voice — used sparingly for character moments (display titles,
+// journal entries, pull quotes, decorative accents). Never the default.
+const handwriting = Reenie_Beanie({
+  variable: "--font-handwriting",
   subsets: ["latin"],
+  weight: "400",
+  display: "swap",
 });
 
-// Friendly, rounded display face — the webapp headline voice.
-const display = Fredoka({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
-// Handwritten body face — the mobile app's travel-journal voice.
-const hand = Kalam({
-  variable: "--font-hand",
-  subsets: ["latin"],
-  weight: ["400", "700"],
-});
-
-// Bold marker face — masculine, journal-headline lettering.
+// Bold marker face — kept for the "MEET. VIBE. MOVE." brand wordmark and a
+// handful of marker-style display headings in the mobile shell.
 const marker = Permanent_Marker({
   variable: "--font-marker",
   subsets: ["latin"],
@@ -48,6 +42,12 @@ const yumyumpo = Space_Grotesk({
   variable: "--font-yumyumpo",
   subsets: ["latin"],
   weight: ["500", "700"],
+});
+
+// Code/data font — kept for any inline code rendering.
+const codeMono = Geist_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
 });
 
 /** Applies the saved/system theme (light · dark · cute · orange) before paint. */
@@ -112,7 +112,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${display.variable} ${hand.variable} ${marker.variable} ${yumyumpo.variable} h-full antialiased`}
+      className={`${body.variable} ${handwriting.variable} ${marker.variable} ${yumyumpo.variable} ${codeMono.variable} h-full antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />

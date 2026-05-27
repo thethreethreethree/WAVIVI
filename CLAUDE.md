@@ -44,6 +44,41 @@ src/
 2. Copy `.env.example` to `.env.local` and fill in the Supabase keys.
 3. `npm run dev`
 
+## Typography
+
+The app uses **two fonts only**:
+
+- **Reenie Beanie** (`var(--font-handwriting)`) — traveler's handwriting voice.
+  Used for character moments only: display titles, journal entries, pull
+  quotes, decorative accents. Never for body, UI, buttons, or forms.
+- **Quicksand** (`var(--font-body)`) — everything else: body, headings, UI,
+  buttons, labels, navigation, forms.
+
+(Permanent Marker is reserved for the brand wordmark + a handful of marker
+headings inside `.font-hand-app`. Space Grotesk is the YumYumPo partner-page
+font. Geist Mono is for inline code only.)
+
+**How to render text:** import from `@/components/text` and use the named
+components. Never hardcode `font-family`, `font-size`, `line-height`, or use
+raw Tailwind sizes like `text-3xl` / `text-sm` — they bypass the type system.
+
+```tsx
+import { Heading, BodyText, JournalText, Caption, ButtonText } from "@/components/text";
+
+<Heading level={1}>Discover Palawan</Heading>
+<BodyText>Hidden lagoons and limestone cliffs await.</BodyText>
+<JournalText>Day three. The water is so clear it doesn&apos;t look real.</JournalText>
+<Caption>Posted 2h ago</Caption>
+```
+
+When you need a one-off style: add it to `src/design/typography.ts` with a
+semantic name (`hero`, `pageSubtitle`, not `text20Bold`), add a matching
+utility class to `globals.css`, add a convenience component to
+`src/components/text/Text.tsx`, then use it everywhere — never inline.
+
+**Reenie Beanie rule of thumb:** if you find yourself reaching for it more
+than ~10% of the time, you're overusing it. Guest voice, not default.
+
 ## Roadmap
 
 Build order is tracked in `src/config/phases.ts`. All 12 phases are
