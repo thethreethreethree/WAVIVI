@@ -105,10 +105,9 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
           onClick={onClick}
           className="group relative block h-full w-full touch-pan-x active:scale-95"
         >
-          {/* Hand-drawn CHARCOAL sketch circle as the centre blob. PNG with
-              a transparent background so the parchment shows through; the
-              breathing scale keeps the focal point feeling alive. */}
-          <span className="hub-sway absolute inset-0" aria-hidden>
+          {/* Balloon + label + swipe hint all share the swaying wrapper so
+              the text reads as if it were painted on the balloon itself. */}
+          <span className="hub-sway absolute inset-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/decor/frames/sketch_circle.png"
@@ -117,26 +116,23 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
               style={{ filter: "none", transform: "translateY(30%) scale(1.65)" }}
               className="h-full w-full select-none object-contain"
             />
-          </span>
-          <span className="relative flex h-full w-full -translate-y-[8%] items-center justify-center px-5">
-            <span
-              className="text-center text-lg font-bold uppercase leading-[1.15] tracking-[0.1em]"
-              style={{
-                // Fill matches the balloon's terracotta charcoal stroke.
-                color: "var(--accent-glow)",
-              }}
-            >
-              {centerLabel}
+            <span className="absolute inset-0 flex -translate-y-[8%] items-center justify-center px-5">
+              <span
+                className="text-center text-lg font-bold uppercase leading-[1.15] tracking-[0.1em]"
+                style={{ color: "var(--accent-glow)" }}
+              >
+                {centerLabel}
+              </span>
             </span>
+            {hasPlans && (
+              <span
+                aria-hidden
+                className="absolute bottom-2 left-1/2 -translate-x-1/2 -translate-y-[110%] text-sm font-bold text-glow"
+              >
+                swipe ↕
+              </span>
+            )}
           </span>
-          {hasPlans && (
-            <span
-              aria-hidden
-              className="absolute bottom-2 left-1/2 -translate-x-1/2 -translate-y-[110%] text-sm font-bold text-glow"
-            >
-              swipe ↕
-            </span>
-          )}
         </Link>
       </div>
 
