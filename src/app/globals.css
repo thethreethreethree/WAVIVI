@@ -971,13 +971,17 @@ h3 {
    the string), so the ring at the top swings in the widest arc. Slight
    asymmetry in keyframe distribution avoids the perfect metronome feel. */
 @keyframes hub-sway {
-  0%   { transform: rotate(-3deg); }
-  50%  { transform: rotate(3deg); }
-  100% { transform: rotate(-3deg); }
+  0%   { transform: rotate(-7deg); }
+  50%  { transform: rotate(7deg); }
+  100% { transform: rotate(-7deg); }
 }
 .hub-sway {
-  animation: hub-sway 5.5s ease-in-out infinite;
-  transform-origin: 50% 100%;
+  animation: hub-sway 5s ease-in-out infinite;
+  /* Pivot near the string's tip (below the wrapper) so the balloon at the
+     top swings in a wide arc — same physics as a real balloon held by the
+     base of its string. */
+  transform-origin: 50% 130%;
+  will-change: transform;
 }
 
 /* Opening splash — hidden for return visitors by a synchronous inline
