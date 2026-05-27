@@ -105,15 +105,17 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
           onClick={onClick}
           className="group relative block h-full w-full touch-pan-x active:scale-95"
         >
-          {/* Hand-painted CHARCOAL sketch_circle asset as the centre blob,
-              replacing the flat painted disc. Breathing scale stays on the
-              outer wrapper so the painted edge animates with it. */}
-          <span className="absolute inset-0" aria-hidden>
+          {/* Hand-painted CHARCOAL sketch_circle asset as the centre blob.
+              Breathing scale is on the wrapper; `filter: none` on the img
+              defends against any inherited watercolor SVG filter that
+              would otherwise wash out the pencil strokes. */}
+          <span className="hub-breathe absolute inset-0" aria-hidden>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/decor/frames/sketch_circle.png"
               alt=""
               aria-hidden
+              style={{ filter: "none" }}
               className="h-full w-full select-none object-contain"
             />
           </span>
