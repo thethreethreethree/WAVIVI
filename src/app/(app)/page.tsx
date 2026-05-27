@@ -76,7 +76,7 @@ export default async function Home() {
 
         {/* Hero block — motto with the gradient accent on "Vibe.", and the
             brand tagline underneath with the watercolor underline. */}
-        <div className="relative z-10 mb-7 flex flex-col items-center gap-1.5 text-center">
+        <div className="relative z-10 mb-7 flex -translate-y-10 flex-col items-center gap-1.5 text-center">
           <h1 className="text-3xl leading-tight tracking-tight text-foreground">
             <span>Meet.&nbsp;</span>
             <span className="text-sunset">Vibe.</span>
