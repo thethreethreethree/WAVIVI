@@ -323,6 +323,94 @@ export async function getChatAuthors(
   return out;
 }
 
+/** Groups the signed-in user is currently a member of, sorted by the
+ *  most-recent join. Powers the "My Groups" page. Returns [] if the
+ *  user isn't signed in. */
+export async function listMyChatGroups(): Promise<PublicChatGroup[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: memberRows } = await supabase
+    .from("chat_group_members")
+    .select("group_id, joined_at")
+    .eq("user_id", user.id)
+    .order("joined_at", { ascending: false });
+
+  const rows =
+    (memberRows as { group_id: string; joined_at: string }[] | null) ?? [];
+  if (rows.length === 0) return [];
+
+  const groupIds = rows.map((r) => r.group_id);
+  const { data: groupRows } = await supabase
+    .from("chat_groups")
+    .select(
+      "id, name, description, category, cover_image, destination_city, destination_country, featured, chat_group_members(count)",
+    )
+    .in("id", groupIds)
+    .eq("archived", false);
+
+  type Row = {
+    id: string;
+    name: string;
+    description: string | null;
+    category: string | null;
+    cover_image: string | null;
+    destination_city: string | null;
+    destination_country: string | null;
+    featured: boolean;
+    chat_group_members?: Array<{ count: number }>;
+  };
+
+  const byId = new Map<string, Row>();
+  for (const g of ((groupRows as unknown as Row[] | null) ?? [])) {
+    byId.set(g.id, g);
+  }
+
+  // Preserve the most-recent-joined order from memberRows, drop any
+  // groups that have since been archived (not returned by the second query).
+  const ordered = rows
+    .map((r) => byId.get(r.group_id))
+    .filter((g): g is Row => Boolean(g));
+
+  // Fetch up to 3 preview avatars per group (same pattern as the public
+  // list) so the cards aren't empty.
+  const ids = ordered.map((g) => g.id);
+  const previewByGroup = new Map<string, (string | null)[]>();
+  if (ids.length > 0) {
+    const { data: avatarRows } = await supabase
+      .from("chat_group_members")
+      .select("group_id, joined_at, profiles!inner(avatar_url)")
+      .in("group_id", ids)
+      .order("joined_at", { ascending: false });
+    type AvatarRow = {
+      group_id: string;
+      profiles: { avatar_url: string | null } | { avatar_url: string | null }[];
+    };
+    for (const a of ((avatarRows as unknown as AvatarRow[] | null) ?? [])) {
+      const p = Array.isArray(a.profiles) ? a.profiles[0] : a.profiles;
+      const list = previewByGroup.get(a.group_id) ?? [];
+      if (list.length < 3) list.push(p?.avatar_url ?? null);
+      previewByGroup.set(a.group_id, list);
+    }
+  }
+
+  return ordered.map((g) => ({
+    id: g.id,
+    name: g.name,
+    description: g.description,
+    category: g.category,
+    cover_image: g.cover_image,
+    destination_city: g.destination_city,
+    destination_country: g.destination_country,
+    featured: g.featured,
+    member_count: g.chat_group_members?.[0]?.count ?? 0,
+    preview_avatars: previewByGroup.get(g.id) ?? [],
+  }));
+}
+
 /** True if the signed-in user belongs to the group. */
 export async function isMember(groupId: string): Promise<boolean> {
   const supabase = await createClient();

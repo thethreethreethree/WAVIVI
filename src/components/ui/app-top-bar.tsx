@@ -42,8 +42,8 @@ export function AppTopBar({ showInstallPill = false }: { showInstallPill?: boole
           />
         </Link>
         <Link
-          href="/meet"
-          aria-label="Group chats"
+          href="/my-groups"
+          aria-label="My groups"
           className="relative flex h-11 w-11 items-center justify-center active:scale-95"
         >
           <span
