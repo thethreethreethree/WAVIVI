@@ -103,7 +103,7 @@ export default function ToolsPage() {
               />
               <Icon name={service.icon} className="relative h-[92px] w-[92px]" />
             </span>
-            <span className="text-center text-sm font-semibold">
+            <span className="text-center text-lg font-semibold">
               {service.label}
             </span>
           </Link>
