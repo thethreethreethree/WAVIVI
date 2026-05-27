@@ -132,7 +132,7 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
           {hasPlans && (
             <span
               aria-hidden
-              className="absolute bottom-2 left-1/2 -translate-x-1/2 text-sm font-bold text-white/85"
+              className="absolute bottom-2 left-1/2 -translate-x-1/2 -translate-y-[20%] text-sm font-bold text-glow"
             >
               swipe ↕
             </span>
