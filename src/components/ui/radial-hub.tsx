@@ -108,7 +108,7 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
           {/* Hand-painted CHARCOAL sketch_circle asset as the centre blob,
               replacing the flat painted disc. Breathing scale stays on the
               outer wrapper so the painted edge animates with it. */}
-          <span className="hub-breathe absolute inset-0" aria-hidden>
+          <span className="absolute inset-0" aria-hidden>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/decor/frames/sketch_circle.png"
