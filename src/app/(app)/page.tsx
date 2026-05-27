@@ -77,12 +77,15 @@ export default async function Home() {
         {/* Hero block — motto with the gradient accent on "Vibe.", and the
             brand tagline underneath with the watercolor underline. */}
         <div className="relative z-10 mb-7 flex -translate-y-10 flex-col items-center gap-1.5 text-center">
-          <h1 className="text-3xl leading-tight tracking-tight text-foreground">
+          <h1 className="text-4xl font-bold leading-tight tracking-tight text-foreground">
             <span>Meet.&nbsp;</span>
-            <span className="text-sunset">Vibe.</span>
+            <span style={{ color: "#bf5b25" }}>Vibe.</span>
             <span>&nbsp;Move.</span>
           </h1>
-          <p className="wc-underline relative mt-1 text-sm text-muted">
+          <p
+            className="wc-underline relative mt-1 text-lg font-bold"
+            style={{ color: "#bf5b25" }}
+          >
             Find your people, wherever you wonder.
           </p>
         </div>
