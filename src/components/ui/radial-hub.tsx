@@ -105,17 +105,21 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
           onClick={onClick}
           className="group relative block h-full w-full touch-pan-x active:scale-95"
         >
-          {/* Hand-painted CHARCOAL sketch_circle asset as the centre blob.
-              Breathing scale is on the wrapper; `filter: none` on the img
-              defends against any inherited watercolor SVG filter that
-              would otherwise wash out the pencil strokes. */}
+          {/* Hand-drawn animated sketch loop as the centre blob. The video
+              has a light/cream background; `mix-blend-mode: multiply` lets
+              the dark pencil strokes "stamp" onto the parchment while the
+              white pixels effectively become transparent — no alpha channel
+              required, so the asset stays a tiny H.264 MP4 instead of a
+              huge WebM/alpha file. Breathing scale is on the wrapper. */}
           <span className="hub-breathe absolute inset-0" aria-hidden>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/decor/frames/sketch_circle.png"
-              alt=""
-              aria-hidden
-              style={{ filter: "none" }}
+            <video
+              src="/decor/frames/sketch_circle.mp4"
+              autoPlay
+              muted
+              playsInline
+              loop
+              preload="auto"
+              style={{ mixBlendMode: "multiply", filter: "none" }}
               className="h-full w-full select-none object-contain"
             />
           </span>
