@@ -341,6 +341,10 @@ export type StayRow = {
   claimed_by: string | null;
   metadata_json: Record<string, unknown>;
   active: boolean;
+  /** Hidden from the public site until an admin approves. Set by the
+   *  Partner Collection extension ingest route; cleared in the admin
+   *  pending-review queue. */
+  needs_review: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -379,6 +383,7 @@ export type StayInsert = {
   claimed_by?: string | null;
   metadata_json?: Record<string, unknown>;
   active?: boolean;
+  needs_review?: boolean;
 };
 
 export type StayUpdate = Partial<Omit<StayInsert, "source_ref">>;
@@ -826,6 +831,179 @@ export type ChatInviteLogInsert = {
 
 export type ChatInviteLogUpdate = Partial<Omit<ChatInviteLogInsert, "id">>;
 
+/* ── Pet ─────────────────────────────────────────────────────────────── */
+// See supabase/migrations/0034_pet_core.sql.
+
+export type PetSpecies = "wanderling";
+export type PetStage =
+  | "egg"
+  | "hatchling"
+  | "pup"
+  | "explorer"
+  | "wayfarer"
+  | "elder";
+export type PetBranch =
+  | "explorer"
+  | "social"
+  | "foodie"
+  | "homebody"
+  | "adventurer";
+export type PetStatus = "healthy" | "sick" | "dormant";
+export type PetItemCategory =
+  | "food"
+  | "toy"
+  | "hat"
+  | "body"
+  | "background"
+  | "boost"
+  | "special";
+
+export type PetRow = {
+  user_id: string;
+  species: PetSpecies;
+  name: string;
+  stage: PetStage;
+  branch: PetBranch | null;
+  xp: number;
+  hunger: number;
+  happiness: number;
+  energy: number;
+  cleanliness: number;
+  wanderlust: number;
+  bond: number;
+  status: PetStatus;
+  wc_balance: number;
+  last_tick_at: string;
+  hatched_at: string | null;
+  created_at: string;
+};
+
+export type PetInsert = {
+  user_id: string;
+  species?: PetSpecies;
+  name?: string;
+  stage?: PetStage;
+  branch?: PetBranch | null;
+  xp?: number;
+  hunger?: number;
+  happiness?: number;
+  energy?: number;
+  cleanliness?: number;
+  wanderlust?: number;
+  bond?: number;
+  status?: PetStatus;
+  wc_balance?: number;
+  last_tick_at?: string;
+  hatched_at?: string | null;
+};
+
+export type PetUpdate = Partial<Omit<PetInsert, "user_id">>;
+
+export type PetItemRow = {
+  slug: string;
+  category: PetItemCategory;
+  name: string;
+  description: string | null;
+  price_wc: number;
+  effect: Record<string, unknown>;
+  region: string | null;
+  sprite: string;
+  unlock_stage: PetStage | null;
+  active: boolean;
+  created_at: string;
+};
+
+export type PetItemInsert = Omit<PetItemRow, "created_at" | "active"> & {
+  active?: boolean;
+};
+export type PetItemUpdate = Partial<PetItemInsert>;
+
+export type PetInventoryRow = {
+  user_id: string;
+  item_slug: string;
+  qty: number;
+  equipped: boolean;
+  acquired_at: string;
+};
+
+export type PetInventoryInsert = {
+  user_id: string;
+  item_slug: string;
+  qty?: number;
+  equipped?: boolean;
+};
+
+export type PetInventoryUpdate = Partial<
+  Omit<PetInventoryInsert, "user_id" | "item_slug">
+>;
+
+export type PetTokenLedgerRow = {
+  id: number;
+  user_id: string;
+  delta: number;
+  balance_after: number;
+  reason: string;
+  source_kind: string | null;
+  source_id: string | null;
+  meta: Record<string, unknown>;
+  created_at: string;
+};
+
+export type PetTokenLedgerInsert = {
+  user_id: string;
+  delta: number;
+  balance_after: number;
+  reason: string;
+  source_kind?: string | null;
+  source_id?: string | null;
+  meta?: Record<string, unknown>;
+};
+
+export type PetTokenLedgerUpdate = Partial<
+  Omit<PetTokenLedgerInsert, "user_id">
+>;
+
+export type PetRewardRuleRow = {
+  action_kind: string;
+  xp: number;
+  tokens: number;
+  stat_bumps: Record<string, number>;
+  cap_per_day: number | null;
+  one_time: boolean;
+  active: boolean;
+  updated_at: string;
+};
+
+export type PetRewardRuleInsert = {
+  action_kind: string;
+  xp?: number;
+  tokens?: number;
+  stat_bumps?: Record<string, number>;
+  cap_per_day?: number | null;
+  one_time?: boolean;
+  active?: boolean;
+};
+
+export type PetRewardRuleUpdate = Partial<
+  Omit<PetRewardRuleInsert, "action_kind">
+>;
+
+export type PetEventRow = {
+  id: number;
+  user_id: string;
+  kind: string;
+  meta: Record<string, unknown>;
+  at: string;
+};
+
+export type PetEventInsert = {
+  user_id: string;
+  kind: string;
+  meta?: Record<string, unknown>;
+};
+
+export type PetEventUpdate = Partial<Omit<PetEventInsert, "user_id">>;
+
 /* ── Database ─────────────────────────────────────────────────────────── */
 
 type TableShape<R, I, U> = {
@@ -892,6 +1070,24 @@ export type Database = {
         ChatInviteLogInsert,
         ChatInviteLogUpdate
       >;
+      pet: TableShape<PetRow, PetInsert, PetUpdate>;
+      pet_item: TableShape<PetItemRow, PetItemInsert, PetItemUpdate>;
+      pet_inventory: TableShape<
+        PetInventoryRow,
+        PetInventoryInsert,
+        PetInventoryUpdate
+      >;
+      pet_token_ledger: TableShape<
+        PetTokenLedgerRow,
+        PetTokenLedgerInsert,
+        PetTokenLedgerUpdate
+      >;
+      pet_reward_rule: TableShape<
+        PetRewardRuleRow,
+        PetRewardRuleInsert,
+        PetRewardRuleUpdate
+      >;
+      pet_event: TableShape<PetEventRow, PetEventInsert, PetEventUpdate>;
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };

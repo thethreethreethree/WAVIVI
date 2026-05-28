@@ -9,12 +9,16 @@ export const dynamic = "force-dynamic";
 export default async function StaysAdminLandingPage() {
   const supabase = await createClient();
 
-  const [regionsRes, staysCountRes] = await Promise.all([
+  const [regionsRes, staysCountRes, pendingRes] = await Promise.all([
     supabase
       .from("regions")
       .select("*")
       .order("display_name", { ascending: true }),
     supabase.from("stays").select("*", { count: "exact", head: true }),
+    supabase
+      .from("stays")
+      .select("*", { count: "exact", head: true })
+      .eq("needs_review", true),
   ]);
 
   const regions = (regionsRes.data ?? []) as RegionRow[];
@@ -40,12 +44,29 @@ export default async function StaysAdminLandingPage() {
             {staysCountRes.count ?? 0} stays across {regions.length} regions.
           </p>
         </div>
-        <Link
-          href="/admin/toolbox"
-          className="rounded-full bg-foreground/10 px-4 py-2 text-sm font-bold text-foreground hover:bg-foreground/15"
-        >
-          ← Toolbox admin
-        </Link>
+        <div className="flex items-center gap-2">
+          {pendingRes.count && pendingRes.count > 0 ? (
+            <Link
+              href="/admin/stays/pending"
+              className="rounded-full bg-glow/15 px-4 py-2 text-sm font-bold text-glow hover:bg-glow/25"
+            >
+              {pendingRes.count} pending review →
+            </Link>
+          ) : (
+            <Link
+              href="/admin/stays/pending"
+              className="rounded-full bg-foreground/5 px-4 py-2 text-sm font-bold text-muted hover:bg-foreground/10"
+            >
+              Pending review
+            </Link>
+          )}
+          <Link
+            href="/admin/toolbox"
+            className="rounded-full bg-foreground/10 px-4 py-2 text-sm font-bold text-foreground hover:bg-foreground/15"
+          >
+            ← Toolbox admin
+          </Link>
+        </div>
       </header>
 
       <section className="mt-8">

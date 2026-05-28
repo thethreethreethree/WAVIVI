@@ -36,6 +36,7 @@ const EDITABLE: (keyof StayUpdate)[] = [
   "description",
   "region_id",
   "active",
+  "needs_review",
 ];
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {
