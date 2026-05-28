@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -22,6 +23,18 @@ const RATING_FILTERS = [
   { v: 4, label: "4.0+" },
   { v: 4.5, label: "4.5+" },
 ];
+
+/** Map cuisine → sketch icon filename in /icons/sketch/. Missing entries
+ *  fall back to restaurant.png so every card renders something on-brand. */
+const CUISINE_ICON: Record<string, string> = {
+  Cafe: "coffee",
+  Bar: "bar",
+  // Add more here as the sketch set grows (pizza, sushi, taco, etc.).
+};
+function cuisineIcon(c: string | null | undefined): string {
+  if (!c) return "restaurant";
+  return CUISINE_ICON[c] ?? "restaurant";
+}
 
 type UserPos = { lat: number; lng: number };
 
@@ -256,7 +269,15 @@ export function RestaurantList({
                     {/* Cuisine pill — top-left */}
                     {r.cuisine && (
                       <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold capitalize text-foreground">
-                        🍽️ {r.cuisine}
+                        <Image
+                          src={`/icons/sketch/${cuisineIcon(r.cuisine)}.png`}
+                          alt=""
+                          width={16}
+                          height={16}
+                          className="h-4 w-4"
+                          aria-hidden
+                        />
+                        {r.cuisine}
                       </span>
                     )}
                     {/* Top pick — top-right */}
