@@ -29,7 +29,17 @@ const RATING_FILTERS = [
 const CUISINE_ICON: Record<string, string> = {
   Cafe: "coffee",
   Bar: "bar",
-  // Add more here as the sketch set grows (pizza, sushi, taco, etc.).
+  Asian: "asian",
+  Bakery: "bakery",
+  "BBQ & Grill": "bbq_grill",
+  Desserts: "desserts",
+  "Fast Food": "fast_food",
+  Filipino: "filipino",
+  Italian: "italian",
+  Mediterranean: "mediterranean",
+  Seafood: "seafood",
+  Vegan: "vegan",
+  // Still missing: Pizza, Japanese, Korean, Thai, Indian, Mexican.
 };
 function cuisineIcon(c: string | null | undefined): string {
   if (!c) return "restaurant";
