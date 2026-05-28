@@ -39,7 +39,12 @@ const CUISINE_ICON: Record<string, string> = {
   Mediterranean: "mediterranean",
   Seafood: "seafood",
   Vegan: "vegan",
-  // Still missing: Pizza, Japanese, Korean, Thai, Indian, Mexican.
+  Pizza: "pizza",
+  Japanese: "sushi",
+  Korean: "korean",
+  Thai: "thai",
+  Indian: "indian",
+  Mexican: "mexican",
 };
 function cuisineIcon(c: string | null | undefined): string {
   if (!c) return "restaurant";
