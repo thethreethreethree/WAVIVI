@@ -44,6 +44,10 @@ const FONTS: { label: string; value: string }[] = [
     label: "Hand-printed (Architects Daughter)",
     value: "var(--font-architects), cursive",
   },
+  {
+    label: "Bold marker (Permanent Marker)",
+    value: "var(--font-permanent-marker), cursive",
+  },
   { label: "Mono (Geist Mono)", value: "var(--font-mono), monospace" },
 ];
 

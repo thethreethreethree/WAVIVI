@@ -3,6 +3,7 @@ import {
   Architects_Daughter,
   Covered_By_Your_Grace,
   Geist_Mono,
+  Permanent_Marker,
   Quicksand,
   Space_Grotesk,
 } from "next/font/google";
@@ -39,6 +40,15 @@ const handwriting = Covered_By_Your_Grace({
 // great for section eyebrows / labels where a tidier hand is wanted.
 const architects = Architects_Daughter({
   variable: "--font-architects",
+  subsets: ["latin"],
+  weight: "400",
+  display: "swap",
+});
+
+// Permanent Marker — Font Diner. Thick black marker for high-impact
+// display moments (e.g. brand wordmark style).
+const permanentMarker = Permanent_Marker({
+  variable: "--font-permanent-marker",
   subsets: ["latin"],
   weight: "400",
   display: "swap",
@@ -119,7 +129,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${body.variable} ${handwriting.variable} ${architects.variable} ${yumyumpo.variable} ${codeMono.variable} h-full antialiased`}
+      className={`${body.variable} ${handwriting.variable} ${architects.variable} ${permanentMarker.variable} ${yumyumpo.variable} ${codeMono.variable} h-full antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
