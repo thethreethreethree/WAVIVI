@@ -136,6 +136,9 @@ function loadOverrides(): Overrides {
 function saveOverrides(o: Overrides) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(o));
+    // Notify the runtime applier in the same tab — the native `storage`
+    // event only fires across tabs, so we dispatch a custom one too.
+    window.dispatchEvent(new Event("wavivi:overrides-changed"));
   } catch {
     /* ignore */
   }

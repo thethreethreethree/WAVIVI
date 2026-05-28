@@ -7,6 +7,10 @@
  * the bundle), walks the DOM after hydration, and applies each override
  * to its matching element.
  *
+ * In dev, ALSO merges localStorage["wavivi:design-overrides"] on top of
+ * the bundled JSON so unsaved-to-source edits from the design editor
+ * persist across React re-renders without needing a page refresh.
+ *
  * Key formats supported:
  *  - "wv:UUID"          → querySelector('[data-wv-id="UUID"]'). Bulletproof
  *                          across refactors. Created when the dev editor
@@ -18,7 +22,32 @@
 
 import { useEffect } from "react";
 
-import overrides from "@/data/design-overrides.json";
+import bundledOverrides from "@/data/design-overrides.json";
+
+const LOCAL_STORAGE_KEY = "wavivi:design-overrides";
+
+/** Merge bundled JSON overrides with localStorage edits (dev). localStorage
+ *  wins per-key so a freshly-edited style replaces the bundled one until the
+ *  user runs "Save to source" (which rewrites the JSON) or clears overrides. */
+function readMergedOverrides(): Record<string, Record<string, string>> {
+  const base = bundledOverrides as Record<string, Record<string, string>>;
+  if (process.env.NODE_ENV === "production") return base;
+  try {
+    const raw =
+      typeof window !== "undefined"
+        ? window.localStorage.getItem(LOCAL_STORAGE_KEY)
+        : null;
+    if (!raw) return base;
+    const local = JSON.parse(raw) as Record<string, Record<string, string>>;
+    const merged: Record<string, Record<string, string>> = { ...base };
+    for (const [k, v] of Object.entries(local)) {
+      merged[k] = { ...(merged[k] ?? {}), ...v };
+    }
+    return merged;
+  } catch {
+    return base;
+  }
+}
 
 function findByPathFingerprint(fp: string): HTMLElement | null {
   const parts = fp.split(">");
@@ -49,7 +78,7 @@ function findByKey(key: string): HTMLElement | null {
 }
 
 function apply() {
-  const map = overrides as Record<string, Record<string, string>>;
+  const map = readMergedOverrides();
   for (const [key, styles] of Object.entries(map)) {
     const el = findByKey(key);
     if (!el) continue;
@@ -65,6 +94,23 @@ export function DesignOverridesRuntime() {
     requestAnimationFrame(apply);
     const obs = new MutationObserver(() => apply());
     obs.observe(document.body, { childList: true, subtree: true });
+
+    // In dev, listen for the editor's localStorage writes so we re-apply
+    // immediately when the user toggles a control — no refresh needed.
+    if (process.env.NODE_ENV !== "production") {
+      const onStorage = (e: StorageEvent) => {
+        if (e.key === LOCAL_STORAGE_KEY) requestAnimationFrame(apply);
+      };
+      const onCustom = () => requestAnimationFrame(apply);
+      window.addEventListener("storage", onStorage);
+      window.addEventListener("wavivi:overrides-changed", onCustom);
+      return () => {
+        obs.disconnect();
+        window.removeEventListener("storage", onStorage);
+        window.removeEventListener("wavivi:overrides-changed", onCustom);
+      };
+    }
+
     return () => obs.disconnect();
   }, []);
   return null;
