@@ -18,6 +18,14 @@ const nextConfig: NextConfig = {
       // is the project ref (e.g. lgdbcowtsasjyrzmylzv.supabase.co), so
       // wildcard captures any project we deploy against.
       { protocol: "https", hostname: "**.supabase.co" },
+      // Google-hosted Place photos returned by the Partner Collection
+      // ingest (the stays-photos bucket mirrors these, but raw rows can
+      // still carry the original URL until the mirror job runs).
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
+      { protocol: "https", hostname: "lh4.googleusercontent.com" },
+      { protocol: "https", hostname: "lh5.googleusercontent.com" },
+      { protocol: "https", hostname: "lh6.googleusercontent.com" },
+      { protocol: "https", hostname: "**.ggpht.com" },
     ],
   },
   // Security headers applied to every route.
