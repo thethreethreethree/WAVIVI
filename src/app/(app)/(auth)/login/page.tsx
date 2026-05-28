@@ -33,10 +33,10 @@ export default async function LoginPage({
 
   return (
     <div className="pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
-      <h1 className="mb-1 text-lg font-semibold">
+      <h1 className="mb-1 text-3xl font-bold">
         {goingToAdmin ? "Admin sign-in" : "Welcome back"}
       </h1>
-      <p className="mb-5 text-sm text-muted">
+      <p className="mb-5 text-lg text-muted">
         {goingToAdmin
           ? "Sign in with your Wondavu admin account."
           : "Sign in to pick up where you left off."}

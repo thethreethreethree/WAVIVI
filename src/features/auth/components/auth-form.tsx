@@ -9,7 +9,7 @@ import { type AuthState, initialAuthState } from "@/features/auth/types";
 type Mode = "login" | "signup";
 
 const fieldClass =
-  "wc-frame w-full rounded-lg bg-transparent px-3 py-2.5 text-sm " +
+  "wc-frame w-full rounded-lg bg-transparent px-3 py-2.5 text-lg " +
   "outline-none transition-colors placeholder:text-muted focus-visible:border-glow";
 
 export function AuthForm({
@@ -64,12 +64,12 @@ export function AuthForm({
       />
 
       {state.error && (
-        <p className="text-sm text-heat" role="alert">
+        <p className="text-base text-heat" role="alert">
           {state.error}
         </p>
       )}
       {state.message && (
-        <p className="text-sm text-cool" role="status">
+        <p className="text-base text-cool" role="status">
           {state.message}
         </p>
       )}
@@ -77,7 +77,7 @@ export function AuthForm({
       <button
         type="submit"
         disabled={pending}
-        className="mt-1 rounded-lg bg-glow px-4 py-2.5 text-sm font-medium text-white
+        className="mt-1 rounded-lg bg-glow px-4 py-2.5 text-lg font-semibold text-white
                    transition-opacity hover:opacity-90 active:opacity-80
                    disabled:cursor-not-allowed disabled:opacity-50"
       >
@@ -88,7 +88,7 @@ export function AuthForm({
             : "Create account"}
       </button>
 
-      <p className="mt-2 text-center text-sm text-muted">
+      <p className="mt-2 text-center text-base text-muted">
         {mode === "login" ? (
           <>
             New to Wondavu?{" "}
@@ -125,7 +125,7 @@ function Field({
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium text-muted">{label}</span>
+      <span className="text-base font-semibold text-muted">{label}</span>
       <input name={name} required className={fieldClass} {...props} />
     </label>
   );
