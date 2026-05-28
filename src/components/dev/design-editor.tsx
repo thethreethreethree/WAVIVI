@@ -20,6 +20,26 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const STORAGE_KEY = "wavivi:design-overrides";
 const ENABLED_KEY = "wavivi:design-editor-enabled";
+const PALETTE_KEY = "wavivi:design-editor-palette";
+
+function loadPalette(): string[] {
+  try {
+    const raw = localStorage.getItem(PALETTE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+    return Array.isArray(parsed)
+      ? parsed.filter((x): x is string => typeof x === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+function savePalette(p: string[]) {
+  try {
+    localStorage.setItem(PALETTE_KEY, JSON.stringify(p));
+  } catch {
+    /* ignore */
+  }
+}
 const OUTLINE_CLASS = "wv-design-hover-outline";
 const SELECTED_CLASS = "wv-design-selected-outline";
 
@@ -179,6 +199,7 @@ export function DesignEditor() {
 function DesignEditorInner() {
   const [enabled, setEnabled] = useState(false);
   const [selected, setSelected] = useState<HTMLElement | null>(null);
+  const [palette, setPalette] = useState<string[]>([]);
   const overridesRef = useRef<Overrides>({});
   const sourcesRef = useRef<SourceMap>({});
   const lastHoverRef = useRef<HTMLElement | null>(null);
@@ -196,6 +217,8 @@ function DesignEditorInner() {
     try {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- bootstrap state from localStorage on mount
       setEnabled(localStorage.getItem(ENABLED_KEY) === "1");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- bootstrap state from localStorage on mount
+      setPalette(loadPalette());
     } catch {
       /* ignore */
     }
@@ -397,6 +420,18 @@ function DesignEditorInner() {
           onResetAll={resetAll}
           onExport={exportCss}
           onSave={saveToSource}
+          palette={palette}
+          onAddPaletteColor={(color) => {
+            if (!color || palette.includes(color)) return;
+            const next = [...palette, color];
+            setPalette(next);
+            savePalette(next);
+          }}
+          onRemovePaletteColor={(color) => {
+            const next = palette.filter((c) => c !== color);
+            setPalette(next);
+            savePalette(next);
+          }}
         />
       )}
     </>
@@ -411,6 +446,9 @@ function EditorPanel({
   onResetAll,
   onExport,
   onSave,
+  palette,
+  onAddPaletteColor,
+  onRemovePaletteColor,
 }: {
   element: HTMLElement;
   onChange: (prop: string, value: string) => void;
@@ -419,6 +457,9 @@ function EditorPanel({
   onResetAll: () => void;
   onExport: () => void;
   onSave: () => void;
+  palette: string[];
+  onAddPaletteColor: (color: string) => void;
+  onRemovePaletteColor: (color: string) => void;
 }) {
   const computed = getComputedStyle(element);
   const tag = element.tagName.toLowerCase();
@@ -474,13 +515,59 @@ function EditorPanel({
               </option>
             ))}
           </select>
-          <input
-            data-wv-design-chrome="1"
-            type="color"
-            defaultValue={rgbToHex(computed.color)}
-            onChange={(e) => onChange("color", e.target.value)}
-            className="mt-1 h-7 w-full rounded border border-slate-300"
-          />
+          <div className="mt-1 flex items-center gap-1">
+            <input
+              data-wv-design-chrome="1"
+              type="color"
+              defaultValue={rgbToHex(computed.color)}
+              onChange={(e) => onChange("color", e.target.value)}
+              className="h-7 flex-1 rounded border border-slate-300"
+              id="wv-color-input"
+            />
+            <button
+              data-wv-design-chrome="1"
+              type="button"
+              title="Add the current picker color to your palette"
+              onClick={() => {
+                const input = document.getElementById(
+                  "wv-color-input",
+                ) as HTMLInputElement | null;
+                if (input?.value) onAddPaletteColor(input.value);
+              }}
+              className="h-7 shrink-0 rounded border border-slate-300 bg-slate-50 px-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+            >
+              + Add to palette
+            </button>
+          </div>
+          {palette.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {palette.map((c) => (
+                <div
+                  key={c}
+                  data-wv-design-chrome="1"
+                  className="group relative"
+                >
+                  <button
+                    type="button"
+                    onClick={() => onChange("color", c)}
+                    title={`Apply ${c}`}
+                    style={{ backgroundColor: c }}
+                    className="h-6 w-6 rounded border border-slate-300 shadow-sm"
+                    aria-label={`Apply palette color ${c}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onRemovePaletteColor(c)}
+                    title="Remove from palette"
+                    className="absolute -right-1 -top-1 hidden h-3.5 w-3.5 items-center justify-center rounded-full bg-slate-700 text-[9px] font-bold leading-none text-white group-hover:flex"
+                    aria-label={`Remove ${c} from palette`}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </Field>
 
         <Field label="Font family">
