@@ -283,13 +283,13 @@ export function RestaurantList({
                     />
                     {/* Cuisine pill — top-left */}
                     {r.cuisine && (
-                      <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold capitalize text-foreground">
+                      <span className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-3.5 py-1.5 text-sm font-bold capitalize text-foreground">
                         <Image
                           src={`/icons/sketch/${cuisineIcon(r.cuisine)}.png`}
                           alt=""
-                          width={16}
-                          height={16}
-                          className="h-4 w-4"
+                          width={28}
+                          height={28}
+                          className="h-6 w-6"
                           aria-hidden
                         />
                         {r.cuisine}
