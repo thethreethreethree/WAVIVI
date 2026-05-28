@@ -44,16 +44,11 @@ export async function AppTopBar({
       </div>
 
       <div className="flex items-center gap-3.5">
-        <div className="flex flex-col items-center gap-1">
-          <RegionPicker
-            regions={regions}
-            currentId={currentId}
-            currentLabel={currentLabel}
-          />
-          <span className="max-w-[5.5rem] truncate text-center text-xs font-semibold text-muted">
-            {currentLabel}
-          </span>
-        </div>
+        <RegionPicker
+          regions={regions}
+          currentId={currentId}
+          currentLabel={currentLabel}
+        />
         <Link
           href="/notifications"
           aria-label="Notifications"
