@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { AppTopBar } from "@/components/ui/app-top-bar";
+import { CardImage } from "@/components/ui/card-image";
 import { RadialHub } from "@/components/ui/radial-hub";
 import { getCurrentRegionId } from "@/lib/regions/current";
 import { createClient } from "@/lib/supabase/server";
@@ -207,7 +208,7 @@ export default async function Home() {
                   image — same pattern as the rest of the brand cards. */}
               <div className="wc-frame relative h-36 w-44 rounded-2xl p-1.5 transition active:scale-[0.98]">
                 <span className="relative block h-full w-full overflow-hidden rounded-xl">
-                  <Image
+                  <CardImage
                     src={card.image}
                     alt={card.name}
                     fill

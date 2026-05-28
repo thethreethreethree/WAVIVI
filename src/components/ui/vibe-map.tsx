@@ -280,13 +280,22 @@ export function VibeMap() {
       },
       (err) => {
         setNearby(null);
-        setNotice(
-          err.code === err.PERMISSION_DENIED
-            ? "Location permission denied — enable it to see what's near you."
-            : "Couldn't get your location. Try again.",
-        );
+        let msg: string;
+        if (err.code === err.PERMISSION_DENIED) {
+          msg =
+            "Location permission denied — enable it to see what's near you.";
+        } else if (err.code === err.TIMEOUT) {
+          msg = "Location took too long — showing the area instead.";
+        } else {
+          msg = "Couldn't get your location. Try again.";
+        }
+        setNotice(msg);
       },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
+      // enableHighAccuracy=false lets browsers fall back to cell/Wi-Fi
+      // positioning instead of waking GPS — far fewer timeouts on iOS
+      // Safari + indoor users. 6s cap so we fail fast and show the
+      // graceful notice instead of a 8-10s hang.
+      { enableHighAccuracy: false, timeout: 6000, maximumAge: 5 * 60 * 1000 },
     );
   }
 
