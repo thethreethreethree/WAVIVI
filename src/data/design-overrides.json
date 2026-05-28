@@ -1,9 +1,13 @@
 {
   "div:1>div:0>div:1>div:0>section:0>div:1>div:0>div:0>a:0>span:0>span:1": {
-    "color": "#bf683c"
+    "color": "#bf5b25",
+    "font-weight": "400",
+    "font-size": "20px",
+    "line-height": "1.07857"
   },
   "div:1>div:0>div:1>div:0>section:0>div:0>h1:0>span:1": {
-    "color": "#df6a08"
+    "color": "#df6a08",
+    "font-weight": "300"
   },
   "div:1>div:0>div:1>div:0>section:0>div:1>div:0>div:0>a:0>span:0>span:0>span:0": {
     "color": "#bf5b25"
@@ -37,5 +41,71 @@
     "font-family": "var(--font-handwriting), cursive",
     "font-weight": "700",
     "font-size": "37px"
+  },
+  "": {
+    "font-size": "17px"
+  },
+  "div:1>div:0>div:1>div:0>section:1>div:0>div:0>p:0": {
+    "font-weight": "300",
+    "color": "#8f5100",
+    "font-size": "15px",
+    "line-height": "1.65"
+  },
+  "div:1>div:0>div:1>div:0>section:0>div:1>div:0>div:5>span:0": {
+    "font-size": "18px",
+    "color": "#433524"
+  },
+  "div:1>div:0>div:1>div:0>section:0>div:1>div:0": {
+    "font-size": "16px",
+    "font-family": "var(--font-handwriting), cursive"
+  },
+  "div:1>div:0>div:1>div:0>section:0>div:1>div:0>div:1>span:0": {
+    "font-size": "18px",
+    "color": "#433524"
+  },
+  "div:1>div:0>div:1>div:0>section:0>div:1>div:0>div:2>span:0": {
+    "font-size": "18px"
+  },
+  "div:1>div:0>div:1>div:0>section:0>div:1>div:0>div:4>span:0": {
+    "font-size": "18px"
+  },
+  "div:1>div:0>div:1>div:0>section:0>div:1>div:0>div:3>span:0": {
+    "font-size": "18px"
+  },
+  "div:1>div:0>div:1>div:0>section:0>div:0>p:0": {
+    "font-size": "23px",
+    "font-weight": "700",
+    "color": "#433524"
+  },
+  "div:1>div:0>div:1>div:0>section:0>div:0>h1:0>span:2": {
+    "font-weight": "300"
+  },
+  "div:1>div:0>div:1>div:0>section:1>div:0": {
+    "font-size": "13.5px"
+  },
+  "div:1>div:0>div:1>div:0>section:0>div:0>h1:0>span:0": {
+    "font-weight": "300"
+  },
+  "div:1>div:0>div:1>div:0>section:1>div:0>div:0>h2:0": {
+    "font-size": "17px",
+    "font-weight": "600",
+    "color": "#393732"
+  },
+  "div:1>div:0>div:1>div:0>div:0>div:0>div:0>input:0": {
+    "font-size": "16px"
+  },
+  "div:1>div:0>div:1>div:0>div:0>div:0>div:1>button:1": {
+  },
+  "div:1>div:0>div:1>div:0>div:0>div:0>div:1>button:0": {
+    "font-size": "16px"
+  },
+  "div:1>div:0>div:1>div:0>div:0>div:0>div:0": {
+    "font-size": "17px"
+  },
+  "div:1>div:0>div:1>div:0>div:0>header:0>h1:0>span:0": {
+    "font-weight": "300"
+  },
+  "div:1>div:0>div:1>div:0>div:0>div:0>div:0>h1:0": {
+    "font-weight": "600"
   }
 }
