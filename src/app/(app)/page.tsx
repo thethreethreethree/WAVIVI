@@ -3,10 +3,19 @@ import Link from "next/link";
 
 import { AppTopBar } from "@/components/ui/app-top-bar";
 import { RadialHub } from "@/components/ui/radial-hub";
+import { getCurrentRegionId } from "@/lib/regions/current";
 import { createClient } from "@/lib/supabase/server";
 import { places } from "@/lib/travejor/places";
 
 export const dynamic = "force-dynamic";
+
+type ForYouCard = {
+  id: string;
+  name: string;
+  image: string;
+  category: string;
+  href: string;
+};
 
 /** Decorative balloon floaters scattered behind the hub — varied sizes +
  *  drift delays so the cluster reads as a hand-painted scene, not a grid. */
@@ -20,15 +29,78 @@ const FLOATERS = [
 ];
 
 export default async function Home() {
-  // Rule-based "For you" picks. Eat is excluded — it lives on YumYumPo.
-  const forYou = places
-    .filter((p) => p.recommended && p.kind !== "eat")
-    .slice(0, 6);
+  const supabase = await createClient();
+  const regionId = await getCurrentRegionId();
+
+  // "For you" picks. When a region is selected, pull live top-rated
+  // stays / restaurants / experiences from that region (2 of each).
+  // When no region is selected, fall back to the legacy hand-picked
+  // mock set in places.ts so anonymous landings still feel alive.
+  let forYou: ForYouCard[];
+  if (regionId) {
+    const [{ data: regStays }, { data: regEats }, { data: regExps }] =
+      await Promise.all([
+        supabase
+          .from("stays")
+          .select("id, name, photo_url, stay_type")
+          .eq("active", true)
+          .eq("region_id", regionId)
+          .order("backpack_rating", { ascending: false })
+          .limit(2),
+        supabase
+          .from("restaurants")
+          .select("id, name, photo_url, cuisine")
+          .eq("active", true)
+          .eq("region_id", regionId)
+          .order("backpack_rating", { ascending: false })
+          .limit(2),
+        supabase
+          .from("experiences")
+          .select("id, name, photo_url, category")
+          .eq("active", true)
+          .eq("region_id", regionId)
+          .order("backpack_rating", { ascending: false })
+          .limit(2),
+      ]);
+    forYou = [
+      ...(regStays ?? []).map((s) => ({
+        id: s.id,
+        name: s.name,
+        image: s.photo_url ?? "/decor/balloon-floater.png",
+        category: s.stay_type ?? "Stay",
+        href: `/stay/${s.id}`,
+      })),
+      ...(regEats ?? []).map((r) => ({
+        id: r.id,
+        name: r.name,
+        image: r.photo_url ?? "/decor/balloon-floater.png",
+        category: r.cuisine ?? "Eat",
+        href: `/eat/${r.id}`,
+      })),
+      ...(regExps ?? []).map((e) => ({
+        id: e.id,
+        name: e.name,
+        image: e.photo_url ?? "/decor/balloon-floater.png",
+        category: e.category ?? "Experience",
+        href: `/todo/${e.id}`,
+      })),
+    ];
+  } else {
+    forYou = places
+      .filter((p) => p.recommended && p.kind !== "eat")
+      .slice(0, 6)
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        image: p.image,
+        category: p.category,
+        href: `/place/${p.id}`,
+      }));
+  }
 
   // RLS scopes travel_plans to the signed-in user, so a non-zero count
   // here means *this* traveler has a saved plan and the hub flips its
   // label. Anonymous visitors get the default "Where to next?".
-  const supabase = await createClient();
   const { count } = await supabase
     .from("travel_plans")
     .select("id", { count: "exact", head: true });
@@ -113,10 +185,10 @@ export default async function Home() {
           </Link>
         </div>
         <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {forYou.map((place) => (
+          {forYou.map((card) => (
             <Link
-              key={place.id}
-              href={`/place/${place.id}`}
+              key={card.id}
+              href={card.href}
               className="group w-44 shrink-0"
             >
               {/* wc-frame wraps the photo with a painted edge (the ::before
@@ -126,8 +198,8 @@ export default async function Home() {
               <div className="wc-frame relative h-36 w-44 rounded-2xl p-1.5 transition active:scale-[0.98]">
                 <span className="relative block h-full w-full overflow-hidden rounded-xl">
                   <Image
-                    src={place.image}
-                    alt={place.name}
+                    src={card.image}
+                    alt={card.name}
                     fill
                     sizes="176px"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -136,17 +208,12 @@ export default async function Home() {
                     className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent"
                     aria-hidden
                   />
-                  {place.recommended && (
-                    <span className="absolute right-2 top-2 rounded-full bg-glow px-1.5 py-0.5 text-xs font-bold text-white shadow-card">
-                      ⭐ pick
-                    </span>
-                  )}
                   <span className="absolute bottom-2 left-2.5 right-2.5 text-white">
                     <span className="block truncate text-base font-bold drop-shadow">
-                      {place.name}
+                      {card.name}
                     </span>
                     <span className="block truncate text-sm opacity-90">
-                      {place.category}
+                      {card.category}
                     </span>
                   </span>
                 </span>

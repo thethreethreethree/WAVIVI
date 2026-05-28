@@ -1,12 +1,32 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { RegionPicker } from "@/components/ui/region-picker";
 import { InstallPill } from "@/features/pwa";
+import {
+  getCurrentRegionId,
+  listActiveRegions,
+} from "@/lib/regions/current";
 
 /** Home-screen top bar — Wondavu logo plus notification and group-chat shortcuts.
  *  `showInstallPill` is set to true for unauthenticated visitors so they get
  *  a soft nudge to install the PWA. Signed-in travelers never see it. */
-export function AppTopBar({ showInstallPill = false }: { showInstallPill?: boolean }) {
+export async function AppTopBar({
+  showInstallPill = false,
+}: {
+  showInstallPill?: boolean;
+}) {
+  // Region picker — server fetches the list + current id once per render so
+  // the client component receives a fully-rendered, server-data sheet.
+  const [regions, currentId] = await Promise.all([
+    listActiveRegions(),
+    getCurrentRegionId(),
+  ]);
+  const current = currentId
+    ? regions.find((r) => r.id === currentId) ?? null
+    : null;
+  const currentLabel = current?.display_name ?? "Everywhere";
+
   return (
     <header className="flex items-start justify-between px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
       <div className="flex flex-col items-start gap-2">
@@ -24,6 +44,16 @@ export function AppTopBar({ showInstallPill = false }: { showInstallPill?: boole
       </div>
 
       <div className="flex items-center gap-3.5">
+        <div className="flex flex-col items-center gap-1">
+          <RegionPicker
+            regions={regions}
+            currentId={currentId}
+            currentLabel={currentLabel}
+          />
+          <span className="max-w-[5.5rem] truncate text-center text-xs font-semibold text-muted">
+            {currentLabel}
+          </span>
+        </div>
         <Link
           href="/notifications"
           aria-label="Notifications"

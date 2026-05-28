@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { StayList, type StayPicker } from "@/features/stays/stay-list";
+import { getCurrentRegionId } from "@/lib/regions/current";
 import { createClient } from "@/lib/supabase/server";
 import type { StayRow } from "@/types/supabase";
 
@@ -11,11 +12,14 @@ const MAX_PICKERS = 3;
 
 export default async function StayPage() {
   const supabase = await createClient();
-  const { data } = await supabase
+  const regionId = await getCurrentRegionId();
+  let query = supabase
     .from("stays")
     .select("*")
     .eq("active", true)
     .order("backpack_rating", { ascending: false });
+  if (regionId) query = query.eq("region_id", regionId);
+  const { data } = await query;
   const stays = (data ?? []) as StayRow[];
 
   // Latest pickers per stay → small avatar stack on each list card.

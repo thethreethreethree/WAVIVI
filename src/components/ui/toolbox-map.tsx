@@ -143,15 +143,17 @@ function qualityBadge(rating: number | null): string {
  */
 export function ToolboxMap({
   initialCategory,
+  initialRegion,
 }: {
   initialCategory?: CategoryId;
+  initialRegion?: string;
 }) {
   const router = useRouter();
   const [active, setActive] = useState<CategoryId | "all">(
     initialCategory ?? "all",
   );
   const [regions, setRegions] = useState<Region[]>([]);
-  const [region, setRegion] = useState<string>("");
+  const [region, setRegion] = useState<string>(initialRegion ?? "");
   const [utilities, setUtilities] = useState<UtilityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [located, setLocated] = useState(false);
@@ -182,7 +184,13 @@ export function ToolboxMap({
         if (cancelled) return;
         const list: Region[] = json.regions ?? [];
         setRegions(list);
-        if (list.length > 0) setRegion(list[0].id);
+        // Honour the global region cookie passed as initialRegion if it's
+        // still in the active list; otherwise fall back to the first one.
+        const preferred =
+          initialRegion && list.some((r) => r.id === initialRegion)
+            ? initialRegion
+            : list[0]?.id ?? "";
+        if (preferred) setRegion(preferred);
         else setNotice("No regions yet — add one in the admin Toolbox.");
       } catch (err) {
         if (!cancelled) {
@@ -193,7 +201,7 @@ export function ToolboxMap({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialRegion]);
 
   // --- Map init (once) ------------------------------------------------------
   useEffect(() => {
