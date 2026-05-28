@@ -60,7 +60,7 @@ export function RegionPicker({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="wc-frame relative mx-3 mb-3 w-full max-w-md rounded-3xl bg-background p-5"
+            className="wc-frame relative mx-3 mb-[7.5rem] w-full max-w-md rounded-3xl bg-background p-5"
           >
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-2xl font-bold">Pick a region</h2>
