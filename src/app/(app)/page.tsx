@@ -36,48 +36,66 @@ export default async function Home() {
   // stays / restaurants / experiences from that region (2 of each).
   // When no region is selected, fall back to the legacy hand-picked
   // mock set in places.ts so anonymous landings still feel alive.
-  let forYou: ForYouCard[];
+  // Static fallback used both when no region is picked and when the
+  // per-table region queries fail (so a flaky table can't crash home).
+  const staticForYou: ForYouCard[] = places
+    .filter((p) => p.recommended && p.kind !== "eat")
+    .slice(0, 6)
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      image: p.image,
+      category: p.category,
+      href: `/place/${p.id}`,
+    }));
+
+  let forYou: ForYouCard[] = staticForYou;
   if (regionId) {
-    const [{ data: regStays }, { data: regEats }, { data: regExps }] =
-      await Promise.all([
-        supabase
-          .from("stays")
-          .select("id, name, photo_url, stay_type")
-          .eq("active", true)
-          .eq("region_id", regionId)
-          .order("backpack_rating", { ascending: false })
-          .limit(2),
-        supabase
-          .from("restaurants")
-          .select("id, name, photo_url, cuisine")
-          .eq("active", true)
-          .eq("region_id", regionId)
-          .order("backpack_rating", { ascending: false })
-          .limit(2),
-        supabase
-          .from("experiences")
-          .select("id, name, photo_url, category")
-          .eq("active", true)
-          .eq("region_id", regionId)
-          .order("backpack_rating", { ascending: false })
-          .limit(2),
-      ]);
-    forYou = [
-      ...(regStays ?? []).map((s) => ({
+    const [staysRes, eatsRes, expsRes] = await Promise.all([
+      supabase
+        .from("stays")
+        .select("id, name, photo_url, stay_type")
+        .eq("active", true)
+        .eq("region_id", regionId)
+        .order("backpack_rating", { ascending: false })
+        .limit(2),
+      supabase
+        .from("restaurants")
+        .select("id, name, photo_url, cuisine")
+        .eq("active", true)
+        .eq("region_id", regionId)
+        .order("backpack_rating", { ascending: false })
+        .limit(2),
+      supabase
+        .from("experiences")
+        .select("id, name, photo_url, category")
+        .eq("active", true)
+        .eq("region_id", regionId)
+        .order("backpack_rating", { ascending: false })
+        .limit(2),
+    ]);
+    if (staysRes.error)
+      console.warn("[home] stays region query failed", staysRes.error);
+    if (eatsRes.error)
+      console.warn("[home] restaurants region query failed", eatsRes.error);
+    if (expsRes.error)
+      console.warn("[home] experiences region query failed", expsRes.error);
+    const live: ForYouCard[] = [
+      ...(staysRes.data ?? []).map((s) => ({
         id: s.id,
         name: s.name,
         image: s.photo_url ?? "/decor/balloon-floater.png",
         category: s.stay_type ?? "Stay",
         href: `/stay/${s.id}`,
       })),
-      ...(regEats ?? []).map((r) => ({
+      ...(eatsRes.data ?? []).map((r) => ({
         id: r.id,
         name: r.name,
         image: r.photo_url ?? "/decor/balloon-floater.png",
         category: r.cuisine ?? "Eat",
         href: `/eat/${r.id}`,
       })),
-      ...(regExps ?? []).map((e) => ({
+      ...(expsRes.data ?? []).map((e) => ({
         id: e.id,
         name: e.name,
         image: e.photo_url ?? "/decor/balloon-floater.png",
@@ -85,17 +103,9 @@ export default async function Home() {
         href: `/todo/${e.id}`,
       })),
     ];
-  } else {
-    forYou = places
-      .filter((p) => p.recommended && p.kind !== "eat")
-      .slice(0, 6)
-      .map((p) => ({
-        id: p.id,
-        name: p.name,
-        image: p.image,
-        category: p.category,
-        href: `/place/${p.id}`,
-      }));
+    // Only flip to live data when we actually got something back; otherwise
+    // the user still sees curated mocks instead of an empty rail.
+    if (live.length > 0) forYou = live;
   }
 
   // RLS scopes travel_plans to the signed-in user, so a non-zero count
