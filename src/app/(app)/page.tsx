@@ -98,7 +98,7 @@ export default async function Home() {
       <section className="relative px-5 pb-8">
         <div className="mb-3 flex items-end justify-between">
           <div>
-            <p className="text-lg font-black uppercase tracking-[0.25em] text-foreground">
+            <p className="uppercase tracking-[0.25em] text-foreground">
               Curated for you
             </p>
             <h2 className="text-2xl font-bold tracking-tight">
