@@ -40,6 +40,10 @@ const FONTS: { label: string; value: string }[] = [
     label: "Marker (Covered By Your Grace)",
     value: "var(--font-marker), cursive",
   },
+  {
+    label: "Hand-printed (Architects Daughter)",
+    value: "var(--font-architects), cursive",
+  },
   { label: "Mono (Geist Mono)", value: "var(--font-mono), monospace" },
 ];
 

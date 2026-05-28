@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import {
+  Architects_Daughter,
   Covered_By_Your_Grace,
   Geist_Mono,
   Quicksand,
@@ -33,6 +34,15 @@ const handwriting = Covered_By_Your_Grace({
 // `--font-marker` is aliased to `--font-handwriting` in globals.css so the
 // wordmark + marker-style mobile headings inherit Covered By Your Grace
 // without changing every consumer.
+
+// Architects Daughter — also by Kimberly Geswein. Neat hand-printed style,
+// great for section eyebrows / labels where a tidier hand is wanted.
+const architects = Architects_Daughter({
+  variable: "--font-architects",
+  subsets: ["latin"],
+  weight: "400",
+  display: "swap",
+});
 
 // YumYumPo brand typeface — used on the partner handoff screen.
 const yumyumpo = Space_Grotesk({
@@ -109,7 +119,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${body.variable} ${handwriting.variable} ${yumyumpo.variable} ${codeMono.variable} h-full antialiased`}
+      className={`${body.variable} ${handwriting.variable} ${architects.variable} ${yumyumpo.variable} ${codeMono.variable} h-full antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
