@@ -45,7 +45,7 @@ const SECTIONS: { title: string; rows: Row[] }[] = [
     title: "About",
     rows: [
       { label: "Help & support" },
-      { label: "Terms & privacy policy" },
+      { label: "Privacy policy", href: "/privacy" },
       { label: "App version", hint: "1.0.0" },
     ],
   },

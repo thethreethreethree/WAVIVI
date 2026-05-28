@@ -29,6 +29,13 @@ export default function AuthLayout({
         <div className="wc-frame rounded-2xl p-6">
           {children}
         </div>
+        <p className="mt-4 text-center text-sm text-muted">
+          By continuing, you agree to our{" "}
+          <Link href="/privacy" className="text-glow underline">
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </div>
     </main>
   );
