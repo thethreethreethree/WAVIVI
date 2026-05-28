@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import {
   Architects_Daughter,
-  Covered_By_Your_Grace,
   Geist_Mono,
   Permanent_Marker,
   Quicksand,
@@ -21,29 +20,23 @@ const body = Quicksand({
   display: "swap",
 });
 
-// Handwriting voice — Covered By Your Grace by Kimberly Geswein. Picked for
-// readability at small sizes while keeping the hand-painted journal feel.
-// Used for character moments (display titles, journal entries, pull quotes,
-// section eyebrows, marker-style headings).
-const handwriting = Covered_By_Your_Grace({
+// Handwriting voice — Architects Daughter by Kimberly Geswein. Tidy
+// hand-printed feel that stays legible at small sizes. Used for character
+// moments (display titles, journal entries, pull quotes, section eyebrows,
+// marker-style headings). Drives BOTH `--font-handwriting` and the
+// secondary `--font-architects` variable so existing consumers of either
+// continue to render identically.
+const handwriting = Architects_Daughter({
   variable: "--font-handwriting",
   subsets: ["latin"],
   weight: "400",
   display: "swap",
 });
 
-// `--font-marker` is aliased to `--font-handwriting` in globals.css so the
-// wordmark + marker-style mobile headings inherit Covered By Your Grace
-// without changing every consumer.
-
-// Architects Daughter — also by Kimberly Geswein. Neat hand-printed style,
-// great for section eyebrows / labels where a tidier hand is wanted.
-const architects = Architects_Daughter({
-  variable: "--font-architects",
-  subsets: ["latin"],
-  weight: "400",
-  display: "swap",
-});
+// `--font-marker` and `--font-architects` are aliased to `--font-handwriting`
+// in globals.css so wordmark, marker-style mobile headings, and any element
+// that explicitly opted into Architects Daughter all keep working without
+// per-component edits.
 
 // Permanent Marker — Font Diner. Thick black marker for high-impact
 // display moments (e.g. brand wordmark style).
@@ -129,7 +122,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${body.variable} ${handwriting.variable} ${architects.variable} ${permanentMarker.variable} ${yumyumpo.variable} ${codeMono.variable} h-full antialiased`}
+      className={`${body.variable} ${handwriting.variable} ${permanentMarker.variable} ${yumyumpo.variable} ${codeMono.variable} h-full antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />

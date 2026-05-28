@@ -113,13 +113,15 @@
   --color-cool: var(--accent-cool);
   --color-glow: var(--accent-glow);
 
-  /* Quicksand for UI/body; Covered By Your Grace (--font-handwriting) for
-     every hand-painted moment — display, journal, quote, wordmark, and the
-     legacy `--font-marker` consumers (aliased below). */
+  /* Quicksand for UI/body; Architects Daughter (--font-handwriting) for
+     every hand-painted moment — display, journal, quote, wordmark, and any
+     element that previously referenced --font-marker or --font-architects
+     (all aliased below). */
   --font-sans: var(--font-body);
   --font-display: var(--font-body);
   --font-hand: var(--font-handwriting);
   --font-marker: var(--font-handwriting);
+  --font-architects: var(--font-handwriting);
   /* --font-mono is set on <html> by next/font, already aliased */
 }
 

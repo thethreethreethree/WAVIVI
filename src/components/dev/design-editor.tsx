@@ -53,16 +53,8 @@ type SourceMap = Record<string, FiberSource>;
 const FONTS: { label: string; value: string }[] = [
   { label: "Body (Quicksand)", value: "var(--font-body), sans-serif" },
   {
-    label: "Hand-painted (Covered By Your Grace)",
+    label: "Hand-painted (Architects Daughter)",
     value: "var(--font-handwriting), cursive",
-  },
-  {
-    label: "Marker (Covered By Your Grace)",
-    value: "var(--font-marker), cursive",
-  },
-  {
-    label: "Hand-printed (Architects Daughter)",
-    value: "var(--font-architects), cursive",
   },
   {
     label: "Bold marker (Permanent Marker)",
