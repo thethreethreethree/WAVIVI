@@ -99,19 +99,30 @@ function BackpackGlyph({ className }: { className?: string }) {
 }
 
 /** Watercolor icon markup for each category marker (used in divIcon).
-   Renders both a default (cute) image and a Rustic/orange image; CSS
-   toggles which one shows based on the active theme. Inline width/height
+   Single source of truth — /icons/map/ — that renders identically across
+   every theme (light, dark, cute, sketch, orange). Inline width/height
    guarantee sizing even if cached CSS is stale. */
+const MAP_ICON_BY_CATEGORY: Record<CategoryId, string> = {
+  atm: "/icons/map/map_atm.png",
+  market: "/icons/map/map_market.png",
+  bank: "/icons/map/map_bank.png",
+  sim_card: "/icons/map/map_sim_card.png",
+  // No dedicated wifi pin in the new set yet — keep the legacy cute icon
+  // so the marker still renders. Swap when the new asset lands.
+  public_wifi: CUTE_ICONS["wifi"] ?? "",
+  currency_exchange: "/icons/map/map_currency_exchange.png",
+  bathroom: "/icons/map/map_bathroom.png",
+  transportation: "/icons/map/map_bus_stop.png",
+  medical_clinic: "/icons/map/map_medical_clinic.png",
+  police: "/icons/map/map_police.png",
+  embassy: "/icons/map/map_embassy.png",
+  laundry: "/icons/map/map_laundry.png",
+};
 const CATEGORY_GLYPH: Record<CategoryId, string> = Object.fromEntries(
   TOOLBOX_CATEGORIES.map((c) => {
-    const cuteSrc = CUTE_ICONS[c.icon] ?? "";
-    const orangeSrc = `/icons/orange/map/${c.id}.png`;
+    const src = MAP_ICON_BY_CATEGORY[c.id];
     const base = `width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.35))`;
-    return [
-      c.id,
-      `<img class="tb-pin-img tb-pin-img-cute" src="${cuteSrc}" alt="" style="${base}" />` +
-        `<img class="tb-pin-img tb-pin-img-orange" src="${orangeSrc}" alt="" style="${base}" />`,
-    ];
+    return [c.id, `<img class="tb-pin-img" src="${src}" alt="" style="${base}" />`];
   }),
 ) as Record<CategoryId, string>;
 

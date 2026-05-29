@@ -518,17 +518,9 @@ h3 {
   display: block;
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
 }
-/* Theme-conditional toolbox marker icon. Default (light/dark/cute) shows
-   the cute image; Rustic swaps to the orange map-icon set. */
-.tb-pin-img-orange {
-  display: none;
-}
-.orange .tb-pin-img-cute {
-  display: none;
-}
-.orange .tb-pin-img-orange {
-  display: block;
-}
+/* Map markers now use a single shared icon set in /icons/map/ that
+   renders identically across every theme — no more theme-conditional
+   image swap needed here. */
 
 /* Floating quality badge — driven by the Google rating (see qualityBadge).
    🔴 balloon 3–4 · 🟢 balloon 4–4.5 · 🟧 thumbs-up 4.5+. */
