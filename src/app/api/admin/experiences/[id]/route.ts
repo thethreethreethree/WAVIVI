@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/toolbox/admin";
 import type { ExperienceUpdate } from "@/types/supabase";
 
@@ -35,14 +36,17 @@ const EDITABLE: (keyof ExperienceUpdate)[] = [
   "description",
   "region_id",
   "active",
+  "featured",
+  "top_pick",
 ];
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {
   const { id } = await params;
-  const { isAdmin, supabase } = await requireAdmin();
+  const { isAdmin } = await requireAdmin();
   if (!isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  const supabase = createAdminClient();
 
   const body = (await req.json().catch(() => null)) as Record<
     string,
@@ -86,11 +90,11 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 
 export async function DELETE(_req: NextRequest, { params }: Ctx) {
   const { id } = await params;
-  const { isAdmin, supabase } = await requireAdmin();
+  const { isAdmin } = await requireAdmin();
   if (!isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-
+  const supabase = createAdminClient();
   const { error } = await supabase.from("experiences").delete().eq("id", id);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

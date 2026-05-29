@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { EventsCsvImport } from "@/components/admin/events/csv-import";
+import { EventFlagToggles } from "@/components/admin/events/event-flag-toggles";
 import { createClient } from "@/lib/supabase/server";
 import type { EventRow, RegionRow } from "@/types/supabase";
 
@@ -78,13 +79,20 @@ export default async function RegionEventsPage({
                     {e.address ? ` · ${e.address}` : ""}
                   </p>
                 </div>
-                <div className="shrink-0 text-right text-[11px]">
-                  {e.rating != null && (
-                    <p className="font-bold text-foreground">
-                      ★ {e.rating.toFixed(1)}
-                    </p>
-                  )}
-                  <p className="text-muted">{e.review_count} reviews</p>
+                <div className="flex shrink-0 items-start gap-3">
+                  <div className="text-right text-[11px]">
+                    {e.rating != null && (
+                      <p className="font-bold text-foreground">
+                        ★ {e.rating.toFixed(1)}
+                      </p>
+                    )}
+                    <p className="text-muted">{e.review_count} reviews</p>
+                  </div>
+                  <EventFlagToggles
+                    id={e.id}
+                    featured={e.featured}
+                    top_pick={e.top_pick}
+                  />
                 </div>
               </li>
             ))}

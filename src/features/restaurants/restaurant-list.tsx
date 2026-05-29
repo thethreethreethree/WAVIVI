@@ -113,15 +113,26 @@ export function RestaurantList({
         (r.description ?? "").toLowerCase().includes(q)
       );
     });
+    // Featured restaurants float to the top — admin editorial pick. Then
+    // by proximity (when we have the user's location) or original
+    // backpack_rating order.
     if (userPos) {
       return filtered
         .map((r) => ({
           r,
           km: haversineKm(userPos, { lat: r.latitude, lng: r.longitude }),
         }))
-        .sort((a, b) => a.km - b.km);
+        .sort((a, b) => {
+          if (a.r.featured !== b.r.featured) return a.r.featured ? -1 : 1;
+          return a.km - b.km;
+        });
     }
-    return filtered.map((r) => ({ r, km: null as number | null }));
+    return filtered
+      .map((r) => ({ r, km: null as number | null }))
+      .sort((a, b) => {
+        if (a.r.featured !== b.r.featured) return a.r.featured ? -1 : 1;
+        return 0;
+      });
   }, [restaurants, query, cuisine, minRating, userPos]);
 
   const activeFilterCount =
@@ -267,7 +278,10 @@ export function RestaurantList({
       ) : (
         <ul className="flex flex-col gap-4 px-5 pb-8 pt-2">
           {results.map(({ r, km }) => {
-            const topPick = (r.rating ?? r.backpack_rating) >= 4.7;
+            // Admin-set top_pick wins; rating heuristic is the fallback
+            // for restaurants we haven't curated yet.
+            const topPick =
+              r.top_pick || (r.rating ?? r.backpack_rating) >= 4.7;
             return (
               <li key={r.id}>
                 <Link

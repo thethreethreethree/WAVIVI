@@ -87,6 +87,30 @@ export function ExperiencesList({
     }
   }
 
+  async function patchFlag(
+    id: string,
+    field: "featured" | "top_pick",
+    next: boolean,
+  ) {
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/experiences/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: next }),
+      });
+      if (!res.ok) {
+        const b = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(b?.error ?? `Update failed (${res.status})`);
+      }
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Update failed.");
+    }
+  }
+
   const allVisibleSelected =
     visible.length > 0 && visible.every((e) => selected.has(e.id));
 
@@ -324,6 +348,38 @@ export function ExperiencesList({
                 </span>
               </span>
               <span className="flex shrink-0 flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => patchFlag(e.id, "featured", !e.featured)}
+                  title={
+                    e.featured
+                      ? "Featured — unpin from the top of the regional list"
+                      : "Pin to the top of the regional list"
+                  }
+                  className={`rounded-full px-3 py-1 text-xs font-bold ring-1 transition-colors ${
+                    e.featured
+                      ? "bg-glow text-white ring-glow"
+                      : "text-muted ring-border hover:text-foreground"
+                  }`}
+                >
+                  {e.featured ? "★ Featured" : "Feature"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => patchFlag(e.id, "top_pick", !e.top_pick)}
+                  title={
+                    e.top_pick
+                      ? "Top pick — remove the ⭐ badge"
+                      : "Tag this experience with the ⭐ Top pick badge"
+                  }
+                  className={`rounded-full px-3 py-1 text-xs font-bold ring-1 transition-colors ${
+                    e.top_pick
+                      ? "bg-cool text-white ring-cool"
+                      : "text-muted ring-border hover:text-foreground"
+                  }`}
+                >
+                  {e.top_pick ? "⭐ Top pick" : "Top pick"}
+                </button>
                 <button
                   type="button"
                   onClick={() => setEditing(e)}

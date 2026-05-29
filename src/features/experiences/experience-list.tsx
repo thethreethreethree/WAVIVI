@@ -148,15 +148,25 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
         (e.description ?? "").toLowerCase().includes(q)
       );
     });
+    // Featured experiences pinned to the top. Within featured + within
+    // non-featured we then sort by proximity (when located).
     if (userPos) {
       return filtered
         .map((e) => ({
           e,
           km: haversineKm(userPos, { lat: e.latitude, lng: e.longitude }),
         }))
-        .sort((a, b) => a.km - b.km);
+        .sort((a, b) => {
+          if (a.e.featured !== b.e.featured) return a.e.featured ? -1 : 1;
+          return a.km - b.km;
+        });
     }
-    return filtered.map((e) => ({ e, km: null as number | null }));
+    return filtered
+      .map((e) => ({ e, km: null as number | null }))
+      .sort((a, b) => {
+        if (a.e.featured !== b.e.featured) return a.e.featured ? -1 : 1;
+        return 0;
+      });
   }, [experiences, query, bucket, minRating, userPos]);
 
   const activeFilterCount =
@@ -303,7 +313,9 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
       ) : (
         <ul className="flex flex-col gap-4 px-5 pb-8 pt-2">
           {results.map(({ e, km }) => {
-            const topPick = (e.rating ?? e.backpack_rating) >= 4.7;
+            // Admin-set top_pick wins; rating heuristic is the fallback.
+            const topPick =
+              e.top_pick || (e.rating ?? e.backpack_rating) >= 4.7;
             return (
               <li key={e.id}>
                 <Link

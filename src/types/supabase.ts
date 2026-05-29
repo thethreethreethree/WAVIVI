@@ -433,6 +433,9 @@ export type ExperienceRow = {
   claimed_by: string | null;
   metadata_json: Record<string, unknown>;
   active: boolean;
+  /** Admin-controlled promotion flags (migration 0041). */
+  featured: boolean;
+  top_pick: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -471,6 +474,8 @@ export type ExperienceInsert = {
   claimed_by?: string | null;
   metadata_json?: Record<string, unknown>;
   active?: boolean;
+  featured?: boolean;
+  top_pick?: boolean;
 };
 
 export type ExperienceUpdate = Partial<Omit<ExperienceInsert, "source_ref">>;
@@ -511,6 +516,8 @@ export type EventRow = {
   claimed_by: string | null;
   metadata_json: Record<string, unknown>;
   active: boolean;
+  featured: boolean;
+  top_pick: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -548,6 +555,8 @@ export type EventInsert = {
   claimed_by?: string | null;
   metadata_json?: Record<string, unknown>;
   active?: boolean;
+  featured?: boolean;
+  top_pick?: boolean;
 };
 
 export type EventUpdate = Partial<Omit<EventInsert, "source_ref">>;
@@ -587,6 +596,8 @@ export type RestaurantRow = {
   claimed_by: string | null;
   metadata_json: Record<string, unknown>;
   active: boolean;
+  featured: boolean;
+  top_pick: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -623,6 +634,8 @@ export type RestaurantInsert = {
   claimed_by?: string | null;
   metadata_json?: Record<string, unknown>;
   active?: boolean;
+  featured?: boolean;
+  top_pick?: boolean;
 };
 
 export type RestaurantUpdate = Partial<Omit<RestaurantInsert, "source_ref">>;

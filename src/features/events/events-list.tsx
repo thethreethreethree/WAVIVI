@@ -25,18 +25,24 @@ export function EventsList({ events }: { events: EventRow[] }) {
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return events.filter((e) => {
-      if (bucket !== "all" && (e.day_bucket ?? "").toLowerCase() !== bucket) {
-        return false;
-      }
-      if (!q) return true;
-      return (
-        e.name.toLowerCase().includes(q) ||
-        (e.category ?? "").toLowerCase().includes(q) ||
-        (e.address ?? "").toLowerCase().includes(q) ||
-        (e.description ?? "").toLowerCase().includes(q)
-      );
-    });
+    return events
+      .filter((e) => {
+        if (bucket !== "all" && (e.day_bucket ?? "").toLowerCase() !== bucket) {
+          return false;
+        }
+        if (!q) return true;
+        return (
+          e.name.toLowerCase().includes(q) ||
+          (e.category ?? "").toLowerCase().includes(q) ||
+          (e.address ?? "").toLowerCase().includes(q) ||
+          (e.description ?? "").toLowerCase().includes(q)
+        );
+      })
+      // Featured events float to the top of the regional list.
+      .sort((a, b) => {
+        if (a.featured !== b.featured) return a.featured ? -1 : 1;
+        return 0;
+      });
   }, [events, query, bucket]);
 
   return (

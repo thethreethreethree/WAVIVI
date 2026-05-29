@@ -2,19 +2,25 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/toolbox/admin";
-import type { RestaurantUpdate } from "@/types/supabase";
+import type { EventUpdate } from "@/types/supabase";
 
 /**
- * PATCH  /api/admin/restaurants/[id]  — edit any field of a restaurant (admin).
+ * PATCH  /api/admin/events/[id]  — edit any field of an event (admin).
  *   Sets `admin_edited` so future CSV imports respect hand-tuned values.
- * DELETE /api/admin/restaurants/[id]  — remove a restaurant.
+ * DELETE /api/admin/events/[id]  — remove an event.
+ *
+ * Mirrors the patterns established by the stays / restaurants /
+ * experiences admin routes — service-role client, allow-listed
+ * EDITABLE columns, rating bounds check.
  */
 
 type Ctx = { params: Promise<{ id: string }> };
 
-const EDITABLE: (keyof RestaurantUpdate)[] = [
+const EDITABLE: (keyof EventUpdate)[] = [
   "name",
-  "cuisine",
+  "category",
+  "day_bucket",
+  "when_text",
   "latitude",
   "longitude",
   "address",
@@ -25,7 +31,6 @@ const EDITABLE: (keyof RestaurantUpdate)[] = [
   "facebook",
   "whatsapp",
   "photo_url",
-  "price_range",
   "amenities",
   "backpack_rating",
   "rating",
@@ -44,8 +49,6 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (!isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  // Service-role client so the .select().single() after UPDATE doesn't
-  // get filtered by a restaurants SELECT policy.
   const supabase = createAdminClient();
 
   const body = (await req.json().catch(() => null)) as Record<
@@ -77,15 +80,15 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   updates.admin_edited = true;
 
   const { data, error } = await supabase
-    .from("restaurants")
-    .update(updates as RestaurantUpdate)
+    .from("events")
+    .update(updates as EventUpdate)
     .eq("id", id)
     .select("*")
     .single();
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  return NextResponse.json({ restaurant: data });
+  return NextResponse.json({ event: data });
 }
 
 export async function DELETE(_req: NextRequest, { params }: Ctx) {
@@ -95,7 +98,7 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const supabase = createAdminClient();
-  const { error } = await supabase.from("restaurants").delete().eq("id", id);
+  const { error } = await supabase.from("events").delete().eq("id", id);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
