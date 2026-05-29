@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/toolbox/admin";
 import type { ChatGroupUpdate } from "@/types/supabase";
 
@@ -27,7 +28,7 @@ const EDITABLE: (keyof ChatGroupUpdate)[] = [
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {
   const { id } = await params;
-  const { isAdmin, supabase } = await requireAdmin();
+  const { isAdmin } = await requireAdmin();
   if (!isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -48,7 +49,12 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
   }
 
-  const { data, error } = await supabase
+  // Service-role client bypasses RLS. The route is already gated by the
+  // requireAdmin() check above; using the user-auth client tripped the
+  // chat_groups SELECT policy after UPDATE and surfaced as
+  // "Cannot coerce the result to a single JSON object" in the editor.
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("chat_groups")
     .update(updates as ChatGroupUpdate)
     .eq("id", id)
@@ -62,12 +68,13 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 
 export async function DELETE(_req: NextRequest, { params }: Ctx) {
   const { id } = await params;
-  const { isAdmin, supabase } = await requireAdmin();
+  const { isAdmin } = await requireAdmin();
   if (!isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { error } = await supabase.from("chat_groups").delete().eq("id", id);
+  const admin = createAdminClient();
+  const { error } = await admin.from("chat_groups").delete().eq("id", id);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

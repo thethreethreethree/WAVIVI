@@ -203,11 +203,12 @@ h3 {
 .text-label     { font-family: var(--font-body), sans-serif; font-size: 0.9375rem;line-height: 1.3;  font-weight: 500; letter-spacing: 0.02em; }
 .text-button    { font-family: var(--font-body), sans-serif; font-size: 1.125rem; line-height: 1.2;  font-weight: 600; letter-spacing: 0.01em; }
 
-/* Ask Susen banner frame on /tools — swap to the warm Rustic painted
-   stroke only on the orange (Rustic) theme. Every other theme keeps
-   the original charcoal frame3. */
-.orange .susen-frame-default { display: none; }
-.orange .susen-frame-rustic  { display: block; }
+/* Ask Susen banner frame on /tools — Light Rustic (default, no theme
+   class on <html>) shows the warm Rustic painted stroke; every other
+   theme (.dark, .sketch, .cute, .orange) falls back to charcoal frame3.
+   The component renders BOTH images and CSS picks the one to show. */
+:where(.dark, .sketch, .cute, .orange) .susen-frame-rustic { display: none; }
+:where(.dark, .sketch, .cute, .orange) .susen-frame-default { display: block; }
 
 /* Shared helpers */
 /* Flat accent — previously a gradient, now a solid terracotta tone that
