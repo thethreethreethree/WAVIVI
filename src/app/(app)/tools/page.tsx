@@ -63,13 +63,22 @@ export default function ToolsPage() {
             inset + max-w-none) so the painted frame reads bigger without
             forcing the inner content area to grow. The frame is the
             positioning reference; the content overlays it absolutely and
-            is vertically centered within the visible painted bar. */}
+            is vertically centered within the visible painted bar.
+            Theme-conditional: orange (Rustic) shows the warm watercolor
+            stroke; every other theme keeps the original charcoal frame3. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/decor/frames/frame3.png"
+          alt=""
+          aria-hidden
+          className="susen-frame-default pointer-events-none relative -mx-4 block h-auto w-[calc(100%+2rem)] max-w-none select-none"
+        />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/decor/frames/Rustic_frame.png"
           alt=""
           aria-hidden
-          className="pointer-events-none relative -mx-4 block h-auto w-[calc(100%+2rem)] max-w-none select-none"
+          className="susen-frame-rustic pointer-events-none relative -mx-4 hidden h-auto w-[calc(100%+2rem)] max-w-none select-none"
         />
         <span className="absolute inset-0 flex items-center gap-3 px-7">
           <SusenAvatar className="h-10 w-10 ring-2 ring-white/40" />
