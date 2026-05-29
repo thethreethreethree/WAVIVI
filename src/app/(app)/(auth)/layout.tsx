@@ -14,7 +14,7 @@ export default function AuthLayout({
         <Link
           href="/"
           aria-label={`${siteConfig.name} home`}
-          className="mb-6 flex flex-col items-center gap-2"
+          className="auth-logo-frame mb-6 flex flex-col items-center gap-2"
         >
           <Image
             src="/wondavu-logo-v2.png"
@@ -22,7 +22,7 @@ export default function AuthLayout({
             width={240}
             height={240}
             priority
-            className="h-24 w-auto"
+            className="relative h-24 w-auto"
           />
           <span className="text-sm text-muted">{siteConfig.tagline}</span>
         </Link>

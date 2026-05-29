@@ -203,6 +203,28 @@ h3 {
 .text-label     { font-family: var(--font-body), sans-serif; font-size: 0.9375rem;line-height: 1.3;  font-weight: 500; letter-spacing: 0.02em; }
 .text-button    { font-family: var(--font-body), sans-serif; font-size: 1.125rem; line-height: 1.2;  font-weight: 600; letter-spacing: 0.01em; }
 
+/* Auth-page Wondavu logo: painted Rustic frame behind the wordmark.
+   Scoped to .orange ONLY — every other theme keeps the unframed logo. */
+.auth-logo-frame {
+  position: relative;
+  isolation: isolate; /* keeps the frame's z-index local */
+}
+.orange .auth-logo-frame::before {
+  content: "";
+  position: absolute;
+  /* Sit behind the logo image (h-24 = 96px) with breathing room so the
+     painted edge frames it cleanly. Width:height kept ~1:1 so the
+     square frame asset draws at its native aspect. */
+  top: 50%;
+  left: 50%;
+  width: 200px;
+  height: 200px;
+  transform: translate(-50%, -56%);
+  background: url("/decor/frames/Rustic_frame.png") center / contain no-repeat;
+  z-index: -1;
+  pointer-events: none;
+}
+
 /* Shared helpers */
 /* Flat accent — previously a gradient, now a solid terracotta tone that
    matches the painted watercolor icon set without the candy-bright sheen. */
