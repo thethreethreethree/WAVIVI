@@ -118,7 +118,7 @@ const MAP_ICON_BY_CATEGORY: Record<CategoryId, string> = {
 const CATEGORY_GLYPH: Record<CategoryId, string> = Object.fromEntries(
   TOOLBOX_CATEGORIES.map((c) => {
     const src = MAP_ICON_BY_CATEGORY[c.id];
-    const base = `width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.35))`;
+    const base = `width:56px;height:56px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.4))`;
     return [c.id, `<img class="tb-pin-img" src="${src}" alt="" style="${base}" />`];
   }),
 ) as Record<CategoryId, string>;
@@ -283,12 +283,12 @@ export function ToolboxMap({
     for (const { marker } of markersRef.current) marker.remove();
     markersRef.current = [];
 
-    const size = 40;
+    const size = 60;
     // Inline styles so the marker layout renders correctly even with stale
     // cached CSS. No background / border — the watercolor icon art carries
     // its own shadow + halo, so the cream disc isn't needed.
     const pinStyle =
-      "width:40px;height:40px;display:flex;align-items:center;" +
+      "width:60px;height:60px;display:flex;align-items:center;" +
       "justify-content:center;background:transparent;border:0;" +
       "box-shadow:none";
     const bounds = L.latLngBounds([]);
