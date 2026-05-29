@@ -101,19 +101,70 @@ export function GroupEditor({
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
+  /** Shrink a phone-camera photo client-side before sending it across the
+   *  network. Vercel caps API-route bodies at ~4.5 MB, and raw HEIC/JPEG
+   *  from a modern phone is routinely 5–12 MB. We resize to a max edge of
+   *  1920 px and re-encode as JPEG 0.85 — visually indistinguishable on a
+   *  cover banner, but typically lands at 300–800 KB. */
+  async function compressForUpload(file: File): Promise<File> {
+    // Tiny files (<700 KB) are already fine — skip the canvas round trip.
+    if (file.size < 700 * 1024) return file;
+    const bmp = await createImageBitmap(file).catch(() => null);
+    if (!bmp) return file;
+    const MAX_EDGE = 1920;
+    const scale = Math.min(1, MAX_EDGE / Math.max(bmp.width, bmp.height));
+    const w = Math.round(bmp.width * scale);
+    const h = Math.round(bmp.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(bmp, 0, 0, w, h);
+    const blob: Blob | null = await new Promise((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.85),
+    );
+    if (!blob) return file;
+    // If compression somehow grew the file (rare on already-small images),
+    // keep the original.
+    if (blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.[a-z0-9]+$/i, ".jpg"), {
+      type: "image/jpeg",
+      lastModified: Date.now(),
+    });
+  }
+
   async function uploadFile(file: File) {
     setUploading(true);
     setError(null);
     try {
+      // Quick MIME guard so we don't waste a canvas round trip on a
+      // .mov / .pdf / etc. The server enforces the real allow-list.
+      if (!file.type.startsWith("image/")) {
+        throw new Error("Pick an image file (JPEG, PNG, or WebP).");
+      }
+      const prepared = await compressForUpload(file);
+      // Friendlier ceiling than Vercel's opaque 413. The server still
+      // enforces a 5 MB cap as defence-in-depth.
+      const HARD_CAP = 4 * 1024 * 1024;
+      if (prepared.size > HARD_CAP) {
+        throw new Error(
+          "Image is too large after compression — try a smaller photo (under ~10 MB raw).",
+        );
+      }
       const form = new FormData();
-      form.append("file", file);
+      form.append("file", prepared);
       const res = await fetch("/api/admin/groups/upload-cover", {
         method: "POST",
         body: form,
       });
       if (!res.ok) {
         const b = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(b?.error ?? `Upload failed (${res.status})`);
+        const fallback =
+          res.status === 413
+            ? "Image too large for upload — try a smaller photo."
+            : `Upload failed (${res.status})`;
+        throw new Error(b?.error ?? fallback);
       }
       const json = (await res.json()) as { url?: string };
       if (json.url) setCoverImage(json.url);
