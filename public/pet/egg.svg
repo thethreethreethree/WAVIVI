@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <radialGradient id="eggShade" cx="38%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#fff3dc"/>
+      <stop offset="55%" stop-color="#ffdcb0"/>
+      <stop offset="100%" stop-color="#d68d52"/>
+    </radialGradient>
+    <radialGradient id="eggBleed" cx="50%" cy="55%" r="60%">
+      <stop offset="0%" stop-color="#ffdcb0" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#ffdcb0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="eggShine" cx="38%" cy="25%" r="35%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="60" cy="112" rx="30" ry="4" fill="#000" opacity="0.13"/>
+  <ellipse cx="60" cy="64" rx="46" ry="56" fill="url(#eggBleed)"/>
+  <ellipse cx="60" cy="64" rx="34" ry="46" fill="url(#eggShade)" stroke="#9b5520" stroke-width="2.2"/>
+  <g fill="#a8743f" opacity="0.7">
+    <circle cx="46" cy="46" r="2.4"/>
+    <circle cx="68" cy="54" r="1.8"/>
+    <circle cx="55" cy="72" r="2"/>
+    <circle cx="74" cy="82" r="2.6"/>
+    <circle cx="44" cy="84" r="1.7"/>
+    <circle cx="62" cy="98" r="2.2"/>
+    <circle cx="78" cy="68" r="1.5"/>
+    <circle cx="50" cy="62" r="1.4"/>
+  </g>
+  <ellipse cx="48" cy="44" rx="14" ry="20" fill="url(#eggShine)"/>
+  <path d="M 58 18 Q 60 8 64 12 Q 62 16 60 20" fill="#86b894" stroke="#3d6a4a" stroke-width="1.4" stroke-linejoin="round"/>
+</svg>

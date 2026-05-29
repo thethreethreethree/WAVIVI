@@ -3,8 +3,15 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
+import { awardPetReward } from "@/lib/pet";
 
 export type NoteActionResult = { error: string | null };
+
+/** Stable pair key for mutual-note rewards: lexicographically-sorted UUIDs
+ *  joined by `:`. Same pair → same key regardless of who wrote first. */
+function pairKey(a: string, b: string): string {
+  return a < b ? `${a}:${b}` : `${b}:${a}`;
+}
 
 /**
  * Leave a Traveler Note on someone's profile. Body length must match the
@@ -31,15 +38,39 @@ export async function leaveNote(
   if (user.id === recipientId)
     return { error: "You can't leave a note on your own profile." };
 
-  const { error } = await supabase.from("traveler_notes").insert({
-    author_id: user.id,
-    recipient_id: recipientId,
-    body: trimmed,
-  });
+  const { data: inserted, error } = await supabase
+    .from("traveler_notes")
+    .insert({
+      author_id: user.id,
+      recipient_id: recipientId,
+      body: trimmed,
+    })
+    .select("id")
+    .single();
   if (error) return { error: error.message };
+
+  // Pet rewards — best effort. Don't fail the note on a reward miss.
+  // 1. The author always earns `write_note` once per note.
+  void awardPetReward(user.id, "write_note", "traveler_note", inserted.id);
+
+  // 2. If the recipient has also written a note about us, the pair
+  //    unlocks `mutual_note` for both — idempotent via the pair_key
+  //    source_id.
+  const { data: reverse } = await supabase
+    .from("traveler_notes")
+    .select("id")
+    .eq("author_id", recipientId)
+    .eq("recipient_id", user.id)
+    .limit(1);
+  if (reverse && reverse.length > 0) {
+    const key = pairKey(user.id, recipientId);
+    void awardPetReward(user.id, "mutual_note", "traveler_note_pair", key);
+    void awardPetReward(recipientId, "mutual_note", "traveler_note_pair", key);
+  }
 
   if (recipientUsername) revalidatePath(`/u/${recipientUsername}`);
   revalidatePath("/notes");
+  revalidatePath("/pet");
   return { error: null };
 }
 

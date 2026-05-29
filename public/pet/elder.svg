@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <radialGradient id="elBody" cx="40%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#fff0d0"/>
+      <stop offset="50%" stop-color="#d8a060"/>
+      <stop offset="100%" stop-color="#7a3e18"/>
+    </radialGradient>
+    <radialGradient id="elBleed" cx="50%" cy="55%" r="60%">
+      <stop offset="0%" stop-color="#d8a060" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#d8a060" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="elGlow" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#ffe19b" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#ffe19b" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="60" cy="114" rx="30" ry="4" fill="#000" opacity="0.13"/>
+  <circle cx="60" cy="60" r="52" fill="url(#elGlow)"/>
+  <ellipse cx="60" cy="64" rx="46" ry="48" fill="url(#elBleed)"/>
+  <path d="M 84 90 L 84 60 Q 84 50, 90 48" stroke="#5a3818" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <circle cx="92" cy="46" r="4" fill="#86b894" stroke="#3d6a4a" stroke-width="1.5"/>
+  <circle cx="92" cy="46" r="1.5" fill="#fff" opacity="0.7"/>
+  <path d="M 30 52 C 30 32, 44 22, 60 22 C 76 22, 90 32, 90 52 C 90 82, 82 100, 60 100 C 38 100, 30 82, 30 52 Z" fill="url(#elBody)" stroke="#5a2810" stroke-width="2.4" stroke-linejoin="round"/>
+  <g stroke="#7a3e18" stroke-width="1.5" fill="none">
+    <path d="M 60 22 L 60 14" stroke-linecap="round"/>
+    <path d="M 50 24 L 46 18" stroke-linecap="round"/>
+    <path d="M 70 24 L 74 18" stroke-linecap="round"/>
+  </g>
+  <g>
+    <path d="M 44 22 Q 60 -2 76 22 Q 78 6 60 4 Q 42 6 44 22 Z" fill="#7eb094" stroke="#2d5a40" stroke-width="1.5" stroke-linejoin="round"/>
+    <ellipse cx="60" cy="12" rx="6" ry="8" fill="#9bd0a8" opacity="0.7"/>
+    <path d="M 54 14 Q 60 22 66 14" fill="none" stroke="#2d5a40" stroke-width="1.2"/>
+  </g>
+  <ellipse cx="50" cy="56" rx="6" ry="4" fill="#fff" stroke="#5a3818" stroke-width="1.5"/>
+  <ellipse cx="70" cy="56" rx="6" ry="4" fill="#fff" stroke="#5a3818" stroke-width="1.5"/>
+  <path d="M 56 56 L 64 56" stroke="#5a3818" stroke-width="1.5"/>
+  <circle cx="50" cy="56" r="1.5" fill="#2a1810"/>
+  <circle cx="70" cy="56" r="1.5" fill="#2a1810"/>
+  <path d="M 52 74 Q 60 78 68 74" fill="none" stroke="#5a2810" stroke-width="2.4" stroke-linecap="round"/>
+  <g stroke="#7a3e18" stroke-width="1.2" fill="none" opacity="0.6">
+    <path d="M 38 80 Q 42 84 38 88"/>
+    <path d="M 82 80 Q 78 84 82 88"/>
+  </g>
+</svg>

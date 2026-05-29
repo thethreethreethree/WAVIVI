@@ -217,23 +217,23 @@ export function GroupEditor({
     const ctx = canvas.getContext("2d");
     if (!ctx) return file;
 
-    const keepAlpha = file.type === "image/png";
-    if (!keepAlpha) {
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, w, h);
-    }
+    // Cover images don't need alpha. Always re-encode as JPEG 0.85 —
+    // a previous "keep PNG when source is PNG" branch was ballooning
+    // 3 MB phone photos into 30+ MB lossless PNGs and tripping
+    // Vercel's 32 MB request limit. White background under transparent
+    // pixels so PNG sources still flatten cleanly.
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, w, h);
     ctx.drawImage(bmp, 0, 0, w, h);
-    const mime = keepAlpha ? "image/png" : "image/jpeg";
     const blob: Blob | null = await new Promise((resolve) =>
-      canvas.toBlob(resolve, mime, keepAlpha ? undefined : 0.85),
+      canvas.toBlob(resolve, "image/jpeg", 0.85),
     );
     if (!blob) return file;
     // If compression somehow grew the file (rare on already-small images),
     // keep the original.
     if (blob.size >= file.size) return file;
-    const ext = keepAlpha ? ".png" : ".jpg";
-    return new File([blob], file.name.replace(/\.[a-z0-9]+$/i, ext), {
-      type: mime,
+    return new File([blob], file.name.replace(/\.[a-z0-9]+$/i, ".jpg"), {
+      type: "image/jpeg",
       lastModified: Date.now(),
     });
   }

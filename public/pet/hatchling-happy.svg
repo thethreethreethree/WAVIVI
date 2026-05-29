@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <radialGradient id="hpBody" cx="38%" cy="32%" r="78%">
+      <stop offset="0%" stop-color="#fff3dc"/>
+      <stop offset="50%" stop-color="#ffc892"/>
+      <stop offset="100%" stop-color="#e5814b"/>
+    </radialGradient>
+    <radialGradient id="hpBleed" cx="50%" cy="55%" r="60%">
+      <stop offset="0%" stop-color="#ffd4a8" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#ffd4a8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="hpCheek" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff9bb0" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#ff9bb0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="60" cy="108" rx="38" ry="5" fill="#000" opacity="0.13"/>
+  <ellipse cx="60" cy="64" rx="50" ry="44" fill="url(#hpBleed)"/>
+  <g opacity="0.85">
+    <path d="M 16 30 L 22 36 M 22 30 L 16 36" stroke="#ffba4d" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M 98 28 L 104 34 M 104 28 L 98 34" stroke="#ffba4d" stroke-width="2.2" stroke-linecap="round"/>
+    <circle cx="14" cy="58" r="2" fill="#ffba4d"/>
+    <circle cx="106" cy="62" r="2.5" fill="#ffba4d"/>
+    <path d="M 24 88 L 28 92 M 28 88 L 24 92" stroke="#ffba4d" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  <g>
+    <ellipse cx="86" cy="76" rx="11" ry="13" fill="#9bc7c0" stroke="#3d6a66" stroke-width="1.6"/>
+    <path d="M 79 70 Q 80 60 87 60 Q 94 60 95 70" fill="none" stroke="#3d6a66" stroke-width="1.6" stroke-linecap="round"/>
+    <rect x="82" y="76" width="8" height="3" rx="1.5" fill="#3d6a66" opacity="0.6"/>
+  </g>
+  <path d="M 28 70 C 28 50, 42 36, 60 36 C 78 36, 92 50, 92 70 C 92 88, 78 98, 60 98 C 42 98, 28 88, 28 70 Z" fill="url(#hpBody)" stroke="#9b5520" stroke-width="2.2" stroke-linejoin="round"/>
+  <ellipse cx="48" cy="98" rx="6" ry="3" fill="#9b5520"/>
+  <ellipse cx="72" cy="98" rx="6" ry="3" fill="#9b5520"/>
+  <circle cx="38" cy="74" r="8" fill="url(#hpCheek)"/>
+  <circle cx="82" cy="74" r="8" fill="url(#hpCheek)"/>
+  <path d="M 44 64 Q 50 56 56 64" fill="none" stroke="#2a1810" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M 64 64 Q 70 56 76 64" fill="none" stroke="#2a1810" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M 46 82 Q 60 94 74 82 Q 70 88 60 88 Q 50 88 46 82 Z" fill="#7a3e18"/>
+  <path d="M 50 82 Q 60 88 70 82" fill="#ff8c8c" opacity="0.85"/>
+  <path d="M 58 36 Q 60 24 64 28 Q 62 32 60 36" fill="#86b894" stroke="#3d6a4a" stroke-width="1.4" stroke-linejoin="round"/>
+</svg>

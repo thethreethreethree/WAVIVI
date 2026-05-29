@@ -115,10 +115,6 @@
     "font-family": "var(--font-permanent-marker), cursive",
     "font-weight": "300"
   },
-  "div:1>div:0>div:1>div:0>div:0>div:0>div:0>h1:0": {
-    "font-family": "var(--font-handwriting), cursive",
-    "font-weight": "600"
-  },
   "div:1>div:0>div:1>div:0>header:0>div:1>div:0>div:0>div:0>h2:0": {
     "font-family": "var(--font-permanent-marker), cursive",
     "font-size": "29px",
@@ -131,6 +127,19 @@
   "div:1>div:0>div:1>div:0>header:0>div:1>div:0>div:0>div:1>section:0>h3:0": {
     "font-family": "var(--font-permanent-marker), cursive",
     "font-weight": "300",
+    "color": "#593412"
+  },
+  "div:1>div:0>div:1>div:0>div:0>a:0>span:0>span:1>span:1": {
+    "font-size": "15px",
+    "font-weight": "600"
+  },
+  "div:1>div:0>div:1>div:0>div:0>div:0>div:0>h1:0": {
+    "color": "#262626",
+    "font-weight": "700"
+  },
+  "div:1>div:0>div:1>div:0>div:0>div:1>h2:0": {
+    "font-size": "16.5px",
+    "font-weight": "700",
     "color": "#593412"
   }
 }
