@@ -206,9 +206,19 @@ h3 {
 /* Ask Susen banner frame on /tools — Light Rustic (default, no theme
    class on <html>) shows the warm Rustic painted stroke; every other
    theme (.dark, .sketch, .cute, .orange) falls back to charcoal frame3.
-   The component renders BOTH images and CSS picks the one to show. */
-:where(.dark, .sketch, .cute, .orange) .susen-frame-rustic { display: none; }
-:where(.dark, .sketch, .cute, .orange) .susen-frame-default { display: block; }
+   The component renders BOTH images and CSS picks the one to show.
+   NOTE: plain compound selectors (no :where) so the theme class adds
+   its own specificity, beating Tailwind's .hidden utility on the
+   frame3 <img>. With :where the rules tied with .hidden and lost on
+   source order. */
+.dark .susen-frame-rustic,
+.sketch .susen-frame-rustic,
+.cute .susen-frame-rustic,
+.orange .susen-frame-rustic { display: none; }
+.dark .susen-frame-default,
+.sketch .susen-frame-default,
+.cute .susen-frame-default,
+.orange .susen-frame-default { display: block; }
 
 /* Shared helpers */
 /* Flat accent — previously a gradient, now a solid terracotta tone that
