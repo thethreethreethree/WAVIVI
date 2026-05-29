@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import packageJson from "../../../../package.json";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { signOut } from "@/features/auth/actions";
@@ -20,33 +21,33 @@ const SECTIONS: { title: string; rows: Row[] }[] = [
     title: "Account",
     rows: [
       { label: "Edit profile", href: "/profile/edit" },
-      { label: "Verification", hint: "ID verified", badge: "Verified" },
-      { label: "Linked accounts", hint: "Email confirmed" },
+      { label: "Verification", href: "/profile/verification" },
+      { label: "Linked accounts", href: "/profile/linked-accounts" },
     ],
   },
   {
     title: "Safety & Trust",
     rows: [
       { label: "Traveler notes", href: "/notes" },
-      { label: "Blocked travelers", hint: "0 blocked" },
-      { label: "Report a problem" },
-      { label: "Safety tips" },
+      { label: "Blocked travelers", href: "/profile/blocked" },
+      { label: "Report a problem", href: "/report" },
+      { label: "Safety tips", href: "/safety" },
     ],
   },
   {
     title: "Preferences",
     rows: [
-      { label: "Notifications", hint: "On" },
-      { label: "Privacy", hint: "Friends only" },
-      { label: "Language", hint: "English" },
+      { label: "Notifications", href: "/profile/notifications" },
+      { label: "Privacy", href: "/profile/privacy-settings" },
+      { label: "Language", href: "/profile/language", hint: "English" },
     ],
   },
   {
     title: "About",
     rows: [
-      { label: "Help & support" },
+      { label: "Help & support", href: "/help" },
       { label: "Privacy policy", href: "/privacy" },
-      { label: "App version", hint: "1.0.0" },
+      { label: "App version", hint: `v${packageJson.version}` },
     ],
   },
 ];
