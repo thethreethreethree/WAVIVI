@@ -7,6 +7,7 @@ import {
   Space_Grotesk,
 } from "next/font/google";
 
+import { OpeningSplash } from "@/components/ui/opening-splash";
 import { siteConfig } from "@/config/site";
 
 import "./globals.css";
@@ -130,8 +131,27 @@ export default function RootLayout({
         {/* First-frame poster so the splash paints something on the
             very first frame, before the video data arrives. */}
         <link rel="preload" as="image" href="/decor/opening-poster.jpg" />
+        {/* Critical inline CSS so the opening splash covers the viewport
+            even before Tailwind's stylesheet finishes parsing. Without
+            this the splash flickers in/out of fullscreen during the
+            first paint on slow connections. */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              .opening-splash{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:#fff;}
+              .opening-splash video{width:100%;height:100%;object-fit:cover;display:block;}
+              .splash-hide .opening-splash{display:none!important;}
+            `,
+          }}
+        />
       </head>
       <body className="min-h-full">
+        {/* Opening splash — rendered FIRST in <body> so its markup streams
+            to the browser before any app-shell content. Mounting it later
+            (e.g. inside the (app) layout) lets the shell paint underneath
+            for one frame before the overlay arrives. The component itself
+            no-ops for return visitors via the `splash-hide` head script. */}
+        <OpeningSplash />
         {/* Watercolor edge filters — referenced via `filter: url(#wc-edge)`. */}
         <svg
           aria-hidden

@@ -2,12 +2,15 @@ import { DesignEditor } from "@/components/dev/design-editor";
 import { DesignOverridesRuntime } from "@/components/dev/design-overrides-runtime";
 import { AppPrewarm } from "@/components/ui/app-prewarm";
 import { BottomNav } from "@/components/ui/bottom-nav";
-import { OpeningSplash } from "@/components/ui/opening-splash";
 import { PageTransition } from "@/components/ui/page-transition";
 import { ThemeImgSwap } from "@/components/ui/theme-img-swap";
 import { ServiceWorkerRegister } from "@/features/pwa";
 
-/** Mobile app shell — phone-width frame + floating bottom nav. */
+/** Mobile app shell — phone-width frame + floating bottom nav.
+ *  Note: <OpeningSplash /> is mounted at the top of <body> in the root
+ *  layout (not here) so its markup streams to the browser before any
+ *  app-shell content — otherwise the shell would briefly paint underneath
+ *  before the splash overlay appears. */
 export default function AppLayout({
   children,
 }: {
@@ -25,7 +28,6 @@ export default function AppLayout({
         </div>
       </div>
       <BottomNav />
-      <OpeningSplash />
       <ServiceWorkerRegister />
       <ThemeImgSwap />
       <DesignOverridesRuntime />
