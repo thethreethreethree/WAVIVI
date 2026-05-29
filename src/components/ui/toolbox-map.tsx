@@ -380,8 +380,18 @@ export function ToolboxMap({
 
   return (
     <div className="bg-sunset flex flex-1 flex-col">
-      {/* Top bar — watercolor sunset orange, matching the app's brand */}
-      <div className="bg-sunset relative z-20 flex flex-col gap-2.5 px-4 pb-3 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))] shadow-card">
+      {/* Top bar — painted CHARCOAL nav background (nav_background1) as
+          the bar's bg-image, with the paper-grain overlay kept on top for
+          consistency with the rest of the painted app shell. */}
+      <div
+        className="relative z-20 flex flex-col gap-2.5 px-4 pb-3 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))] shadow-card"
+        style={{
+          backgroundImage: "url('/decor/frames/nav_background1.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
         <span
           className="paper-grain-coarse pointer-events-none absolute inset-0"
           aria-hidden
