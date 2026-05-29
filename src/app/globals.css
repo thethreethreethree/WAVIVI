@@ -1027,18 +1027,11 @@ h3 {
   will-change: transform;
 }
 
-/* Opening splash — hidden for return visitors by a synchronous inline
-   <head> script that adds `.splash-hide` to <html> before first paint.
-   First-time visitors get `.splash-active` instead, which hides everything
-   under the splash so the app shell can't briefly paint through before
-   the overlay's `position: fixed` takes effect. The OpeningSplash
-   component removes both classes when the video ends. */
-.splash-hide .opening-splash {
-  display: none !important;
-}
-html.splash-active body > *:not(.opening-splash) {
-  visibility: hidden !important;
-}
+/* Opening splash CSS lives INLINE in the root layout's <head>, not here.
+   It needs to apply on the very first paint before this external
+   stylesheet's CSSOM is complete, otherwise the home shell briefly
+   paints through under the splash. See src/app/layout.tsx for the rules.
+   The inline rules cover .opening-splash, .splash-hide, .splash-active. */
 
 /* Back-button wiggle — a subtle attention-getting micro-shake that runs
    every few seconds so the user spots the affordance. */

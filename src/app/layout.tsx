@@ -148,16 +148,20 @@ export default function RootLayout({
         {/* First-frame poster so the splash paints something on the
             very first frame, before the video data arrives. */}
         <link rel="preload" as="image" href="/decor/opening-poster.jpg" />
-        {/* Critical inline CSS so the opening splash covers the viewport
-            even before Tailwind's stylesheet finishes parsing. Without
-            this the splash flickers in/out of fullscreen during the
-            first paint on slow connections. */}
+        {/* Critical inline CSS — must live here, not in globals.css.
+            globals.css is a separate <link rel="stylesheet"> resource;
+            browsers can stream and start painting the SSR body before
+            that file's CSSOM is complete, producing a one-frame flash
+            of the home content under the splash. Inlining the rules
+            here puts them in the same byte stream as the SSR HTML, so
+            they're guaranteed to apply on the very first paint. */}
         <style
           dangerouslySetInnerHTML={{
             __html: `
               .opening-splash{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:#fff;}
               .opening-splash video{width:100%;height:100%;object-fit:cover;display:block;}
-              .splash-hide .opening-splash{display:none!important;}
+              html.splash-hide .opening-splash{display:none!important;}
+              html.splash-active body>*:not(.opening-splash){display:none!important;}
             `,
           }}
         />
