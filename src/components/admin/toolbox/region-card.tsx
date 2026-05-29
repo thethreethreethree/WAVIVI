@@ -164,37 +164,61 @@ export function RegionCard({ region, utilityCount }: RegionCardProps) {
           </div>
         </div>
       ) : (
-        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
-          <ScanButton regionId={region.id} />
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="rounded-full px-3 py-1.5 text-xs font-bold text-muted ring-1 ring-border hover:text-foreground"
-          >
-            Edit
-          </button>
-          <button
-            type="button"
-            onClick={toggleActive}
-            disabled={busy}
-            className="rounded-full px-3 py-1.5 text-xs font-bold text-muted ring-1 ring-border hover:text-foreground disabled:opacity-60"
-          >
-            {region.active ? "Disable" : "Enable"}
-          </button>
-          <Link
-            href={`/admin/toolbox/${region.id}`}
-            className="rounded-full px-3 py-1.5 text-xs font-bold text-glow ring-1 ring-border hover:bg-glow/10"
-          >
-            View Utilities ›
-          </Link>
-          {error && (
-            <span className="text-[11px] font-semibold text-heat">
-              {error}
-            </span>
-          )}
-        </div>
+        <>
+          {/* Scan / edit / enable-disable actions */}
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+            <ScanButton regionId={region.id} />
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="rounded-full px-3 py-1.5 text-xs font-bold text-muted ring-1 ring-border hover:text-foreground"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={toggleActive}
+              disabled={busy}
+              className="rounded-full px-3 py-1.5 text-xs font-bold text-muted ring-1 ring-border hover:text-foreground disabled:opacity-60"
+            >
+              {region.active ? "Disable" : "Enable"}
+            </button>
+            {error && (
+              <span className="text-[11px] font-semibold text-heat">
+                {error}
+              </span>
+            )}
+          </div>
+          {/* Per-region content shortcuts */}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <ContentLink href={`/admin/stays/${region.id}`} label="Stays" />
+            <ContentLink href={`/admin/eat/${region.id}`} label="Where to eat" />
+            <ContentLink
+              href={`/admin/experiences/${region.id}`}
+              label="Experiences"
+            />
+            <ContentLink href={`/admin/events/${region.id}`} label="Events" />
+            <Link
+              href={`/admin/toolbox/${region.id}`}
+              className="rounded-full px-3 py-1.5 text-xs font-bold text-glow ring-1 ring-border hover:bg-glow/10"
+            >
+              Utilities ›
+            </Link>
+          </div>
+        </>
       )}
     </div>
+  );
+}
+
+function ContentLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="rounded-full px-3 py-1.5 text-xs font-bold text-glow ring-1 ring-border hover:bg-glow/10"
+    >
+      {label} ›
+    </Link>
   );
 }
 
