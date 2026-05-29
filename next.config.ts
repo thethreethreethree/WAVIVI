@@ -30,6 +30,11 @@ const nextConfig: NextConfig = {
       // these for venues that don't have a regular Place Photo. Same
       // trust class as the lh*.googleusercontent.com entries above.
       { protocol: "https", hostname: "streetviewpixels-pa.googleapis.com" },
+      // Google static CDN — ssl.gstatic.com (default reviewer avatars,
+      // business default images) and maps.gstatic.com (map tiles,
+      // marker icons). Wildcard avoids the one-hostname-at-a-time
+      // whack-a-mole as the ingest surfaces new gstatic subdomains.
+      { protocol: "https", hostname: "**.gstatic.com" },
     ],
   },
   // Security headers applied to every route.
