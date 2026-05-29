@@ -76,13 +76,6 @@ export default function ToolsPage() {
         />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/decor/frames/nav_background1.png"
-          alt=""
-          aria-hidden
-          className="susen-frame-sketch pointer-events-none relative -mx-4 hidden h-auto w-[calc(100%+2rem)] max-w-none select-none"
-        />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
           src="/decor/frames/frame3.png"
           alt=""
           aria-hidden
