@@ -72,13 +72,9 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
           priority
           className="object-cover"
         />
-        {/* Soft fade kept only at the bottom so the white title stays
-            legible on a busy cover photo. No coloured category tint and
-            no top-side darkening — the cover photo carries the look. */}
-        <span
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/55 to-transparent"
-          aria-hidden
-        />
+        {/* No image overlay — title relies on its own drop-shadow for
+            contrast; the distance pill and category chip carry their
+            own backgrounds. Cover photo shows uncovered. */}
         <BackButton
           fallback="/meet"
           className="absolute left-4 top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))]"
