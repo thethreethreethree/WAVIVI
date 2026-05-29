@@ -192,16 +192,18 @@ export function GroupEditor({
   /** Shrink a phone-camera photo client-side before sending it across the
    *  network. Vercel caps API-route bodies at ~4.5 MB, and raw HEIC/JPEG
    *  from a modern phone is routinely 5–12 MB. We resize to a max edge of
-   *  1920 px and re-encode as JPEG 0.85 — visually indistinguishable on a
-   *  cover banner, but typically lands at 300–800 KB.
+   *  1920 px and re-encode at quality 0.85 — visually indistinguishable
+   *  on a cover banner, but typically lands at 300–800 KB.
    *
-   *  Important: transparent PNGs would otherwise come out with a black
-   *  background because canvas's default backing buffer is transparent
-   *  black, and JPEG encoding has no alpha channel. We pre-fill the
-   *  canvas with white so transparent regions render as white instead
-   *  of black. */
+   *  PNG inputs are re-emitted as PNG so transparency is preserved (logos,
+   *  stickers, cropped portraits). Everything else is re-emitted as JPEG
+   *  for the smaller payload. JPEG has no alpha channel, so for the JPEG
+   *  path we pre-fill the canvas with white — otherwise the canvas's
+   *  default transparent-black backing buffer would bake any leftover
+   *  alpha out as black. */
   async function compressForUpload(file: File): Promise<File> {
-    // Tiny files (<700 KB) are already fine — skip the canvas round trip.
+    // Tiny files (<700 KB) are already fine — skip the canvas round trip
+    // (also preserves the PNG's original alpha for sub-700 KB PNGs).
     if (file.size < 700 * 1024) return file;
     const bmp = await createImageBitmap(file).catch(() => null);
     if (!bmp) return file;
@@ -214,22 +216,30 @@ export function GroupEditor({
     canvas.height = h;
     const ctx = canvas.getContext("2d");
     if (!ctx) return file;
-    // Fill with white so transparent PNGs don't bake out as black.
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, w, h);
+
+    const keepAlpha = file.type === "image/png";
+    if (!keepAlpha) {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+    }
     ctx.drawImage(bmp, 0, 0, w, h);
+    const mime = keepAlpha ? "image/png" : "image/jpeg";
     const blob: Blob | null = await new Promise((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", 0.85),
+      canvas.toBlob(resolve, mime, keepAlpha ? undefined : 0.85),
     );
     if (!blob) return file;
     // If compression somehow grew the file (rare on already-small images),
     // keep the original.
     if (blob.size >= file.size) return file;
-    return new File([blob], file.name.replace(/\.[a-z0-9]+$/i, ".jpg"), {
-      type: "image/jpeg",
+    const ext = keepAlpha ? ".png" : ".jpg";
+    return new File([blob], file.name.replace(/\.[a-z0-9]+$/i, ext), {
+      type: mime,
       lastModified: Date.now(),
     });
   }
+
+  const TOO_BIG_MESSAGE =
+    "The picture looks great but the file is too big. Please choose something smaller.";
 
   async function uploadFile(file: File) {
     setUploading(true);
@@ -245,9 +255,7 @@ export function GroupEditor({
       // enforces a 5 MB cap as defence-in-depth.
       const HARD_CAP = 4 * 1024 * 1024;
       if (prepared.size > HARD_CAP) {
-        throw new Error(
-          "Image is too large after compression — try a smaller photo (under ~10 MB raw).",
-        );
+        throw new Error(TOO_BIG_MESSAGE);
       }
       const form = new FormData();
       form.append("file", prepared);
@@ -257,9 +265,12 @@ export function GroupEditor({
       });
       if (!res.ok) {
         const b = (await res.json().catch(() => null)) as { error?: string } | null;
+        // Server-side 413 (Vercel body cap) and our /upload-cover 413
+        // (the route's own 5 MB check) both surface the same friendly
+        // message so admins see a consistent prompt.
         const fallback =
           res.status === 413
-            ? "Image too large for upload — try a smaller photo."
+            ? TOO_BIG_MESSAGE
             : `Upload failed (${res.status})`;
         throw new Error(b?.error ?? fallback);
       }
@@ -348,6 +359,27 @@ export function GroupEditor({
             ×
           </button>
         </div>
+
+        {error && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-start gap-2 border-b border-heat/20 bg-heat/10 px-4 py-3"
+          >
+            <span aria-hidden className="mt-0.5 text-base">
+              ⚠️
+            </span>
+            <p className="flex-1 text-sm font-semibold text-heat">{error}</p>
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              aria-label="Dismiss"
+              className="shrink-0 text-base leading-none text-heat hover:opacity-70"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         <div className="flex flex-col gap-3 p-4">
           {!isEdit && (
@@ -603,11 +635,6 @@ export function GroupEditor({
             )}
           </Field>
 
-          {error && (
-            <p className="rounded-lg bg-heat/15 px-3 py-2 text-xs font-semibold text-heat">
-              {error}
-            </p>
-          )}
         </div>
 
         <div className="sticky bottom-0 flex gap-2 border-t border-border bg-surface px-4 py-3">
