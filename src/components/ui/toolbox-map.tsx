@@ -99,7 +99,7 @@ function BackpackGlyph({ className }: { className?: string }) {
 
 /** Watercolor icon markup for each category marker (used in divIcon).
    Single source of truth — /icons/map/ — that renders identically across
-   every theme (light, dark, cute, sketch, orange). Inline width/height
+   every theme (light, cute, sketch, orange). Inline width/height
    guarantee sizing even if cached CSS is stale. */
 const MAP_ICON_BY_CATEGORY: Record<CategoryId, string> = {
   atm: "/icons/map/map_atm.png",

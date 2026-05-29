@@ -2,8 +2,9 @@
 
 /* ---------------------------------------------------------------------------
    WAVIVI / Travejor design system
-   Light + dark ("night traveler") themes. Components consume token-backed
-   colours, so toggling the `.dark` class on <html> re-themes the whole app.
+   Theme classes (.cute, .sketch, .orange) are applied to <html> to re-theme
+   the whole app via token-backed CSS variables. Default (no class) is
+   Light Rustic. A dedicated dark mode will be rebuilt separately.
 --------------------------------------------------------------------------- */
 :root {
   /* Light Rustic — warm hand-painted watercolor palette, tuned to the REFIND
@@ -22,25 +23,6 @@
   --gradient-sunset: linear-gradient(135deg, #c46d2e 0%, #db8a48 48%, #e8a965 100%);
   --shadow-card: 0 10px 26px -12px rgba(168, 69, 26, 0.36);
   --hub-core: #2a1304;
-}
-
-.dark {
-  /* Dark Rustic — deep warm browns with the same terracotta/honey accents
-     so painted icons stay coherent against the dark surfaces. */
-  --background: #1a120a;
-  --surface: #251a10;
-  --surface-elevated: #2e2114;
-  --foreground: #f6e6cb;
-  --muted: #b59875;
-  --border: #3d2c1b;
-
-  --accent-heat: #d96638;
-  --accent-cool: #45c0a2;
-  --accent-glow: #e08a4a;
-
-  --gradient-sunset: linear-gradient(135deg, #c46d2e 0%, #e08a4a 48%, #efb27d 100%);
-  --shadow-card: 0 8px 26px -12px rgba(0, 0, 0, 0.7);
-  --hub-core: #050302;
 }
 
 /* Cute mode — a brighter, softer, playful watercolor theme. Pairs with the
@@ -205,17 +187,15 @@ h3 {
 
 /* Ask Susen banner frame on /tools — Light Rustic (default, no theme
    class on <html>) shows the warm Rustic painted stroke; every other
-   theme (.dark, .sketch, .cute, .orange) falls back to charcoal frame3.
+   theme (.sketch, .cute, .orange) falls back to charcoal frame3.
    The component renders BOTH images and CSS picks the one to show.
    NOTE: plain compound selectors (no :where) so the theme class adds
    its own specificity, beating Tailwind's .hidden utility on the
    frame3 <img>. With :where the rules tied with .hidden and lost on
    source order. */
-.dark .susen-frame-rustic,
 .sketch .susen-frame-rustic,
 .cute .susen-frame-rustic,
 .orange .susen-frame-rustic { display: none; }
-.dark .susen-frame-default,
 .sketch .susen-frame-default,
 .cute .susen-frame-default,
 .orange .susen-frame-default { display: block; }
@@ -1049,9 +1029,15 @@ h3 {
 
 /* Opening splash — hidden for return visitors by a synchronous inline
    <head> script that adds `.splash-hide` to <html> before first paint.
-   First-time visitors get the splash painted from the very first frame. */
+   First-time visitors get `.splash-active` instead, which hides everything
+   under the splash so the app shell can't briefly paint through before
+   the overlay's `position: fixed` takes effect. The OpeningSplash
+   component removes both classes when the video ends. */
 .splash-hide .opening-splash {
   display: none !important;
+}
+html.splash-active body > *:not(.opening-splash) {
+  visibility: hidden !important;
 }
 
 /* Back-button wiggle — a subtle attention-getting micro-shake that runs
@@ -1138,9 +1124,6 @@ h3 {
   transform-origin: center;
   opacity: 1;
   mix-blend-mode: normal;
-}
-.dark .app-paper-bg {
-  filter: brightness(0.32) saturate(0.85);
 }
 /* Sketch parchment — clean white-paper sketch backdrop. */
 .sketch .app-paper-bg {

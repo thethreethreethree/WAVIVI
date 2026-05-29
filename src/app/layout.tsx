@@ -61,15 +61,32 @@ const codeMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-/** Applies the saved/system theme (light · dark · cute · orange) before paint. */
-const themeScript = `(function(){try{var t=localStorage.getItem('wavivi-theme');var theme=t||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');var c=document.documentElement.classList;if(theme==='dark')c.add('dark');else if(theme==='cute')c.add('cute');else if(theme==='orange')c.add('orange');else if(theme==='sketch')c.add('sketch');}catch(e){}})();`;
+/** Applies the saved theme (light · cute · orange · sketch) before paint.
+ *  Defaults to **Light Rustic** (no class) when no choice is saved — the
+ *  brand default is intentionally light, even on devices that prefer a
+ *  dark colour scheme system-wide. Dark mode was removed; a dedicated
+ *  dark theme will be added back as a separate build. Any pre-existing
+ *  "dark" value in localStorage falls through to Light Rustic. */
+const themeScript = `(function(){try{var theme=localStorage.getItem('wavivi-theme');var c=document.documentElement.classList;if(theme==='cute')c.add('cute');else if(theme==='orange')c.add('orange');else if(theme==='sketch')c.add('sketch');}catch(e){}})();`;
 
-/** Marks the document so the opening splash CSS is hidden for return
- *  visitors before first paint — otherwise SSR renders the splash markup
- *  and the user gets a frame of home before JS hides it. Also kicks off
- *  a high-priority video preload for first-time visitors so the splash
- *  video data arrives in parallel with HTML/CSS rather than after. */
-const splashScript = `(function(){try{if(sessionStorage.getItem('wavivi:opening-shown')){document.documentElement.classList.add('splash-hide');return;}var l=document.createElement('link');l.rel='preload';l.as='video';l.href='/decor/opening.mp4';l.type='video/mp4';document.head.appendChild(l);}catch(e){}})();`;
+/** Two responsibilities for first-paint splash behaviour:
+ *
+ *  • Return visitors (sessionStorage flag set): add `splash-hide` so the
+ *    inline CSS suppresses the SSR'd splash markup before paint — no
+ *    flash of splash on every navigation.
+ *
+ *  • First-time visitors: add `splash-active` so the inline CSS hides
+ *    everything except the splash overlay until JS removes the class
+ *    on splash close. This prevents the app shell from briefly painting
+ *    through before the splash's `position: fixed` takes over.
+ *
+ *  Deliberately NOT preloading the video here. A 1.4 MB high-priority
+ *  preload was starving the JS bundle and CSS of bandwidth, so the rest
+ *  of the page felt slow. The video element's own `preload="auto"` will
+ *  fetch the file at a more reasonable priority, and the poster image
+ *  (preloaded separately, ~56 KB) covers the first paint while the
+ *  video data arrives. */
+const splashScript = `(function(){try{var c=document.documentElement.classList;if(sessionStorage.getItem('wavivi:opening-shown')){c.add('splash-hide');}else{c.add('splash-active');}}catch(e){}})();`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),

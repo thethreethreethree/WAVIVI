@@ -46,6 +46,11 @@ export function OpeningSplash() {
   }, []);
 
   function close() {
+    // Reveal the app content underneath. The inline <head> script added
+    // `.splash-active` to <html> for first-time visitors, which hid every
+    // direct body child except the splash itself; clearing it now lets the
+    // shell fade in beneath the splash's opacity transition.
+    document.documentElement.classList.remove("splash-active");
     setClosing(true);
     // Match the CSS fade-out duration before unmounting.
     window.setTimeout(() => setUnmounted(true), 350);

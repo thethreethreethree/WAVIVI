@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from "react";
 
-/** App themes. Light Rustic + Dark Rustic + Sketch are user-selectable;
- *  `cute` and `orange` stay in the type so stored preferences from
- *  earlier builds don't crash but are no longer surfaced. */
-export type Theme = "light" | "dark" | "cute" | "orange" | "sketch";
+/** App themes. Light Rustic + Sketch are user-selectable; `cute` and
+ *  `orange` stay in the type so stored preferences from earlier builds
+ *  don't crash but are no longer surfaced. Dark mode was removed — a
+ *  separate dedicated dark theme will be built later. Older localStorage
+ *  values of "dark" are coerced back to "light" on mount. */
+export type Theme = "light" | "cute" | "orange" | "sketch";
 
 const OPTIONS: { value: Theme; label: string; icon: string }[] = [
   { value: "light", label: "Light Rustic", icon: "🍂" },
-  { value: "dark", label: "Dark Rustic", icon: "🌙" },
   { value: "sketch", label: "Sketch", icon: "✏️" },
 ];
 
@@ -19,18 +20,27 @@ function currentTheme(): Theme {
   if (c.contains("sketch")) return "sketch";
   if (c.contains("cute")) return "cute";
   if (c.contains("orange")) return "orange";
-  if (c.contains("dark")) return "dark";
   return "light";
 }
 
 /**
- * Theme switch — Light · Dark · Cute · Orange. A segmented control that
- * toggles the theme class on <html> and persists the choice to localStorage.
+ * Theme switch — Light Rustic · Sketch. A segmented control that toggles
+ * the theme class on <html> and persists the choice to localStorage.
  */
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
+    // Migrate any pre-existing "dark" preference back to light so users
+    // who picked Dark Rustic before the removal don't end up themeless.
+    try {
+      if (localStorage.getItem("wavivi-theme") === "dark") {
+        localStorage.setItem("wavivi-theme", "light");
+        document.documentElement.classList.remove("dark");
+      }
+    } catch {
+      /* ignore */
+    }
     const id = requestAnimationFrame(() => setTheme(currentTheme()));
     return () => cancelAnimationFrame(id);
   }, []);
@@ -38,7 +48,7 @@ export function ThemeToggle() {
   function choose(next: Theme) {
     setTheme(next);
     const c = document.documentElement.classList;
-    c.remove("dark", "cute", "orange", "sketch");
+    c.remove("cute", "orange", "sketch");
     if (next !== "light") c.add(next);
     try {
       localStorage.setItem("wavivi-theme", next);
