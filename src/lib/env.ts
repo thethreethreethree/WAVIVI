@@ -12,11 +12,36 @@ function required(name: string, value: string | undefined): string {
   return value;
 }
 
+/** Resolve the canonical site URL with the least possible config.
+ *
+ *  1. `NEXT_PUBLIC_SITE_URL` — explicit override, wins if set (use this to
+ *     pin a custom domain like https://wondavu.com once we have one).
+ *  2. `VERCEL_PROJECT_PRODUCTION_URL` — Vercel auto-injects this on every
+ *     deploy; it points at the project's stable production alias
+ *     (e.g. `wondavu.vercel.app`). Right for prod email links.
+ *  3. `VERCEL_URL` — Vercel auto-injects this too; per-deployment URL
+ *     (e.g. `wondavu-git-feature-x.vercel.app`). Right for preview
+ *     deploys so confirmation links return to the same preview.
+ *  4. `http://localhost:3000` — local-dev fallback.
+ *
+ *  This is read server-side only (sitemap/robots/layout metadata/auth
+ *  actions), so VERCEL_* env vars — which are not NEXT_PUBLIC and thus
+ *  not exposed to the browser — work fine. If a client component ever
+ *  needs the canonical URL, it must come through NEXT_PUBLIC_SITE_URL. */
+function resolveSiteUrl(): string {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  }
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:3000";
+}
+
 /** Values safe to use in the browser. */
 export const publicEnv = {
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  siteUrl: resolveSiteUrl(),
   /** Wondavu Pet system is still in development. Set
    *  `NEXT_PUBLIC_PET_ENABLED=1` in dev to expose `/pet` and activate
    *  reward hooks. Unset / anything else → /pet returns 404 and reward
