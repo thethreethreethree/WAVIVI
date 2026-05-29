@@ -66,7 +66,7 @@ export default function ToolsPage() {
             is vertically centered within the visible painted bar. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/decor/frames/frame3.png"
+          src="/decor/frames/Rustic_frame.png"
           alt=""
           aria-hidden
           className="pointer-events-none relative -mx-4 block h-auto w-[calc(100%+2rem)] max-w-none select-none"
