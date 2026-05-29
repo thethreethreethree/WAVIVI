@@ -26,6 +26,10 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "lh5.googleusercontent.com" },
       { protocol: "https", hostname: "lh6.googleusercontent.com" },
       { protocol: "https", hostname: "**.ggpht.com" },
+      // Google Street View thumbnails — Partner Collection ingest returns
+      // these for venues that don't have a regular Place Photo. Same
+      // trust class as the lh*.googleusercontent.com entries above.
+      { protocol: "https", hostname: "streetviewpixels-pa.googleapis.com" },
     ],
   },
   // Security headers applied to every route.
