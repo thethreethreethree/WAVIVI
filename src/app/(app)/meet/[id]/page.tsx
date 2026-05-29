@@ -72,8 +72,11 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
           priority
           className="object-cover"
         />
+        {/* Soft fade kept only at the bottom so the white title stays
+            legible on a busy cover photo. No coloured category tint and
+            no top-side darkening — the cover photo carries the look. */}
         <span
-          className={`absolute inset-0 bg-gradient-to-t ${meta.tint} via-black/30 to-black/10`}
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/55 to-transparent"
           aria-hidden
         />
         <BackButton
