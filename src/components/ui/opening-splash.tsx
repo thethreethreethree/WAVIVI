@@ -74,7 +74,15 @@ export function OpeningSplash() {
         preload="auto"
         onEnded={close}
         onError={close}
-        className="h-full w-full object-cover"
+        /* Absolute positioning so iOS Safari can't substitute the
+         * video's intrinsic aspect ratio for the requested height.
+         * h-full on a <video> in a flex column is ignored on iOS and
+         * the element collapses to width × (videoH/videoW), leaving a
+         * white band wherever it doesn't reach the viewport edge.
+         * Absolute + inset-0 forces the element box to fill the
+         * splash; object-fit:cover handles the aspect mismatch by
+         * cropping the content, not the box. */
+        className="absolute inset-0 h-full w-full object-cover"
       />
     </div>
   );
