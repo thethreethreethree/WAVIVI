@@ -5,6 +5,22 @@ import { useEffect, useRef, useState } from "react";
 
 import type { AdminChatGroup } from "@/lib/chat";
 
+type PartnerHit = {
+  type: "stay" | "restaurant" | "experience" | "event";
+  id: string;
+  name: string;
+  address: string | null;
+  latitude: number;
+  longitude: number;
+  region_id: string | null;
+};
+const PARTNER_EMOJI: Record<PartnerHit["type"], string> = {
+  stay: "🛏️",
+  restaurant: "🍽️",
+  experience: "🎟️",
+  event: "🎉",
+};
+
 const CATEGORIES = [
   "Food",
   "Nightlife",
@@ -54,6 +70,26 @@ export function GroupEditor({
   const [destinationCountry, setDestinationCountry] = useState(
     group?.destination_country ?? "",
   );
+  // Specific-location pin — optional. Either picked from our partner DB
+  // (place_partner_* set) or, later, from Google Maps (those fields stay
+  // null). Manual "Clear" zeroes everything.
+  const [placeName, setPlaceName] = useState(group?.place_name ?? "");
+  const [placeAddress, setPlaceAddress] = useState(group?.place_address ?? "");
+  const [placeLat, setPlaceLat] = useState<number | null>(
+    group?.place_lat ?? null,
+  );
+  const [placeLng, setPlaceLng] = useState<number | null>(
+    group?.place_lng ?? null,
+  );
+  const [placePartnerId, setPlacePartnerId] = useState<string | null>(
+    group?.place_partner_id ?? null,
+  );
+  const [placePartnerType, setPlacePartnerType] = useState<
+    PartnerHit["type"] | null
+  >((group?.place_partner_type ?? null) as PartnerHit["type"] | null);
+  const [partnerQuery, setPartnerQuery] = useState("");
+  const [partnerHits, setPartnerHits] = useState<PartnerHit[]>([]);
+  const [partnerSearching, setPartnerSearching] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,6 +130,58 @@ export function GroupEditor({
       setDestinationCity(r.city ?? "");
       setDestinationCountry(r.country ?? "");
     }
+  }
+
+  // Partner search — debounced. Scoped to the selected region when one
+  // exists so admins don't see partners from other countries by accident.
+  useEffect(() => {
+    if (partnerQuery.trim().length < 2) {
+      setPartnerHits([]);
+      return;
+    }
+    let cancelled = false;
+    const t = window.setTimeout(async () => {
+      setPartnerSearching(true);
+      try {
+        const params = new URLSearchParams({ q: partnerQuery });
+        if (regionId) params.set("region_id", regionId);
+        const res = await fetch(
+          `/api/admin/groups/partner-search?${params.toString()}`,
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = (await res.json()) as { results?: PartnerHit[] };
+        if (!cancelled) setPartnerHits(json.results ?? []);
+      } catch {
+        if (!cancelled) setPartnerHits([]);
+      } finally {
+        if (!cancelled) setPartnerSearching(false);
+      }
+    }, 220);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [partnerQuery, regionId]);
+
+  function choosePartner(p: PartnerHit) {
+    setPlaceName(p.name);
+    setPlaceAddress(p.address ?? "");
+    setPlaceLat(p.latitude);
+    setPlaceLng(p.longitude);
+    setPlacePartnerId(p.id);
+    setPlacePartnerType(p.type);
+    setPartnerQuery("");
+    setPartnerHits([]);
+  }
+  function clearLocation() {
+    setPlaceName("");
+    setPlaceAddress("");
+    setPlaceLat(null);
+    setPlaceLng(null);
+    setPlacePartnerId(null);
+    setPlacePartnerType(null);
+    setPartnerQuery("");
+    setPartnerHits([]);
   }
 
   // Cover image upload — drop or click.
@@ -199,6 +287,12 @@ export function GroupEditor({
         cover_image: coverImage.trim() || null,
         destination_city: destinationCity.trim() || null,
         destination_country: destinationCountry.trim() || null,
+        place_name: placeName.trim() || null,
+        place_address: placeAddress.trim() || null,
+        place_lat: placeLat,
+        place_lng: placeLng,
+        place_partner_id: placePartnerId,
+        place_partner_type: placePartnerType,
       };
       const url = isEdit
         ? `/api/admin/groups/${group!.id}`
@@ -393,6 +487,112 @@ export function GroupEditor({
               />
             </Field>
           </div>
+
+          {/* Specific location pin — optional. Picked from our own partner
+              network (stays / restaurants / experiences / events). Google
+              Maps autocomplete is a planned follow-up. */}
+          <Field label="Specific location (optional)">
+            {placeName ? (
+              <div className="rounded-lg bg-surface-elevated p-3 ring-1 ring-border">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-bold text-foreground">
+                      {placePartnerType
+                        ? `${PARTNER_EMOJI[placePartnerType]} `
+                        : "📍 "}
+                      {placeName}
+                    </p>
+                    {placeAddress && (
+                      <p className="truncate text-[11px] text-muted">
+                        {placeAddress}
+                      </p>
+                    )}
+                    {placePartnerType && placePartnerId && (
+                      <a
+                        href={`/admin/${
+                          placePartnerType === "stay"
+                            ? "stays"
+                            : placePartnerType === "restaurant"
+                              ? "restaurants"
+                              : placePartnerType === "experience"
+                                ? "experiences"
+                                : "events"
+                        }`}
+                        className="mt-1 inline-block text-[10px] font-semibold text-glow underline"
+                      >
+                        Open partner admin ›
+                      </a>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearLocation}
+                    className="shrink-0 rounded-full px-2 py-1 text-[10px] font-bold text-muted ring-1 ring-border hover:text-foreground"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <input
+                  value={partnerQuery}
+                  onChange={(e) => setPartnerQuery(e.target.value)}
+                  placeholder="Search partners — stays, restaurants, experiences, events"
+                  className="admin-input"
+                />
+                <span className="text-[10px] text-muted">
+                  Pin this group to a specific partner location.{" "}
+                  {regionId
+                    ? "Limited to the selected region."
+                    : "Pick a region first to narrow results."}
+                </span>
+                {partnerSearching && (
+                  <p className="mt-1 text-[10px] text-muted">Searching…</p>
+                )}
+                {partnerHits.length > 0 && (
+                  <ul className="mt-1 max-h-56 overflow-y-auto rounded-lg ring-1 ring-border">
+                    {partnerHits.map((h) => (
+                      <li
+                        key={`${h.type}-${h.id}`}
+                        className="border-b border-border last:border-b-0"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => choosePartner(h)}
+                          className="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-surface-elevated"
+                        >
+                          <span className="text-base">
+                            {PARTNER_EMOJI[h.type]}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-xs font-bold text-foreground">
+                              {h.name}
+                            </span>
+                            {h.address && (
+                              <span className="block truncate text-[10px] text-muted">
+                                {h.address}
+                              </span>
+                            )}
+                          </span>
+                          <span className="shrink-0 rounded-full bg-glow/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-glow">
+                            {h.type}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {partnerQuery.trim().length >= 2 &&
+                  !partnerSearching &&
+                  partnerHits.length === 0 && (
+                    <p className="mt-1 text-[10px] text-muted">
+                      No partners match &ldquo;{partnerQuery}&rdquo;.
+                    </p>
+                  )}
+              </>
+            )}
+          </Field>
 
           {error && (
             <p className="rounded-lg bg-heat/15 px-3 py-2 text-xs font-semibold text-heat">

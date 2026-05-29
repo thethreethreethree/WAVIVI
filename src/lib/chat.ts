@@ -9,6 +9,13 @@ export interface ChatGroup {
   category: string | null;
   cover_image: string | null;
   created_at: string;
+  /** Optional specific-location pin (migration 0039). */
+  place_name: string | null;
+  place_address: string | null;
+  place_lat: number | null;
+  place_lng: number | null;
+  place_partner_id: string | null;
+  place_partner_type: "stay" | "restaurant" | "experience" | "event" | null;
 }
 
 export interface ChatMessage {
@@ -224,6 +231,13 @@ export interface AdminChatGroup {
   member_count: number;
   created_at: string;
   updated_at: string;
+  /** Optional specific-location pin (migration 0039). All-null until set. */
+  place_name: string | null;
+  place_address: string | null;
+  place_lat: number | null;
+  place_lng: number | null;
+  place_partner_id: string | null;
+  place_partner_type: "stay" | "restaurant" | "experience" | "event" | null;
 }
 
 /**
@@ -237,7 +251,7 @@ export async function listChatGroups(): Promise<AdminChatGroup[]> {
   const { data } = await supabase
     .from("chat_groups")
     .select(
-      "id, name, description, category, cover_image, destination_city, destination_country, featured, archived, created_at, updated_at, chat_group_members(count)",
+      "id, name, description, category, cover_image, destination_city, destination_country, featured, archived, created_at, updated_at, place_name, place_address, place_lat, place_lng, place_partner_id, place_partner_type, chat_group_members(count)",
     )
     .order("featured", { ascending: false })
     .order("archived", { ascending: true })
@@ -255,6 +269,17 @@ export async function listChatGroups(): Promise<AdminChatGroup[]> {
     archived: boolean;
     created_at: string;
     updated_at: string;
+    place_name: string | null;
+    place_address: string | null;
+    place_lat: number | null;
+    place_lng: number | null;
+    place_partner_id: string | null;
+    place_partner_type:
+      | "stay"
+      | "restaurant"
+      | "experience"
+      | "event"
+      | null;
     chat_group_members?: Array<{ count: number }>;
   };
   return ((data as unknown as Row[] | null) ?? []).map((g) => ({
@@ -269,6 +294,12 @@ export async function listChatGroups(): Promise<AdminChatGroup[]> {
     archived: g.archived,
     created_at: g.created_at,
     updated_at: g.updated_at,
+    place_name: g.place_name,
+    place_address: g.place_address,
+    place_lat: g.place_lat,
+    place_lng: g.place_lng,
+    place_partner_id: g.place_partner_id,
+    place_partner_type: g.place_partner_type,
     member_count: g.chat_group_members?.[0]?.count ?? 0,
   }));
 }

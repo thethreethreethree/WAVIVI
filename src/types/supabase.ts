@@ -652,6 +652,13 @@ export type ChatGroupRow = {
   featured: boolean;
   archived: boolean;
   updated_at: string;
+  /* Optional specific-location pin (migration 0039). */
+  place_name: string | null;
+  place_address: string | null;
+  place_lat: number | null;
+  place_lng: number | null;
+  place_partner_id: string | null;
+  place_partner_type: "stay" | "restaurant" | "experience" | "event" | null;
 };
 export type ChatGroupInsert = {
   id: string;
@@ -668,6 +675,17 @@ export type ChatGroupInsert = {
   is_auto_generated?: boolean;
   featured?: boolean;
   archived?: boolean;
+  place_name?: string | null;
+  place_address?: string | null;
+  place_lat?: number | null;
+  place_lng?: number | null;
+  place_partner_id?: string | null;
+  place_partner_type?:
+    | "stay"
+    | "restaurant"
+    | "experience"
+    | "event"
+    | null;
 };
 export type ChatGroupUpdate = Partial<Omit<ChatGroupInsert, "id">>;
 

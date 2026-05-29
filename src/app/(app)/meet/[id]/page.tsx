@@ -101,6 +101,40 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
             : "Be the first to join this group."}
         </p>
 
+        {/* Specific location pin (admin-set). Deep-links to the partner
+            page when one was attached; otherwise just shows the label. */}
+        {dbGroup?.place_name && (
+          <div className="mt-4 flex items-start gap-3 rounded-2xl bg-surface/70 px-4 py-3 ring-1 ring-border">
+            <span className="mt-0.5 text-xl">📍</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-foreground">
+                {dbGroup.place_name}
+              </p>
+              {dbGroup.place_address && (
+                <p className="mt-0.5 text-xs text-muted">
+                  {dbGroup.place_address}
+                </p>
+              )}
+              {dbGroup.place_partner_type && dbGroup.place_partner_id && (
+                <Link
+                  href={`/${
+                    dbGroup.place_partner_type === "stay"
+                      ? "stay"
+                      : dbGroup.place_partner_type === "restaurant"
+                        ? "eat"
+                        : dbGroup.place_partner_type === "experience"
+                          ? "todo"
+                          : "events"
+                  }/${dbGroup.place_partner_id}`}
+                  className="mt-1 inline-block text-xs font-semibold text-glow underline"
+                >
+                  See on Wondavu ›
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+
         <h2 className="mt-5 text-sm font-bold uppercase tracking-wide text-muted">
           Featured Travelers
         </h2>

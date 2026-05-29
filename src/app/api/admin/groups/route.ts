@@ -43,6 +43,12 @@ export async function POST(req: NextRequest) {
     destination_city: body.destination_city ?? null,
     theme_tags: body.theme_tags ?? [],
     featured: body.featured ?? false,
+    place_name: body.place_name ?? null,
+    place_address: body.place_address ?? null,
+    place_lat: body.place_lat ?? null,
+    place_lng: body.place_lng ?? null,
+    place_partner_id: body.place_partner_id ?? null,
+    place_partner_type: body.place_partner_type ?? null,
   };
 
   const { data, error } = await supabase

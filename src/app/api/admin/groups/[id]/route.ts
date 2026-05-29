@@ -24,6 +24,12 @@ const EDITABLE: (keyof ChatGroupUpdate)[] = [
   "theme_tags",
   "featured",
   "archived",
+  "place_name",
+  "place_address",
+  "place_lat",
+  "place_lng",
+  "place_partner_id",
+  "place_partner_type",
 ];
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {
