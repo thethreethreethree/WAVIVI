@@ -104,15 +104,27 @@ export function StayList({
         (s.address ?? "").toLowerCase().includes(q)
       );
     });
+    // Featured stays always float to the top of the regional list — admin
+    // editorial pick. Within featured + within non-featured we then sort
+    // by proximity (if we have the user's location) or leave the
+    // backpack_rating order from the server query.
     if (userPos) {
       return filtered
         .map((s) => ({
           s,
           km: haversineKm(userPos, { lat: s.latitude, lng: s.longitude }),
         }))
-        .sort((a, b) => a.km - b.km);
+        .sort((a, b) => {
+          if (a.s.featured !== b.s.featured) return a.s.featured ? -1 : 1;
+          return a.km - b.km;
+        });
     }
-    return filtered.map((s) => ({ s, km: null as number | null }));
+    return filtered
+      .map((s) => ({ s, km: null as number | null }))
+      .sort((a, b) => {
+        if (a.s.featured !== b.s.featured) return a.s.featured ? -1 : 1;
+        return 0;
+      });
   }, [stays, query, category, minRating, userPos]);
 
   const activeFilterCount =
@@ -258,7 +270,11 @@ export function StayList({
       ) : (
         <ul className="flex flex-col gap-4 px-5 pb-8 pt-2">
           {results.map(({ s, km }) => {
-            const topPick = (s.rating ?? s.backpack_rating) >= 4.7;
+            // Admin-set top_pick wins; fall back to the legacy rating
+            // heuristic for stays that haven't been curated yet so the
+            // badge still appears on new/un-managed listings.
+            const topPick =
+              s.top_pick || (s.rating ?? s.backpack_rating) >= 4.7;
             const pickers = pickersByStay[s.id] ?? [];
             const overflow = Math.max(0, s.thumbs_up - pickers.length);
             return (

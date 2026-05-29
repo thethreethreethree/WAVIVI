@@ -85,6 +85,31 @@ export function StaysList({ stays }: { stays: StayRow[] }) {
     }
   }
 
+  /** Flip a boolean column on one stay (`featured` or `top_pick`). */
+  async function patchFlag(
+    id: string,
+    field: "featured" | "top_pick",
+    next: boolean,
+  ) {
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/stays/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: next }),
+      });
+      if (!res.ok) {
+        const b = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(b?.error ?? `Update failed (${res.status})`);
+      }
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Update failed.");
+    }
+  }
+
   // Whether every currently-visible row is selected.
   const allVisibleSelected =
     visible.length > 0 && visible.every((s) => selected.has(s.id));
@@ -321,6 +346,38 @@ export function StaysList({ stays }: { stays: StayRow[] }) {
                 </span>
               </span>
               <span className="flex shrink-0 flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => patchFlag(s.id, "featured", !s.featured)}
+                  title={
+                    s.featured
+                      ? "Featured — unpin from the top of the regional list"
+                      : "Pin to the top of the regional list"
+                  }
+                  className={`rounded-full px-3 py-1 text-xs font-bold ring-1 transition-colors ${
+                    s.featured
+                      ? "bg-glow text-white ring-glow"
+                      : "text-muted ring-border hover:text-foreground"
+                  }`}
+                >
+                  {s.featured ? "★ Featured" : "Feature"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => patchFlag(s.id, "top_pick", !s.top_pick)}
+                  title={
+                    s.top_pick
+                      ? "Top pick — remove the ⭐ badge"
+                      : "Tag this stay with the ⭐ Top pick badge"
+                  }
+                  className={`rounded-full px-3 py-1 text-xs font-bold ring-1 transition-colors ${
+                    s.top_pick
+                      ? "bg-cool text-white ring-cool"
+                      : "text-muted ring-border hover:text-foreground"
+                  }`}
+                >
+                  {s.top_pick ? "⭐ Top pick" : "Top pick"}
+                </button>
                 <button
                   type="button"
                   onClick={() => setEditing(s)}

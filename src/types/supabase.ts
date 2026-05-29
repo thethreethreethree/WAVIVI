@@ -345,6 +345,9 @@ export type StayRow = {
    *  Partner Collection extension ingest route; cleared in the admin
    *  pending-review queue. */
   needs_review: boolean;
+  /** Admin-controlled promotion flags (migration 0040). */
+  featured: boolean;
+  top_pick: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -384,6 +387,8 @@ export type StayInsert = {
   metadata_json?: Record<string, unknown>;
   active?: boolean;
   needs_review?: boolean;
+  featured?: boolean;
+  top_pick?: boolean;
 };
 
 export type StayUpdate = Partial<Omit<StayInsert, "source_ref">>;
