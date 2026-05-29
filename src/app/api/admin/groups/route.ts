@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/toolbox/admin";
 import type { ChatGroupInsert } from "@/types/supabase";
 
@@ -14,10 +15,15 @@ import type { ChatGroupInsert } from "@/types/supabase";
  * `/meet/[id]` and `/meet/[id]/chat` routes that pre-date this dashboard.
  */
 export async function POST(req: NextRequest) {
-  const { isAdmin, supabase } = await requireAdmin();
+  const { isAdmin } = await requireAdmin();
   if (!isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  // Service-role client bypasses RLS. The route is already gated by the
+  // requireAdmin() check above; the user-auth client tripped the
+  // chat_groups INSERT policy and surfaced as
+  // "new row violates row-level security policy for table chat_groups".
+  const supabase = createAdminClient();
 
   const body = (await req.json().catch(() => null)) as Partial<ChatGroupInsert> | null;
   if (!body || !body.id || !body.name) {
