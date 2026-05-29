@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { AdminChatGroup } from "@/lib/chat";
 
@@ -18,6 +18,13 @@ const CATEGORIES = [
   "Backpacker",
   "Other",
 ];
+
+type Region = {
+  id: string;
+  display_name: string;
+  city: string | null;
+  country: string | null;
+};
 
 /**
  * Modal editor for chat groups. Doubles as create + edit:
@@ -49,6 +56,85 @@ export function GroupEditor({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Region picker — replaces free-text city + country.
+  const [regions, setRegions] = useState<Region[]>([]);
+  const [regionId, setRegionId] = useState<string>("");
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/regions")
+      .then((r) => r.json())
+      .then((j: { regions?: Region[] }) => {
+        if (cancelled) return;
+        const list = j.regions ?? [];
+        setRegions(list);
+        // Pre-select the region whose city + country match the saved
+        // values, so editing an existing group lands on the right row.
+        const existing = list.find(
+          (r) =>
+            (r.city ?? "").toLowerCase() ===
+              (group?.destination_city ?? "").toLowerCase() &&
+            (r.country ?? "").toLowerCase() ===
+              (group?.destination_country ?? "").toLowerCase(),
+        );
+        if (existing) setRegionId(existing.id);
+      })
+      .catch(() => {
+        /* leave list empty — admin can still type in fallback fields */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [group?.destination_city, group?.destination_country]);
+
+  function chooseRegion(id: string) {
+    setRegionId(id);
+    const r = regions.find((x) => x.id === id);
+    if (r) {
+      setDestinationCity(r.city ?? "");
+      setDestinationCountry(r.country ?? "");
+    }
+  }
+
+  // Cover image upload — drop or click.
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
+  async function uploadFile(file: File) {
+    setUploading(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/admin/groups/upload-cover", {
+        method: "POST",
+        body: form,
+      });
+      if (!res.ok) {
+        const b = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(b?.error ?? `Upload failed (${res.status})`);
+      }
+      const json = (await res.json()) as { url?: string };
+      if (json.url) setCoverImage(json.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function onFileInput(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (f) void uploadFile(f);
+    e.target.value = "";
+  }
+  function onDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragOver(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) void uploadFile(f);
+  }
 
   async function save() {
     setBusy(true);
@@ -163,12 +249,43 @@ export function GroupEditor({
             />
           </Field>
 
-          <Field label="Cover image URL">
+          {/* Cover image — drop / upload + URL fallback. */}
+          <Field label="Cover image">
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={onDrop}
+              onClick={() => fileRef.current?.click()}
+              className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-3 py-6 text-center transition-colors ${
+                dragOver
+                  ? "border-glow bg-glow/10"
+                  : "border-border bg-surface-elevated hover:border-glow/60"
+              }`}
+            >
+              <p className="text-xs font-bold text-foreground">
+                {uploading
+                  ? "Uploading…"
+                  : "Drop an image here or click to upload"}
+              </p>
+              <p className="mt-0.5 text-[10px] text-muted">
+                JPEG / PNG / WebP · up to 5 MB
+              </p>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={onFileInput}
+                className="hidden"
+              />
+            </div>
             <input
               value={coverImage}
               onChange={(e) => setCoverImage(e.target.value)}
-              placeholder="https://…/cover.jpg"
-              className="admin-input"
+              placeholder="…or paste an image URL"
+              className="admin-input mt-2"
             />
             {coverImage && /^https?:\/\//i.test(coverImage) && (
               // eslint-disable-next-line @next/next/no-img-element
@@ -180,12 +297,39 @@ export function GroupEditor({
             )}
           </Field>
 
+          {/* Region — replaces free-text city + country. Writes the
+              selected region's city/country into the existing columns
+              so downstream queries don't change shape yet. */}
+          <Field label="Region">
+            <select
+              value={regionId}
+              onChange={(e) => chooseRegion(e.target.value)}
+              className="admin-input"
+            >
+              <option value="">— Pick a region —</option>
+              {regions.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.display_name}
+                  {r.country ? ` · ${r.country}` : ""}
+                </option>
+              ))}
+            </select>
+            <span className="text-[10px] text-muted">
+              Sets destination city + country from your{" "}
+              <a className="font-semibold text-glow" href="/admin/regions">
+                Regions
+              </a>{" "}
+              list. Need a new one? Add it there first.
+            </span>
+          </Field>
+
+          {/* Read-only echo so admins can confirm what'll be saved. */}
           <div className="grid grid-cols-2 gap-3">
             <Field label="Destination city">
               <input
                 value={destinationCity}
                 onChange={(e) => setDestinationCity(e.target.value)}
-                placeholder="Bangkok"
+                placeholder="(set by region)"
                 className="admin-input"
               />
             </Field>
@@ -193,7 +337,7 @@ export function GroupEditor({
               <input
                 value={destinationCountry}
                 onChange={(e) => setDestinationCountry(e.target.value)}
-                placeholder="Thailand"
+                placeholder="(set by region)"
                 className="admin-input"
               />
             </Field>
