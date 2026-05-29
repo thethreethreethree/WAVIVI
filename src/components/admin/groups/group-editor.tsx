@@ -193,7 +193,13 @@ export function GroupEditor({
    *  network. Vercel caps API-route bodies at ~4.5 MB, and raw HEIC/JPEG
    *  from a modern phone is routinely 5–12 MB. We resize to a max edge of
    *  1920 px and re-encode as JPEG 0.85 — visually indistinguishable on a
-   *  cover banner, but typically lands at 300–800 KB. */
+   *  cover banner, but typically lands at 300–800 KB.
+   *
+   *  Important: transparent PNGs would otherwise come out with a black
+   *  background because canvas's default backing buffer is transparent
+   *  black, and JPEG encoding has no alpha channel. We pre-fill the
+   *  canvas with white so transparent regions render as white instead
+   *  of black. */
   async function compressForUpload(file: File): Promise<File> {
     // Tiny files (<700 KB) are already fine — skip the canvas round trip.
     if (file.size < 700 * 1024) return file;
@@ -208,6 +214,9 @@ export function GroupEditor({
     canvas.height = h;
     const ctx = canvas.getContext("2d");
     if (!ctx) return file;
+    // Fill with white so transparent PNGs don't bake out as black.
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, w, h);
     ctx.drawImage(bmp, 0, 0, w, h);
     const blob: Blob | null = await new Promise((resolve) =>
       canvas.toBlob(resolve, "image/jpeg", 0.85),
