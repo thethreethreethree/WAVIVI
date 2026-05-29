@@ -9,7 +9,8 @@
  * Internal helpers (decay, stages, sprites) stay private.
  */
 
-export { awardPetReward, todayUtcKey } from "./api/award-reward";
+export { awardPetReward } from "./api/award-reward";
+export { todayUtcKey } from "./lib/time";
 export { feedPet, playWithPet, letPetSleep, bathePet } from "./api/care";
 export { renamePet } from "./api/rename";
 export { getMyPet, getPetForUser } from "./api/get-pet";

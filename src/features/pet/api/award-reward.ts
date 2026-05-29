@@ -142,7 +142,3 @@ export async function awardPetReward(
   };
 }
 
-/** Convenience: today's UTC date as a source_id for daily_login. */
-export function todayUtcKey(now: Date = new Date()): string {
-  return now.toISOString().slice(0, 10);
-}
