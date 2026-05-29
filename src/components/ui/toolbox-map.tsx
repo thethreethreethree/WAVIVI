@@ -77,11 +77,12 @@ function fmtMins(min: number): string {
  * restaurants, so they get a venue image.
  */
 const IMAGE_CATEGORIES = new Set<string>(["public_wifi"]);
-/** Fallback venue photo per image-category, used when a pin has no own photo. */
-const CATEGORY_FALLBACK_IMAGE: Record<string, string> = {
-  public_wifi:
-    "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=600&q=70",
-};
+/** Fallback venue photo per image-category, used when a pin has no own photo.
+ *  Intentionally empty — previously pointed at an Unsplash stock URL that
+ *  read as off-brand on a traveler-trust screen. Cards without a real photo
+ *  now render the category icon + name + distance only, which is cleaner
+ *  than a generic cafe photo that has nothing to do with the actual venue. */
+const CATEGORY_FALLBACK_IMAGE: Record<string, string> = {};
 
 /** A backpack glyph — orange, so it can be tinted via `text-*` (vs the emoji). */
 function BackpackGlyph({ className }: { className?: string }) {

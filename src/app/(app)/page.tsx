@@ -75,12 +75,11 @@ export default async function Home() {
         .order("backpack_rating", { ascending: false })
         .limit(2),
     ]);
-    if (staysRes.error)
-      console.warn("[home] stays region query failed", staysRes.error);
-    if (eatsRes.error)
-      console.warn("[home] restaurants region query failed", eatsRes.error);
-    if (expsRes.error)
-      console.warn("[home] experiences region query failed", expsRes.error);
+    // Region queries that fail fall through silently to the mock fallback
+    // below — we deliberately don't surface them in the browser console
+    // because they fire on every home-page load and create noise without
+    // actionable signal. If we ever need this for debugging, add a
+    // server-side log instead (won't reach the user's devtools).
     const live: ForYouCard[] = [
       ...(staysRes.data ?? []).map((s) => ({
         id: s.id,

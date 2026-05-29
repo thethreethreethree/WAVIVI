@@ -48,15 +48,9 @@ export default function FeedPage() {
         ))}
       </div>
 
-      <Link
-        href="#"
-        aria-label="Create post"
-        className="fixed bottom-24 right-4 z-30 flex h-12 w-12 items-center
-                   justify-center rounded-full bg-glow text-2xl text-white shadow-lg
-                   active:scale-95"
-      >
-        +
-      </Link>
+      {/* Create-post FAB hidden for v1 — the post-creation flow isn't built
+          yet, and a no-op `href="#"` button reads as broken on first tap.
+          Re-enable when the compose screen lands. */}
     </div>
   );
 }

@@ -88,8 +88,8 @@ export function EventsList({ events }: { events: EventRow[] }) {
 
       {events.length === 0 ? (
         <p className="px-5 py-10 text-center text-sm text-muted">
-          No events in the system yet. Admins can add them from the Events
-          admin.
+          No events here yet — check back soon, or pick a different region from
+          the top bar to see what&apos;s on elsewhere.
         </p>
       ) : (
         <ul className="flex flex-col gap-4 px-5 pb-8 pt-2">
