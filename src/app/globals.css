@@ -220,6 +220,16 @@ h3 {
 .cute .susen-frame-default,
 .orange .susen-frame-default { display: block; }
 
+/* Toolbox Map top bar — Sketch theme swaps the bg-sunset gradient for
+   the painted CHARCOAL nav_background1 driftwood. Light Rustic and
+   every other theme keep the default terracotta gradient. */
+.sketch .toolbox-map-bar {
+  background-image: url("/decor/frames/nav_background1.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 /* Shared helpers */
 /* Flat accent — previously a gradient, now a solid terracotta tone that
    matches the painted watercolor icon set without the candy-bright sheen. */
