@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Icon } from "@/components/ui/icon";
-import { CUTE_ICONS } from "@/lib/cute-icons";
 import {
   backpackDisplay,
   backpackLabel,
@@ -107,9 +106,7 @@ const MAP_ICON_BY_CATEGORY: Record<CategoryId, string> = {
   market: "/icons/map/map_market.png",
   bank: "/icons/map/map_bank.png",
   sim_card: "/icons/map/map_sim_card.png",
-  // No dedicated wifi pin in the new set yet — keep the legacy cute icon
-  // so the marker still renders. Swap when the new asset lands.
-  public_wifi: CUTE_ICONS["wifi"] ?? "",
+  public_wifi: "/icons/map/map_public_wifi.png",
   currency_exchange: "/icons/map/map_currency_exchange.png",
   bathroom: "/icons/map/map_bathroom.png",
   transportation: "/icons/map/map_bus_stop.png",
