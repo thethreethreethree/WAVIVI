@@ -82,6 +82,12 @@ export default async function ToolboxPage() {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Link
+            href="/admin/regions"
+            className="rounded-full bg-glow px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+          >
+            Manage Regions ›
+          </Link>
+          <Link
             href="/admin/stays"
             className="rounded-full px-3 py-1.5 text-xs font-bold text-glow ring-1 ring-border hover:bg-glow/10"
           >
