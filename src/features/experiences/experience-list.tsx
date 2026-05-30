@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -270,7 +271,14 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
                 : "wc-frame text-foreground"
             } disabled:opacity-60`}
           >
-            📍{" "}
+            <Image
+              src="/icons/orange/map_pin.png"
+              alt=""
+              width={36}
+              height={36}
+              className="h-4 w-4"
+              aria-hidden
+            />
             {locating
               ? "Locating…"
               : userPos
@@ -427,7 +435,15 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
                     {/* Top pick — top-right */}
                     {topPick && (
                       <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-glow px-2.5 py-1 text-[11px] font-bold text-white shadow-card">
-                        ⭐ Top pick
+                        <Image
+                          src="/icons/orange/top_pick_badge.png"
+                          alt=""
+                          width={36}
+                          height={36}
+                          className="h-3.5 w-3.5"
+                          aria-hidden
+                        />
+                        Top pick
                       </span>
                     )}
                     {/* Distance pill (when located) — sits above the title */}
