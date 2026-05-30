@@ -13,6 +13,7 @@ const SECTIONS = [
   { href: "/admin/moderation", label: "Moderation" },
   { href: "/admin/susen", label: "Susen" },
   { href: "/admin/logs", label: "Logs" },
+  { href: "/admin/data-quality", label: "Data quality" },
 ];
 
 /** Chrome for the Wondavu Admin app — dark header + section nav. */
