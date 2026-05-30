@@ -136,16 +136,21 @@ export function RegionPicker({
                     : "hover:bg-surface-elevated"
                 }`}
               >
-                <span className="inline-flex items-center gap-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/icons/orange/globe.png"
-                    alt=""
+                <span className="inline-flex items-center gap-2.5">
+                  <span
+                    className="inline-flex h-[1.82em] w-[1.82em] shrink-0 items-center justify-center rounded-full bg-[#fdf4e2]"
                     aria-hidden
-                    width={22}
-                    height={22}
-                    className="h-[1.4em] w-[1.4em] shrink-0 object-contain"
-                  />
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/icons/orange/globe.png"
+                      alt=""
+                      aria-hidden
+                      width={28}
+                      height={28}
+                      className="h-[1.82em] w-[1.82em] object-contain"
+                    />
+                  </span>
                   Show everywhere
                 </span>
                 {currentId == null && <span className="text-glow">✓</span>}
