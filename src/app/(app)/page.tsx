@@ -54,17 +54,24 @@ export default async function Home() {
 
   let forYou: ForYouCard[] = staticForYou;
   if (regionId) {
-    // Pull more than we'll show so the within-radius filter still leaves
-    // us with the intended 2 per category. Lat/lng included in the SELECT
-    // so the filter has the coordinates it needs.
+    // Curated "for you" rail — strict quality filter: only high-rated,
+    // well-reviewed venues qualify, and we surface ONE per category
+    // (1 stay + 1 eat + 1 experience), plus ONE active chat group if the
+    // region has any. Four cards total. Padding the fetch beyond 1 so
+    // the within-radius filter still has candidates left after dropping
+    // venues outside the region centre.
+    const QUALITY_MIN_RATING = 4.5;
+    const QUALITY_MIN_REVIEWS = 20;
     const PER_CAT_FETCH = 10;
-    const PER_CAT_KEEP = 2;
-    const [staysRes, eatsRes, expsRes] = await Promise.all([
+    const PER_CAT_KEEP = 1;
+    const [staysRes, eatsRes, expsRes, groupRes] = await Promise.all([
       supabase
         .from("stays")
         .select("id, name, photo_url, stay_type, latitude, longitude")
         .eq("active", true)
         .eq("region_id", regionId)
+        .gte("backpack_rating", QUALITY_MIN_RATING)
+        .gte("review_count", QUALITY_MIN_REVIEWS)
         .order("backpack_rating", { ascending: false })
         .limit(PER_CAT_FETCH),
       supabase
@@ -72,6 +79,8 @@ export default async function Home() {
         .select("id, name, photo_url, cuisine, latitude, longitude")
         .eq("active", true)
         .eq("region_id", regionId)
+        .gte("backpack_rating", QUALITY_MIN_RATING)
+        .gte("review_count", QUALITY_MIN_REVIEWS)
         .order("backpack_rating", { ascending: false })
         .limit(PER_CAT_FETCH),
       supabase
@@ -79,8 +88,22 @@ export default async function Home() {
         .select("id, name, photo_url, category, latitude, longitude")
         .eq("active", true)
         .eq("region_id", regionId)
+        .gte("backpack_rating", QUALITY_MIN_RATING)
+        .gte("review_count", QUALITY_MIN_REVIEWS)
         .order("backpack_rating", { ascending: false })
         .limit(PER_CAT_FETCH),
+      // Chat group — featured first, then most recent. Groups don't
+      // carry a rating, so no quality filter; featured + non-archived
+      // is the curation signal. No region scoping yet (chat_groups
+      // doesn't have region_id), so the same group surfaces across
+      // regions until that schema lands.
+      supabase
+        .from("chat_groups")
+        .select("id, name, cover_image, category")
+        .eq("archived", false)
+        .order("featured", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(1),
     ]);
     // Region queries that fail fall through silently to the mock fallback
     // below — we deliberately don't surface them in the browser console
@@ -103,6 +126,7 @@ export default async function Home() {
       0,
       PER_CAT_KEEP,
     );
+    const group = (groupRes.data ?? [])[0];
     const live: ForYouCard[] = [
       ...stays.map((s) => ({
         id: s.id,
@@ -125,6 +149,17 @@ export default async function Home() {
         category: e.category ?? "Experience",
         href: `/todo/${e.id}`,
       })),
+      ...(group
+        ? [
+            {
+              id: group.id,
+              name: group.name,
+              image: group.cover_image ?? "/decor/balloon-floater.png",
+              category: group.category ?? "Group",
+              href: `/meet/${group.id}`,
+            },
+          ]
+        : []),
     ];
     // Only flip to live data when we actually got something back; otherwise
     // the user still sees curated mocks instead of an empty rail.
