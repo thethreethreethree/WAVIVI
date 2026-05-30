@@ -238,8 +238,10 @@ export default async function Home() {
 
       {/* Cinematic recommendations — taller cards, photo + gradient overlay,
           name + category set on top of the image so each card reads like a
-          travel postcard rather than a thumbnail + caption. */}
-      <section className="relative px-5 pb-8">
+          travel postcard rather than a thumbnail + caption. `mt-12` opens
+          breathing room between the radial hub above and this rail so the
+          two zones read as separate sections instead of crowding. */}
+      <section className="relative mt-12 px-5 pb-8">
         <div className="mb-3 flex items-end justify-between">
           <div>
             <p className="uppercase tracking-[0.25em] text-foreground">
