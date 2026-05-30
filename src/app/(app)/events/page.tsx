@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 
 import { EventsList } from "@/features/events/events-list";
-import { getCurrentRegionId } from "@/lib/regions/current";
+import { getCurrentRegion } from "@/lib/regions/current";
+import { withinRegionRadius } from "@/lib/regions/within-radius";
 import { createClient } from "@/lib/supabase/server";
 import type { EventRow } from "@/types/supabase";
 
@@ -13,14 +14,15 @@ export const dynamic = "force-dynamic";
 
 export default async function EventsPage() {
   const supabase = await createClient();
-  const regionId = await getCurrentRegionId();
+  const region = await getCurrentRegion();
   let query = supabase
     .from("events")
     .select("*")
     .eq("active", true)
     .order("backpack_rating", { ascending: false });
-  if (regionId) query = query.eq("region_id", regionId);
+  if (region) query = query.eq("region_id", region.id);
   const { data } = await query;
-  const events = (data ?? []) as EventRow[];
+  // Drop venues outside the region's centre+radius (see /stay for the why).
+  const events = withinRegionRadius((data ?? []) as EventRow[], region);
   return <EventsList events={events} />;
 }

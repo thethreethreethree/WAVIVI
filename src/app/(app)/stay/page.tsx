@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 
 import { StayList, type StayPicker } from "@/features/stays/stay-list";
-import { getCurrentRegionId } from "@/lib/regions/current";
+import { getCurrentRegion } from "@/lib/regions/current";
+import { withinRegionRadius } from "@/lib/regions/within-radius";
 import { createClient } from "@/lib/supabase/server";
 import type { StayRow } from "@/types/supabase";
 
@@ -12,15 +13,18 @@ const MAX_PICKERS = 3;
 
 export default async function StayPage() {
   const supabase = await createClient();
-  const regionId = await getCurrentRegionId();
+  const region = await getCurrentRegion();
   let query = supabase
     .from("stays")
     .select("*")
     .eq("active", true)
     .order("backpack_rating", { ascending: false });
-  if (regionId) query = query.eq("region_id", regionId);
+  if (region) query = query.eq("region_id", region.id);
   const { data } = await query;
-  const stays = (data ?? []) as StayRow[];
+  // Drop venues the ingest tagged with this region but that sit outside
+  // the region's centre+radius — usually venues in a neighbouring region
+  // that the larger scan circle swept in.
+  const stays = withinRegionRadius((data ?? []) as StayRow[], region);
 
   // Latest pickers per stay → small avatar stack on each list card.
   const pickersByStay: Record<string, StayPicker[]> = {};

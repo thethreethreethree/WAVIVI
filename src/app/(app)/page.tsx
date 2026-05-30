@@ -4,7 +4,8 @@ import Link from "next/link";
 import { AppTopBar } from "@/components/ui/app-top-bar";
 import { CardImage } from "@/components/ui/card-image";
 import { RadialHub } from "@/components/ui/radial-hub";
-import { getCurrentRegionId } from "@/lib/regions/current";
+import { getCurrentRegion } from "@/lib/regions/current";
+import { withinRegionRadius } from "@/lib/regions/within-radius";
 import { createClient } from "@/lib/supabase/server";
 import { places } from "@/lib/travejor/places";
 
@@ -31,7 +32,8 @@ const FLOATERS = [
 
 export default async function Home() {
   const supabase = await createClient();
-  const regionId = await getCurrentRegionId();
+  const region = await getCurrentRegion();
+  const regionId = region?.id ?? null;
 
   // "For you" picks. When a region is selected, pull live top-rated
   // stays / restaurants / experiences from that region (2 of each).
@@ -52,50 +54,71 @@ export default async function Home() {
 
   let forYou: ForYouCard[] = staticForYou;
   if (regionId) {
+    // Pull more than we'll show so the within-radius filter still leaves
+    // us with the intended 2 per category. Lat/lng included in the SELECT
+    // so the filter has the coordinates it needs.
+    const PER_CAT_FETCH = 10;
+    const PER_CAT_KEEP = 2;
     const [staysRes, eatsRes, expsRes] = await Promise.all([
       supabase
         .from("stays")
-        .select("id, name, photo_url, stay_type")
+        .select("id, name, photo_url, stay_type, latitude, longitude")
         .eq("active", true)
         .eq("region_id", regionId)
         .order("backpack_rating", { ascending: false })
-        .limit(2),
+        .limit(PER_CAT_FETCH),
       supabase
         .from("restaurants")
-        .select("id, name, photo_url, cuisine")
+        .select("id, name, photo_url, cuisine, latitude, longitude")
         .eq("active", true)
         .eq("region_id", regionId)
         .order("backpack_rating", { ascending: false })
-        .limit(2),
+        .limit(PER_CAT_FETCH),
       supabase
         .from("experiences")
-        .select("id, name, photo_url, category")
+        .select("id, name, photo_url, category, latitude, longitude")
         .eq("active", true)
         .eq("region_id", regionId)
         .order("backpack_rating", { ascending: false })
-        .limit(2),
+        .limit(PER_CAT_FETCH),
     ]);
     // Region queries that fail fall through silently to the mock fallback
     // below — we deliberately don't surface them in the browser console
     // because they fire on every home-page load and create noise without
     // actionable signal. If we ever need this for debugging, add a
     // server-side log instead (won't reach the user's devtools).
+    //
+    // Apply the within-radius filter per category, then take the top N —
+    // so a stay ranked #1 by rating but tagged with the wrong region
+    // can't sneak past the dropdown into the home rail.
+    const stays = withinRegionRadius(staysRes.data ?? [], region).slice(
+      0,
+      PER_CAT_KEEP,
+    );
+    const eats = withinRegionRadius(eatsRes.data ?? [], region).slice(
+      0,
+      PER_CAT_KEEP,
+    );
+    const exps = withinRegionRadius(expsRes.data ?? [], region).slice(
+      0,
+      PER_CAT_KEEP,
+    );
     const live: ForYouCard[] = [
-      ...(staysRes.data ?? []).map((s) => ({
+      ...stays.map((s) => ({
         id: s.id,
         name: s.name,
         image: s.photo_url ?? "/decor/balloon-floater.png",
         category: s.stay_type ?? "Stay",
         href: `/stay/${s.id}`,
       })),
-      ...(eatsRes.data ?? []).map((r) => ({
+      ...eats.map((r) => ({
         id: r.id,
         name: r.name,
         image: r.photo_url ?? "/decor/balloon-floater.png",
         category: r.cuisine ?? "Eat",
         href: `/eat/${r.id}`,
       })),
-      ...(expsRes.data ?? []).map((e) => ({
+      ...exps.map((e) => ({
         id: e.id,
         name: e.name,
         image: e.photo_url ?? "/decor/balloon-floater.png",
