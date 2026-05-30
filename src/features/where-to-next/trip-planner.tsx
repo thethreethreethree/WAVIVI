@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, useTransition } from "react";
 
@@ -51,14 +52,24 @@ const TIME_OPTIONS: { id: ItineraryTimeOfDay; label: string; emoji: string }[] =
     { id: "anytime", label: "Anytime", emoji: "✨" },
   ];
 
-/** Category options for each itinerary row — uses the same painted Hub
- *  icons the home page renders, so the trip planner reads as a
- *  shorthand for the rest of the app. */
-const KIND_OPTIONS: { id: ItineraryKind; label: string; icon: string }[] = [
-  { id: "stay", label: "Stay", icon: "/icons/orange/hub_stay.png" },
-  { id: "eat", label: "Eat", icon: "/icons/orange/hub_eat.png" },
-  { id: "todo", label: "To do", icon: "/icons/orange/hub_todo.png" },
-  { id: "events", label: "Events", icon: "/icons/orange/hub_events.png" },
+/** Quick-jump shortcuts from each day card to the trip's saved-by-category
+ *  pages. Tapping "Stay" opens the saved-stays list for this trip,
+ *  "Eat" opens saved-restaurants, etc. — the same routes the
+ *  /where-to-next/plans/[id]/saved/[category] page handles.
+ *
+ *  Category id is the chip-/data-level identifier (matches
+ *  ItineraryKind); slug is the URL segment which differs for "todo"
+ *  → "do" because the route page uses the shorter "do". */
+const KIND_OPTIONS: {
+  id: ItineraryKind;
+  slug: string;
+  label: string;
+  icon: string;
+}[] = [
+  { id: "stay", slug: "stay", label: "Stay", icon: "/icons/orange/hub_stay.png" },
+  { id: "eat", slug: "eat", label: "Eat", icon: "/icons/orange/hub_eat.png" },
+  { id: "todo", slug: "do", label: "To do", icon: "/icons/orange/hub_todo.png" },
+  { id: "events", slug: "events", label: "Events", icon: "/icons/orange/hub_events.png" },
 ];
 
 function fmtDayHeader(startDate: string, dayIndex: number): string {
@@ -260,14 +271,12 @@ function DayCard({
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
   const [time, setTime] = useState<ItineraryTimeOfDay>("anytime");
-  const [kind, setKind] = useState<ItineraryKind | null>(null);
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   function reset() {
     setTitle("");
     setTime("anytime");
-    setKind(null);
     setNotes("");
     setError(null);
     setAdding(false);
@@ -284,7 +293,7 @@ function DayCard({
         title: title.trim(),
         time,
         notes: notes.trim() || null,
-        kind,
+        kind: null,
       });
       if (!res.ok) {
         setError(res.error ?? "Couldn't save that item.");
@@ -396,20 +405,16 @@ function DayCard({
               </button>
             ))}
           </div>
-          {/* Category row — same painted Hub icons the home page uses
-              (stay / eat / to do / events). Tapping the active kind
-              again toggles it off (null = uncategorised). */}
+          {/* Quick-jump shortcuts to this trip's saved-by-category pages.
+              Tapping Stay opens /where-to-next/plans/<id>/saved/stay,
+              etc. — the user can browse what they've already saved
+              for the trip from this row rather than typing freeform. */}
           <div className="flex flex-wrap gap-1.5">
             {KIND_OPTIONS.map((k) => (
-              <button
+              <Link
                 key={k.id}
-                type="button"
-                onClick={() => setKind((cur) => (cur === k.id ? null : k.id))}
-                className={`wc-frame ${
-                  kind === k.id
-                    ? "wc-frame-sunset text-white"
-                    : "wc-frame-orange-white text-foreground"
-                } inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold`}
+                href={`/where-to-next/plans/${planId}/saved/${k.slug}`}
+                className="wc-frame wc-frame-orange-white inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold text-foreground"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -421,7 +426,7 @@ function DayCard({
                   className="h-4 w-4 shrink-0 object-contain"
                 />
                 {k.label}
-              </button>
+              </Link>
             ))}
           </div>
           <textarea
