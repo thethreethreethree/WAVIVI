@@ -86,6 +86,52 @@ feature-complete against mock data. Remaining production work: wire up a live
 Supabase project (auth, profiles, realtime chat), then swap the rule-based
 recommendation engine for a real AI call when desired.
 
+## Approach quality is the user's time
+
+The way an agent approaches a problem determines how many hours of the
+user's day the resolution costs. An ineffective approach produces
+ineffective solution attempts — every wrong patch ships, the user has
+to re-test, Vercel has to redeploy, context drifts, and the actual
+bug stays hidden behind layers of false fixes. The cost is not paid
+in agent output tokens. It's paid in hours of the user's life.
+
+**Documented precedent: the 2026-05-30 Google OAuth loop
+([postmortem](docs/postmortems/2026-05-30-google-oauth-loop.md))
+cost the user approximately three hours.** Three patches were shipped
+against the same wrong hypothesis ("session cookies aren't persisting")
+before a five-minute debug page revealed the actual cause (Supabase
+silently fell back to the project's Site URL because the redirect URL
+wasn't allowlisted, so our callback was never invoked). All three
+patches were sincere attempts, each one looked like ~20 minutes of
+work, and together they erased an entire afternoon of progress.
+
+**Why ineffective approaches compound, instead of merely adding:**
+
+- A wrong patch is not the same as no patch — it lands in the
+  codebase, alters behaviour in related paths, and the next patch
+  has to reason about that altered state too.
+- Each round costs the user a re-test cycle (clear cache, sign in
+  again, navigate to the failing page) on top of agent time. Three
+  rounds = three full re-tests.
+- The agent's mental real estate stays occupied by the wrong model.
+  Each subsequent patch is generated under the same flawed framing
+  and inherits the same blind spots.
+- The user's frustration is a real cost. "Same problem bro" three
+  times in a row is a signal that progress has stopped, not that
+  the next patch will be the one.
+
+**Effective approaches feel slower per attempt and cost less in total.**
+After attempt #1 doesn't move the symptom: stop. Ask one cheap
+diagnostic question or build one probe. Get one piece of real
+evidence. Then write one targeted fix. Total wall-clock for the
+same bug, done right: under an hour.
+
+Every section below — probe before patch, the three-attempt rule,
+the postmortems log — exists because of this trade. They are not
+process for process's sake. They are the operational mechanics that
+keep an agent from spending the user's afternoon patching the wrong
+hypothesis.
+
 ## Debugging — probe before patch
 
 A bug is **silent** when there's no error toast, no console log, no broken

@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-30
 **Commit range:** `b4f4554` → `a4cd934` (real fix), `59c9e14` (CLAUDE.md rule)
-**Time to fix:** 4 wrong attempts / 6 commits before the cause was identified
+**Time to fix:** 4 wrong attempts / 6 commits / ~3 hours of the user's day before the cause was identified
 **Authors / agents involved:** Claude Opus 4.7 + user
 
 ## Symptom

@@ -2,7 +2,12 @@
 
 **Date:** YYYY-MM-DD
 **Commit range:** `<first-chase-commit>` → `<fix-commit>`
-**Time to fix:** N attempts / X commits / Y days
+**Time to fix:** N attempts / X commits / **~Y hours of the user's day**
+
+(Recording the user-time cost — not agent time — is mandatory. It's
+the metric that justifies the whole probe-before-patch discipline.
+If you don't know the exact hours, estimate from the timestamps of
+the first chase commit and the fix commit.)
 **Authors / agents involved:** <names>
 
 ## Symptom
