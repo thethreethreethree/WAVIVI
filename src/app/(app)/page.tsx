@@ -65,11 +65,15 @@ export default async function Home() {
     const PER_CAT_FETCH = 10;
     const PER_CAT_KEEP = 1;
     const [staysRes, eatsRes, expsRes, groupRes] = await Promise.all([
+      // Stay slot is specifically a hostel — fits the Wondavu traveller
+      // audience. If no hostel in the region meets the quality bar, the
+      // stay card simply doesn't appear (no fallback to BnBs/hotels).
       supabase
         .from("stays")
         .select("id, name, photo_url, stay_type, latitude, longitude")
         .eq("active", true)
         .eq("region_id", regionId)
+        .eq("stay_type", "hostel")
         .gte("backpack_rating", QUALITY_MIN_RATING)
         .gte("review_count", QUALITY_MIN_REVIEWS)
         .order("backpack_rating", { ascending: false })
