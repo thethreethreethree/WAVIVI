@@ -138,7 +138,7 @@ export function RegionPicker({
               >
                 <span className="inline-flex items-center gap-2.5">
                   <span
-                    className="inline-flex h-[1.82em] w-[1.82em] shrink-0 items-center justify-center rounded-full bg-[#fdf4e2]"
+                    className="inline-flex h-[2em] w-[2em] shrink-0 items-center justify-center rounded-full bg-[#fdf4e2]"
                     aria-hidden
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -148,7 +148,7 @@ export function RegionPicker({
                       aria-hidden
                       width={28}
                       height={28}
-                      className="h-[1.82em] w-[1.82em] object-contain"
+                      className="h-[2em] w-[2em] object-contain"
                     />
                   </span>
                   Show everywhere
