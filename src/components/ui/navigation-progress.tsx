@@ -125,7 +125,7 @@ export function NavigationProgress() {
         top: 0,
         left: 0,
         right: 0,
-        height: 3,
+        height: 6,
         zIndex: 2147483646,
         pointerEvents: "none",
       }}
@@ -134,8 +134,10 @@ export function NavigationProgress() {
         style={{
           height: "100%",
           width: `${progress}%`,
-          background: "linear-gradient(90deg, #ff7e3d 0%, #ffb55a 100%)",
-          boxShadow: "0 0 8px rgba(255, 126, 61, 0.55)",
+          background:
+            "linear-gradient(90deg, #ff5a1f 0%, #ff7e3d 45%, #ffb55a 100%)",
+          boxShadow:
+            "0 0 14px 2px rgba(255, 126, 61, 0.85), 0 1px 0 rgba(255, 255, 255, 0.35) inset",
           transition: "width 180ms ease-out, opacity 220ms ease-out",
           opacity: progress >= 100 ? 0 : 1,
         }}
