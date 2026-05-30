@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useMemo, useState, useTransition } from "react";
 
 import { setCurrentRegion } from "@/lib/regions/actions";
@@ -68,18 +67,18 @@ export function RegionPicker({
         type="button"
         onClick={() => setOpen(true)}
         aria-label={`Change region (currently ${currentLabel})`}
-        className="relative flex h-11 w-11 items-center justify-center active:scale-95"
+        className="flex h-14 w-14 items-center justify-center active:scale-95"
       >
-        <span
-          aria-hidden
-          className="wc-edge-soft absolute inset-0 rounded-full bg-[#fdf4e2] ring-[1.5px] ring-[#3d1f06]/55 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.22)]"
-        />
-        <Image
+        {/* Cream frame removed — icon stands on its own, matches the
+            new top-bar bell + group treatment. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src="/icons/orange/globe.png"
           alt=""
-          width={88}
-          height={88}
-          className="relative h-full w-full object-contain"
+          aria-hidden
+          loading="eager"
+          decoding="async"
+          className="h-full w-full object-contain"
         />
       </button>
 
