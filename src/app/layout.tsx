@@ -74,7 +74,126 @@ const codeMono = Geist_Mono({
  *   • Stale cookie/localStorage drift — re-syncs both to whatever the
  *     html element actually has so future SSRs are consistent.
  */
-const themeScript = `(function(){try{var c=document.documentElement.classList;var current=c.contains('sketch')?'sketch':c.contains('journal')?'journal':'light';var ls=localStorage.getItem('wavivi-theme');if(ls==='cute'||ls==='orange'||ls==='dark')ls='light';if(!document.cookie.match(/(?:^|; )wavivi-theme=/)){if(ls&&ls!==current){c.remove('cute','orange','sketch','journal');if(ls!=='light')c.add(ls);current=ls;}document.cookie='wavivi-theme='+current+'; path=/; max-age=31536000; samesite=lax';}if(ls!==current){try{localStorage.setItem('wavivi-theme',current);}catch(e){}}var folder=current==='sketch'?'/icons/sketch/':current==='journal'?'/icons/journal/':null;if(!folder)return;var encOrange='%2Ficons%2Forange%2F';var encFolder=encodeURIComponent(folder);function rewrite(v){if(typeof v!=='string')return v;if(v.indexOf('/icons/orange/')===-1&&v.indexOf(encOrange)===-1)return v;return v.split('/icons/orange/').join(folder).split(encOrange).join(encFolder);}try{var desc=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src');if(desc&&desc.set){var origSet=desc.set;Object.defineProperty(HTMLImageElement.prototype,'src',{configurable:true,enumerable:true,get:desc.get,set:function(v){origSet.call(this,rewrite(v));}});}}catch(e){}try{var origSetAttr=Element.prototype.setAttribute;Element.prototype.setAttribute=function(name,value){if(this instanceof HTMLImageElement&&(name==='src'||name==='srcset')){return origSetAttr.call(this,name,rewrite(value));}return origSetAttr.call(this,name,value);};}catch(e){}}catch(e){}})();`;
+const themeScript = `
+(function () {
+  try {
+    var c = document.documentElement.classList;
+    var current = c.contains('sketch')
+      ? 'sketch'
+      : c.contains('journal')
+        ? 'journal'
+        : 'light';
+    var ls = localStorage.getItem('wavivi-theme');
+    if (ls === 'cute' || ls === 'orange' || ls === 'dark') ls = 'light';
+
+    if (!document.cookie.match(/(?:^|; )wavivi-theme=/)) {
+      if (ls && ls !== current) {
+        c.remove('cute', 'orange', 'sketch', 'journal');
+        if (ls !== 'light') c.add(ls);
+        current = ls;
+      }
+      document.cookie =
+        'wavivi-theme=' + current + '; path=/; max-age=31536000; samesite=lax';
+    }
+    if (ls !== current) {
+      try { localStorage.setItem('wavivi-theme', current); } catch (e) {}
+    }
+
+    var folder = current === 'sketch'
+      ? '/icons/sketch/'
+      : current === 'journal'
+        ? '/icons/journal/'
+        : null;
+    if (!folder) return;
+
+    var encOrange = '%2Ficons%2Forange%2F';
+    var encFolder = encodeURIComponent(folder);
+
+    // When a setter call comes from the error-fallback path, skip the
+    // rewrite — otherwise we'd loop (themed 404 -> restore orange ->
+    // rewrite to themed -> 404 -> ...).
+    var bypass = false;
+
+    function rewrite(v) {
+      if (bypass || typeof v !== 'string') return v;
+      if (v.indexOf('/icons/orange/') === -1 && v.indexOf(encOrange) === -1) {
+        return v;
+      }
+      return v
+        .split('/icons/orange/').join(folder)
+        .split(encOrange).join(encFolder);
+    }
+
+    // Attach a one-shot error listener that restores the orange original
+    // when the themed file 404s. ThemeImgSwap can't see these because
+    // we've already swapped the src out of the orange folder; this is
+    // the resilience layer for theme folders that haven't been fully
+    // populated yet.
+    function trackForFallback(img, orangeSrc) {
+      if (img.__themedErrHooked) {
+        img.__themedOrangeSrc = orangeSrc;
+        return;
+      }
+      img.__themedErrHooked = true;
+      img.__themedOrangeSrc = orangeSrc;
+      img.addEventListener('error', function onErr() {
+        var orig = img.__themedOrangeSrc;
+        if (!orig) return;
+        bypass = true;
+        try { img.setAttribute('src', orig); } finally { bypass = false; }
+      });
+    }
+
+    try {
+      var desc = Object.getOwnPropertyDescriptor(
+        HTMLImageElement.prototype,
+        'src',
+      );
+      if (desc && desc.set) {
+        var origSet = desc.set;
+        Object.defineProperty(HTMLImageElement.prototype, 'src', {
+          configurable: true,
+          enumerable: true,
+          get: desc.get,
+          set: function (v) {
+            var rewritten = rewrite(v);
+            if (
+              !bypass &&
+              typeof v === 'string' &&
+              rewritten !== v
+            ) {
+              trackForFallback(this, v);
+            }
+            origSet.call(this, rewritten);
+          },
+        });
+      }
+    } catch (e) {}
+
+    try {
+      var origSetAttr = Element.prototype.setAttribute;
+      Element.prototype.setAttribute = function (name, value) {
+        if (
+          this instanceof HTMLImageElement &&
+          (name === 'src' || name === 'srcset')
+        ) {
+          var rewritten = rewrite(value);
+          if (
+            name === 'src' &&
+            !bypass &&
+            typeof value === 'string' &&
+            rewritten !== value
+          ) {
+            trackForFallback(this, value);
+          }
+          return origSetAttr.call(this, name, rewritten);
+        }
+        return origSetAttr.call(this, name, value);
+      };
+    } catch (e) {}
+  } catch (e) {}
+})();
+`;
 
 /** Two responsibilities for first-paint splash behaviour:
  *
