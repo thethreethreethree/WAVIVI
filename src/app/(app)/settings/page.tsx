@@ -94,10 +94,10 @@ export default async function SettingsPage() {
           <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted">
             Appearance
           </h2>
-          <div className="wc-frame flex items-center gap-3 rounded-2xl px-4 py-3.5">
-            <span className="flex-1 text-sm font-medium">
-              Night traveler mode
-            </span>
+          <div className="wc-frame flex items-center justify-center rounded-2xl px-4 py-3.5">
+            {/* "Night traveler mode" label dropped — the APPEARANCE
+                section header already names the section, and the three
+                chip labels make the row's purpose self-evident. */}
             <ThemeToggle />
           </div>
         </section>
