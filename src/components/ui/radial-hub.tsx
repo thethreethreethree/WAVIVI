@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
-import { type PersistedTheme, themedIconPath } from "@/lib/theme/cookie";
+import { useThemeContext } from "@/components/ui/theme-context";
+import { themedIconPath } from "@/lib/theme/cookie";
 
 interface HubLink {
   href: string;
@@ -45,13 +46,8 @@ const HUB_MODES = [
 
 type HubMode = (typeof HUB_MODES)[number]["id"];
 
-export function RadialHub({
-  hasPlans = false,
-  theme = "light",
-}: {
-  hasPlans?: boolean;
-  theme?: PersistedTheme;
-}) {
+export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
+  const theme = useThemeContext();
   const items = HUB_LINKS.map((link, i) => {
     const angle = ((-90 + i * 72) * Math.PI) / 180;
     return {

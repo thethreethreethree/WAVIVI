@@ -31,7 +31,7 @@ export default async function AppLayout({
             <PageTransition>{children}</PageTransition>
           </div>
         </div>
-        <BottomNav theme={theme} />
+        <BottomNav />
         <ServiceWorkerRegister />
         <ThemeImgSwap />
         <DesignOverridesRuntime />

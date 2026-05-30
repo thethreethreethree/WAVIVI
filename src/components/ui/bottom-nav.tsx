@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { SusenAvatar } from "@/components/ui/susen-avatar";
-import { type PersistedTheme, themedIconPath } from "@/lib/theme/cookie";
+import { useThemeContext } from "@/components/ui/theme-context";
+import { themedIconPath } from "@/lib/theme/cookie";
 
 interface Tab {
   href: string;
@@ -57,11 +58,11 @@ const TABS: Tab[] = [
 const HIDDEN_PREFIXES = ["/login", "/signup", "/auth", "/admin"];
 
 /** Floating pill tab bar with Susen as the elevated centre action.
- *  The `theme` prop is resolved from the cookie on the server so the
- *  bottom-nav icons render in the right folder on the FIRST paint —
- *  no JS swap, no flash. */
-export function BottomNav({ theme = "light" }: { theme?: PersistedTheme }) {
+ *  Icon paths come from the live ThemeContext so they're correct on
+ *  the SSR first paint AND react to client-side theme cycles. */
+export function BottomNav() {
   const pathname = usePathname();
+  const theme = useThemeContext();
 
   if (HIDDEN_PREFIXES.some((p) => pathname.startsWith(p))) return null;
 

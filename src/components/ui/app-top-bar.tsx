@@ -1,14 +1,13 @@
 import Link from "next/link";
 
 import { RegionPicker } from "@/components/ui/region-picker";
+import { ThemedIcon } from "@/components/ui/themed-icon";
 import { WondavuLogoToggle } from "@/components/ui/wondavu-logo-toggle";
 import { InstallPill } from "@/features/pwa";
 import {
   getCurrentRegionId,
   listActiveRegions,
 } from "@/lib/regions/current";
-import { themedIconPath } from "@/lib/theme/cookie";
-import { getServerTheme } from "@/lib/theme/server";
 
 /** Home-screen top bar — Wondavu logo plus notification and group-chat shortcuts.
  *  `showInstallPill` is set to true for unauthenticated visitors so they get
@@ -20,10 +19,9 @@ export async function AppTopBar({
 }) {
   // Region picker — server fetches the list + current id once per render so
   // the client component receives a fully-rendered, server-data sheet.
-  const [regions, currentId, theme] = await Promise.all([
+  const [regions, currentId] = await Promise.all([
     listActiveRegions(),
     getCurrentRegionId(),
-    getServerTheme(),
   ]);
   const current = currentId
     ? regions.find((r) => r.id === currentId) ?? null
@@ -45,7 +43,6 @@ export async function AppTopBar({
           regions={regions}
           currentId={currentId}
           currentLabel={currentLabel}
-          theme={theme}
         />
         {/* tb-trio-button = hook used by the Journal-scoped overrides in
             globals.css (removes the ring, scales the icon, enlarges the
@@ -60,10 +57,8 @@ export async function AppTopBar({
             aria-hidden
             className="wc-edge-soft absolute inset-0 rounded-full bg-[#fdf4e2] ring-[1.5px] ring-[#3d1f06]/55 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.22)]"
           />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={themedIconPath("/icons/orange/bell.png", theme)}
-            data-theme-ready="1"
+          <ThemedIcon
+            src="/icons/orange/bell.png"
             alt=""
             aria-hidden
             loading="eager"
@@ -80,10 +75,8 @@ export async function AppTopBar({
             aria-hidden
             className="wc-edge-soft absolute inset-0 rounded-full bg-[#fdf4e2] ring-[1.5px] ring-[#3d1f06]/55 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.22)]"
           />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={themedIconPath("/icons/orange/group_join.png", theme)}
-            data-theme-ready="1"
+          <ThemedIcon
+            src="/icons/orange/group_join.png"
             alt=""
             aria-hidden
             loading="eager"
