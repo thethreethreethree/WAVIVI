@@ -129,6 +129,17 @@ export function RegionCard({ region, utilityCount }: RegionCardProps) {
               onChange={(e) => setRadius(Number(e.target.value))}
               className="w-full accent-glow"
             />
+            {/* Live explainer so admins know dragging the slider isn't only
+                about scan range — it also caps what travelers see across
+                every source (lib/regions/within-radius applies the same
+                radius_km to /stay, /eat, /todo, /events, and the home
+                Recommended-for-you rail). */}
+            <span className="text-[11px] text-muted">
+              Travelers will see stays, restaurants, experiences, and events
+              within{" "}
+              <span className="font-bold text-foreground">{radius} km</span>{" "}
+              of {region.display_name} on the app.
+            </span>
           </label>
           <label className="flex items-center gap-2 text-xs font-bold">
             <input
