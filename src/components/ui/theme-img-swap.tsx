@@ -90,7 +90,13 @@ export function ThemeImgSwap() {
         // default, sketch, or journal.
         restoreFromDataset(img);
 
-        if (!target) return; // Default theme — leave orange in place.
+        if (!target) {
+          // Default theme — leave orange in place. Still mark ready so
+          // the anti-flash CSS doesn't hide it (it shouldn't anyway in
+          // Light, but be defensive against intermediate states).
+          img.dataset.themeReady = "1";
+          return;
+        }
 
         const src = img.getAttribute("src") || "";
         const srcset = img.getAttribute("srcset") || "";
@@ -105,6 +111,7 @@ export function ThemeImgSwap() {
             img.setAttribute("srcset", rewriteToTarget(srcset, target));
           }
           img.dataset.themedSwapApplied = "1";
+          img.dataset.themeReady = "1";
 
           // If the themed icon doesn't exist, fall back to the orange
           // original. Set onerror once; clear it inside the handler so
@@ -123,8 +130,12 @@ export function ThemeImgSwap() {
               delete img.dataset.origOrangeSrcset;
             }
             delete img.dataset.themedSwapApplied;
+            // Keep themeReady — the orange fallback is the displayable
+            // result, so we don't want CSS to hide it.
+            img.dataset.themeReady = "1";
           };
         } else if (isThemedRef(src) || isThemedRef(srcset)) {
+          img.dataset.themeReady = "1";
           // Already swapped by an earlier pass under the same theme;
           // nothing to do. (Won't happen often — most images come from
           // Next/Image and the src is always orange in the DOM until we

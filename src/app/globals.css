@@ -1215,6 +1215,26 @@ h3 {
    via CSS, we run a tiny client effect (see ThemeImgSwap component) that
    retargets every /icons/orange/* to /icons/sketch/* whenever the .sketch
    class is on <html>. */
+
+/* Anti-flash for icons during navigation in non-Light themes.
+   Each page render briefly has <img src="/icons/orange/X.png"> in the DOM
+   before ThemeImgSwap rewrites it — that's the orange-paint-then-swap
+   flash. We hide those imgs until ThemeImgSwap has examined them
+   (it sets data-theme-ready="1" after processing each one, whether the
+   src was rewritten or kept). Result: Sketch/Journal users see icons
+   appear in their theme directly, no orange flicker. Light Rustic is
+   untouched — orange IS the right theme there.
+   Inline `<head>` style instead of a separate CSS file is intentional:
+   waiting on the globals.css <link> means the orange paint still wins
+   the first frame before the rule applies. The same rules are duplicated
+   in layout.tsx as critical inline CSS for that reason. */
+html.sketch img[src*="/icons/orange/"]:not([data-theme-ready]),
+html.journal img[src*="/icons/orange/"]:not([data-theme-ready]) {
+  opacity: 0;
+}
+img[data-theme-ready] {
+  transition: opacity 120ms ease-out;
+}
 /* The Cute parchment is still applied when the .cute theme class is set —
    it overrides the rustic image above with the original cute backdrop. */
 

@@ -173,6 +173,9 @@ export default async function RootLayout({
               .opening-splash video{width:100%;height:100%;object-fit:cover;display:block;}
               html.splash-hide .opening-splash{display:none!important;}
               html.splash-active body>*:not(.opening-splash){display:none!important;}
+              html.sketch img[src*="/icons/orange/"]:not([data-theme-ready]),
+              html.journal img[src*="/icons/orange/"]:not([data-theme-ready]){opacity:0;}
+              img[data-theme-ready]{transition:opacity 120ms ease-out;}
             `,
           }}
         />
