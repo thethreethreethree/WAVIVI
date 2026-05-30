@@ -111,3 +111,33 @@ export async function signOut(): Promise<void> {
   revalidatePath("/", "layout");
   redirect("/login");
 }
+
+/**
+ * Frictionless OAuth signup/login via Google. Server Action that asks
+ * Supabase for the Google consent URL and redirects the user to it.
+ * When the user finishes consent, Google redirects to
+ * `${siteConfig.url}/auth/callback?code=...&next=<dest>` which the
+ * existing callback route exchanges for a session.
+ *
+ * No email confirmation needed — Google already vouched for the
+ * address. The DB trigger (handle_new_user_robust) assigns a
+ * placeholder username + "Traveler" display name; the user can edit
+ * both later in /profile/edit.
+ */
+export async function signInWithGoogle(formData: FormData): Promise<void> {
+  const next = readString(formData, "next");
+  const dest = safeRedirect(next, "/profile");
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${siteConfig.url}/auth/callback?next=${encodeURIComponent(dest)}`,
+    },
+  });
+
+  if (error || !data?.url) {
+    redirect(`/login?error=${encodeURIComponent(error?.message ?? "google_failed")}`);
+  }
+  redirect(data.url);
+}
