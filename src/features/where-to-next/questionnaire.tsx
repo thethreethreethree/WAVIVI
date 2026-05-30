@@ -276,7 +276,21 @@ export function Questionnaire({
 
       <main className="relative mt-6 flex flex-1 flex-col">
         {step === 0 && (
-          <Step emoji="🌍" title="Where are we headed?" hint="Country first, city if you've got one.">
+          <Step
+            emoji={
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src="/icons/orange/globe.png"
+                alt=""
+                aria-hidden
+                width={48}
+                height={48}
+                className="h-12 w-12 object-contain"
+              />
+            }
+            title="Where are we headed?"
+            hint="Country first, city if you've got one."
+          >
             <input
               autoFocus
               value={country}
@@ -504,7 +518,7 @@ function Step({
   hint,
   children,
 }: {
-  emoji: string;
+  emoji: React.ReactNode;
   title: string;
   hint?: string;
   children: React.ReactNode;
