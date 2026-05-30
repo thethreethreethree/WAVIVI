@@ -122,9 +122,10 @@ function GroupCard({ group }: { group: PublicChatGroup }) {
           className={`absolute inset-0 bg-gradient-to-t ${meta.tint} via-black/20 to-transparent`}
           aria-hidden
         />
-        {/* Distance — frosted pill, top-left */}
-        <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur">
-          📍 {distance}
+        {/* Distance — frosted pill, top-left. Text-only; the 📍 emoji
+            read noisy across themes. */}
+        <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-black/40 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur">
+          {distance}
         </span>
         {/* Category — top-right */}
         <span className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-foreground">
@@ -140,7 +141,15 @@ function GroupCard({ group }: { group: PublicChatGroup }) {
         </span>
         {group.featured && (
           <span className="absolute left-3 bottom-14 inline-flex items-center gap-1 rounded-full bg-glow px-2 py-0.5 text-[10px] font-bold text-white shadow-card">
-            ⭐ Featured
+            <Image
+              src="/icons/orange/star.png"
+              alt=""
+              width={28}
+              height={28}
+              className="h-3 w-3 shrink-0"
+              aria-hidden
+            />
+            Featured
           </span>
         )}
         {/* Title — bottom-left over the gradient */}
