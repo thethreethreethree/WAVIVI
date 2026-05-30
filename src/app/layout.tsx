@@ -6,9 +6,13 @@ import {
   Quicksand,
   Space_Grotesk,
 } from "next/font/google";
+import { cookies } from "next/headers";
+import { Suspense } from "react";
 
+import { NavigationProgress } from "@/components/ui/navigation-progress";
 import { OpeningSplash } from "@/components/ui/opening-splash";
 import { siteConfig } from "@/config/site";
+import { parseTheme, themeClass, THEME_COOKIE } from "@/lib/theme/cookie";
 
 import "./globals.css";
 
@@ -61,13 +65,16 @@ const codeMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-/** Applies the saved theme (light · cute · orange · sketch) before paint.
- *  Defaults to **Light Rustic** (no class) when no choice is saved — the
- *  brand default is intentionally light, even on devices that prefer a
- *  dark colour scheme system-wide. Dark mode was removed; a dedicated
- *  dark theme will be added back as a separate build. Any pre-existing
- *  "dark" value in localStorage falls through to Light Rustic. */
-const themeScript = `(function(){try{var theme=localStorage.getItem('wavivi-theme');var c=document.documentElement.classList;if(theme==='cute')c.add('cute');else if(theme==='orange')c.add('orange');else if(theme==='sketch')c.add('sketch');else if(theme==='journal')c.add('journal');}catch(e){}})();`;
+/** Fallback theme sync — runs in <head> before body parses. The cookie
+ *  is the source of truth at SSR (so the html class is already correct
+ *  on the very first paint), but this script handles two edge cases:
+ *
+ *   • First-time visitor whose localStorage already has a theme but no
+ *     cookie yet — applies the class and mirrors localStorage → cookie.
+ *   • Stale cookie/localStorage drift — re-syncs both to whatever the
+ *     html element actually has so future SSRs are consistent.
+ */
+const themeScript = `(function(){try{var c=document.documentElement.classList;var current=c.contains('sketch')?'sketch':c.contains('journal')?'journal':'light';var ls=localStorage.getItem('wavivi-theme');if(ls==='cute'||ls==='orange'||ls==='dark')ls='light';if(!document.cookie.match(/(?:^|; )wavivi-theme=/)){if(ls&&ls!==current){c.remove('cute','orange','sketch','journal');if(ls!=='light')c.add(ls);current=ls;}document.cookie='wavivi-theme='+current+'; path=/; max-age=31536000; samesite=lax';}if(ls!==current){try{localStorage.setItem('wavivi-theme',current);}catch(e){}}var folder=current==='sketch'?'/icons/sketch/':current==='journal'?'/icons/journal/':null;if(!folder)return;var encOrange='%2Ficons%2Forange%2F';var encFolder=encodeURIComponent(folder);function rewrite(v){if(typeof v!=='string')return v;if(v.indexOf('/icons/orange/')===-1&&v.indexOf(encOrange)===-1)return v;return v.split('/icons/orange/').join(folder).split(encOrange).join(encFolder);}try{var desc=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src');if(desc&&desc.set){var origSet=desc.set;Object.defineProperty(HTMLImageElement.prototype,'src',{configurable:true,enumerable:true,get:desc.get,set:function(v){origSet.call(this,rewrite(v));}});}}catch(e){}try{var origSetAttr=Element.prototype.setAttribute;Element.prototype.setAttribute=function(name,value){if(this instanceof HTMLImageElement&&(name==='src'||name==='srcset')){return origSetAttr.call(this,name,rewrite(value));}return origSetAttr.call(this,name,value);};}catch(e){}}catch(e){}})();`;
 
 /** Two responsibilities for first-paint splash behaviour:
  *
@@ -131,16 +138,20 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const theme = parseTheme(cookieStore.get(THEME_COOKIE)?.value);
+  const themeCls = themeClass(theme);
+
   return (
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${body.variable} ${handwriting.variable} ${permanentMarker.variable} ${yumyumpo.variable} ${codeMono.variable} h-full antialiased`}
+      className={`${body.variable} ${handwriting.variable} ${permanentMarker.variable} ${yumyumpo.variable} ${codeMono.variable} ${themeCls} h-full antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
@@ -173,6 +184,9 @@ export default function RootLayout({
             for one frame before the overlay arrives. The component itself
             no-ops for return visitors via the `splash-hide` head script. */}
         <OpeningSplash />
+        <Suspense fallback={null}>
+          <NavigationProgress />
+        </Suspense>
         {/* Watercolor edge filters — referenced via `filter: url(#wc-edge)`. */}
         <svg
           aria-hidden

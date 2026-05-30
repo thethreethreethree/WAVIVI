@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { applyTheme } from "@/lib/theme/client";
+
 /** App themes. Light Rustic + Sketch + Journal are user-selectable;
  *  `cute` and `orange` stay in the type so stored preferences from
  *  earlier builds don't crash but are no longer surfaced. Dark mode was
@@ -54,13 +56,8 @@ export function ThemeToggle() {
 
   function choose(next: Theme) {
     setTheme(next);
-    const c = document.documentElement.classList;
-    c.remove("cute", "orange", "sketch", "journal");
-    if (next !== "light") c.add(next);
-    try {
-      localStorage.setItem("wavivi-theme", next);
-    } catch {
-      // ignore storage failures (private mode, etc.)
+    if (next === "light" || next === "sketch" || next === "journal") {
+      applyTheme(next);
     }
   }
 

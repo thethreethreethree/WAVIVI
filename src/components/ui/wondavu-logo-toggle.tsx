@@ -1,5 +1,7 @@
 "use client";
 
+import { applyTheme } from "@/lib/theme/client";
+
 /**
  * Wondavu logo doubling as a theme cycle button.
  *
@@ -33,15 +35,7 @@ function nextInCycle(theme: CycleTheme): CycleTheme {
 
 export function WondavuLogoToggle() {
   function cycle() {
-    const next = nextInCycle(currentCycleTheme());
-    const c = document.documentElement.classList;
-    c.remove("cute", "orange", "sketch", "journal");
-    if (next !== "light") c.add(next);
-    try {
-      localStorage.setItem("wavivi-theme", next);
-    } catch {
-      /* private mode — ignore */
-    }
+    applyTheme(nextInCycle(currentCycleTheme()));
   }
 
   return (
