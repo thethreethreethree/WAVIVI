@@ -327,9 +327,12 @@ export function StayList({
                       className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent"
                       aria-hidden
                     />
-                    {/* Type pill — top-left */}
-                    <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-base font-bold text-foreground">
-                      🏠 {STAY_TYPE_LABEL[s.stay_type] ?? "Stay"}
+                    {/* Type pill — top-left. Text-only; the label is a
+                        clear noun on its own (Hostel, Hotel, Resort…)
+                        and the leading 🏠 emoji read as noisy across
+                        themes. */}
+                    <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-white/90 px-2.5 py-1 text-base font-bold text-foreground">
+                      {STAY_TYPE_LABEL[s.stay_type] ?? "Stay"}
                     </span>
                     {/* Top pick — top-right */}
                     {topPick && (

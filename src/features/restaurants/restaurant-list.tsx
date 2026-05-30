@@ -315,17 +315,12 @@ export function RestaurantList({
                       className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent"
                       aria-hidden
                     />
-                    {/* Cuisine pill — top-left */}
+                    {/* Cuisine pill — top-left. Text-only; the leading
+                        cuisine icon (Image) duplicated the Sketch icon
+                        set across themes and read noisy on Light Rustic
+                        and Journal. */}
                     {r.cuisine && (
-                      <span className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-3.5 py-1.5 text-sm font-bold capitalize text-foreground">
-                        <Image
-                          src={`/icons/sketch/${cuisineIcon(r.cuisine)}.png`}
-                          alt=""
-                          width={28}
-                          height={28}
-                          className="h-6 w-6"
-                          aria-hidden
-                        />
+                      <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-white/90 px-2.5 py-1 text-sm font-bold capitalize text-foreground">
                         {r.cuisine}
                       </span>
                     )}

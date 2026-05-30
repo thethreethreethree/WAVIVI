@@ -426,10 +426,12 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
                       className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent"
                       aria-hidden
                     />
-                    {/* Activity type pill — top-left */}
+                    {/* Activity type pill — top-left. Text-only; the
+                        🧭 emoji didn't add information and read noisy
+                        across themes. */}
                     {e.activity_type && (
-                      <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-foreground">
-                        🧭 {e.activity_type}
+                      <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-foreground">
+                        {e.activity_type}
                       </span>
                     )}
                     {/* Top pick — top-right */}
