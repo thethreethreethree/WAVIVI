@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { SusenAvatar } from "@/components/ui/susen-avatar";
+import { type PersistedTheme, themedIconPath } from "@/lib/theme/cookie";
 
 interface Tab {
   href: string;
@@ -55,8 +56,11 @@ const TABS: Tab[] = [
 /** Routes that should not show app chrome. */
 const HIDDEN_PREFIXES = ["/login", "/signup", "/auth", "/admin"];
 
-/** Floating pill tab bar with Susen as the elevated centre action. */
-export function BottomNav() {
+/** Floating pill tab bar with Susen as the elevated centre action.
+ *  The `theme` prop is resolved from the cookie on the server so the
+ *  bottom-nav icons render in the right folder on the FIRST paint —
+ *  no JS swap, no flash. */
+export function BottomNav({ theme = "light" }: { theme?: PersistedTheme }) {
   const pathname = usePathname();
 
   if (HIDDEN_PREFIXES.some((p) => pathname.startsWith(p))) return null;
@@ -85,7 +89,8 @@ export function BottomNav() {
       {t.image ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={t.image}
+          src={themedIconPath(t.image, theme)}
+          data-theme-ready="1"
           alt=""
           aria-hidden
           // The `.bottom-nav-icon` class is the hook for the

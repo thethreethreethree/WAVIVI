@@ -4,6 +4,7 @@ import { AppTopBar } from "@/components/ui/app-top-bar";
 import { CardImage } from "@/components/ui/card-image";
 import { RadialHub } from "@/components/ui/radial-hub";
 import { getCurrentRegion } from "@/lib/regions/current";
+import { getServerTheme } from "@/lib/theme/server";
 import { withinRegionRadius } from "@/lib/regions/within-radius";
 import { createClient } from "@/lib/supabase/server";
 import { places } from "@/lib/travejor/places";
@@ -22,6 +23,7 @@ export default async function Home() {
   const supabase = await createClient();
   const region = await getCurrentRegion();
   const regionId = region?.id ?? null;
+  const theme = await getServerTheme();
 
   // "For you" picks. When a region is selected, pull live top-rated
   // stays / restaurants / experiences from that region (2 of each).
@@ -192,7 +194,7 @@ export default async function Home() {
         </div>
 
         <div className="relative z-10 w-full">
-          <RadialHub hasPlans={hasPlans} />
+          <RadialHub hasPlans={hasPlans} theme={theme} />
         </div>
       </section>
 

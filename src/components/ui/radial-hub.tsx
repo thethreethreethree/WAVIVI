@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
+import { type PersistedTheme, themedIconPath } from "@/lib/theme/cookie";
+
 interface HubLink {
   href: string;
   label: string;
@@ -43,7 +45,13 @@ const HUB_MODES = [
 
 type HubMode = (typeof HUB_MODES)[number]["id"];
 
-export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
+export function RadialHub({
+  hasPlans = false,
+  theme = "light",
+}: {
+  hasPlans?: boolean;
+  theme?: PersistedTheme;
+}) {
   const items = HUB_LINKS.map((link, i) => {
     const angle = ((-90 + i * 72) * Math.PI) / 180;
     return {
@@ -164,7 +172,8 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
                 in globals.css) keeps working via the class hook. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={item.image}
+              src={themedIconPath(item.image, theme)}
+              data-theme-ready="1"
               alt=""
               aria-hidden
               loading="eager"

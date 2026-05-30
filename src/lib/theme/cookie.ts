@@ -25,3 +25,15 @@ export function parseTheme(value: string | null | undefined): PersistedTheme {
 export function themeClass(theme: PersistedTheme): "" | "sketch" | "journal" {
   return theme === "light" ? "" : theme;
 }
+
+/**
+ * Resolve an /icons/orange/... path to the active theme's folder.
+ * Pure function — pass a theme value, get the themed path. Used by
+ * both server components (resolving on SSR for zero-flash icons) and
+ * client components (taking the theme as a prop from the server).
+ */
+export function themedIconPath(orangePath: string, theme: PersistedTheme): string {
+  if (theme === "light") return orangePath;
+  if (theme === "sketch") return orangePath.replace("/icons/orange/", "/icons/sketch/");
+  return orangePath.replace("/icons/orange/", "/icons/journal/");
+}
