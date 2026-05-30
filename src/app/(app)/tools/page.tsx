@@ -111,7 +111,13 @@ export default function ToolsPage() {
                 aria-hidden
                 className="wc-edge-soft absolute inset-0 rounded-full bg-[#fdf4e2]/85 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.20)]"
               />
-              <Icon name={service.icon} className="relative h-[92px] w-[92px]" />
+              {/* `tools-tile-icon` is the Journal-only scale-up hook
+                  in globals.css (`.journal .tools-tile-icon`).
+                  Rustic + Sketch keep their original icon size. */}
+              <Icon
+                name={service.icon}
+                className="tools-tile-icon relative h-[92px] w-[92px]"
+              />
             </span>
             <span className="text-center text-lg font-semibold">
               {service.label}

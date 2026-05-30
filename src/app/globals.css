@@ -1158,7 +1158,8 @@ h3 {
    when (and only when) the Journal theme is active. Rustic + Sketch
    keep their original sizing. */
 .journal .hub-satellite-icon,
-.journal .bottom-nav-icon {
+.journal .bottom-nav-icon,
+.journal .tools-tile-icon {
   transform: scale(1.3);
 }
 /* Sketch theme — icon source swap. Because <img src> can't be rewritten
