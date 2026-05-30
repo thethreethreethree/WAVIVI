@@ -153,11 +153,18 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
               aria-hidden
               className="absolute inset-0 rounded-full bg-[#fdf4e2]/85 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.18)]"
             />
+            {/* Scale only the icon image so the cream frame stays at
+                its current 96×96 footprint. The pen-style + watercolour
+                PNGs both have transparent padding around the visible
+                drawing, so a 30% scale-up makes the drawing read
+                larger inside the same circle without clipping at the
+                circle's edge. */}
             <Image
               src={item.image}
               alt=""
               width={192}
               height={192}
+              style={{ transform: "scale(1.3)" }}
               className="relative h-full w-full object-contain"
             />
           </Link>
