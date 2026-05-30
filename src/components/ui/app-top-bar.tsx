@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { RegionPicker } from "@/components/ui/region-picker";
+import { WondavuLogoToggle } from "@/components/ui/wondavu-logo-toggle";
 import { InstallPill } from "@/features/pwa";
 import {
   getCurrentRegionId,
@@ -30,16 +30,10 @@ export async function AppTopBar({
   return (
     <header className="flex items-start justify-between px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
       <div className="flex flex-col items-start gap-2">
-        <Link href="/" aria-label="Wondavu home" className="flex items-center">
-          <Image
-            src="/wondavu-logo-v2.png"
-            alt="Wondavu"
-            width={240}
-            height={240}
-            priority
-            className="h-24 w-auto"
-          />
-        </Link>
+        {/* Logo is now a theme-cycle button (tap → Light · Sketch ·
+            Journal). Home navigation moved to the bottom nav's Home
+            tab; the brand mark's new job is theme shortcut. */}
+        <WondavuLogoToggle />
         {showInstallPill && <InstallPill />}
       </div>
 
