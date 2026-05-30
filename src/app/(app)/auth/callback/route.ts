@@ -20,17 +20,38 @@ import type { Database } from "@/types/supabase";
  * object ourselves and `setAll` straight onto its cookie jar — the
  * pattern from supabase-ssr's own Next.js example.
  */
+type TraceEntry = {
+  step: string;
+  ok: boolean;
+  detail?: unknown;
+};
+
 export async function GET(request: NextRequest) {
+  const trace: TraceEntry[] = [];
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/profile";
 
-  // Build the response first so the cookie setters have somewhere
-  // permanent to write to. If the exchange fails we redirect to
-  // /login instead but reuse the same flow.
+  trace.push({
+    step: "callback_hit",
+    ok: true,
+    detail: {
+      url: request.url,
+      has_code: Boolean(code),
+      next,
+      incoming_cookie_names: request.cookies.getAll().map((c) => c.name),
+    },
+  });
+
+  const cookieWrites: string[] = [];
   const response = NextResponse.redirect(new URL(next, request.url));
 
   if (!code) {
+    response.cookies.set(
+      "auth_callback_trace",
+      JSON.stringify(trace),
+      { path: "/", maxAge: 600 },
+    );
     return NextResponse.redirect(
       new URL("/login?error=missing_code", request.url),
     );
@@ -46,9 +67,7 @@ export async function GET(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            // Mirror to both: the request (so any further reads in this
-            // handler see the new tokens) and the response (so the
-            // browser actually stores them).
+            cookieWrites.push(`${name} (len=${value.length})`);
             request.cookies.set(name, value);
             response.cookies.set(name, value, options);
           });
@@ -57,14 +76,38 @@ export async function GET(request: NextRequest) {
     },
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+  trace.push({
+    step: "exchange_done",
+    ok: !error,
+    detail: {
+      error_message: error?.message ?? null,
+      error_status: error?.status ?? null,
+      session_present: Boolean(data?.session),
+      user_id: data?.user?.id ?? null,
+      cookie_writes_by_supabase: cookieWrites,
+      response_cookie_count_after: response.cookies.getAll().length,
+    },
+  });
+
+  // Trace cookie is short-lived (10 min) and contains no secrets, just
+  // enough to debug the loop. Visit /auth/debug right after to read it.
+  response.cookies.set(
+    "auth_callback_trace",
+    JSON.stringify(trace),
+    { path: "/", maxAge: 600 },
+  );
+
   if (error) {
-    return NextResponse.redirect(
-      new URL(
-        `/login?error=${encodeURIComponent(error.message)}`,
-        request.url,
-      ),
+    const errResp = NextResponse.redirect(
+      new URL(`/login?error=${encodeURIComponent(error.message)}`, request.url),
     );
+    errResp.cookies.set("auth_callback_trace", JSON.stringify(trace), {
+      path: "/",
+      maxAge: 600,
+    });
+    return errResp;
   }
 
   return response;

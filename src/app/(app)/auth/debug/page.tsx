@@ -75,7 +75,23 @@ export default async function AuthDebug() {
     }
   }
 
+  let traceParsed: unknown = null;
+  let traceParseError: string | null = null;
+  const traceRaw = cookieStore.get("auth_callback_trace")?.value;
+  if (traceRaw) {
+    try {
+      traceParsed = JSON.parse(traceRaw);
+    } catch (e) {
+      traceParseError = e instanceof Error ? e.message : String(e);
+    }
+  }
+
   const dump = {
+    callback_trace: {
+      present: Boolean(traceRaw),
+      parsed: traceParsed,
+      parse_error: traceParseError,
+    },
     cookies: {
       total: allCookies.length,
       names: allCookies.map((c) => c.name),
