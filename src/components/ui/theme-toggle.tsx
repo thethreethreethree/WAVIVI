@@ -77,7 +77,7 @@ export function ThemeToggle() {
           role="radio"
           aria-checked={theme === o.value}
           onClick={() => choose(o.value)}
-          className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold transition-colors ${
+          className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
             theme === o.value
               ? "bg-surface text-foreground shadow-sm"
               : "text-muted"
@@ -85,7 +85,9 @@ export function ThemeToggle() {
         >
           {/* Plain <img> — see radial-hub/top-bar; avoids the dev
               /_next/image proxy. The icon files in /icons/theme-toggle/
-              are already optimised (256px max-edge palette PNG). */}
+              are already optimised (256px max-edge palette PNG).
+              Sized at h-6 w-6 so the painted chip art reads at a glance
+              without the user having to lean in. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={o.icon}
@@ -93,7 +95,7 @@ export function ThemeToggle() {
             aria-hidden
             loading="eager"
             decoding="async"
-            className="h-4 w-4 shrink-0 object-contain"
+            className="h-6 w-6 shrink-0 object-contain"
           />
           {o.label}
         </button>
