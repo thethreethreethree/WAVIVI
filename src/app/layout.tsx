@@ -174,7 +174,9 @@ export default async function RootLayout({
               html.splash-hide .opening-splash{display:none!important;}
               html.splash-active body>*:not(.opening-splash){display:none!important;}
               html.sketch img[src*="/icons/orange/"]:not([data-theme-ready]),
-              html.journal img[src*="/icons/orange/"]:not([data-theme-ready]){opacity:0;}
+              html.journal img[src*="/icons/orange/"]:not([data-theme-ready]),
+              html.sketch img[src*="%2Ficons%2Forange%2F"]:not([data-theme-ready]),
+              html.journal img[src*="%2Ficons%2Forange%2F"]:not([data-theme-ready]){opacity:0;}
               img[data-theme-ready]{transition:opacity 120ms ease-out;}
             `,
           }}
