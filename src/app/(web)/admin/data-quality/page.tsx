@@ -1,5 +1,13 @@
 import Link from "next/link";
 
+import { ExportDataQualityCsvButton } from "@/components/admin/data-quality/export-button";
+import {
+  type Source,
+  SOURCE_ADMIN_ROUTE,
+  SOURCE_LABEL,
+  SUSPECT_FILTER,
+  classifyUrl,
+} from "@/components/admin/data-quality/shared";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { RegionRow } from "@/types/supabase";
 
@@ -27,49 +35,6 @@ type SuspectRow = {
   region_id: string | null;
   photo_url: string | null;
 };
-
-type Source = "stays" | "restaurants" | "experiences";
-
-const SOURCE_LABEL: Record<Source, string> = {
-  stays: "Where to stay",
-  restaurants: "Where to eat",
-  experiences: "What to do",
-};
-
-/** Admin list route per source — used to deep-link the edit screen. */
-const SOURCE_ADMIN_ROUTE: Record<Source, string> = {
-  stays: "/admin/stays",
-  restaurants: "/admin/eat",
-  experiences: "/admin/experiences",
-};
-
-/** PostgREST `.or()` filter that catches: NULL photo_url, empty string,
- *  and every known placeholder host. ILIKE wildcards are `*` in supabase-js. */
-const SUSPECT_FILTER = [
-  "photo_url.is.null",
-  "photo_url.eq.",
-  "photo_url.ilike.*ssl.gstatic.com*",
-  "photo_url.ilike.*default_user*",
-  "photo_url.ilike.*streetviewpixels*",
-  "photo_url.ilike.*picsum.photos*",
-  "photo_url.ilike.*via.placeholder*",
-  "photo_url.ilike.*unsplash.com*",
-].join(",");
-
-/** Human-friendly tag describing why a URL was flagged. Keeps the table
- *  honest about the rule that caught each row. */
-function classifyUrl(url: string | null): string {
-  if (!url) return "no photo";
-  if (url === "") return "empty";
-  const lower = url.toLowerCase();
-  if (lower.includes("ssl.gstatic.com")) return "Google placeholder";
-  if (lower.includes("default_user")) return "default avatar";
-  if (lower.includes("streetviewpixels")) return "Street View thumb";
-  if (lower.includes("picsum.photos")) return "picsum placeholder";
-  if (lower.includes("via.placeholder")) return "via.placeholder";
-  if (lower.includes("unsplash.com")) return "Unsplash stock";
-  return "suspect";
-}
 
 export default async function DataQualityPage() {
   const supabase = createAdminClient();
@@ -123,18 +88,41 @@ export default async function DataQualityPage() {
 
   const totalBad = groups.reduce((acc, g) => acc + g.rows.length, 0);
 
+  // Server-stamped date for the export filename (YYYY-MM-DD UTC). Done
+  // on the server so the user gets a consistent label tied to the audit
+  // they're looking at, not the moment they click Export.
+  const dateLabel = new Date().toISOString().slice(0, 10);
+
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight">Data quality</h1>
-        <p className="mt-1 text-sm text-muted">
-          Rows whose <code className="font-mono text-xs">photo_url</code> is
-          missing or points at a known placeholder image (Google default
-          avatar, Street View thumb, Unsplash stock, etc.). Fix by opening
-          the row&apos;s admin page and either uploading a real photo or
-          clearing the URL — a null falls back to the clean 🏠 / 🌅 brand
-          glyph instead of a busted Google placeholder.
-        </p>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Data quality</h1>
+          <p className="mt-1 text-sm text-muted">
+            Rows whose <code className="font-mono text-xs">photo_url</code> is
+            missing or points at a known placeholder image (Google default
+            avatar, Street View thumb, Unsplash stock, etc.). Fix by opening
+            the row&apos;s admin page and either uploading a real photo or
+            clearing the URL — a null falls back to the clean 🏠 / 🌅 brand
+            glyph instead of a busted Google placeholder.
+          </p>
+          <p className="mt-2 text-xs text-muted">
+            <strong>Faster path:</strong> click{" "}
+            <strong>↓ Export CSV</strong>, drop new photo URLs into the blank{" "}
+            <code className="font-mono text-[11px]">Image</code> column, then
+            re-upload through{" "}
+            <Link
+              href="/admin/partner-import"
+              className="font-bold text-glow underline-offset-2 hover:underline"
+            >
+              /admin/partner-import
+            </Link>{" "}
+            to fix the whole batch at once.
+          </p>
+        </div>
+        {totalBad > 0 && (
+          <ExportDataQualityCsvButton dateLabel={dateLabel} />
+        )}
       </header>
 
       <div className="rounded-2xl bg-sunset p-4 text-white shadow-card">
