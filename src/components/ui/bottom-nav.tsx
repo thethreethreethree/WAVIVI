@@ -88,6 +88,12 @@ export function BottomNav() {
           src={t.image}
           alt=""
           aria-hidden
+          // Match the radial-hub treatment: scale the icon visually so
+          // the drawing reads larger without changing the touch-target
+          // container size or the surrounding cream pill that holds the
+          // whole bottom nav. The pen-style / watercolour PNGs both
+          // ship with transparent padding so the scale-up stays clean.
+          style={{ transform: "scale(1.3)" }}
           className="tj-paint relative h-[3.1rem] w-[3.1rem] object-contain"
         />
       ) : null}
