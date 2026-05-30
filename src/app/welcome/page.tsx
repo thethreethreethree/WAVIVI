@@ -106,10 +106,7 @@ export default function WelcomePage() {
                 className="wc-frame flex items-center gap-3.5 rounded-2xl p-3.5"
               >
                 <span
-                  // Same logic as the top-bar trio: cream wash + soft
-                  // shadow, no outline ring; icon scaled to fill the
-                  // wash instead of sitting smaller inside it.
-                  className="wc-edge-soft relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#fdf4e2] shadow-[0_2px_8px_-2px_rgba(120,70,30,0.22)]"
+                  className="wc-edge-soft relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#fdf4e2] ring-[1.5px] ring-[#3d1f06]/55 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.22)]"
                   aria-hidden
                 >
                   <Image
@@ -117,7 +114,7 @@ export default function WelcomePage() {
                     alt=""
                     width={88}
                     height={88}
-                    className="h-14 w-14 scale-125 object-contain"
+                    className="h-12 w-12 object-contain"
                   />
                 </span>
                 <span className="min-w-0">
