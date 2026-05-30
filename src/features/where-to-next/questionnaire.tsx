@@ -278,15 +278,17 @@ export function Questionnaire({
         {step === 0 && (
           <Step
             emoji={
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src="/icons/orange/globe.png"
-                alt=""
-                aria-hidden
-                width={48}
-                height={48}
-                className="h-12 w-12 object-contain"
-              />
+              <span className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#fdf4e2]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/icons/orange/globe.png"
+                  alt=""
+                  aria-hidden
+                  width={48}
+                  height={48}
+                  className="h-12 w-12 object-contain"
+                />
+              </span>
             }
             title="Where are we headed?"
             hint="Country first, city if you've got one."
