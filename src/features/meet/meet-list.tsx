@@ -70,7 +70,23 @@ export function MeetList({ groups }: { groups: PublicChatGroup[] }) {
                   aria-hidden
                 />
               ) : (
-                <span aria-hidden>🌍</span>
+                <>
+                  {/* "All" chip glyph. Default themes: 🌍 emoji. Journal:
+                      pen-style search icon (CSS in globals.css hides one
+                      and shows the other depending on the html theme
+                      class). */}
+                  <span aria-hidden className="meet-all-emoji">
+                    🌍
+                  </span>
+                  <Image
+                    src="/icons/journal/search.png"
+                    alt=""
+                    width={28}
+                    height={28}
+                    className="meet-all-journal-icon h-4 w-4 shrink-0"
+                    aria-hidden
+                  />
+                </>
               )}
               {c}
             </button>
