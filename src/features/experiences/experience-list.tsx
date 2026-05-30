@@ -85,6 +85,39 @@ function bucketForActivity(rawType: string | null): DayBucket {
 type UserPos = { lat: number; lng: number };
 
 /**
+ * Relevance score for a free-text search. Higher = more topical match.
+ *
+ * The flat OR search this replaced treated every match the same: a
+ * passing mention of "beach" in an Adventure Sports tour's description
+ * ranked equal to an actual beach whose `category` and `name` both said
+ * "beach". With the row sort favouring featured + rating, businesses
+ * routinely outranked the natural features users were searching for.
+ *
+ * Weights (highest signal first):
+ *   category    → +100   the badge IS the topic (Beach card for "beach")
+ *   activity_type → +50  on-topic activity (Hiking trail for "hiking")
+ *   name        → +20    "Seven Commandos BEACH", "BEACH Bar" both count
+ *   description / address → +5  incidental mentions still surface, but
+ *                                rank below the strong matches
+ *
+ * Returns 0 when the query doesn't appear anywhere — callers drop those.
+ */
+function relevanceScore(e: ExperienceRow, qLower: string): number {
+  if (!qLower) return 0;
+  let score = 0;
+  if ((e.category ?? "").toLowerCase().includes(qLower)) score += 100;
+  if ((e.activity_type ?? "").toLowerCase().includes(qLower)) score += 50;
+  if (e.name.toLowerCase().includes(qLower)) score += 20;
+  if (
+    (e.description ?? "").toLowerCase().includes(qLower) ||
+    (e.address ?? "").toLowerCase().includes(qLower)
+  ) {
+    score += 5;
+  }
+  return score;
+}
+
+/**
  * Real-data Things To Do list. Mirrors the StayList layout so the
  * visual + interaction language is consistent: search bar, filter
  * panel (rating + activity type, derived from the data), "What's
@@ -134,39 +167,40 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = experiences.filter((e) => {
-      if (bucket !== "all" && bucketOf(e) !== bucket) {
-        return false;
-      }
-      const rating = e.rating ?? e.backpack_rating;
-      if (rating < minRating) return false;
-      if (!q) return true;
-      return (
-        e.name.toLowerCase().includes(q) ||
-        (e.address ?? "").toLowerCase().includes(q) ||
-        (e.activity_type ?? "").toLowerCase().includes(q) ||
-        (e.description ?? "").toLowerCase().includes(q)
-      );
-    });
-    // Featured experiences pinned to the top. Within featured + within
-    // non-featured we then sort by proximity (when located).
-    if (userPos) {
-      return filtered
-        .map((e) => ({
-          e,
-          km: haversineKm(userPos, { lat: e.latitude, lng: e.longitude }),
-        }))
-        .sort((a, b) => {
-          if (a.e.featured !== b.e.featured) return a.e.featured ? -1 : 1;
-          return a.km - b.km;
-        });
-    }
-    return filtered
-      .map((e) => ({ e, km: null as number | null }))
-      .sort((a, b) => {
-        if (a.e.featured !== b.e.featured) return a.e.featured ? -1 : 1;
-        return 0;
+    const scored = experiences
+      .map((e) => ({
+        e,
+        score: relevanceScore(e, q),
+        km: userPos
+          ? haversineKm(userPos, { lat: e.latitude, lng: e.longitude })
+          : null,
+      }))
+      .filter((row) => {
+        if (bucket !== "all" && bucketOf(row.e) !== bucket) return false;
+        const rating = row.e.rating ?? row.e.backpack_rating;
+        if (rating < minRating) return false;
+        // When there's a query, drop rows the relevance scorer couldn't
+        // match anywhere — same exclusion the old flat OR enforced.
+        if (q && row.score === 0) return false;
+        return true;
       });
+
+    // Sort priority:
+    //   1. Relevance score (when a query is active) — keeps "beach" results
+    //      with category=Beach above businesses that mention beach in
+    //      passing.
+    //   2. Featured flag — admin editorial pick stays above the fold.
+    //   3. Proximity (when the user is located) — closer wins.
+    // No explicit rating tiebreaker because `experiences` was already
+    // fetched server-side ordered by backpack_rating.
+    scored.sort((a, b) => {
+      if (q && a.score !== b.score) return b.score - a.score;
+      if (a.e.featured !== b.e.featured) return a.e.featured ? -1 : 1;
+      if (a.km != null && b.km != null) return a.km - b.km;
+      return 0;
+    });
+
+    return scored.map(({ e, km }) => ({ e, km }));
   }, [experiences, query, bucket, minRating, userPos]);
 
   const activeFilterCount =
