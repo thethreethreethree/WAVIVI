@@ -9,10 +9,15 @@ import { useEffect, useState } from "react";
  *  localStorage values of "dark" are coerced back to "light" on mount. */
 export type Theme = "light" | "cute" | "orange" | "sketch" | "journal";
 
+/** Theme-toggle chip art. Lives in /public/icons/theme-toggle/ — a
+ *  neutral subfolder ThemeImgSwap deliberately does NOT touch, so each
+ *  chip always shows its own theme's icon regardless of which theme
+ *  is currently active (otherwise switching to Sketch would retarget
+ *  these to /icons/sketch/, making the toggle visually inconsistent). */
 const OPTIONS: { value: Theme; label: string; icon: string }[] = [
-  { value: "light", label: "Light Rustic", icon: "🍂" },
-  { value: "sketch", label: "Sketch", icon: "✏️" },
-  { value: "journal", label: "Journal", icon: "📓" },
+  { value: "light", label: "Light Rustic", icon: "/icons/theme-toggle/rustic.png" },
+  { value: "sketch", label: "Sketch", icon: "/icons/theme-toggle/sketch.png" },
+  { value: "journal", label: "Journal", icon: "/icons/theme-toggle/journal.png" },
 ];
 
 /** Reads the theme currently applied to <html>. */
@@ -72,13 +77,24 @@ export function ThemeToggle() {
           role="radio"
           aria-checked={theme === o.value}
           onClick={() => choose(o.value)}
-          className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition-colors ${
+          className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold transition-colors ${
             theme === o.value
               ? "bg-surface text-foreground shadow-sm"
               : "text-muted"
           }`}
         >
-          <span aria-hidden>{o.icon}</span>
+          {/* Plain <img> — see radial-hub/top-bar; avoids the dev
+              /_next/image proxy. The icon files in /icons/theme-toggle/
+              are already optimised (256px max-edge palette PNG). */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={o.icon}
+            alt=""
+            aria-hidden
+            loading="eager"
+            decoding="async"
+            className="h-4 w-4 shrink-0 object-contain"
+          />
           {o.label}
         </button>
       ))}
