@@ -85,9 +85,11 @@ export default async function MyProfilePage() {
         <Link
           href="/settings"
           aria-label="Settings"
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-[#fdf4e2] ring-2 ring-[#3d1f06]/55 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.30)] text-foreground transition-transform active:scale-90"
+          // Matches the top-bar trio treatment: cream wash + drop
+          // shadow, no outline ring. Scaled icon fills the wash.
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-[#fdf4e2] shadow-[0_2px_8px_-2px_rgba(120,70,30,0.30)] text-foreground transition-transform active:scale-90"
         >
-          <Icon name="settings" className="h-10 w-10" />
+          <Icon name="settings" className="h-12 w-12 scale-125" />
         </Link>
       </header>
 
