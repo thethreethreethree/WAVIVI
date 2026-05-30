@@ -1157,9 +1157,14 @@ h3 {
    visible drawing on the home radial hub and the bottom nav by 30%
    when (and only when) the Journal theme is active. Rustic + Sketch
    keep their original sizing. */
-.journal .hub-satellite-icon,
-.journal .bottom-nav-icon,
-.journal .tools-tile-icon {
+/* Icon scale-up applies universally — was originally scoped to .journal
+   only because the pen-style art had extra transparent padding, but
+   the bigger drawings read better across Rustic + Sketch too, so the
+   theme prefix is dropped. Hub satellites, bottom nav painted icons,
+   and the tools page tiles all scale together. */
+.hub-satellite-icon,
+.bottom-nav-icon,
+.tools-tile-icon {
   transform: scale(1.3);
 }
 
