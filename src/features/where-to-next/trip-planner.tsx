@@ -7,7 +7,11 @@ import {
   addItineraryItem,
   removeItineraryItem,
 } from "@/features/where-to-next/actions";
-import type { ItineraryItem, ItineraryTimeOfDay } from "@/types/supabase";
+import type {
+  ItineraryItem,
+  ItineraryKind,
+  ItineraryTimeOfDay,
+} from "@/types/supabase";
 
 interface Props {
   planId: string;
@@ -46,6 +50,16 @@ const TIME_OPTIONS: { id: ItineraryTimeOfDay; label: string; emoji: string }[] =
     { id: "evening", label: "Evening", emoji: "🌙" },
     { id: "anytime", label: "Anytime", emoji: "✨" },
   ];
+
+/** Category options for each itinerary row — uses the same painted Hub
+ *  icons the home page renders, so the trip planner reads as a
+ *  shorthand for the rest of the app. */
+const KIND_OPTIONS: { id: ItineraryKind; label: string; icon: string }[] = [
+  { id: "stay", label: "Stay", icon: "/icons/orange/hub_stay.png" },
+  { id: "eat", label: "Eat", icon: "/icons/orange/hub_eat.png" },
+  { id: "todo", label: "To do", icon: "/icons/orange/hub_todo.png" },
+  { id: "events", label: "Events", icon: "/icons/orange/hub_events.png" },
+];
 
 function fmtDayHeader(startDate: string, dayIndex: number): string {
   const d = new Date(`${startDate}T00:00:00Z`);
@@ -105,9 +119,18 @@ export function TripPlanner({ planId, startDate, durationDays, items }: Props) {
           type="button"
           onClick={() => setCalendarOpen((o) => !o)}
           aria-expanded={calendarOpen}
-          className="wc-frame wc-frame-orange-white inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-bold text-glow"
+          className="wc-frame wc-frame-orange-white inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold text-glow"
         >
-          📅 Calendar
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/orange/calendar.png"
+            alt=""
+            aria-hidden
+            loading="eager"
+            decoding="async"
+            className="h-4 w-4 shrink-0 object-contain"
+          />
+          Calendar
         </button>
       </div>
 
@@ -237,12 +260,14 @@ function DayCard({
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
   const [time, setTime] = useState<ItineraryTimeOfDay>("anytime");
+  const [kind, setKind] = useState<ItineraryKind | null>(null);
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   function reset() {
     setTitle("");
     setTime("anytime");
+    setKind(null);
     setNotes("");
     setError(null);
     setAdding(false);
@@ -259,6 +284,7 @@ function DayCard({
         title: title.trim(),
         time,
         notes: notes.trim() || null,
+        kind,
       });
       if (!res.ok) {
         setError(res.error ?? "Couldn't save that item.");
@@ -301,16 +327,34 @@ function DayCard({
               key={it.id}
               className="flex items-start justify-between gap-2 rounded-xl bg-surface px-3 py-2 ring-1 ring-border"
             >
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold">
-                  <span className="mr-1.5" aria-hidden>
-                    {TIME_OPTIONS.find((t) => t.id === it.time)?.emoji ?? "✨"}
-                  </span>
-                  {it.title}
-                </p>
-                {it.notes && (
-                  <p className="mt-0.5 text-xs text-muted">{it.notes}</p>
+              <div className="flex min-w-0 items-start gap-2">
+                {/* Kind icon (when the row is tagged) — same painted hub
+                    art the home page uses. */}
+                {it.kind && (
+                  <img
+                    // eslint-disable-next-line @next/next/no-img-element
+                    src={
+                      KIND_OPTIONS.find((k) => k.id === it.kind)?.icon ?? ""
+                    }
+                    alt=""
+                    aria-hidden
+                    loading="eager"
+                    decoding="async"
+                    className="mt-0.5 h-6 w-6 shrink-0 object-contain"
+                  />
                 )}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold">
+                    <span className="mr-1.5" aria-hidden>
+                      {TIME_OPTIONS.find((t) => t.id === it.time)?.emoji ??
+                        "✨"}
+                    </span>
+                    {it.title}
+                  </p>
+                  {it.notes && (
+                    <p className="mt-0.5 text-xs text-muted">{it.notes}</p>
+                  )}
+                </div>
               </div>
               <button
                 type="button"
@@ -349,6 +393,34 @@ function DayCard({
               >
                 <span aria-hidden>{t.emoji}</span>
                 {t.label}
+              </button>
+            ))}
+          </div>
+          {/* Category row — same painted Hub icons the home page uses
+              (stay / eat / to do / events). Tapping the active kind
+              again toggles it off (null = uncategorised). */}
+          <div className="flex flex-wrap gap-1.5">
+            {KIND_OPTIONS.map((k) => (
+              <button
+                key={k.id}
+                type="button"
+                onClick={() => setKind((cur) => (cur === k.id ? null : k.id))}
+                className={`wc-frame ${
+                  kind === k.id
+                    ? "wc-frame-sunset text-white"
+                    : "wc-frame-orange-white text-foreground"
+                } inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={k.icon}
+                  alt=""
+                  aria-hidden
+                  loading="eager"
+                  decoding="async"
+                  className="h-4 w-4 shrink-0 object-contain"
+                />
+                {k.label}
               </button>
             ))}
           </div>

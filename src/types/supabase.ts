@@ -784,6 +784,11 @@ export type SavedTravelItem = {
 
 export type ItineraryTimeOfDay = "morning" | "afternoon" | "evening" | "anytime";
 
+/** Category kinds an itinerary item can be tagged as. Matches the four
+ *  Hub destinations (stay / eat / todo / events) so the planner can
+ *  decorate each row with the same painted hub icon the home page uses. */
+export type ItineraryKind = "stay" | "eat" | "todo" | "events";
+
 /** One Trip Planner row — fits in the jsonb `itinerary` column. */
 export type ItineraryItem = {
   /** Client-generated UUID so React keys + delete-by-id are stable. */
@@ -793,6 +798,9 @@ export type ItineraryItem = {
   title: string;
   time: ItineraryTimeOfDay;
   notes: string | null;
+  /** Optional category. Existing rows from before this field was added
+   *  will have it as undefined; we treat that as "no category" in the UI. */
+  kind?: ItineraryKind | null;
 };
 
 export type TravelPlanRow = {
