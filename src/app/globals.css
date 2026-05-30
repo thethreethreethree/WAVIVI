@@ -1167,6 +1167,39 @@ h3 {
   transform: scale(1.3);
 }
 
+/* Journal-only icon-pill refinements. The pen-style art reads larger
+   inside its cream wash than the watercolour art, so on Journal we:
+   - drop the dark outline ring (the painted drawing already has its
+     own visual edge)
+   - enlarge the trio's footprint so the larger pen art has room
+   - scale the icon to fill the cream wash instead of floating smaller
+     inside it.
+   Rustic + Sketch keep the original ring + native sizing. */
+.journal .tb-trio-button {
+  height: 3.5rem;
+  width: 3.5rem;
+}
+.journal .tb-trio-button > span {
+  box-shadow: 0 2px 8px -2px rgba(120, 70, 30, 0.22);
+}
+.journal .tb-trio-button > img {
+  transform: scale(1.25);
+}
+
+.journal .profile-gear-button {
+  box-shadow: 0 2px 8px -2px rgba(120, 70, 30, 0.3);
+}
+.journal .profile-gear-button > svg {
+  transform: scale(1.25);
+}
+
+.journal .welcome-feat-pill {
+  box-shadow: 0 2px 8px -2px rgba(120, 70, 30, 0.22);
+}
+.journal .welcome-feat-pill > img {
+  transform: scale(1.25);
+}
+
 /* Meet "All" filter chip glyph. The chip renders both the 🌍 emoji and
    the pen-style search icon; this rule shows the right one per theme. */
 .meet-all-journal-icon {

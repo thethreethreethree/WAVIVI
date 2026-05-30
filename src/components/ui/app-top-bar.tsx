@@ -43,14 +43,18 @@ export async function AppTopBar({
           currentId={currentId}
           currentLabel={currentLabel}
         />
+        {/* tb-trio-button = hook used by the Journal-scoped overrides in
+            globals.css (removes the ring, scales the icon, enlarges the
+            footprint). Rustic + Sketch see the original h-11 + ring +
+            native-size icon. */}
         <Link
           href="/notifications"
           aria-label="Notifications"
-          className="relative flex h-14 w-14 items-center justify-center active:scale-95"
+          className="tb-trio-button relative flex h-11 w-11 items-center justify-center active:scale-95"
         >
           <span
             aria-hidden
-            className="wc-edge-soft absolute inset-0 rounded-full bg-[#fdf4e2] shadow-[0_2px_8px_-2px_rgba(120,70,30,0.22)]"
+            className="wc-edge-soft absolute inset-0 rounded-full bg-[#fdf4e2] ring-[1.5px] ring-[#3d1f06]/55 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.22)]"
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -59,17 +63,17 @@ export async function AppTopBar({
             aria-hidden
             loading="eager"
             decoding="async"
-            className="relative h-full w-full scale-125 object-contain"
+            className="relative h-full w-full object-contain"
           />
         </Link>
         <Link
           href="/my-groups"
           aria-label="My groups"
-          className="relative flex h-14 w-14 items-center justify-center active:scale-95"
+          className="tb-trio-button relative flex h-11 w-11 items-center justify-center active:scale-95"
         >
           <span
             aria-hidden
-            className="wc-edge-soft absolute inset-0 rounded-full bg-[#fdf4e2] shadow-[0_2px_8px_-2px_rgba(120,70,30,0.22)]"
+            className="wc-edge-soft absolute inset-0 rounded-full bg-[#fdf4e2] ring-[1.5px] ring-[#3d1f06]/55 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.22)]"
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -78,7 +82,7 @@ export async function AppTopBar({
             aria-hidden
             loading="eager"
             decoding="async"
-            className="relative h-full w-full scale-125 object-contain"
+            className="relative h-full w-full object-contain"
           />
         </Link>
       </div>
