@@ -79,8 +79,16 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
           fallback="/meet"
           className="absolute left-4 top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))]"
         />
-        <span className="absolute right-4 top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-foreground">
-          {meta.emoji} {category}
+        <span className="absolute right-4 top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-foreground">
+          <Image
+            src={meta.icon}
+            alt=""
+            width={36}
+            height={36}
+            className="h-4 w-4 shrink-0"
+            aria-hidden
+          />
+          {category}
         </span>
         <div className="absolute bottom-3 left-5 right-5">
           {distance && (
@@ -101,13 +109,66 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
             : "Be the first to join this group."}
         </p>
 
+        {/* Primary CTA — three states: not signed in, signed in but not a
+            member (real join action), or already joined (deep-link to chat).
+            Lives above the directions block on purpose: joining the chat is
+            the primary action; getting directions to the meet-up is what you
+            do AFTER you've joined. */}
+        {!user ? (
+          <Link
+            href={`/login?next=${encodeURIComponent(`/meet/${id}`)}`}
+            className="wc-frame wc-frame-sunset mt-5 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-center font-bold text-white active:scale-[0.98]"
+          >
+            <Image
+              src="/icons/orange/plane.png"
+              alt=""
+              width={44}
+              height={44}
+              className="h-5 w-5"
+              aria-hidden
+            />
+            Sign in to join the chat
+          </Link>
+        ) : joined ? (
+          <Link
+            href={`/meet/${id}/chat`}
+            className="wc-frame wc-frame-sunset mt-5 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-center font-bold text-white active:scale-[0.98]"
+          >
+            <Image
+              src="/icons/orange/plane.png"
+              alt=""
+              width={44}
+              height={44}
+              className="h-5 w-5"
+              aria-hidden
+            />
+            Open Group Chat
+          </Link>
+        ) : (
+          <JoinGroupButton
+            groupId={id}
+            className="wc-frame wc-frame-sunset mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-center font-bold text-white active:scale-[0.98]"
+          >
+            <Image
+              src="/icons/orange/plane.png"
+              alt=""
+              width={44}
+              height={44}
+              className="h-5 w-5"
+              aria-hidden
+            />
+            Join the Group Chat
+          </JoinGroupButton>
+        )}
+
         {/* Specific location pin (admin-set). When we have coordinates the
             block becomes a tappable "Get directions" button that opens the
             in-app /nav route view with the destination preloaded. When
             coordinates are missing we fall back to the static info block.
             The partner deep-link, when present, stays as a small secondary
             chip below — viewing the venue page is a separate action from
-            navigating to it. */}
+            navigating to it. Custom watercolour icons replace the emoji
+            so the block reads on-brand. */}
         {dbGroup?.place_name && (
           <div className="mt-4 flex flex-col gap-2">
             {dbGroup.place_lat != null && dbGroup.place_lng != null ? (
@@ -116,9 +177,14 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
                 className="group flex items-start gap-3 rounded-2xl bg-surface px-4 py-3 ring-1 ring-border shadow-card transition active:scale-[0.99] hover:bg-surface-elevated"
                 aria-label={`Get directions to ${dbGroup.place_name}`}
               >
-                <span className="mt-0.5 text-xl" aria-hidden>
-                  📍
-                </span>
+                <Image
+                  src="/icons/orange/map_pin.png"
+                  alt=""
+                  width={52}
+                  height={52}
+                  className="mt-0.5 h-6 w-6 shrink-0"
+                  aria-hidden
+                />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold text-foreground">
                     {dbGroup.place_name}
@@ -129,7 +195,15 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
                     </p>
                   )}
                   <p className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold text-glow">
-                    🗺️ Get directions
+                    <Image
+                      src="/icons/orange/direction_arrow.png"
+                      alt=""
+                      width={36}
+                      height={36}
+                      className="h-4 w-4"
+                      aria-hidden
+                    />
+                    Get directions
                     <span
                       aria-hidden
                       className="transition-transform group-hover:translate-x-0.5"
@@ -141,9 +215,14 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
               </Link>
             ) : (
               <div className="flex items-start gap-3 rounded-2xl bg-surface/70 px-4 py-3 ring-1 ring-border">
-                <span className="mt-0.5 text-xl" aria-hidden>
-                  📍
-                </span>
+                <Image
+                  src="/icons/orange/map_pin.png"
+                  alt=""
+                  width={52}
+                  height={52}
+                  className="mt-0.5 h-6 w-6 shrink-0"
+                  aria-hidden
+                />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold text-foreground">
                     {dbGroup.place_name}

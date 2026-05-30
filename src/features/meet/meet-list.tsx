@@ -46,7 +46,9 @@ export function MeetList({ groups }: { groups: PublicChatGroup[] }) {
       <div className="-mx-0 flex gap-2 overflow-x-auto px-5 pb-1 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {categories.map((c) => {
           const isActive = c === active;
-          const emoji = c === "All" ? "🌍" : metaFor(c).emoji;
+          // "All" keeps the globe emoji because it's not a category in the
+          // meta map; everything else swaps to the per-category icon.
+          const icon = c === "All" ? null : metaFor(c).icon;
           return (
             <button
               key={c}
@@ -58,7 +60,18 @@ export function MeetList({ groups }: { groups: PublicChatGroup[] }) {
                   : "wc-frame wc-frame-orange-white text-foreground"
               }`}
             >
-              <span aria-hidden>{emoji}</span>
+              {icon ? (
+                <Image
+                  src={icon}
+                  alt=""
+                  width={36}
+                  height={36}
+                  className="h-4 w-4 shrink-0"
+                  aria-hidden
+                />
+              ) : (
+                <span aria-hidden>🌍</span>
+              )}
               {c}
             </button>
           );
@@ -114,8 +127,16 @@ function GroupCard({ group }: { group: PublicChatGroup }) {
           📍 {distance}
         </span>
         {/* Category — top-right */}
-        <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-foreground">
-          {meta.emoji} {category}
+        <span className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-foreground">
+          <Image
+            src={meta.icon}
+            alt=""
+            width={36}
+            height={36}
+            className="h-4 w-4 shrink-0"
+            aria-hidden
+          />
+          {category}
         </span>
         {group.featured && (
           <span className="absolute left-3 bottom-14 inline-flex items-center gap-1 rounded-full bg-glow px-2 py-0.5 text-[10px] font-bold text-white shadow-card">

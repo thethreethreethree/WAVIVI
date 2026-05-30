@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -60,9 +61,18 @@ export default async function MyGroupsPage() {
                         referrerPolicy="no-referrer"
                         className="h-full w-full object-cover"
                       />
+                    ) : meta ? (
+                      <Image
+                        src={meta.icon}
+                        alt=""
+                        width={52}
+                        height={52}
+                        className="h-7 w-7"
+                        aria-hidden
+                      />
                     ) : (
                       <span className="text-xl" aria-hidden>
-                        {meta?.emoji ?? "💬"}
+                        💬
                       </span>
                     )}
                   </span>
