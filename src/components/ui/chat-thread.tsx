@@ -215,22 +215,31 @@ export function ChatThread({
 
         {/* Chat settings — kebab menu top-right. Shows the painted icon
             from the brand asset kit; opens a small popover anchored under
-            the button with View Members + (when joined) Leave Group. */}
-        <div ref={menuWrapRef} className="relative">
+            the button with View Members + (when joined) Leave Group.
+            `shrink-0 h-9 w-9` on the wrap pins the trigger's footprint so
+            opening the absolute-positioned dropdown can't reflow it into
+            the flex parent. */}
+        <div ref={menuWrapRef} className="relative h-9 w-9 shrink-0">
           <button
             type="button"
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             aria-label="Chat settings"
             onClick={() => setMenuOpen((o) => !o)}
-            className="flex h-9 w-9 items-center justify-center rounded-full transition-transform active:scale-95 hover:bg-foreground/5"
+            // `focus:outline-none focus-visible:outline-none` kills the
+            // browser-default focus ring (which picked up the theme's
+            // accent-glow and read as an orange outline on Sketch /
+            // Journal). The icon stays the clear hit-target.
+            className="flex h-full w-full items-center justify-center rounded-full transition-transform focus:outline-none focus-visible:outline-none active:scale-95 hover:bg-foreground/5"
           >
             <Image
               src="/icons/orange/menu_kebab.png"
               alt=""
-              width={28}
-              height={28}
-              className="h-7 w-7 object-contain"
+              width={36}
+              height={36}
+              // Bumped from h-7 → h-9 (≈30% larger) so the dots fill the
+              // trigger more confidently. User asked for the size bump.
+              className="h-9 w-9 object-contain"
             />
           </button>
           {menuOpen && (
