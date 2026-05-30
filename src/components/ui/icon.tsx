@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Minimalist line-icon set. Stroke-based, 24×24, inherits `currentColor`.
  * Keep these clean and geometric — no cartoonish fills.
@@ -145,8 +147,10 @@ const PATHS: Record<string, React.ReactNode> = {
 
 export type IconName = keyof typeof PATHS;
 
+import { useThemeContext } from "@/components/ui/theme-context";
 import { CUTE_ICONS } from "@/lib/cute-icons";
 import { ORANGE_ICONS } from "@/lib/orange-icons";
+import { themedIconPath } from "@/lib/theme/cookie";
 
 /**
  * Renders a minimalist line icon.
@@ -169,10 +173,14 @@ export function Icon({
       Cute-Mode watercolor image (e.g. the radial hub). */
   svgOnly?: boolean;
 }) {
+  const theme = useThemeContext();
   const cuteSrc = svgOnly ? undefined : CUTE_ICONS[name];
   // Orange theme: use the Orange art, falling back to Cute V2 when an
-  // icon hasn't been drawn for Orange yet.
-  const orangeSrc = svgOnly ? undefined : ORANGE_ICONS[name] ?? cuteSrc;
+  // icon hasn't been drawn for Orange yet. Then resolve against the
+  // active theme so SSR ships the right folder on the first paint
+  // (no ThemeImgSwap waltz, no flash).
+  const orangeRaw = svgOnly ? undefined : ORANGE_ICONS[name] ?? cuteSrc;
+  const orangeSrc = orangeRaw ? themedIconPath(orangeRaw, theme) : undefined;
   // The watercolor PNGs are already painted — strip any edge/paint effect
   // classes so no filter is layered on the icon asset.
   const baseImg = `object-contain ${className}`
@@ -212,6 +220,7 @@ export function Icon({
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={orangeSrc}
+          data-theme-ready="1"
           alt=""
           aria-hidden
           className={`tj-icon-img-orange ${baseImg}`}

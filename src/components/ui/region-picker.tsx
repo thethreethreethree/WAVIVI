@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 
 import { setCurrentRegion } from "@/lib/regions/actions";
 import type { RegionRow } from "@/lib/regions/current";
+import { type PersistedTheme, themedIconPath } from "@/lib/theme/cookie";
 
 /** Globe button + bottom-sheet picker. Selecting a region writes the
  *  `wv-region` cookie via a Server Action and refreshes every list. */
@@ -11,11 +12,14 @@ export function RegionPicker({
   regions,
   currentId,
   currentLabel,
+  theme = "light",
 }: {
   regions: RegionRow[];
   currentId: string | null;
   currentLabel: string;
+  theme?: PersistedTheme;
 }) {
+  const globeSrc = themedIconPath("/icons/orange/globe.png", theme);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [pending, startTransition] = useTransition();
@@ -78,7 +82,8 @@ export function RegionPicker({
         />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/icons/orange/globe.png"
+          src={globeSrc}
+          data-theme-ready="1"
           alt=""
           aria-hidden
           loading="eager"
@@ -143,7 +148,8 @@ export function RegionPicker({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src="/icons/orange/globe.png"
+                      src={globeSrc}
+                      data-theme-ready="1"
                       alt=""
                       aria-hidden
                       width={28}
