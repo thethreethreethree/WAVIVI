@@ -284,9 +284,9 @@ export function Questionnaire({
                   src="/icons/orange/globe.png"
                   alt=""
                   aria-hidden
-                  width={48}
-                  height={48}
-                  className="h-12 w-12 object-contain"
+                  width={64}
+                  height={64}
+                  className="h-16 w-16 object-contain"
                 />
               </span>
             }
