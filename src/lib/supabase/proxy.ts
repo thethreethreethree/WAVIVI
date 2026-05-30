@@ -16,6 +16,25 @@ const AUTH_PREFIXES = ["/login", "/signup"];
  * cookie in sync, and enforces route protection. Called from `proxy.ts`.
  */
 export async function updateSession(request: NextRequest) {
+  // OAuth code recovery — if Supabase's redirect-URL allowlist isn't
+  // configured correctly, Supabase falls back to the project's Site URL
+  // and we land on something like `/?code=<pkce>` instead of
+  // `/auth/callback?code=<pkce>`. Detect it and forward to our callback
+  // so the exchange still happens.
+  const code = request.nextUrl.searchParams.get("code");
+  if (code && !request.nextUrl.pathname.startsWith("/auth/callback")) {
+    const url = request.nextUrl.clone();
+    const landed = request.nextUrl.pathname;
+    url.pathname = "/auth/callback";
+    url.searchParams.delete("code");
+    url.searchParams.set("code", code);
+    url.searchParams.set(
+      "next",
+      landed === "/" || landed === "/welcome" ? "/profile" : landed,
+    );
+    return NextResponse.redirect(url);
+  }
+
   let response = NextResponse.next({ request });
 
   // Skip silently until Supabase env vars are configured.
