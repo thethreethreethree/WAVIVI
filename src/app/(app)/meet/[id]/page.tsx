@@ -101,37 +101,78 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
             : "Be the first to join this group."}
         </p>
 
-        {/* Specific location pin (admin-set). Deep-links to the partner
-            page when one was attached; otherwise just shows the label. */}
+        {/* Specific location pin (admin-set). When we have coordinates the
+            block becomes a tappable "Get directions" button that opens the
+            in-app /nav route view with the destination preloaded. When
+            coordinates are missing we fall back to the static info block.
+            The partner deep-link, when present, stays as a small secondary
+            chip below — viewing the venue page is a separate action from
+            navigating to it. */}
         {dbGroup?.place_name && (
-          <div className="mt-4 flex items-start gap-3 rounded-2xl bg-surface/70 px-4 py-3 ring-1 ring-border">
-            <span className="mt-0.5 text-xl">📍</span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-foreground">
-                {dbGroup.place_name}
-              </p>
-              {dbGroup.place_address && (
-                <p className="mt-0.5 text-xs text-muted">
-                  {dbGroup.place_address}
-                </p>
-              )}
-              {dbGroup.place_partner_type && dbGroup.place_partner_id && (
-                <Link
-                  href={`/${
-                    dbGroup.place_partner_type === "stay"
-                      ? "stay"
-                      : dbGroup.place_partner_type === "restaurant"
-                        ? "eat"
-                        : dbGroup.place_partner_type === "experience"
-                          ? "todo"
-                          : "events"
-                  }/${dbGroup.place_partner_id}`}
-                  className="mt-1 inline-block text-xs font-semibold text-glow underline"
-                >
-                  See on Wondavu ›
-                </Link>
-              )}
-            </div>
+          <div className="mt-4 flex flex-col gap-2">
+            {dbGroup.place_lat != null && dbGroup.place_lng != null ? (
+              <Link
+                href={`/nav?lat=${dbGroup.place_lat}&lng=${dbGroup.place_lng}&name=${encodeURIComponent(dbGroup.place_name)}`}
+                className="group flex items-start gap-3 rounded-2xl bg-surface px-4 py-3 ring-1 ring-border shadow-card transition active:scale-[0.99] hover:bg-surface-elevated"
+                aria-label={`Get directions to ${dbGroup.place_name}`}
+              >
+                <span className="mt-0.5 text-xl" aria-hidden>
+                  📍
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-foreground">
+                    {dbGroup.place_name}
+                  </p>
+                  {dbGroup.place_address && (
+                    <p className="mt-0.5 text-xs text-muted">
+                      {dbGroup.place_address}
+                    </p>
+                  )}
+                  <p className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold text-glow">
+                    🗺️ Get directions
+                    <span
+                      aria-hidden
+                      className="transition-transform group-hover:translate-x-0.5"
+                    >
+                      ›
+                    </span>
+                  </p>
+                </div>
+              </Link>
+            ) : (
+              <div className="flex items-start gap-3 rounded-2xl bg-surface/70 px-4 py-3 ring-1 ring-border">
+                <span className="mt-0.5 text-xl" aria-hidden>
+                  📍
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-foreground">
+                    {dbGroup.place_name}
+                  </p>
+                  {dbGroup.place_address && (
+                    <p className="mt-0.5 text-xs text-muted">
+                      {dbGroup.place_address}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {dbGroup.place_partner_type && dbGroup.place_partner_id && (
+              <Link
+                href={`/${
+                  dbGroup.place_partner_type === "stay"
+                    ? "stay"
+                    : dbGroup.place_partner_type === "restaurant"
+                      ? "eat"
+                      : dbGroup.place_partner_type === "experience"
+                        ? "todo"
+                        : "events"
+                }/${dbGroup.place_partner_id}`}
+                className="self-start text-xs font-semibold text-glow underline-offset-2 hover:underline"
+              >
+                See venue on Wondavu ›
+              </Link>
+            )}
           </div>
         )}
 
