@@ -58,11 +58,15 @@ export async function AppTopBar({
             aria-hidden
             className="wc-edge-soft absolute inset-0 rounded-full bg-[#fdf4e2] ring-[1.5px] ring-[#3d1f06]/55 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.22)]"
           />
-          <Image
+          {/* Plain <img> — same reason as the radial-hub satellites:
+              embedded dev preview panes stall on /_next/image. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src="/icons/orange/bell.png"
             alt=""
-            width={88}
-            height={88}
+            aria-hidden
+            loading="eager"
+            decoding="async"
             className="relative h-full w-full object-contain"
           />
         </Link>
@@ -75,11 +79,14 @@ export async function AppTopBar({
             aria-hidden
             className="wc-edge-soft absolute inset-0 rounded-full bg-[#fdf4e2] ring-[1.5px] ring-[#3d1f06]/55 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.22)]"
           />
-          <Image
+          {/* Plain <img> — same rationale as above. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src="/icons/orange/group_join.png"
             alt=""
-            width={88}
-            height={88}
+            aria-hidden
+            loading="eager"
+            decoding="async"
             className="relative h-full w-full object-contain"
           />
         </Link>

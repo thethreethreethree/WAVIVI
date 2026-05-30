@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -153,18 +152,23 @@ export function RadialHub({ hasPlans = false }: { hasPlans?: boolean }) {
               aria-hidden
               className="absolute inset-0 rounded-full bg-[#fdf4e2]/85 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.18)]"
             />
-            {/* Journal-theme-only scale-up — see globals.css
-                `.journal .hub-satellite-icon { transform: scale(1.3) }`.
-                Rustic + Sketch keep their original icon size; only the
-                Journal pen-style icons read larger (they ship with more
-                transparent padding around the drawing, so they need
-                the extra scale to match the visual weight of the
-                watercolour set). */}
-            <Image
+            {/* Plain <img> instead of next/image — the dev preview
+                pane and some embedded browsers stall on /_next/image
+                requests, leaving the hub circles empty. Plain <img>
+                hits the file in /public/icons/ directly, matching the
+                bottom-nav pattern that's always reliable. Production
+                still gets Vercel's CDN optimisation for the underlying
+                PNG so payload size is unaffected.
+                The Journal-theme-only scale-up
+                (`.journal .hub-satellite-icon { transform: scale(1.3) }`
+                in globals.css) keeps working via the class hook. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={item.image}
               alt=""
-              width={192}
-              height={192}
+              aria-hidden
+              loading="eager"
+              decoding="async"
               className="hub-satellite-icon relative h-full w-full object-contain"
             />
           </Link>
