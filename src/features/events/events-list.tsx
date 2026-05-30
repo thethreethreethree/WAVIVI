@@ -16,34 +16,74 @@ const DAY_BUCKETS: { id: DayBucket; label: string; emoji: string }[] = [
   { id: "nighttime", label: "Nighttime", emoji: "🌙" },
 ];
 
+/**
+ * Relevance score for the events search. Category is the strongest
+ * signal — "nightlife" should return actual nightlife events above a
+ * morning yoga class whose description happens to mention nightlife.
+ *
+ *   category       → +100   the badge IS the topic
+ *   name           → +20    "Jazz Night", "Beach Cleanup"
+ *   description    → +5     incidental mentions still rank
+ *   address        → +5     venue/area name occasionally matches
+ */
+function eventRelevance(e: EventRow, qLower: string): number {
+  if (!qLower) return 0;
+  let score = 0;
+  if ((e.category ?? "").toLowerCase().includes(qLower)) score += 100;
+  if (e.name.toLowerCase().includes(qLower)) score += 20;
+  if ((e.description ?? "").toLowerCase().includes(qLower)) score += 5;
+  if ((e.address ?? "").toLowerCase().includes(qLower)) score += 5;
+  return score;
+}
+
 export function EventsList({ events }: { events: EventRow[] }) {
   const [query, setQuery] = useStickyState("events:q", "");
   const [bucket, setBucket] = useStickyState<"all" | DayBucket>(
     "events:bucket",
     "all",
   );
+  // Category quick-filter chip (Nightlife / Music / Workshops / ...).
+  // Sticky so the chip survives navigation back to the list.
+  const [category, setCategory] = useStickyState<"all" | string>(
+    "events:category",
+    "all",
+  );
+
+  // Distinct categories present in the data — drives the chip row below.
+  const presentCategories = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of events) {
+      const c = e.category?.trim();
+      if (c) set.add(c);
+    }
+    return Array.from(set).sort();
+  }, [events]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return events
-      .filter((e) => {
-        if (bucket !== "all" && (e.day_bucket ?? "").toLowerCase() !== bucket) {
+    const scored = events
+      .map((e) => ({ e, score: eventRelevance(e, q) }))
+      .filter((row) => {
+        if (
+          bucket !== "all" &&
+          (row.e.day_bucket ?? "").toLowerCase() !== bucket
+        ) {
           return false;
         }
-        if (!q) return true;
-        return (
-          e.name.toLowerCase().includes(q) ||
-          (e.category ?? "").toLowerCase().includes(q) ||
-          (e.address ?? "").toLowerCase().includes(q) ||
-          (e.description ?? "").toLowerCase().includes(q)
-        );
-      })
-      // Featured events float to the top of the regional list.
-      .sort((a, b) => {
-        if (a.featured !== b.featured) return a.featured ? -1 : 1;
-        return 0;
+        if (category !== "all" && row.e.category !== category) return false;
+        if (q && row.score === 0) return false;
+        return true;
       });
-  }, [events, query, bucket]);
+
+    // Sort: relevance (when querying) → featured.
+    scored.sort((a, b) => {
+      if (q && a.score !== b.score) return b.score - a.score;
+      if (a.e.featured !== b.e.featured) return a.e.featured ? -1 : 1;
+      return 0;
+    });
+
+    return scored.map(({ e }) => e);
+  }, [events, query, bucket, category]);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -84,6 +124,38 @@ export function EventsList({ events }: { events: EventRow[] }) {
             </button>
           ))}
         </div>
+        {/* Category quick-filter chips — Nightlife / Music / etc. Render
+            only when ≥2 categories are present so a one-category region
+            doesn't get a redundant single-chip row. */}
+        {presentCategories.length >= 2 && (
+          <div className="flex flex-wrap gap-1.5 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => setCategory("all")}
+              className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                category === "all"
+                  ? "bg-sunset text-white"
+                  : "bg-surface text-foreground ring-1 ring-border"
+              }`}
+            >
+              All
+            </button>
+            {presentCategories.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCategory(c)}
+                className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                  category === c
+                    ? "bg-sunset text-white"
+                    : "bg-surface text-foreground ring-1 ring-border"
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {events.length === 0 ? (

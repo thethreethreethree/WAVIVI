@@ -131,9 +131,26 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
     "exp:bucket",
     "all",
   );
+  // Category quick-filter chip (Beach / Hiking / Adventure Sports / ...).
+  // Distinct from the relevance ranker — this is a HARD filter so users
+  // who already know they want beaches can hide everything else.
+  const [category, setCategory] = useStickyState<"all" | string>(
+    "exp:category",
+    "all",
+  );
   const [userPos, setUserPos] = useState<UserPos | null>(null);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
+
+  // Distinct categories present in the data — drives the chip row.
+  const presentCategories = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of experiences) {
+      const c = e.category?.trim();
+      if (c) set.add(c);
+    }
+    return Array.from(set).sort();
+  }, [experiences]);
 
   function findNearMe() {
     if (!navigator.geolocation) {
@@ -177,6 +194,7 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
       }))
       .filter((row) => {
         if (bucket !== "all" && bucketOf(row.e) !== bucket) return false;
+        if (category !== "all" && row.e.category !== category) return false;
         const rating = row.e.rating ?? row.e.backpack_rating;
         if (rating < minRating) return false;
         // When there's a query, drop rows the relevance scorer couldn't
@@ -201,10 +219,12 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
     });
 
     return scored.map(({ e, km }) => ({ e, km }));
-  }, [experiences, query, bucket, minRating, userPos]);
+  }, [experiences, query, bucket, category, minRating, userPos]);
 
   const activeFilterCount =
-    (minRating > 0 ? 1 : 0) + (bucket !== "all" ? 1 : 0);
+    (minRating > 0 ? 1 : 0) +
+    (bucket !== "all" ? 1 : 0) +
+    (category !== "all" ? 1 : 0);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -271,6 +291,40 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
           <p className="text-[11px] font-semibold text-heat">{locError}</p>
         )}
 
+        {/* Category quick-filter chips — always visible above the rest of
+            the filters so users can one-tap to "Beach", "Hiking", etc.
+            without opening the filter sheet. Skip when only one category
+            is present (the chip row would be redundant). */}
+        {presentCategories.length >= 2 && (
+          <div className="-mx-1 flex flex-nowrap gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <button
+              type="button"
+              onClick={() => setCategory("all")}
+              className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                category === "all"
+                  ? "bg-sunset text-white"
+                  : "bg-surface text-foreground ring-1 ring-border"
+              }`}
+            >
+              All
+            </button>
+            {presentCategories.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCategory(c)}
+                className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                  category === c
+                    ? "bg-sunset text-white"
+                    : "bg-surface text-foreground ring-1 ring-border"
+                }`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        )}
+
         {filtersOpen && (
           <div className="wc-frame mt-1 flex flex-col gap-3 rounded-2xl p-3 text-xs">
             <div>
@@ -329,6 +383,7 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
                 onClick={() => {
                   setMinRating(0);
                   setBucket("all");
+                  setCategory("all");
                 }}
                 className="self-start text-[11px] font-semibold text-muted underline"
               >

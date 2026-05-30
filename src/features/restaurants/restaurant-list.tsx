@@ -53,6 +53,26 @@ function cuisineIcon(c: string | null | undefined): string {
 
 type UserPos = { lat: number; lng: number };
 
+/**
+ * Relevance score for the restaurants search. Cuisine is the highest
+ * signal — "italian" should surface actual Italian restaurants above a
+ * Thai place that mentions Italian wine in its description.
+ *
+ *   cuisine        → +100   the badge IS the topic
+ *   name           → +20    "Italian Bistro", "Joe's Pizza"
+ *   description    → +5     incidental mentions still rank
+ *   address        → +5     occasionally street/area name matches
+ */
+function restaurantRelevance(r: RestaurantRow, qLower: string): number {
+  if (!qLower) return 0;
+  let score = 0;
+  if ((r.cuisine ?? "").toLowerCase().includes(qLower)) score += 100;
+  if (r.name.toLowerCase().includes(qLower)) score += 20;
+  if ((r.description ?? "").toLowerCase().includes(qLower)) score += 5;
+  if ((r.address ?? "").toLowerCase().includes(qLower)) score += 5;
+  return score;
+}
+
 /** Real-data Where to Eat list — mirrors the stays/experiences layout. */
 export function RestaurantList({
   restaurants,
@@ -101,38 +121,31 @@ export function RestaurantList({
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = restaurants.filter((r) => {
-      if (cuisine !== "all" && r.cuisine !== cuisine) return false;
-      const rating = r.rating ?? r.backpack_rating;
-      if (rating < minRating) return false;
-      if (!q) return true;
-      return (
-        r.name.toLowerCase().includes(q) ||
-        (r.cuisine ?? "").toLowerCase().includes(q) ||
-        (r.address ?? "").toLowerCase().includes(q) ||
-        (r.description ?? "").toLowerCase().includes(q)
-      );
-    });
-    // Featured restaurants float to the top — admin editorial pick. Then
-    // by proximity (when we have the user's location) or original
-    // backpack_rating order.
-    if (userPos) {
-      return filtered
-        .map((r) => ({
-          r,
-          km: haversineKm(userPos, { lat: r.latitude, lng: r.longitude }),
-        }))
-        .sort((a, b) => {
-          if (a.r.featured !== b.r.featured) return a.r.featured ? -1 : 1;
-          return a.km - b.km;
-        });
-    }
-    return filtered
-      .map((r) => ({ r, km: null as number | null }))
-      .sort((a, b) => {
-        if (a.r.featured !== b.r.featured) return a.r.featured ? -1 : 1;
-        return 0;
+    const scored = restaurants
+      .map((r) => ({
+        r,
+        score: restaurantRelevance(r, q),
+        km: userPos
+          ? haversineKm(userPos, { lat: r.latitude, lng: r.longitude })
+          : null,
+      }))
+      .filter((row) => {
+        if (cuisine !== "all" && row.r.cuisine !== cuisine) return false;
+        const rating = row.r.rating ?? row.r.backpack_rating;
+        if (rating < minRating) return false;
+        if (q && row.score === 0) return false;
+        return true;
       });
+
+    // Sort: relevance → featured → proximity → DB rating order.
+    scored.sort((a, b) => {
+      if (q && a.score !== b.score) return b.score - a.score;
+      if (a.r.featured !== b.r.featured) return a.r.featured ? -1 : 1;
+      if (a.km != null && b.km != null) return a.km - b.km;
+      return 0;
+    });
+
+    return scored.map(({ r, km }) => ({ r, km }));
   }, [restaurants, query, cuisine, minRating, userPos]);
 
   const activeFilterCount =

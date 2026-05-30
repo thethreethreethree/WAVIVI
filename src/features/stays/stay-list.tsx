@@ -40,6 +40,33 @@ const RATING_FILTERS = [
 type CategoryFilter = "all" | StayType;
 type UserPos = { lat: number; lng: number };
 
+/**
+ * Relevance score for the stays search. Same weighting shape as the
+ * Things-to-do list — the highest-signal field for stays is the
+ * `stay_type` (Hostel / Hotel / Resort / B&B…), so "hostel" surfaces
+ * actual hostels above a hotel that mentions "hostel" in passing.
+ *
+ *   stay_type      → +100   the badge IS the topic
+ *   name           → +20    "Beachfront Hostel", "Hostel Riviera"
+ *   description    → +5     incidental mentions still rank, just lower
+ *   address        → +5     same, sometimes the area name matches
+ */
+function stayRelevance(s: StayRow, qLower: string): number {
+  if (!qLower) return 0;
+  let score = 0;
+  const typeLabel = STAY_TYPE_LABEL[s.stay_type] ?? "";
+  if (
+    s.stay_type.toLowerCase().includes(qLower) ||
+    typeLabel.toLowerCase().includes(qLower)
+  ) {
+    score += 100;
+  }
+  if (s.name.toLowerCase().includes(qLower)) score += 20;
+  if ((s.description ?? "").toLowerCase().includes(qLower)) score += 5;
+  if ((s.address ?? "").toLowerCase().includes(qLower)) score += 5;
+  return score;
+}
+
 export type StayPicker = {
   id: string;
   username: string;
@@ -94,37 +121,36 @@ export function StayList({
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = stays.filter((s) => {
-      if (category !== "all" && s.stay_type !== category) return false;
-      const rating = s.rating ?? s.backpack_rating;
-      if (rating < minRating) return false;
-      if (!q) return true;
-      return (
-        s.name.toLowerCase().includes(q) ||
-        (s.address ?? "").toLowerCase().includes(q)
-      );
-    });
-    // Featured stays always float to the top of the regional list — admin
-    // editorial pick. Within featured + within non-featured we then sort
-    // by proximity (if we have the user's location) or leave the
-    // backpack_rating order from the server query.
-    if (userPos) {
-      return filtered
-        .map((s) => ({
-          s,
-          km: haversineKm(userPos, { lat: s.latitude, lng: s.longitude }),
-        }))
-        .sort((a, b) => {
-          if (a.s.featured !== b.s.featured) return a.s.featured ? -1 : 1;
-          return a.km - b.km;
-        });
-    }
-    return filtered
-      .map((s) => ({ s, km: null as number | null }))
-      .sort((a, b) => {
-        if (a.s.featured !== b.s.featured) return a.s.featured ? -1 : 1;
-        return 0;
+    const scored = stays
+      .map((s) => ({
+        s,
+        score: stayRelevance(s, q),
+        km: userPos
+          ? haversineKm(userPos, { lat: s.latitude, lng: s.longitude })
+          : null,
+      }))
+      .filter((row) => {
+        if (category !== "all" && row.s.stay_type !== category) return false;
+        const rating = row.s.rating ?? row.s.backpack_rating;
+        if (rating < minRating) return false;
+        if (q && row.score === 0) return false;
+        return true;
       });
+
+    // Sort priority (matches Things-to-do for consistency):
+    //   1. Relevance score (when a query is active).
+    //   2. Featured flag — admin editorial pick stays above the fold.
+    //   3. Proximity (when the user is located).
+    // No rating tiebreaker — `stays` was already fetched ordered by
+    // backpack_rating, so equal scores naturally fall back to that.
+    scored.sort((a, b) => {
+      if (q && a.score !== b.score) return b.score - a.score;
+      if (a.s.featured !== b.s.featured) return a.s.featured ? -1 : 1;
+      if (a.km != null && b.km != null) return a.km - b.km;
+      return 0;
+    });
+
+    return scored.map(({ s, km }) => ({ s, km }));
   }, [stays, query, category, minRating, userPos]);
 
   const activeFilterCount =
