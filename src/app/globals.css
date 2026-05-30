@@ -1146,6 +1146,10 @@ h3 {
 .sketch .app-paper-bg {
   background-image: url("/backgrounds/sketch/bg.jpeg");
 }
+/* Journal paper — aged manuscript backdrop, pairs with the pen-style icon set. */
+.journal .app-paper-bg {
+  background-image: url("/backgrounds/journal/bg.jpeg");
+}
 /* Sketch theme — icon source swap. Because <img src> can't be rewritten
    via CSS, we run a tiny client effect (see ThemeImgSwap component) that
    retargets every /icons/orange/* to /icons/sketch/* whenever the .sketch
