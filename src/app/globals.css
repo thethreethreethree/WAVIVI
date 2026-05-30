@@ -64,6 +64,26 @@
   --hub-core: #1d140a;
 }
 
+/* Journal — pen on cream paper. Warm aged-paper background, deep blue-black
+   ink for body text, burgundy ink for CTAs, pencil grey for muted copy.
+   Pairs with the hand-drawn PEN STYLE icon set in /icons/journal/. */
+.journal {
+  --background: #f4ead0;
+  --surface: #fbf3dc;
+  --surface-elevated: #fff8e3;
+  --foreground: #1f2a3d;
+  --muted: #7a6a55;
+  --border: #d8c89e;
+
+  --accent-heat: #8a3a2a;
+  --accent-cool: #2c4a6e;
+  --accent-glow: #7a3a30;
+
+  --gradient-sunset: linear-gradient(135deg, #6e2a20 0%, #8a3a2a 48%, #a85040 100%);
+  --shadow-card: 0 6px 18px -10px rgba(40, 30, 20, 0.30);
+  --hub-core: #1a2230;
+}
+
 /* Orange mode — warm hand-painted watercolor sunset. Tuned to match the
    REFIND ASSET V1 icon set: terracotta primaries, honey mids, peach paper.
    The previous neon orange is gone in favor of a softer, painterly palette. */

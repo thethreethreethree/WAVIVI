@@ -67,7 +67,7 @@ const codeMono = Geist_Mono({
  *  dark colour scheme system-wide. Dark mode was removed; a dedicated
  *  dark theme will be added back as a separate build. Any pre-existing
  *  "dark" value in localStorage falls through to Light Rustic. */
-const themeScript = `(function(){try{var theme=localStorage.getItem('wavivi-theme');var c=document.documentElement.classList;if(theme==='cute')c.add('cute');else if(theme==='orange')c.add('orange');else if(theme==='sketch')c.add('sketch');}catch(e){}})();`;
+const themeScript = `(function(){try{var theme=localStorage.getItem('wavivi-theme');var c=document.documentElement.classList;if(theme==='cute')c.add('cute');else if(theme==='orange')c.add('orange');else if(theme==='sketch')c.add('sketch');else if(theme==='journal')c.add('journal');}catch(e){}})();`;
 
 /** Two responsibilities for first-paint splash behaviour:
  *
