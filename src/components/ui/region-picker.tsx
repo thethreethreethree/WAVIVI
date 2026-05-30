@@ -5,7 +5,6 @@ import { useMemo, useState, useTransition } from "react";
 
 import { setCurrentRegion } from "@/lib/regions/actions";
 import type { RegionRow } from "@/lib/regions/current";
-import { flagFor } from "@/lib/regions/flags";
 
 /** Globe button + bottom-sheet picker. Selecting a region writes the
  *  `wv-region` cookie via a Server Action and refreshes every list. */
@@ -140,7 +139,6 @@ export function RegionPicker({
               {groups.map(([country, rows]) => (
                 <section key={country} className="mt-2">
                   <h3 className="px-4 pb-1 pt-2 text-xs font-bold uppercase tracking-wider text-muted">
-                    <span className="mr-1">{flagFor(country)}</span>
                     {country}
                   </h3>
                   <ul>
@@ -156,15 +154,8 @@ export function RegionPicker({
                               active ? "bg-glow/15" : "hover:bg-surface-elevated"
                             }`}
                           >
-                            <span className="min-w-0">
-                              <span className="block text-base font-semibold text-foreground">
-                                {r.display_name}
-                              </span>
-                              {r.city && (
-                                <span className="block text-sm text-muted">
-                                  {r.city}
-                                </span>
-                              )}
+                            <span className="block min-w-0 text-base font-semibold text-foreground">
+                              {r.display_name}
                             </span>
                             {active && <span className="text-glow">✓</span>}
                           </button>
