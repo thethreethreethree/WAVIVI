@@ -270,13 +270,11 @@ function DayCard({
   const [pending, startTransition] = useTransition();
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
-  const [time, setTime] = useState<ItineraryTimeOfDay>("anytime");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   function reset() {
     setTitle("");
-    setTime("anytime");
     setNotes("");
     setError(null);
     setAdding(false);
@@ -291,7 +289,7 @@ function DayCard({
       const res = await addItineraryItem(planId, {
         dayIndex,
         title: title.trim(),
-        time,
+        time: "anytime",
         notes: notes.trim() || null,
         kind: null,
       });
@@ -388,23 +386,6 @@ function DayCard({
             placeholder="What's the plan?"
             className="wtn-input"
           />
-          <div className="flex flex-wrap gap-1.5">
-            {TIME_OPTIONS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTime(t.id)}
-                className={`wc-frame ${
-                  time === t.id
-                    ? "wc-frame-sunset text-white"
-                    : "wc-frame-orange-white text-foreground"
-                } inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold`}
-              >
-                <span aria-hidden>{t.emoji}</span>
-                {t.label}
-              </button>
-            ))}
-          </div>
           {/* Quick-jump shortcuts to this trip's saved-by-category pages.
               Tapping Stay opens /where-to-next/plans/<id>/saved/stay,
               etc. — the user can browse what they've already saved
