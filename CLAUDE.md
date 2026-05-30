@@ -85,3 +85,65 @@ Build order is tracked in `src/config/phases.ts`. All 12 phases are
 feature-complete against mock data. Remaining production work: wire up a live
 Supabase project (auth, profiles, realtime chat), then swap the rule-based
 recommendation engine for a real AI call when desired.
+
+## Debugging — probe before patch
+
+A bug is **silent** when there's no error toast, no console log, no broken
+UI text — just "loops back to login," "page is blank," "save doesn't
+stick," "icons stay on the wrong theme." Silent bugs lie. Most of the
+visible symptom is consistent with three or four different root causes,
+and patching the wrong one feels indistinguishable from progress until
+the user comes back with "same problem."
+
+**Rule:** if attempt #1 doesn't move the symptom, do NOT ship attempt
+#2 against the same mental model. Stop and build a probe first.
+
+Why this rule exists: we burned three commits on the Google-OAuth loop
+(`b4f4554`, `472828e`, `2574049`) all assuming "session cookies aren't
+persisting." The actual bug was that the OAuth callback was never
+reached — Supabase silently fell back to the project's Site URL because
+our `/auth/callback?next=...` wasn't in the **Redirect URLs** allowlist.
+A 5-minute `/auth/debug` page (commit `17887a5` → `9d06c74`) dumped the
+auth state and the answer was instant. The three patches before it
+were all the same wrong hypothesis in slightly different clothes.
+
+### The probe pattern
+
+Match the probe shape to the failure shape:
+
+| Failure | Probe |
+|---|---|
+| Auth / cookie / session bug | `/auth/debug` page that dumps `cookies()`, `supabase.auth.getUser()`, `getSession()`, and the relevant DB row |
+| Redirect chain bug | A trace cookie written at each hop carrying `{ step, ok, detail }` entries, displayed by the debug page |
+| Server-side silent failure | `console.error` with a stable prefix the user can pull from Vercel logs |
+| Client-side state bug | A `?debug=1` toggle that overlays the relevant React state as JSON in a fixed corner |
+| "It worked, now it doesn't" | `git bisect` is the probe — narrow to the commit before guessing |
+
+### What to ask the user
+
+The cheapest probe is a single question. Before any code change on a
+silent bug, ask one of:
+
+- "Screenshot the URL bar when the symptom happens."
+- "Open devtools → Application → Cookies and screenshot the list."
+- "What's the full error / network response if you open devtools?"
+- "Does it happen on a hard refresh / clean profile / incognito?"
+
+One turn, often resolves the case.
+
+### The trap to avoid
+
+Pattern-matching to the **loudest community bug** (the famous Supabase-SSR
+cookie bug, the React strict-mode double-render, the Next.js hydration
+mismatch). Those are loud because they're common, not because they're
+*this* bug. Read the evidence in front of you first. If the user's
+symptom doesn't include the famous bug's signature, it isn't the famous
+bug.
+
+### Cleanup
+
+Probes are scaffolding. After the real fix lands, delete the debug
+page, remove the trace cookie writes, and keep only the production
+guardrails (e.g. the `?code=` middleware recovery from `a4cd934` — it's
+permanent because it costs nothing and prevents a regression). Don't
+let the probe rot into the codebase.
