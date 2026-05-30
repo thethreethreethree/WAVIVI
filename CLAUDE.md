@@ -147,3 +147,49 @@ page, remove the trace cookie writes, and keep only the production
 guardrails (e.g. the `?code=` middleware recovery from `a4cd934` — it's
 permanent because it costs nothing and prevents a regression). Don't
 let the probe rot into the codebase.
+
+### The three-attempt rule — write a postmortem
+
+When a single bug takes **more than three attempts** to resolve, the
+agent (or me) **MUST** write a postmortem immediately after the real
+fix lands — no asking, no waiting. The cost of NOT writing it is that
+the same wrong mental model trips the next agent / future-me on a
+similar bug six months later.
+
+Trigger criteria — write the postmortem if **any** of these hold:
+- ≥4 commits chased the bug before the symptom moved
+- ≥2 of those commits patched the same hypothesis in different clothes
+- The user said "same problem" two or more times in a row
+- The root cause was outside the suspected subsystem (e.g. the symptom
+  looked like an auth bug but the cause was a dashboard config)
+- A diagnostic probe (debug page, trace cookie, devtools session) was
+  what finally revealed the cause
+
+Format and location:
+
+1. Short bullet entry in the **Postmortems log** below — one entry per
+   incident, ≤6 lines, with a link to the full writeup.
+2. Full writeup at `docs/postmortems/YYYY-MM-DD-slug.md` following the
+   template in [docs/postmortems/_TEMPLATE.md](docs/postmortems/_TEMPLATE.md).
+3. If the incident exposed a missing project rule, also update the
+   relevant section of this file (CLAUDE.md) so the rule applies
+   project-wide, not just to one agent.
+
+The postmortem doesn't blame anyone. It captures: what we saw, what
+we thought, why that was wrong, what was actually true, how we found
+out, what we changed, and what rule keeps the same trap from biting
+next time. Don't write a novel — short, structured, scannable.
+
+## Postmortems log
+
+Entries are reverse-chronological. Each links to a full writeup.
+
+- **2026-05-30 — Google OAuth infinite sign-in loop**
+  [`docs/postmortems/2026-05-30-google-oauth-loop.md`](docs/postmortems/2026-05-30-google-oauth-loop.md).
+  Symptom: every protected page bounced signed-in users back to /login.
+  Wrong hypothesis (3 patches): "session cookies aren't persisting after auth succeeds."
+  Real cause: Supabase Redirect URLs allowlist was missing `/auth/callback`,
+  so Supabase silently fell back to Site URL and our callback was never
+  invoked. Found by a `/auth/debug` page + trace cookie. Lesson encoded:
+  the "probe before patch" rule above + the `?code=` recovery in
+  middleware (`a4cd934`) as a permanent guardrail.
