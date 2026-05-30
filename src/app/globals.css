@@ -64,24 +64,28 @@
   --hub-core: #1d140a;
 }
 
-/* Journal — pen on cream paper. Warm aged-paper background, deep blue-black
-   ink for body text, burgundy ink for CTAs, pencil grey for muted copy.
-   Pairs with the hand-drawn PEN STYLE icon set in /icons/journal/. */
+/* Journal — pen on aged manuscript paper.
+   Distinct from Light Rustic's warm peach: this is a COOLER off-white
+   journal page (less yellow, less saturated), with deep blue-black ink
+   for text and a strong burgundy for CTAs/highlights. The accents lean
+   away from terracotta toward fountain-pen burgundy so the page reads
+   "library" rather than "sunset". Pairs with the hand-drawn PEN STYLE
+   icon set in /icons/journal/. */
 .journal {
-  --background: #f4ead0;
-  --surface: #fbf3dc;
-  --surface-elevated: #fff8e3;
-  --foreground: #1f2a3d;
-  --muted: #7a6a55;
-  --border: #d8c89e;
+  --background: #ece3c4;
+  --surface: #f2eacc;
+  --surface-elevated: #f9f3d8;
+  --foreground: #1a2436;
+  --muted: #7a6e54;
+  --border: #c8bb9c;
 
-  --accent-heat: #8a3a2a;
-  --accent-cool: #2c4a6e;
-  --accent-glow: #7a3a30;
+  --accent-heat: #6b2520;
+  --accent-cool: #1f3b5e;
+  --accent-glow: #5e2a24;
 
-  --gradient-sunset: linear-gradient(135deg, #6e2a20 0%, #8a3a2a 48%, #a85040 100%);
-  --shadow-card: 0 6px 18px -10px rgba(40, 30, 20, 0.30);
-  --hub-core: #1a2230;
+  --gradient-sunset: linear-gradient(135deg, #4a1c14 0%, #6e2a20 48%, #8e3a2c 100%);
+  --shadow-card: 0 6px 18px -10px rgba(30, 24, 18, 0.4);
+  --hub-core: #14202e;
 }
 
 /* Orange mode — warm hand-painted watercolor sunset. Tuned to match the
