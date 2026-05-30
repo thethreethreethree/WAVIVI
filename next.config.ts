@@ -6,7 +6,14 @@ const nextConfig: NextConfig = {
   // Fail the production build on type errors instead of shipping them.
   typescript: { ignoreBuildErrors: false },
   // Placeholder photography hosts (swapped for Supabase Storage in production).
+  //
+  // `unoptimized` is flipped on in dev so the VS Code embedded "Simple
+  // Browser" can render <Image> components — the dev `/_next/image`
+  // optimizer endpoint hangs there because Simple Browser doesn't speak
+  // the modern accept/headers Next expects. Production on Vercel still
+  // gets full image optimization (resize, AVIF/WebP, caching).
   images: {
+    unoptimized: process.env.NODE_ENV === "development",
     remotePatterns: [
       { protocol: "https", hostname: "picsum.photos" },
       { protocol: "https", hostname: "fastly.picsum.photos" },
