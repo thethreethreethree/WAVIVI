@@ -94,10 +94,10 @@ export default async function SettingsPage() {
           <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted">
             Appearance
           </h2>
-          <div className="wc-frame flex items-center justify-center rounded-2xl px-4 py-3.5">
-            {/* "Night traveler mode" label dropped — the APPEARANCE
-                section header already names the section, and the three
-                chip labels make the row's purpose self-evident. */}
+          {/* No outer wc-frame wash — the toggle ships its own pill
+              background, the extra frame was visual noise. Centered
+              under the APPEARANCE header. */}
+          <div className="flex items-center justify-center">
             <ThemeToggle />
           </div>
         </section>
