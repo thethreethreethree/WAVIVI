@@ -68,7 +68,11 @@ export function ThemeToggle() {
     <div
       role="radiogroup"
       aria-label="Theme"
-      className="inline-flex rounded-full bg-border/70 p-0.5"
+      // No outer cream wash — the active chip carries the only
+      // background (bg-surface), inactive chips sit transparently on
+      // the page. Reads cleaner than the previous segmented-control
+      // look that doubled up tints.
+      className="inline-flex gap-1"
     >
       {OPTIONS.map((o) => (
         <button
@@ -77,7 +81,7 @@ export function ThemeToggle() {
           role="radio"
           aria-checked={theme === o.value}
           onClick={() => choose(o.value)}
-          className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+          className={`flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-bold transition-colors ${
             theme === o.value
               ? "bg-surface text-foreground shadow-sm"
               : "text-muted"
@@ -86,8 +90,8 @@ export function ThemeToggle() {
           {/* Plain <img> — see radial-hub/top-bar; avoids the dev
               /_next/image proxy. The icon files in /icons/theme-toggle/
               are already optimised (256px max-edge palette PNG).
-              Sized at h-6 w-6 so the painted chip art reads at a glance
-              without the user having to lean in. */}
+              h-8 w-8 so the painted chip art carries the row instead
+              of the text label doing all the work. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={o.icon}
@@ -95,7 +99,7 @@ export function ThemeToggle() {
             aria-hidden
             loading="eager"
             decoding="async"
-            className="h-6 w-6 shrink-0 object-contain"
+            className="h-8 w-8 shrink-0 object-contain"
           />
           {o.label}
         </button>
