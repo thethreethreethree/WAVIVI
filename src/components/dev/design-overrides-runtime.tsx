@@ -91,27 +91,50 @@ function apply() {
 
 export function DesignOverridesRuntime() {
   useEffect(() => {
-    requestAnimationFrame(apply);
-    const obs = new MutationObserver(() => apply());
+    let obs: MutationObserver | null = null;
+    let scheduled = false;
+
+    // Wrap apply so the observer never sees its own mutations. Without
+    // this guard, apply() mutates el.innerText / el.style, the observer
+    // fires on those mutations, apply() runs again, mutates again, and
+    // the page locks up in an infinite re-apply loop the moment any
+    // override touches text content. requestAnimationFrame also
+    // debounces bursts of mutations into a single re-apply per frame.
+    const scheduleApply = () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        try {
+          obs?.disconnect();
+          apply();
+        } finally {
+          obs?.observe(document.body, { childList: true, subtree: true });
+        }
+      });
+    };
+
+    obs = new MutationObserver(() => scheduleApply());
     obs.observe(document.body, { childList: true, subtree: true });
+    scheduleApply();
 
     // In dev, listen for the editor's localStorage writes so we re-apply
     // immediately when the user toggles a control — no refresh needed.
     if (process.env.NODE_ENV !== "production") {
       const onStorage = (e: StorageEvent) => {
-        if (e.key === LOCAL_STORAGE_KEY) requestAnimationFrame(apply);
+        if (e.key === LOCAL_STORAGE_KEY) scheduleApply();
       };
-      const onCustom = () => requestAnimationFrame(apply);
+      const onCustom = () => scheduleApply();
       window.addEventListener("storage", onStorage);
       window.addEventListener("wavivi:overrides-changed", onCustom);
       return () => {
-        obs.disconnect();
+        obs?.disconnect();
         window.removeEventListener("storage", onStorage);
         window.removeEventListener("wavivi:overrides-changed", onCustom);
       };
     }
 
-    return () => obs.disconnect();
+    return () => obs?.disconnect();
   }, []);
   return null;
 }
