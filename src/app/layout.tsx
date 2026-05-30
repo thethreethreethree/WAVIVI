@@ -99,15 +99,18 @@ const themeScript = `
       try { localStorage.setItem('wavivi-theme', current); } catch (e) {}
     }
 
-    var folder = current === 'sketch'
-      ? '/icons/sketch/'
-      : current === 'journal'
-        ? '/icons/journal/'
-        : null;
-    if (!folder) return;
-
     var encOrange = '%2Ficons%2Forange%2F';
-    var encFolder = encodeURIComponent(folder);
+
+    // Read current folder on EVERY rewrite — the user can flip themes
+    // without a page reload, and the prototype patch is installed once
+    // for the lifetime of the page. Closing over a captured 'folder'
+    // would mean every theme after the first stays stuck on the first.
+    function currentFolder() {
+      var cl = document.documentElement.classList;
+      if (cl.contains('sketch')) return '/icons/sketch/';
+      if (cl.contains('journal')) return '/icons/journal/';
+      return null;
+    }
 
     // When a setter call comes from the error-fallback path, skip the
     // rewrite — otherwise we'd loop (themed 404 -> restore orange ->
@@ -119,6 +122,9 @@ const themeScript = `
       if (v.indexOf('/icons/orange/') === -1 && v.indexOf(encOrange) === -1) {
         return v;
       }
+      var folder = currentFolder();
+      if (!folder) return v;
+      var encFolder = encodeURIComponent(folder);
       return v
         .split('/icons/orange/').join(folder)
         .split(encOrange).join(encFolder);
