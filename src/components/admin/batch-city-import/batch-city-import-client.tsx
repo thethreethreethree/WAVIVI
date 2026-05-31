@@ -28,6 +28,31 @@ export function BatchCityImportClient({
   const [csvText, setCsvText] = useState("");
   const [result, setResult] = useState<BatchCityImportResult | null>(null);
   const [pending, startTransition] = useTransition();
+  const [dragOver, setDragOver] = useState(false);
+  const [dropError, setDropError] = useState<string | null>(null);
+
+  /** Read one File as text and stash it as the CSV. Shared by the file
+   *  picker and the drop handler. */
+  function ingestFile(file: File): void {
+    setDropError(null);
+    // Be lenient on the type: macOS/Windows often report .csv with no MIME
+    // type, or as application/vnd.ms-excel. We accept anything that ends
+    // in .csv and silently fall through otherwise.
+    const looksLikeCsv =
+      file.name.toLowerCase().endsWith(".csv") ||
+      file.type === "text/csv" ||
+      file.type === "application/csv" ||
+      file.type === "" ||
+      file.type === "application/vnd.ms-excel";
+    if (!looksLikeCsv) {
+      setDropError(`Not a CSV file: ${file.name || "(unnamed)"}`);
+      return;
+    }
+    file
+      .text()
+      .then((t) => setCsvText(t))
+      .catch(() => setDropError("Could not read the file."));
+  }
 
   const split = useMemo(() => {
     if (!csvText.trim()) return null;
@@ -44,13 +69,34 @@ export function BatchCityImportClient({
 
   function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
-    if (!f) return;
-    f.text()
-      .then((t) => setCsvText(t))
-      .catch(() => {
-        /* file read errors leave the textarea unchanged */
-      });
+    if (f) ingestFile(f);
     e.target.value = "";
+  }
+
+  function onDragOver(e: React.DragEvent) {
+    // Required: without preventDefault on dragover the browser won't fire
+    // a drop event at all.
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    if (!dragOver) setDragOver(true);
+  }
+
+  function onDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only flip back to idle when the pointer leaves the entire drop zone.
+    // currentTarget is the zone itself; relatedTarget is what we entered.
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    setDragOver(false);
+  }
+
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    const f = e.dataTransfer?.files?.[0];
+    if (f) ingestFile(f);
   }
 
   function onApply() {
@@ -126,7 +172,17 @@ export function BatchCityImportClient({
         </select>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div
+        onDragEnter={onDragOver}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        className={`flex flex-col gap-2 rounded-2xl border-2 border-dashed p-3 transition-colors ${
+          dragOver
+            ? "border-glow bg-glow/10"
+            : "border-border bg-transparent"
+        }`}
+      >
         <div className="flex items-center gap-2">
           <input
             ref={fileInputRef}
@@ -151,8 +207,17 @@ export function BatchCityImportClient({
               Clear
             </button>
           )}
-          <span className="text-xs text-muted">or paste below ↓</span>
+          <span className="text-xs text-muted">
+            {dragOver
+              ? "Drop the .csv to load it"
+              : "drop a .csv anywhere here, or paste below ↓"}
+          </span>
         </div>
+        {dropError && (
+          <p className="rounded-xl bg-heat/10 px-3 py-2 text-xs font-semibold text-heat">
+            {dropError}
+          </p>
+        )}
         <textarea
           value={csvText}
           onChange={(e) => setCsvText(e.target.value)}
