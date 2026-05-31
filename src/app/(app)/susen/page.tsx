@@ -35,6 +35,10 @@ export default function SusenPage() {
   const [actionTurnKey, setActionTurnKey] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [sharingLocation, setSharingLocation] = useState(false);
+  /** Becomes true once history has loaded AND we've scrolled to the
+   *  bottom. The messages container stays invisible until then so the
+   *  user never sees the "first paint at the top, then snap down" flash. */
+  const [hydrated, setHydrated] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const turnRefs = useRef(new Map<string, HTMLDivElement>());
@@ -49,10 +53,21 @@ export default function SusenPage() {
     let cancelled = false;
     loadSusenHistoryAction()
       .then((history) => {
-        if (cancelled || history.length === 0) return;
-        setTurns([{ role: "susen", text: SUSEN_WELCOME }, ...history]);
+        if (cancelled) return;
+        if (history.length > 0) {
+          setTurns([{ role: "susen", text: SUSEN_WELCOME }, ...history]);
+        }
+        // Wait two frames: one for React to paint the new turns, one for
+        // the scroll-to-end effect to run, THEN reveal the container.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (!cancelled) setHydrated(true);
+          });
+        });
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setHydrated(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -204,7 +219,11 @@ export default function SusenPage() {
         </span>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
+      <div
+        className={`flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 py-4 ${
+          hydrated ? "" : "invisible"
+        }`}
+      >
         {turns.map((turn, i) => {
           const turnKey = turn.id ?? `idx:${i}`;
           return (
