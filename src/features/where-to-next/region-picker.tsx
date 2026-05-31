@@ -315,7 +315,10 @@ export function CityField({ value, onChange, country }: CityFieldProps) {
 
   let hint: string | undefined;
   if (!country.trim()) {
-    hint = "Pick a country above first.";
+    // No hint here — the disabled visual state already signals that
+    // the field is gated on the Country above. A redundant text line
+    // just adds noise.
+    hint = undefined;
   } else if (countryInSystem && cities.length === 0) {
     hint = `No destinations indexed in ${country.trim()} yet — type any city freely.`;
   } else if (countryInSystem) {
