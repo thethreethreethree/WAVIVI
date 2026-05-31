@@ -23,6 +23,7 @@ export default function AdminSusenPage() {
         <SusenAvatar className="h-11 w-11" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold">S.U.S.E.N</p>
+          <p className="text-[10px] text-muted">Smart Universal Experience Navigator</p>
           <p className="truncate text-xs text-muted">{susenStats.model}</p>
         </div>
         <span className="shrink-0 rounded-full bg-cool/15 px-2.5 py-1 text-[10px] font-bold text-cool">
