@@ -744,11 +744,11 @@ function MessageBubble({
       }
     : null;
   return (
-    <div className="relative">
+    <div className="relative w-fit max-w-[78%]">
       <div
         ref={registerRef}
         {...longPress}
-        className={`wc-frame max-w-[78%] px-3.5 py-2 text-sm leading-snug shadow-card transition-shadow ${
+        className={`wc-frame px-3.5 py-2 text-sm leading-snug shadow-card transition-shadow ${
           own
             ? `wc-frame-sunset rounded-2xl text-white ${sameRun ? "rounded-tr-2xl" : "rounded-tr-sm"}`
             : `rounded-2xl text-foreground ${sameRun ? "rounded-tl-2xl" : "rounded-tl-sm"}`

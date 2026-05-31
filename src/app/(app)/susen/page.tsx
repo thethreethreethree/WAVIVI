@@ -356,11 +356,11 @@ function SusenBubble({
       className={`flex items-end gap-2 ${own ? "flex-row-reverse" : ""}`}
     >
       {!own && <SusenAvatar className="h-7 w-7" />}
-      <div className="relative">
+      <div className="relative w-fit max-w-[82%]">
         <div
           ref={registerRef}
           {...longPress}
-          className={`wc-frame max-w-[82%] px-4 py-3 text-base leading-snug transition-shadow ${
+          className={`wc-frame px-4 py-3 text-base leading-snug transition-shadow ${
             own
               ? "wc-frame-sunset rounded-2xl rounded-br-sm text-white"
               : "rounded-2xl rounded-bl-sm bg-white/85 text-foreground"
