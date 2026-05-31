@@ -467,7 +467,10 @@ function EditorPanel({
         <span className="font-bold">
           &lt;{tag}&gt;{" "}
           <span className="font-mono text-xs text-slate-500">
-            {(element.className || "").slice(0, 30)}
+            {/* element.className is a SVGAnimatedString on SVG nodes,
+                not a plain string — calling .slice on it throws.
+                element.classList.value is always a string. */}
+            {element.classList.value.slice(0, 30)}
           </span>
         </span>
         <button
