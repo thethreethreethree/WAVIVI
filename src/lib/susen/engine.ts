@@ -74,57 +74,18 @@ export interface SusenEngine {
   respond(input: string, history: SusenTurn[]): Promise<SusenReply>;
 }
 
-interface Rule {
-  match: RegExp;
-  reply: string;
-}
-
-const RULES: Rule[] = [
-  {
-    match: /\b(eat|food|restaurant|hungry|dinner|lunch)\b/i,
-    reply:
-      "For tonight I'd point you at Sakura Sushi Bar — buzzing and traveler-heavy right now. If you want it social, go around 8; a few people from the Foodies chat are heading there.",
-  },
-  {
-    match: /\b(rooftop|bar|drink|nightlife|party|club)\b/i,
-    reply:
-      "Rooftop Social Night downtown is where the energy is — live DJs, backpacker crowd, great city views. 64 travelers are going. Want me to nudge your group chat?",
-  },
-  {
-    match: /\b(stay|hostel|hotel|sleep|room|dorm)\b/i,
-    reply:
-      "Backpacker's Haven is the most social bed in town tonight — high traveler density and a nightly group dinner. Sunset Hostel is calmer if you want an early one.",
-  },
-  {
-    match: /\b(vibe|busy|happening|where.*now|activity|energy)\b/i,
-    reply:
-      "🔥 Right now the energy is climbing — Khao San Road and the RAW-Gelände area are the hotspots, traveler activity is up about 30% in the last hour. Quieter? Roma Norte's cafés.",
-  },
-  {
-    match: /\b(meet|meetup|people|travelers?|friends?|connect|group)\b/i,
-    reply:
-      "There are travelers nearby who share your interests — surf, coffee, photography. Want me to suggest a group chat, or help you set a quick meetup time?",
-  },
-  {
-    match: /\b(event|tonight|today|weekend|do)\b/i,
-    reply:
-      "A few things are forming nearby — a street food crawl and a sunrise hike. The food crawl has the most momentum. Want me to summarise who's going?",
-  },
-  {
-    match: /\b(safe|safety|scam|help|alone)\b/i,
-    reply:
-      "Good instinct to check. Keep first meetups public — busy cafés, hostel common rooms, verified venues. You can block or report anyone, anytime. Want safe spots near you?",
-  },
+// No demo/canned travel content (admin directive). When the live Susen server
+// is unreachable, she says so honestly instead of serving scripted replies.
+const UNAVAILABLE = [
+  "Gah — I can't reach my live info this second. Give me a moment and try again?",
+  "My connection just hiccuped — try me again in a sec and I'll be right here.",
+  "I'm having a tiny moment reaching the live data. One more try?",
 ];
 
-const DEFAULT_REPLY =
-  "I'm here to help you find the vibe, the people, and the plan. Try asking where it's busy tonight, or tell me what you're in the mood for.";
-
-/** Rule-based Susen — deterministic, no API key required. */
+/** Offline fallback — honest "can't reach me" message, no fabricated info. */
 export const ruleSusen: SusenEngine = {
   async respond(input: string): Promise<SusenReply> {
-    const rule = RULES.find((r) => r.match.test(input));
-    return { text: rule ? rule.reply : DEFAULT_REPLY };
+    return { text: UNAVAILABLE[input.length % UNAVAILABLE.length] ?? UNAVAILABLE[0]! };
   },
 };
 
