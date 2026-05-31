@@ -401,4 +401,35 @@ fidelity and tool selection in your test suite.
    rule-based fallback yet — keep it as the offline degradation
    path.
 
+---
+
+## 16. Admin conversations are development input
+
+When a Wondavu admin (e.g. `@john` / `johnsyramos@gmail.com`) talks to Susen, the
+conversation is **not just chat — it is development signal.** The admin's
+statements, instructions, and suggestions must be captured, remembered, and used
+to shape who Susen becomes.
+
+Every admin turn is:
+
+- **Stored** to the `susen_dev_notes` table (author, source, the message, and
+  Susen's reply) — in addition to her normal per-user memory in `susen_messages`.
+- **Scanned for instructions** — directives like "always…", "never…", "from now
+  on…", "stop saying…", "be more…" are flagged `is_instruction = true`.
+- **Applied as live operator guidance** — active instructions are injected into
+  her system prompt, so she follows them on the very next message, not "someday."
+- **Used to develop her character** — the admin reviews these notes and promotes
+  the good ones into her permanent persona/rules (the §2 system prompt, the §6
+  tone matrix, the §7 NEVER list). Set `applied = true` once baked in; set
+  `active = false` to retire a guidance line.
+
+In short: **regular users get conversation memory; admins get memory *plus* this
+development pipeline** that turns their words into Susen's evolving character.
+
+Mechanism: the S.U.S.E.N server (`src/susen/devnotes.ts`) handles capture,
+instruction detection, and guidance injection. Admin identity is matched by an
+allowlist (email / `@username`). Review captured notes at
+`GET /susen/dev-notes`. Relates to §8 (the rules those instructions refine) and
+§12 (telemetry).
+
 — Susen
