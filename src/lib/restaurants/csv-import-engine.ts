@@ -4,6 +4,7 @@ import {
   classifyCuisine,
   type RestaurantCsvRow,
 } from "@/lib/restaurants/csv-import";
+import { mirrorRowPhotos } from "@/lib/storage/place-photos";
 import { googleMapsUrl } from "@/lib/toolbox/normalize";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
@@ -94,6 +95,17 @@ export async function importRestaurantsCsv(
 
     const mapsUrl = googleMapsUrl(row.latitude, row.longitude);
 
+    // Mirror the Google / IG primary photo to our `stays-photos` bucket
+    // (shared place-photos store) before writing — keeps the row alive
+    // when the source CDN token expires.
+    const mirrored = await mirrorRowPhotos(
+      supabase,
+      "restaurants",
+      row.placeRef,
+      row.photoUrl,
+      [],
+    );
+
     if (best) {
       claimed.add(best.id);
       const fresh = !best.admin_edited;
@@ -120,7 +132,7 @@ export async function importRestaurantsCsv(
       if (row.facebook && (fresh || !best.facebook))
         update.facebook = row.facebook;
       if (row.email && (fresh || !best.email)) update.email = row.email;
-      if (row.photoUrl) update.photo_url = row.photoUrl;
+      if (mirrored.photoUrl) update.photo_url = mirrored.photoUrl;
       if (row.amenities.length > 0) update.amenities = row.amenities;
       if (row.rating != null && fresh) {
         update.backpack_rating = snapHalf(row.rating);
@@ -150,7 +162,7 @@ export async function importRestaurantsCsv(
         facebook: row.facebook,
         email: row.email,
         price_range: row.priceRange,
-        photo_url: row.photoUrl,
+        photo_url: mirrored.photoUrl,
         amenities: row.amenities,
         rating: row.rating,
         review_count: row.reviewCount,

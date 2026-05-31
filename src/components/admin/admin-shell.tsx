@@ -17,6 +17,7 @@ const SECTIONS = [
   { href: "/admin/bulk-import", label: "Bulk import" },
   { href: "/admin/partner-import", label: "Partner import" },
   { href: "/admin/batch-city-import", label: "Batch city import" },
+  { href: "/admin/photo-mirror", label: "Photo mirror" },
 ];
 
 /** Chrome for the Wondavu Admin app — dark header + section nav. */

@@ -5,6 +5,7 @@ import {
   classifyCategory,
   type ExperienceCsvRow,
 } from "@/lib/experiences/csv-import";
+import { mirrorRowPhotos } from "@/lib/storage/place-photos";
 import { googleMapsUrl } from "@/lib/toolbox/normalize";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
@@ -126,6 +127,17 @@ export async function importExperiencesCsv(
 
     const mapsUrl = googleMapsUrl(row.latitude, row.longitude);
 
+    // Mirror the Google primary photo to our `stays-photos` bucket
+    // (shared place-photos store) before writing — keeps the row alive
+    // when the source CDN URL rotates / 403s.
+    const mirrored = await mirrorRowPhotos(
+      supabase,
+      "experiences",
+      row.placeRef,
+      row.photoUrl,
+      [],
+    );
+
     if (best) {
       // --- Update an existing experience ----------------------------------
       claimed.add(best.id);
@@ -158,7 +170,7 @@ export async function importExperiencesCsv(
       if (row.facebook && (fresh || !best.facebook))
         update.facebook = row.facebook;
       if (row.email && (fresh || !best.email)) update.email = row.email;
-      if (row.photoUrl) update.photo_url = row.photoUrl;
+      if (mirrored.photoUrl) update.photo_url = mirrored.photoUrl;
       if (row.amenities.length > 0) update.amenities = row.amenities;
       if (row.rating != null && fresh) {
         update.backpack_rating = snapHalf(row.rating);
@@ -190,7 +202,7 @@ export async function importExperiencesCsv(
         instagram: row.instagram,
         facebook: row.facebook,
         email: row.email,
-        photo_url: row.photoUrl,
+        photo_url: mirrored.photoUrl,
         amenities: row.amenities,
         rating: row.rating,
         review_count: row.reviewCount,

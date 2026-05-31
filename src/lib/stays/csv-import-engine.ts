@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { StayCsvRow } from "@/lib/stays/csv-import";
+import { mirrorRowPhotos } from "@/lib/storage/place-photos";
 import { googleMapsUrl } from "@/lib/toolbox/normalize";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
@@ -115,6 +116,20 @@ export async function importStaysCsv(
 
     const mapsUrl = googleMapsUrl(row.latitude, row.longitude);
 
+    // Mirror IG / Google CDN photos into our `stays-photos` bucket and
+    // swap the row's URLs for the public Supabase Storage ones BEFORE
+    // the upsert — so the row lands in the DB with permanent URLs and
+    // we never have to chase expired tokens. Per-row failures fall back
+    // to the original URL (the row still works in the short term, the
+    // backfill admin page can retry later).
+    const mirrored = await mirrorRowPhotos(
+      supabase,
+      "stays",
+      row.placeRef,
+      row.photoUrl,
+      row.photoUrls,
+    );
+
     if (best) {
       // --- Update an existing stay -----------------------------------------
       claimed.add(best.id);
@@ -142,10 +157,10 @@ export async function importStaysCsv(
         update.facebook = row.facebook;
       if (row.email && (fresh || !best.email)) update.email = row.email;
       // CSV photos always win — admins are usually re-uploading with art.
-      if (row.photoUrl) update.photo_url = row.photoUrl;
+      if (mirrored.photoUrl) update.photo_url = mirrored.photoUrl;
       // Replace the IG gallery whenever the CSV supplies one; it's the only
       // source of truth for the swipeable hero photos.
-      if (row.photoUrls.length > 0) update.photo_urls = row.photoUrls;
+      if (mirrored.photoUrls.length > 0) update.photo_urls = mirrored.photoUrls;
       // CSV amenities replace the stored list when present.
       if (row.amenities.length > 0) update.amenities = row.amenities;
       // Re-snap backpack rating from Google rating — unless hand-edited.
@@ -177,8 +192,8 @@ export async function importStaysCsv(
         instagram: row.instagram,
         facebook: row.facebook,
         email: row.email,
-        photo_url: row.photoUrl,
-        photo_urls: row.photoUrls,
+        photo_url: mirrored.photoUrl,
+        photo_urls: mirrored.photoUrls,
         amenities: row.amenities,
         rating: row.rating,
         review_count: row.reviewCount,
