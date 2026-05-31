@@ -70,7 +70,7 @@ const SOURCE_QUERY_RULES: {
   // RESTAURANTS / EATS / NIGHTLIFE (all go in the restaurants table per
   // the existing per-region scheme).
   { match: /\bcaf[eé]s?\b|coffee shops?/i, bucket: "restaurants", inject: "Cafe" },
-  { match: /\bbars?\b|\bpubs?\b|nightlife|cocktail/i, bucket: "restaurants", inject: "Bar" },
+  { match: /\bbars?\b|\bpubs?\b|nightlife|nightclubs?|night ?clubs?|cocktail/i, bucket: "restaurants", inject: "Bar" },
   { match: /\bbakery|bakeries\b/i, bucket: "restaurants", inject: "Bakery" },
   { match: /\brestaurants?\b|where to eat|what to eat|\beats?\b|food/i, bucket: "restaurants", inject: null },
 
@@ -101,7 +101,7 @@ const INDUSTRY_RULES: { match: RegExp; bucket: RouteBucket; inject: string | nul
   { match: /camping|campground|glamping/i, bucket: "stays", inject: "Camping" },
 
   { match: /\bcaf[eé]\b|coffee shop/i, bucket: "restaurants", inject: "Cafe" },
-  { match: /\bbar\b|pub|cocktail|brewery/i, bucket: "restaurants", inject: "Bar" },
+  { match: /\bbar\b|pub|cocktail|brewery|night ?club/i, bucket: "restaurants", inject: "Bar" },
   { match: /bakery|patisserie/i, bucket: "restaurants", inject: "Bakery" },
   { match: /restaurant|eatery|bistro|diner|grill|pizzeria|ramen|sushi/i, bucket: "restaurants", inject: null },
 
@@ -170,6 +170,12 @@ export function splitCityCsv(input: string): SplitResult {
   }
   const sourceQueryIdx = headerIndex(headers, "Source Query", "SourceQuery", "Query");
   const industryIdx = headerIndex(headers, "Industry", "Type", "Category");
+  // Some upstream scrapers export the review count with a leading minus
+  // (e.g. "-564") and thousands-comma ("-1,074"). The stays/restaurants/
+  // experiences engines run that through `Math.max(0, num)` which zeroes
+  // every row. Normalise the cell here so the engines see a clean positive
+  // integer without touching the canonical insert/dedup paths.
+  const reviewsIdx = headerIndex(headers, "Reviews", "Review Count", "ReviewCount");
 
   // The downstream importers read different per-row classification
   // columns. Ensure each header exists in its bucket's emitted CSV so
@@ -212,6 +218,17 @@ export function splitCityCsv(input: string): SplitResult {
     // Pad to the widest header so injected-column indexes are valid.
     const cells = [...raw];
     while (cells.length < headerCells.length) cells.push("");
+
+    if (reviewsIdx >= 0) {
+      const cur = (cells[reviewsIdx] ?? "").trim();
+      if (cur) {
+        // Strip a single leading minus + any thousands commas. Leave anything
+        // else (e.g. "1,234", "0", "n/a") untouched so non-conforming cells
+        // still surface as parse warnings downstream.
+        const normalised = cur.replace(/^-/, "").replace(/,/g, "");
+        if (/^\d+$/.test(normalised)) cells[reviewsIdx] = normalised;
+      }
+    }
 
     const title = (cells[titleIdx] ?? "").trim();
     const sourceQuery = sourceQueryIdx >= 0 ? (cells[sourceQueryIdx] ?? "").trim() : "";
