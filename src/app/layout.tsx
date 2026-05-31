@@ -104,6 +104,13 @@ export const metadata: Metadata = {
   description: siteConfig.description,
   applicationName: siteConfig.name,
   manifest: "/manifest.webmanifest",
+  icons: {
+    // public/apple-icon.png is the iOS home-screen icon. Without an
+    // explicit <link rel="apple-touch-icon">, iOS Safari falls back to
+    // a screenshot of the page instead of the branded icon when a user
+    // saves the PWA to their home screen.
+    apple: "/apple-icon.png",
+  },
   keywords: [
     "travel",
     "social map",
