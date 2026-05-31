@@ -315,7 +315,6 @@ export function CityField({ value, onChange, country }: CityFieldProps) {
       placeholder="City"
       disabled={!country.trim()}
       className="mt-2"
-      inputClassName="wtn-input--soft"
     />
   );
 }
