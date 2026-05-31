@@ -8,6 +8,10 @@ import {
   submitTravelPlan,
   updateTravelPlan,
 } from "@/features/where-to-next/actions";
+import {
+  CityField,
+  CountryField,
+} from "@/features/where-to-next/region-picker";
 import type {
   TravelPlanBudget,
   TravelPlanTravelingWith,
@@ -293,19 +297,21 @@ export function Questionnaire({
             title="Where are we headed?"
             hint="Country first, city if you've got one."
           >
-            <input
-              autoFocus
+            <CountryField
               value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              placeholder="Country"
-              className="wtn-input"
+              onChange={(v) => {
+                setCountry(v);
+                // When the country changes, drop any previously-typed
+                // city — they're tied together by data, and keeping a
+                // stale city while switching countries gives the wrong
+                // coverage badge state.
+                if (v.trim().toLowerCase() !== country.trim().toLowerCase()) {
+                  setCity("");
+                }
+              }}
+              autoFocus
             />
-            <input
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="City (optional)"
-              className="wtn-input mt-2"
-            />
+            <CityField value={city} onChange={setCity} country={country} />
           </Step>
         )}
 
