@@ -24,13 +24,26 @@ export interface ChatMessage {
   group_id: string;
   user_id: string;
   author_name: string;
-  body: string;
+  /** Text body. Null when the message is an attachment-only bubble. */
+  body: string | null;
   created_at: string;
   /** WhatsApp-style quote-reply target (denormalised so realtime payloads
    *  render without a join). Null when this isn't a reply. */
   reply_to_id: string | null;
   reply_to_snippet: string | null;
   reply_to_author_name: string | null;
+  /** Image attachment (one per message). Width/height drive the bubble
+   *  aspect ratio so the message slot doesn't jump when the image loads. */
+  attachment_kind: "image" | null;
+  attachment_url: string | null;
+  attachment_width: number | null;
+  attachment_height: number | null;
+  /** Location pin — WGS84 lat/lng. accuracy_m is the optional radius
+   *  reported by the device. label is the optional human-readable place. */
+  location_lat: number | null;
+  location_lng: number | null;
+  location_accuracy_m: number | null;
+  location_label: string | null;
 }
 
 /** Look up a chat group by its stable id (matches the mock travel-group id). */

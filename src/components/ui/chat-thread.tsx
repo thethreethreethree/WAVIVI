@@ -7,6 +7,10 @@ import { useEffect, useRef, useState, useTransition } from "react";
 
 import { BackButton } from "@/components/ui/back-button";
 import {
+  MessageImage,
+  MessageLocation,
+} from "@/components/ui/message-attachments";
+import {
   QuotedReply,
   ReplyActionSheet,
   ReplyPreview,
@@ -14,7 +18,13 @@ import {
   snippetFor,
 } from "@/components/ui/reply-bits";
 import { SusenAvatar } from "@/components/ui/susen-avatar";
-import { joinGroup, leaveGroup, sendMessage } from "@/features/chat/actions";
+import {
+  joinGroup,
+  leaveGroup,
+  sendChatImage,
+  sendChatLocation,
+  sendMessage,
+} from "@/features/chat/actions";
 import { useLongPress } from "@/hooks/use-long-press";
 import type { ChatAuthor, ChatMessage } from "@/lib/chat";
 import { createClient } from "@/lib/supabase/client";
@@ -74,6 +84,8 @@ export function ChatThread({
   const menuWrapRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef(new Map<string, HTMLDivElement>());
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [sharingLocation, setSharingLocation] = useState(false);
 
   // Close the kebab menu on outside-click and on Escape.
   useEffect(() => {
@@ -195,12 +207,114 @@ export function ChatThread({
     });
   }
 
+  function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // reset so the same file re-fires onChange next time
+    if (!file || !currentUserId) return;
+    setError(null);
+    const replyPayload = replyTarget?.id
+      ? {
+          id: replyTarget.id,
+          snippet: replyTarget.snippet,
+          authorName: replyTarget.authorName,
+        }
+      : null;
+    setReplyTarget(null);
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.append("file", file);
+      if (replyPayload) {
+        fd.append("replyToId", replyPayload.id);
+        fd.append("replyToSnippet", replyPayload.snippet);
+        fd.append("replyToAuthor", replyPayload.authorName);
+      }
+      const res = await sendChatImage(groupId, fd);
+      if (res.error || !res.message) {
+        setError(res.error ?? "Could not send the photo.");
+        if (replyPayload) {
+          setReplyTarget({
+            id: replyPayload.id,
+            snippet: replyPayload.snippet,
+            authorName: replyPayload.authorName,
+          });
+        }
+        return;
+      }
+      const inserted = res.message;
+      setMessages((prev) =>
+        prev.some((m) => m.id === inserted.id) ? prev : [...prev, inserted],
+      );
+    });
+  }
+
+  function onShareLocation() {
+    if (!currentUserId || sharingLocation) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setError("Location isn't supported on this device.");
+      return;
+    }
+    setError(null);
+    setSharingLocation(true);
+    const replyPayload = replyTarget?.id
+      ? {
+          id: replyTarget.id,
+          snippet: replyTarget.snippet,
+          authorName: replyTarget.authorName,
+        }
+      : null;
+    setReplyTarget(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        startTransition(async () => {
+          const res = await sendChatLocation(
+            groupId,
+            { lat: latitude, lng: longitude, accuracyM: accuracy ?? null },
+            replyPayload,
+          );
+          setSharingLocation(false);
+          if (res.error || !res.message) {
+            setError(res.error ?? "Could not share your location.");
+            if (replyPayload) {
+              setReplyTarget({
+                id: replyPayload.id,
+                snippet: replyPayload.snippet,
+                authorName: replyPayload.authorName,
+              });
+            }
+            return;
+          }
+          const inserted = res.message;
+          setMessages((prev) =>
+            prev.some((m) => m.id === inserted.id) ? prev : [...prev, inserted],
+          );
+        });
+      },
+      (err) => {
+        setSharingLocation(false);
+        setError(
+          err.code === err.PERMISSION_DENIED
+            ? "Location permission was denied."
+            : "Couldn't read your location.",
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000 },
+    );
+  }
+
   function beginReply(m: ChatMessage) {
     setActionMessageId(null);
     setReplyTarget({
       id: m.id,
       authorName: m.user_id === currentUserId ? "You" : m.author_name,
-      snippet: snippetFor(m.body),
+      snippet: snippetFor(
+        m.body ??
+          (m.attachment_kind === "image"
+            ? "📷 Photo"
+            : m.location_lat != null
+              ? "📍 Location"
+              : ""),
+      ),
     });
     // Focus the composer so the keyboard pops on mobile.
     setTimeout(() => inputRef.current?.focus(), 0);
@@ -510,6 +624,56 @@ export function ChatThread({
           onSubmit={onSend}
           className="flex items-center gap-2 border-t border-border bg-surface/60 px-4 py-3 backdrop-blur"
         >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={onPickImage}
+          />
+          <button
+            type="button"
+            aria-label="Attach photo"
+            disabled={pending}
+            onClick={() => fileInputRef.current?.click()}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted hover:bg-foreground/5 disabled:opacity-40"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-5 w-5"
+              aria-hidden
+            >
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <circle cx="9" cy="11" r="2" />
+              <path d="M21 17l-5-5-6 7" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            aria-label="Share location"
+            disabled={pending || sharingLocation}
+            onClick={onShareLocation}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted hover:bg-foreground/5 disabled:opacity-40"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-5 w-5"
+              aria-hidden
+            >
+              <path d="M12 22s-7-7.58-7-12a7 7 0 1 1 14 0c0 4.42-7 12-7 12z" />
+              <circle cx="12" cy="10" r="2.5" />
+            </svg>
+          </button>
           <span className="wc-frame flex flex-1 items-center rounded-full bg-background px-2 py-1">
             <input
               ref={inputRef}
@@ -597,6 +761,27 @@ function MessageBubble({
             onTap={onQuoteTap}
             variant={own ? "own" : "default"}
           />
+        )}
+        {message.attachment_kind === "image" && message.attachment_url && (
+          <div className={message.body ? "mb-1.5" : ""}>
+            <MessageImage
+              url={message.attachment_url}
+              width={message.attachment_width}
+              height={message.attachment_height}
+              variant={own ? "own" : "default"}
+            />
+          </div>
+        )}
+        {message.location_lat != null && message.location_lng != null && (
+          <div className={message.body ? "mb-1.5" : ""}>
+            <MessageLocation
+              lat={message.location_lat}
+              lng={message.location_lng}
+              accuracyM={message.location_accuracy_m}
+              label={message.location_label}
+              variant={own ? "own" : "default"}
+            />
+          </div>
         )}
         {message.body}
       </div>

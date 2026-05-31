@@ -30,7 +30,7 @@ export async function loadSusenHistory(): Promise<SusenTurn[]> {
   let query = supabase
     .from("susen_messages")
     .select(
-      "id, role, text, reply_to_id, reply_to_snippet, reply_to_author_name",
+      "id, role, text, reply_to_id, reply_to_snippet, reply_to_author_name, attachment_kind, attachment_url, attachment_width, attachment_height, location_lat, location_lng, location_accuracy_m, location_label",
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: true })
@@ -45,11 +45,56 @@ export async function loadSusenHistory(): Promise<SusenTurn[]> {
   return (data ?? []).map((r) => ({
     id: r.id,
     role: r.role,
-    text: r.text,
+    text: r.text ?? "",
     reply_to_id: r.reply_to_id,
     reply_to_snippet: r.reply_to_snippet,
     reply_to_author_name: r.reply_to_author_name,
+    attachment_kind: r.attachment_kind,
+    attachment_url: r.attachment_url,
+    attachment_width: r.attachment_width,
+    attachment_height: r.attachment_height,
+    location_lat: r.location_lat,
+    location_lng: r.location_lng,
+    location_accuracy_m: r.location_accuracy_m,
+    location_label: r.location_label,
   }));
+}
+
+/** Append a location-pin turn from the signed-in user. Returns the
+ *  inserted row id. */
+export async function appendSusenLocation(
+  lat: number,
+  lng: number,
+  accuracyM: number | null = null,
+  label: string | null = null,
+): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng) ||
+    Math.abs(lat) > 90 ||
+    Math.abs(lng) > 180
+  ) {
+    return null;
+  }
+  const { data } = await supabase
+    .from("susen_messages")
+    .insert({
+      user_id: user.id,
+      role: "user",
+      text: null,
+      location_lat: lat,
+      location_lng: lng,
+      location_accuracy_m: accuracyM,
+      location_label: label,
+    })
+    .select("id")
+    .single();
+  return (data as { id: string } | null)?.id ?? null;
 }
 
 /** Append one turn (user message or Susen reply). No-op for signed-out users.

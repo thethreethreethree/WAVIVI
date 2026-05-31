@@ -28,6 +28,8 @@ import { claudeSusen } from "./claude";
 
 export interface SusenTurn {
   role: "user" | "susen";
+  /** Text content. May be empty / missing when the turn is an image
+   *  attachment or a location pin only. */
   text: string;
   /** Optional DB id when this turn was hydrated from `susen_messages` —
    *  needed so a reply can target it by id. Live turns rendered before
@@ -37,6 +39,16 @@ export interface SusenTurn {
   reply_to_id?: string | null;
   reply_to_snippet?: string | null;
   reply_to_author_name?: string | null;
+  /** Image attachment (one per turn). */
+  attachment_kind?: "image" | null;
+  attachment_url?: string | null;
+  attachment_width?: number | null;
+  attachment_height?: number | null;
+  /** Location pin. */
+  location_lat?: number | null;
+  location_lng?: number | null;
+  location_accuracy_m?: number | null;
+  location_label?: string | null;
 }
 
 /** Reply-target payload passed from the client to appendSusenTurn. */
@@ -44,6 +56,14 @@ export interface SusenReplyTo {
   id: string;
   snippet: string;
   authorName: string;
+}
+
+/** Location-share payload — same shape used across the chat surfaces. */
+export interface ChatLocation {
+  lat: number;
+  lng: number;
+  accuracyM?: number | null;
+  label?: string | null;
 }
 
 export interface SusenReply {

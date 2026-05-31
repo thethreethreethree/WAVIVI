@@ -5,6 +5,10 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 
 import {
+  MessageImage,
+  MessageLocation,
+} from "@/components/ui/message-attachments";
+import {
   QuotedReply,
   ReplyActionSheet,
   ReplyPreview,
@@ -14,6 +18,7 @@ import {
 import { SusenAvatar } from "@/components/ui/susen-avatar";
 import { useLongPress } from "@/hooks/use-long-press";
 import {
+  appendSusenLocationAction,
   appendSusenTurnAction,
   loadSusenHistoryAction,
 } from "@/lib/susen/actions";
@@ -29,6 +34,7 @@ export default function SusenPage() {
   const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
   const [actionTurnKey, setActionTurnKey] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  const [sharingLocation, setSharingLocation] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const turnRefs = useRef(new Map<string, HTMLDivElement>());
@@ -106,6 +112,45 @@ export default function SusenPage() {
         })
         .catch(() => {});
     }, 700);
+  }
+
+  function onShareLocation() {
+    if (sharingLocation || thinking) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    setSharingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        const turn: SusenTurn = {
+          role: "user",
+          text: "",
+          location_lat: latitude,
+          location_lng: longitude,
+          location_accuracy_m: accuracy ?? null,
+        };
+        setTurns((t) => [...t, turn]);
+        void appendSusenLocationAction(
+          latitude,
+          longitude,
+          accuracy ?? null,
+          null,
+        )
+          .then((insertedId) => {
+            if (!insertedId) return;
+            setTurns((t) => {
+              const idx = t.lastIndexOf(turn);
+              if (idx < 0) return t;
+              const next = t.slice();
+              next[idx] = { ...turn, id: insertedId };
+              return next;
+            });
+          })
+          .catch(() => {})
+          .finally(() => setSharingLocation(false));
+      },
+      () => setSharingLocation(false),
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000 },
+    );
   }
 
   function beginReply(turn: SusenTurn) {
@@ -237,6 +282,27 @@ export default function SusenPage() {
         }}
         className="flex items-center gap-2 border-t border-border px-4 py-3"
       >
+        <button
+          type="button"
+          aria-label="Share location"
+          disabled={sharingLocation || thinking}
+          onClick={onShareLocation}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted hover:bg-foreground/5 disabled:opacity-40"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-5 w-5"
+            aria-hidden
+          >
+            <path d="M12 22s-7-7.58-7-12a7 7 0 1 1 14 0c0 4.42-7 12-7 12z" />
+            <circle cx="12" cy="10" r="2.5" />
+          </svg>
+        </button>
         <input
           ref={inputRef}
           value={draft}
@@ -307,6 +373,27 @@ function SusenBubble({
               onTap={onQuoteTap}
               variant={own ? "own" : "default"}
             />
+          )}
+          {turn.attachment_kind === "image" && turn.attachment_url && (
+            <div className={turn.text ? "mb-1.5" : ""}>
+              <MessageImage
+                url={turn.attachment_url}
+                width={turn.attachment_width ?? null}
+                height={turn.attachment_height ?? null}
+                variant={own ? "own" : "default"}
+              />
+            </div>
+          )}
+          {turn.location_lat != null && turn.location_lng != null && (
+            <div className={turn.text ? "mb-1.5" : ""}>
+              <MessageLocation
+                lat={turn.location_lat}
+                lng={turn.location_lng}
+                accuracyM={turn.location_accuracy_m ?? null}
+                label={turn.location_label ?? null}
+                variant={own ? "own" : "default"}
+              />
+            </div>
           )}
           {turn.text}
         </div>

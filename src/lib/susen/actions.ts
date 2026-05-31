@@ -1,7 +1,11 @@
 "use server";
 
 import type { SusenReplyTo, SusenTurn } from "./engine";
-import { appendSusenTurn, loadSusenHistory } from "./messages";
+import {
+  appendSusenLocation,
+  appendSusenTurn,
+  loadSusenHistory,
+} from "./messages";
 
 /** Server action — load the current user's Susen chat history (24h for non-admins). */
 export async function loadSusenHistoryAction(): Promise<SusenTurn[]> {
@@ -17,4 +21,16 @@ export async function appendSusenTurnAction(
   replyTo: SusenReplyTo | null = null,
 ): Promise<string | null> {
   return appendSusenTurn(role, text, replyTo);
+}
+
+/** Server action — persist a location-pin turn (the user shares "I'm here"
+ *  with Susen). No reply target wiring yet; Susen will respond on the next
+ *  text turn. */
+export async function appendSusenLocationAction(
+  lat: number,
+  lng: number,
+  accuracyM: number | null = null,
+  label: string | null = null,
+): Promise<string | null> {
+  return appendSusenLocation(lat, lng, accuracyM, label);
 }

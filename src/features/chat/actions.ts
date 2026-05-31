@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { uploadChatPhoto } from "@/lib/storage/chat-photos";
 import { createClient } from "@/lib/supabase/server";
 import type { ChatMessageRow } from "@/types/supabase";
 
@@ -10,6 +11,13 @@ export type SendMessageResult = {
   error: string | null;
   message: ChatMessageRow | null;
 };
+
+export interface SendLocationPayload {
+  lat: number;
+  lng: number;
+  accuracyM?: number | null;
+  label?: string | null;
+}
 
 /** Join the signed-in user to a chat group (idempotent). */
 export async function joinGroup(groupId: string): Promise<ChatActionResult> {
@@ -80,6 +88,119 @@ export async function sendMessage(
       user_id: user.id,
       author_name: authorName,
       body: trimmed,
+      reply_to_id: replyTo?.id ?? null,
+      reply_to_snippet: replyTo?.snippet ?? null,
+      reply_to_author_name: replyTo?.authorName ?? null,
+    })
+    .select("*")
+    .single();
+  if (error) return { error: error.message, message: null };
+  return { error: null, message: data as ChatMessageRow };
+}
+
+/** Resolve the sender + their author name once, the same way sendMessage does. */
+async function resolveSender(): Promise<{
+  userId: string;
+  authorName: string;
+} | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name, username")
+    .eq("id", user.id)
+    .maybeSingle();
+  const authorName =
+    profile?.display_name?.trim() || profile?.username || "Traveler";
+  return { userId: user.id, authorName };
+}
+
+/** Upload an image then insert a chat_messages row pointing at it.
+ *  Used by the WhatsApp-style attach button — one round-trip per send. */
+export async function sendChatImage(
+  groupId: string,
+  formData: FormData,
+): Promise<SendMessageResult> {
+  const file = formData.get("file");
+  if (!(file instanceof File)) {
+    return { error: "No image provided.", message: null };
+  }
+  const replyToId = (formData.get("replyToId") as string | null) || null;
+  const replyToSnippet =
+    (formData.get("replyToSnippet") as string | null) || null;
+  const replyToAuthor =
+    (formData.get("replyToAuthor") as string | null) || null;
+  const caption = ((formData.get("caption") as string | null) ?? "").trim();
+
+  const sender = await resolveSender();
+  if (!sender) return { error: "You need to be signed in.", message: null };
+  const supabase = await createClient();
+
+  // Reserve a row id up-front so the storage key references it (means the
+  // object only exists for messages we successfully insert below — orphan
+  // sweep is straightforward).
+  const messageId = crypto.randomUUID();
+  let uploaded: { url: string; width: number; height: number };
+  try {
+    uploaded = await uploadChatPhoto(supabase, groupId, messageId, file);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Image upload failed.";
+    return { error: msg, message: null };
+  }
+
+  const { data, error } = await supabase
+    .from("chat_messages")
+    .insert({
+      id: messageId,
+      group_id: groupId,
+      user_id: sender.userId,
+      author_name: sender.authorName,
+      body: caption || null,
+      attachment_kind: "image",
+      attachment_url: uploaded.url,
+      attachment_width: uploaded.width,
+      attachment_height: uploaded.height,
+      reply_to_id: replyToId,
+      reply_to_snippet: replyToSnippet,
+      reply_to_author_name: replyToAuthor,
+    })
+    .select("*")
+    .single();
+  if (error) return { error: error.message, message: null };
+  return { error: null, message: data as ChatMessageRow };
+}
+
+/** Insert a chat_messages row carrying a location pin only (no upload). */
+export async function sendChatLocation(
+  groupId: string,
+  location: SendLocationPayload,
+  replyTo?: SendMessageReplyTo | null,
+): Promise<SendMessageResult> {
+  if (
+    !Number.isFinite(location.lat) ||
+    !Number.isFinite(location.lng) ||
+    Math.abs(location.lat) > 90 ||
+    Math.abs(location.lng) > 180
+  ) {
+    return { error: "Invalid location.", message: null };
+  }
+  const sender = await resolveSender();
+  if (!sender) return { error: "You need to be signed in.", message: null };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("chat_messages")
+    .insert({
+      group_id: groupId,
+      user_id: sender.userId,
+      author_name: sender.authorName,
+      body: null,
+      location_lat: location.lat,
+      location_lng: location.lng,
+      location_accuracy_m: location.accuracyM ?? null,
+      location_label: location.label ?? null,
       reply_to_id: replyTo?.id ?? null,
       reply_to_snippet: replyTo?.snippet ?? null,
       reply_to_author_name: replyTo?.authorName ?? null,
