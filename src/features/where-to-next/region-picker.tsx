@@ -100,11 +100,6 @@ interface AutocompleteProps {
   onChange: (v: string) => void;
   options: string[];
   placeholder: string;
-  /** Labels the suggestions list e.g. "In our system". */
-  optionsLabel?: string;
-  /** When true, fields show a small "✓ Coverage available" badge once
-   *  the typed value matches an option (case-insensitive). */
-  showCoverageBadge?: boolean;
   /** Disable the input entirely (e.g. city picker before country chosen). */
   disabled?: boolean;
   /** Optional autofocus on mount. */
@@ -119,8 +114,6 @@ function Autocomplete({
   onChange,
   options,
   placeholder,
-  optionsLabel = "Suggestions",
-  showCoverageBadge,
   disabled,
   autoFocus,
   hint,
@@ -143,12 +136,6 @@ function Autocomplete({
     // user can discover what's available.
     if (!value.trim()) return options.slice(0, 8);
     return ranked;
-  }, [options, value]);
-
-  const coverageMatch = useMemo(() => {
-    const v = value.trim().toLowerCase();
-    if (!v) return false;
-    return options.some((o) => o.toLowerCase() === v);
   }, [options, value]);
 
   // Close on outside click.
@@ -219,26 +206,12 @@ function Autocomplete({
         className="wtn-input"
       />
 
-      {showCoverageBadge && coverageMatch && (
-        <span
-          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-cool/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cool"
-          aria-hidden
-        >
-          ✓ Coverage
-        </span>
-      )}
-
       {open && matches.length > 0 && (
         <ul
           id={listId}
           role="listbox"
           className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl bg-surface py-1 shadow-card ring-1 ring-border"
         >
-          {optionsLabel && (
-            <li className="px-3 pb-1 pt-1 text-[10px] font-bold uppercase tracking-wider text-muted">
-              {optionsLabel}
-            </li>
-          )}
           {matches.map((m, i) => (
             <li
               key={m}
@@ -296,8 +269,6 @@ export function CountryField({ value, onChange, autoFocus }: CountryFieldProps) 
       onChange={onChange}
       options={countries}
       placeholder="Country"
-      optionsLabel="In our system"
-      showCoverageBadge
       autoFocus={autoFocus}
       hint={supportedText}
     />
@@ -358,9 +329,7 @@ export function CityField({ value, onChange, country }: CityFieldProps) {
       value={value}
       onChange={onChange}
       options={cities}
-      placeholder="City (optional)"
-      optionsLabel="Destinations in our system"
-      showCoverageBadge={countryInSystem}
+      placeholder="City"
       disabled={false}
       hint={hint}
       className="mt-2"
