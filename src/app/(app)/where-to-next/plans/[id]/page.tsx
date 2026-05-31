@@ -4,7 +4,6 @@ import { notFound, redirect } from "next/navigation";
 
 import { PlanActions } from "@/features/where-to-next/plan-actions";
 import { TripPlanner } from "@/features/where-to-next/trip-planner";
-import { VerificationGate } from "@/features/where-to-next/verification-gate";
 import { getCurrentProfile } from "@/lib/profiles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -44,7 +43,6 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
 
   const profile = await getCurrentProfile();
   if (!profile) redirect(`/login?next=/where-to-next/plans/${id}`);
-  if (!profile.instagram_verified) return <VerificationGate />;
 
   const supabase = await createClient();
   const { data } = await supabase

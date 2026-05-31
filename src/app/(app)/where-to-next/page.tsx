@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { VerificationGate } from "@/features/where-to-next/verification-gate";
 import { getCurrentProfile } from "@/lib/profiles";
 import { createClient } from "@/lib/supabase/server";
 import type { TravelPlanRow } from "@/types/supabase";
@@ -13,19 +12,14 @@ export const dynamic = "force-dynamic";
 /**
  * Where to Next — entry screen.
  *
- * Verified travelers see the "start a plan" CTA + their Upcoming Adventures
- * list (empty until phase 3 lands the questionnaire). Anyone else sees the
- * verification gate; we never expose the questionnaire to non-verified
- * users, neither in UI nor in the API (gate is repeated server-side on
- * every endpoint as the spec requires).
+ * Any signed-in traveler sees the "start a plan" CTA + their Upcoming
+ * Adventures list. The Instagram verification gate was lifted: travel
+ * plans persist against the user's profile, so we only need them
+ * signed in (not Instagram-verified) to use the feature.
  */
 export default async function WhereToNextPage() {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login?next=/where-to-next");
-
-  if (!profile.instagram_verified) {
-    return <VerificationGate />;
-  }
 
   const supabase = await createClient();
   const { data } = await supabase

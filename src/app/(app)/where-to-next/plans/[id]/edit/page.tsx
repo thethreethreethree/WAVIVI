@@ -6,7 +6,6 @@ import {
   type QuestionnaireInitial,
 } from "@/features/where-to-next/questionnaire";
 import { TripPlanner } from "@/features/where-to-next/trip-planner";
-import { VerificationGate } from "@/features/where-to-next/verification-gate";
 import { getCurrentProfile } from "@/lib/profiles";
 import { createClient } from "@/lib/supabase/server";
 import type { TravelPlanRow } from "@/types/supabase";
@@ -21,7 +20,6 @@ export default async function EditPlanPage({ params }: { params: Params }) {
 
   const profile = await getCurrentProfile();
   if (!profile) redirect(`/login?next=/where-to-next/plans/${id}/edit`);
-  if (!profile.instagram_verified) return <VerificationGate />;
 
   const supabase = await createClient();
   const { data } = await supabase

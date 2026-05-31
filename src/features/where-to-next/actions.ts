@@ -47,9 +47,9 @@ export type SubmitResult =
   | { ok: false; error: string };
 
 /**
- * Create a TravelPlan from the questionnaire. Re-verifies that the caller
- * is signed in and instagram_verified — the page-level gate doesn't count
- * for security, the spec calls for the check on every endpoint.
+ * Create a TravelPlan from the questionnaire. Requires the caller to be
+ * signed in (travel_plans rows carry a user_id) — the Instagram
+ * verification gate was lifted so any signed-in traveler can plan.
  */
 export async function submitTravelPlan(
   answers: QuestionnaireAnswers,
@@ -59,18 +59,6 @@ export async function submitTravelPlan(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "You need to be signed in." };
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("instagram_verified")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (!profile?.instagram_verified) {
-    return {
-      ok: false,
-      error: "Where to Next is unlocked for verified travelers.",
-    };
-  }
 
   // Validation — keep messages short; the form re-checks client-side too.
   const country = answers.country.trim();

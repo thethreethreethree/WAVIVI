@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { ManageSavedList } from "@/features/where-to-next/manage-saved-list";
-import { VerificationGate } from "@/features/where-to-next/verification-gate";
 import type { SavedItemList } from "@/features/where-to-next/actions";
 import { getCurrentProfile } from "@/lib/profiles";
 import { createClient } from "@/lib/supabase/server";
@@ -88,7 +87,6 @@ export default async function ManageSavedPage({
 
   const profile = await getCurrentProfile();
   if (!profile) redirect(`/login?next=/where-to-next/plans/${id}/saved/${category}`);
-  if (!profile.instagram_verified) return <VerificationGate />;
 
   const supabase = await createClient();
   const { data } = await supabase
