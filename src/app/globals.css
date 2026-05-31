@@ -308,6 +308,14 @@ h3 {
 .wtn-input::placeholder {
   color: var(--color-muted);
 }
+.wtn-input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: color-mix(in oklab, var(--color-surface) 60%, transparent);
+}
+.wtn-input:disabled::placeholder {
+  color: var(--color-muted);
+}
 
 /* Route fade-in — replaces the framer-motion page transition. */
 @keyframes pageFade {

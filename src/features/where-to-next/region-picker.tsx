@@ -203,7 +203,7 @@ function Autocomplete({
             setOpen(false);
           }
         }}
-        className="wtn-input disabled:cursor-not-allowed disabled:bg-foreground/5 disabled:text-muted disabled:placeholder:text-muted/60"
+        className="wtn-input"
       />
 
       {open && matches.length > 0 && (
