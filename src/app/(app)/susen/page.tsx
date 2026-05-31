@@ -56,7 +56,7 @@ export default function SusenPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex h-[calc(100dvh-6.75rem)] flex-col">
       <header className="flex items-center gap-3 border-b border-border px-5 pb-3 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
         <Link href="/" aria-label="Back" className="text-foreground">
           <svg
@@ -86,7 +86,7 @@ export default function SusenPage() {
         </span>
       </header>
 
-      <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
         {turns.map((turn, i) => (
           <div
             key={i}
