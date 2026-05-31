@@ -295,6 +295,7 @@ export function Questionnaire({
               </span>
             }
             title="Where are we headed?"
+            underline={false}
           >
             <CountryField
               value={country}
@@ -523,11 +524,16 @@ function Step({
   emoji,
   title,
   hint,
+  underline = true,
   children,
 }: {
   emoji: React.ReactNode;
   title: string;
   hint?: string;
+  /** Decorative brown marker stroke under the title. Defaults to true
+   *  to keep the questionnaire's visual rhythm; pass false on the
+   *  occasional step where the chrome reads as noise. */
+  underline?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -536,7 +542,7 @@ function Step({
         {emoji}
       </div>
       <h1 className="text-2xl font-bold leading-tight tracking-tight">
-        <span className="wc-underline">{title}</span>
+        {underline ? <span className="wc-underline">{title}</span> : title}
       </h1>
       {hint && <p className="mt-2 text-sm text-muted">{hint}</p>}
       <div className="mt-5 flex flex-col">{children}</div>
