@@ -8,6 +8,10 @@ import { SusenAvatar } from "@/components/ui/susen-avatar";
 import { SUSEN } from "@/lib/susen/persona";
 import { SUSEN_QUICK_PROMPTS } from "@/lib/susen/persona";
 import { SUSEN_WELCOME, type SusenTurn, susen } from "@/lib/susen/engine";
+import {
+  appendSusenTurnAction,
+  loadSusenHistoryAction,
+} from "@/lib/susen/actions";
 
 export default function SusenPage() {
   const [turns, setTurns] = useState<SusenTurn[]>([
@@ -21,16 +25,33 @@ export default function SusenPage() {
     endRef.current?.scrollIntoView({ block: "end" });
   }, [turns, thinking]);
 
+  // Hydrate persisted history on mount. Admins get everything; everyone else
+  // gets the last 24h. Signed-out users come back empty → keep the welcome.
+  useEffect(() => {
+    let cancelled = false;
+    loadSusenHistoryAction()
+      .then((history) => {
+        if (cancelled || history.length === 0) return;
+        setTurns([{ role: "susen", text: SUSEN_WELCOME }, ...history]);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   async function send(text: string) {
     const input = text.trim();
     if (!input || thinking) return;
     setDraft("");
     setTurns((t) => [...t, { role: "user", text: input }]);
     setThinking(true);
+    void appendSusenTurnAction("user", input).catch(() => {});
     const reply = await susen.respond(input, turns);
     setTimeout(() => {
       setTurns((t) => [...t, { role: "susen", text: reply.text }]);
       setThinking(false);
+      void appendSusenTurnAction("susen", reply.text).catch(() => {});
     }, 700);
   }
 

@@ -755,6 +755,23 @@ export type TravelerNoteInsert = {
 };
 export type TravelerNoteUpdate = Partial<TravelerNoteInsert>;
 
+/* ── Susen chat history (persistent per-user) ─────────────────────────── */
+
+export type SusenMessageRow = {
+  id: string;
+  user_id: string;
+  role: "user" | "susen";
+  text: string;
+  created_at: string;
+};
+export type SusenMessageInsert = {
+  id?: string;
+  user_id: string;
+  role: "user" | "susen";
+  text: string;
+};
+export type SusenMessageUpdate = Partial<SusenMessageInsert>;
+
 /* ── Where to Next (travel plans + match audit) ───────────────────────── */
 
 export type TravelPlanBudget = "shoestring" | "mid" | "premium" | "luxury";
@@ -1103,6 +1120,11 @@ export type Database = {
         TravelerNoteRow,
         TravelerNoteInsert,
         TravelerNoteUpdate
+      >;
+      susen_messages: TableShape<
+        SusenMessageRow,
+        SusenMessageInsert,
+        SusenMessageUpdate
       >;
       travel_plans: TableShape<
         TravelPlanRow,
