@@ -26,6 +26,11 @@ export interface ChatMessage {
   author_name: string;
   body: string;
   created_at: string;
+  /** WhatsApp-style quote-reply target (denormalised so realtime payloads
+   *  render without a join). Null when this isn't a reply. */
+  reply_to_id: string | null;
+  reply_to_snippet: string | null;
+  reply_to_author_name: string | null;
 }
 
 /** Look up a chat group by its stable id (matches the mock travel-group id). */

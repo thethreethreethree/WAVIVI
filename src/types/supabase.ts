@@ -728,6 +728,9 @@ export type ChatMessageRow = {
   author_name: string;
   body: string;
   created_at: string;
+  reply_to_id: string | null;
+  reply_to_snippet: string | null;
+  reply_to_author_name: string | null;
 };
 export type ChatMessageInsert = {
   id?: string;
@@ -735,6 +738,9 @@ export type ChatMessageInsert = {
   user_id: string;
   author_name: string;
   body: string;
+  reply_to_id?: string | null;
+  reply_to_snippet?: string | null;
+  reply_to_author_name?: string | null;
 };
 export type ChatMessageUpdate = Partial<Omit<ChatMessageInsert, "id">>;
 
@@ -763,12 +769,18 @@ export type SusenMessageRow = {
   role: "user" | "susen";
   text: string;
   created_at: string;
+  reply_to_id: string | null;
+  reply_to_snippet: string | null;
+  reply_to_author_name: string | null;
 };
 export type SusenMessageInsert = {
   id?: string;
   user_id: string;
   role: "user" | "susen";
   text: string;
+  reply_to_id?: string | null;
+  reply_to_snippet?: string | null;
+  reply_to_author_name?: string | null;
 };
 export type SusenMessageUpdate = Partial<SusenMessageInsert>;
 

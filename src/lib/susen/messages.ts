@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
-import type { SusenTurn } from "./engine";
+import type { SusenReplyTo, SusenTurn } from "./engine";
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
@@ -29,7 +29,9 @@ export async function loadSusenHistory(): Promise<SusenTurn[]> {
 
   let query = supabase
     .from("susen_messages")
-    .select("role, text")
+    .select(
+      "id, role, text, reply_to_id, reply_to_snippet, reply_to_author_name",
+    )
     .eq("user_id", user.id)
     .order("created_at", { ascending: true })
     .limit(500);
@@ -41,22 +43,39 @@ export async function loadSusenHistory(): Promise<SusenTurn[]> {
 
   const { data } = await query;
   return (data ?? []).map((r) => ({
+    id: r.id,
     role: r.role,
     text: r.text,
+    reply_to_id: r.reply_to_id,
+    reply_to_snippet: r.reply_to_snippet,
+    reply_to_author_name: r.reply_to_author_name,
   }));
 }
 
-/** Append one turn (user message or Susen reply). No-op for signed-out users. */
+/** Append one turn (user message or Susen reply). No-op for signed-out users.
+ *  Returns the inserted row's id so the client can fill in turn.id
+ *  (otherwise the next reply targeting it would have no id to point at). */
 export async function appendSusenTurn(
   role: "user" | "susen",
   text: string,
-): Promise<void> {
+  replyTo: SusenReplyTo | null = null,
+): Promise<string | null> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return;
-  await supabase
+  if (!user) return null;
+  const { data } = await supabase
     .from("susen_messages")
-    .insert({ user_id: user.id, role, text });
+    .insert({
+      user_id: user.id,
+      role,
+      text,
+      reply_to_id: replyTo?.id ?? null,
+      reply_to_snippet: replyTo?.snippet ?? null,
+      reply_to_author_name: replyTo?.authorName ?? null,
+    })
+    .select("id")
+    .single();
+  return (data as { id: string } | null)?.id ?? null;
 }

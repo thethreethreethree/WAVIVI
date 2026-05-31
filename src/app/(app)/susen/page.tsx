@@ -4,14 +4,21 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 
+import {
+  QuotedReply,
+  ReplyActionSheet,
+  ReplyPreview,
+  type ReplyTarget,
+  snippetFor,
+} from "@/components/ui/reply-bits";
 import { SusenAvatar } from "@/components/ui/susen-avatar";
-import { SUSEN } from "@/lib/susen/persona";
-import { SUSEN_QUICK_PROMPTS } from "@/lib/susen/persona";
-import { SUSEN_WELCOME, type SusenTurn, susen } from "@/lib/susen/engine";
+import { useLongPress } from "@/hooks/use-long-press";
 import {
   appendSusenTurnAction,
   loadSusenHistoryAction,
 } from "@/lib/susen/actions";
+import { SUSEN_WELCOME, type SusenTurn, susen } from "@/lib/susen/engine";
+import { SUSEN, SUSEN_QUICK_PROMPTS } from "@/lib/susen/persona";
 
 export default function SusenPage() {
   const [turns, setTurns] = useState<SusenTurn[]>([
@@ -19,7 +26,12 @@ export default function SusenPage() {
   ]);
   const [draft, setDraft] = useState("");
   const [thinking, setThinking] = useState(false);
+  const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
+  const [actionTurnKey, setActionTurnKey] = useState<string | null>(null);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const turnRefs = useRef(new Map<string, HTMLDivElement>());
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
@@ -43,16 +55,77 @@ export default function SusenPage() {
   async function send(text: string) {
     const input = text.trim();
     if (!input || thinking) return;
+    const reply = replyTarget?.id
+      ? {
+          id: replyTarget.id,
+          snippet: replyTarget.snippet,
+          authorName: replyTarget.authorName,
+        }
+      : null;
     setDraft("");
-    setTurns((t) => [...t, { role: "user", text: input }]);
+    setReplyTarget(null);
+    // Build the user turn with the (unresolved) reply metadata so the
+    // bubble shows the quote immediately. We'll stamp turn.id once the
+    // server returns the inserted row id.
+    const userTurn: SusenTurn = {
+      role: "user",
+      text: input,
+      reply_to_id: reply?.id ?? null,
+      reply_to_snippet: reply?.snippet ?? null,
+      reply_to_author_name: reply?.authorName ?? null,
+    };
+    setTurns((t) => [...t, userTurn]);
     setThinking(true);
-    void appendSusenTurnAction("user", input).catch(() => {});
-    const reply = await susen.respond(input, turns);
+    void appendSusenTurnAction("user", input, reply)
+      .then((insertedId) => {
+        if (!insertedId) return;
+        setTurns((t) => {
+          const idx = t.lastIndexOf(userTurn);
+          if (idx < 0) return t;
+          const next = t.slice();
+          next[idx] = { ...userTurn, id: insertedId };
+          return next;
+        });
+      })
+      .catch(() => {});
+    const susenReply = await susen.respond(input, turns);
     setTimeout(() => {
-      setTurns((t) => [...t, { role: "susen", text: reply.text }]);
+      const susenTurn: SusenTurn = { role: "susen", text: susenReply.text };
+      setTurns((t) => [...t, susenTurn]);
       setThinking(false);
-      void appendSusenTurnAction("susen", reply.text).catch(() => {});
+      void appendSusenTurnAction("susen", susenReply.text)
+        .then((insertedId) => {
+          if (!insertedId) return;
+          setTurns((t) => {
+            const idx = t.lastIndexOf(susenTurn);
+            if (idx < 0) return t;
+            const next = t.slice();
+            next[idx] = { ...susenTurn, id: insertedId };
+            return next;
+          });
+        })
+        .catch(() => {});
     }, 700);
+  }
+
+  function beginReply(turn: SusenTurn) {
+    setActionTurnKey(null);
+    setReplyTarget({
+      id: turn.id ?? null,
+      authorName: turn.role === "user" ? "You" : SUSEN.name,
+      snippet: snippetFor(turn.text),
+    });
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }
+
+  function scrollToTurn(id: string) {
+    const el = turnRefs.current.get(id);
+    if (!el) return;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    setHighlightId(id);
+    window.setTimeout(() => {
+      setHighlightId((cur) => (cur === id ? null : cur));
+    }, 1400);
   }
 
   return (
@@ -87,25 +160,31 @@ export default function SusenPage() {
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
-        {turns.map((turn, i) => (
-          <div
-            key={i}
-            className={`flex items-end gap-2 ${
-              turn.role === "user" ? "flex-row-reverse" : ""
-            }`}
-          >
-            {turn.role === "susen" && <SusenAvatar className="h-7 w-7" />}
-            <div
-              className={`wc-frame max-w-[82%] px-4 py-3 text-base leading-snug ${
-                turn.role === "user"
-                  ? "wc-frame-sunset rounded-2xl rounded-br-sm text-white"
-                  : "rounded-2xl rounded-bl-sm bg-white/85 text-foreground"
-              }`}
-            >
-              {turn.text}
-            </div>
-          </div>
-        ))}
+        {turns.map((turn, i) => {
+          const turnKey = turn.id ?? `idx:${i}`;
+          return (
+            <SusenBubble
+              key={turnKey}
+              turn={turn}
+              registerRef={(el) => {
+                if (turn.id) {
+                  if (el) turnRefs.current.set(turn.id, el);
+                  else turnRefs.current.delete(turn.id);
+                }
+              }}
+              highlighted={turn.id != null && highlightId === turn.id}
+              actionsOpen={actionTurnKey === turnKey}
+              onOpenActions={() => setActionTurnKey(turnKey)}
+              onCloseActions={() => setActionTurnKey(null)}
+              onReply={() => beginReply(turn)}
+              onQuoteTap={
+                turn.reply_to_id
+                  ? () => scrollToTurn(turn.reply_to_id!)
+                  : undefined
+              }
+            />
+          );
+        })}
 
         {thinking && (
           <div className="flex items-end gap-2">
@@ -144,6 +223,13 @@ export default function SusenPage() {
         ))}
       </div>
 
+      {replyTarget && (
+        <ReplyPreview
+          target={replyTarget}
+          onCancel={() => setReplyTarget(null)}
+        />
+      )}
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -152,9 +238,10 @@ export default function SusenPage() {
         className="flex items-center gap-2 border-t border-border px-4 py-3"
       >
         <input
+          ref={inputRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="Ask Susen anything…"
+          placeholder={replyTarget ? "Reply…" : "Ask Susen anything…"}
           className="wc-frame flex-1 rounded-full bg-white/70 px-4 py-3
                      text-base outline-none placeholder:text-muted"
         />
@@ -166,6 +253,71 @@ export default function SusenPage() {
           Send
         </button>
       </form>
+    </div>
+  );
+}
+
+function SusenBubble({
+  turn,
+  registerRef,
+  highlighted,
+  actionsOpen,
+  onOpenActions,
+  onCloseActions,
+  onReply,
+  onQuoteTap,
+}: {
+  turn: SusenTurn;
+  registerRef: (el: HTMLDivElement | null) => void;
+  highlighted: boolean;
+  actionsOpen: boolean;
+  onOpenActions: () => void;
+  onCloseActions: () => void;
+  onReply: () => void;
+  onQuoteTap?: () => void;
+}) {
+  const own = turn.role === "user";
+  const longPress = useLongPress(onOpenActions, { delayMs: 450 });
+  const quote: ReplyTarget | null = turn.reply_to_snippet
+    ? {
+        id: turn.reply_to_id ?? null,
+        snippet: turn.reply_to_snippet,
+        authorName: turn.reply_to_author_name ?? "Traveler",
+      }
+    : null;
+  return (
+    <div
+      className={`flex items-end gap-2 ${own ? "flex-row-reverse" : ""}`}
+    >
+      {!own && <SusenAvatar className="h-7 w-7" />}
+      <div className="relative">
+        <div
+          ref={registerRef}
+          {...longPress}
+          className={`wc-frame max-w-[82%] px-4 py-3 text-base leading-snug transition-shadow ${
+            own
+              ? "wc-frame-sunset rounded-2xl rounded-br-sm text-white"
+              : "rounded-2xl rounded-bl-sm bg-white/85 text-foreground"
+          } ${highlighted ? "ring-2 ring-glow ring-offset-2 ring-offset-background" : ""}`}
+          style={{ touchAction: "pan-y" }}
+        >
+          {quote && (
+            <QuotedReply
+              target={quote}
+              onTap={onQuoteTap}
+              variant={own ? "own" : "default"}
+            />
+          )}
+          {turn.text}
+        </div>
+        {actionsOpen && (
+          <div
+            className={`absolute top-full mt-1 ${own ? "right-0" : "left-0"}`}
+          >
+            <ReplyActionSheet onReply={onReply} onClose={onCloseActions} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

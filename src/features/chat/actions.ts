@@ -33,12 +33,23 @@ export async function joinGroup(groupId: string): Promise<ChatActionResult> {
   return { error: null };
 }
 
+export interface SendMessageReplyTo {
+  id: string;
+  snippet: string;
+  authorName: string;
+}
+
 /** Send a message into a group the user belongs to. Returns the inserted
    row so the client can append it optimistically (and dedupe against the
-   realtime echo by id). */
+   realtime echo by id).
+
+   When `replyTo` is passed, the row is stamped with the denormalised
+   quote-target columns (id + snippet + author_name) so the bubble can
+   render the WhatsApp-style quoted bar without a join. */
 export async function sendMessage(
   groupId: string,
   body: string,
+  replyTo?: SendMessageReplyTo | null,
 ): Promise<SendMessageResult> {
   const trimmed = body.trim();
   if (!trimmed) return { error: "Message can't be empty.", message: null };
@@ -69,6 +80,9 @@ export async function sendMessage(
       user_id: user.id,
       author_name: authorName,
       body: trimmed,
+      reply_to_id: replyTo?.id ?? null,
+      reply_to_snippet: replyTo?.snippet ?? null,
+      reply_to_author_name: replyTo?.authorName ?? null,
     })
     .select("*")
     .single();

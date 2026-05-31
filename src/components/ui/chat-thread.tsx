@@ -6,8 +6,16 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { BackButton } from "@/components/ui/back-button";
+import {
+  QuotedReply,
+  ReplyActionSheet,
+  ReplyPreview,
+  type ReplyTarget,
+  snippetFor,
+} from "@/components/ui/reply-bits";
 import { SusenAvatar } from "@/components/ui/susen-avatar";
 import { joinGroup, leaveGroup, sendMessage } from "@/features/chat/actions";
+import { useLongPress } from "@/hooks/use-long-press";
 import type { ChatAuthor, ChatMessage } from "@/lib/chat";
 import { createClient } from "@/lib/supabase/client";
 import { flagImage } from "@/lib/travejor/account";
@@ -59,8 +67,13 @@ export function ChatThread({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
+  const [actionMessageId, setActionMessageId] = useState<string | null>(null);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const menuWrapRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef(new Map<string, HTMLDivElement>());
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Close the kebab menu on outside-click and on Escape.
   useEffect(() => {
@@ -147,13 +160,30 @@ export function ChatThread({
     e.preventDefault();
     const body = draft.trim();
     if (!body || !currentUserId) return;
+    const replyPayload = replyTarget?.id
+      ? {
+          id: replyTarget.id,
+          snippet: replyTarget.snippet,
+          authorName: replyTarget.authorName,
+        }
+      : null;
     setDraft("");
+    setReplyTarget(null);
     setError(null);
     startTransition(async () => {
-      const res = await sendMessage(groupId, body);
+      const res = await sendMessage(groupId, body, replyPayload);
       if (res.error || !res.message) {
         setError(res.error ?? "Could not send.");
         setDraft(body);
+        if (replyPayload) {
+          // Restore the reply chip so the user doesn't lose context on
+          // retry — same gesture WhatsApp uses when a send fails.
+          setReplyTarget({
+            id: replyPayload.id,
+            snippet: replyPayload.snippet,
+            authorName: replyPayload.authorName,
+          });
+        }
         return;
       }
       // Append immediately so the sender doesn't wait for the realtime
@@ -163,6 +193,27 @@ export function ChatThread({
         prev.some((m) => m.id === inserted.id) ? prev : [...prev, inserted],
       );
     });
+  }
+
+  function beginReply(m: ChatMessage) {
+    setActionMessageId(null);
+    setReplyTarget({
+      id: m.id,
+      authorName: m.user_id === currentUserId ? "You" : m.author_name,
+      snippet: snippetFor(m.body),
+    });
+    // Focus the composer so the keyboard pops on mobile.
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }
+
+  function scrollToMessage(id: string) {
+    const el = messageRefs.current.get(id);
+    if (!el) return;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    setHighlightId(id);
+    window.setTimeout(() => {
+      setHighlightId((cur) => (cur === id ? null : cur));
+    }, 1400);
   }
 
   function onJoin() {
@@ -388,15 +439,23 @@ export function ChatThread({
                     </span>
                   )
                 )}
-                <div
-                  className={`wc-frame max-w-[78%] px-3.5 py-2 text-sm leading-snug shadow-card ${
-                    own
-                      ? `wc-frame-sunset rounded-2xl text-white ${sameRun ? "rounded-tr-2xl" : "rounded-tr-sm"}`
-                      : `rounded-2xl text-foreground ${sameRun ? "rounded-tl-2xl" : "rounded-tl-sm"}`
-                  }`}
-                >
-                  {m.body}
-                </div>
+                <MessageBubble
+                  message={m}
+                  own={own}
+                  sameRun={sameRun}
+                  highlighted={highlightId === m.id}
+                  actionsOpen={actionMessageId === m.id}
+                  registerRef={(el) => {
+                    if (el) messageRefs.current.set(m.id, el);
+                    else messageRefs.current.delete(m.id);
+                  }}
+                  onOpenActions={() => setActionMessageId(m.id)}
+                  onCloseActions={() => setActionMessageId(null)}
+                  onReply={() => beginReply(m)}
+                  onQuoteTap={
+                    m.reply_to_id ? () => scrollToMessage(m.reply_to_id!) : undefined
+                  }
+                />
                 {/* Timestamp only on the last message of a run — keeps long
                     bursts compact and the time still visible per cluster. */}
                 {!isMidRun(messages, i) && (
@@ -440,15 +499,23 @@ export function ChatThread({
           </button>
         </div>
       ) : (
+        <>
+          {replyTarget && (
+            <ReplyPreview
+              target={replyTarget}
+              onCancel={() => setReplyTarget(null)}
+            />
+          )}
         <form
           onSubmit={onSend}
           className="flex items-center gap-2 border-t border-border bg-surface/60 px-4 py-3 backdrop-blur"
         >
           <span className="wc-frame flex flex-1 items-center rounded-full bg-background px-2 py-1">
             <input
+              ref={inputRef}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="Say something nice…"
+              placeholder={replyTarget ? "Reply…" : "Say something nice…"}
               disabled={pending}
               className="flex-1 bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-muted"
             />
@@ -473,6 +540,72 @@ export function ChatThread({
             )}
           </button>
         </form>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Single message bubble — knows how to long-press to open the action
+ *  sheet, render its own quoted-reply bar, and flash on highlight. */
+function MessageBubble({
+  message,
+  own,
+  sameRun,
+  highlighted,
+  actionsOpen,
+  registerRef,
+  onOpenActions,
+  onCloseActions,
+  onReply,
+  onQuoteTap,
+}: {
+  message: ChatMessage;
+  own: boolean;
+  sameRun: boolean;
+  highlighted: boolean;
+  actionsOpen: boolean;
+  registerRef: (el: HTMLDivElement | null) => void;
+  onOpenActions: () => void;
+  onCloseActions: () => void;
+  onReply: () => void;
+  onQuoteTap?: () => void;
+}) {
+  const longPress = useLongPress(onOpenActions, { delayMs: 450 });
+  const quote: ReplyTarget | null = message.reply_to_snippet
+    ? {
+        id: message.reply_to_id,
+        snippet: message.reply_to_snippet,
+        authorName: message.reply_to_author_name ?? "Traveler",
+      }
+    : null;
+  return (
+    <div className="relative">
+      <div
+        ref={registerRef}
+        {...longPress}
+        className={`wc-frame max-w-[78%] px-3.5 py-2 text-sm leading-snug shadow-card transition-shadow ${
+          own
+            ? `wc-frame-sunset rounded-2xl text-white ${sameRun ? "rounded-tr-2xl" : "rounded-tr-sm"}`
+            : `rounded-2xl text-foreground ${sameRun ? "rounded-tl-2xl" : "rounded-tl-sm"}`
+        } ${highlighted ? "ring-2 ring-glow ring-offset-2 ring-offset-background" : ""}`}
+        style={{ touchAction: "pan-y" }}
+      >
+        {quote && (
+          <QuotedReply
+            target={quote}
+            onTap={onQuoteTap}
+            variant={own ? "own" : "default"}
+          />
+        )}
+        {message.body}
+      </div>
+      {actionsOpen && (
+        <div
+          className={`absolute top-full mt-1 ${own ? "right-0" : "left-0"}`}
+        >
+          <ReplyActionSheet onReply={onReply} onClose={onCloseActions} />
+        </div>
       )}
     </div>
   );

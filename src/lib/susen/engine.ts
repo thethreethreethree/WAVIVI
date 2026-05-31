@@ -29,6 +29,21 @@ import { claudeSusen } from "./claude";
 export interface SusenTurn {
   role: "user" | "susen";
   text: string;
+  /** Optional DB id when this turn was hydrated from `susen_messages` —
+   *  needed so a reply can target it by id. Live turns rendered before
+   *  the DB insert completes will be missing this until the next reload. */
+  id?: string;
+  /** WhatsApp-style quote-reply target (denormalised). */
+  reply_to_id?: string | null;
+  reply_to_snippet?: string | null;
+  reply_to_author_name?: string | null;
+}
+
+/** Reply-target payload passed from the client to appendSusenTurn. */
+export interface SusenReplyTo {
+  id: string;
+  snippet: string;
+  authorName: string;
 }
 
 export interface SusenReply {
