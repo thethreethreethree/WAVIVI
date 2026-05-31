@@ -203,7 +203,7 @@ function Autocomplete({
             setOpen(false);
           }
         }}
-        className="wtn-input"
+        className="wtn-input disabled:cursor-not-allowed disabled:bg-foreground/5 disabled:text-muted disabled:placeholder:text-muted/60"
       />
 
       {open && matches.length > 0 && (
@@ -330,7 +330,7 @@ export function CityField({ value, onChange, country }: CityFieldProps) {
       onChange={onChange}
       options={cities}
       placeholder="City"
-      disabled={false}
+      disabled={!country.trim()}
       hint={hint}
       className="mt-2"
     />
