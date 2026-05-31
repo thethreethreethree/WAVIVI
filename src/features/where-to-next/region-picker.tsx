@@ -254,15 +254,6 @@ export function CountryField({ value, onChange, autoFocus }: CountryFieldProps) 
   const catalog = useRegionCatalog();
   const countries = catalog?.countries ?? [];
 
-  const supportedText =
-    countries.length === 0
-      ? "Loading countries…"
-      : countries.length === 1
-        ? `In our system: ${countries[0]}. Type any other country freely.`
-        : `In our system: ${countries.slice(0, 4).join(", ")}${
-            countries.length > 4 ? "…" : ""
-          }. Type any other country freely.`;
-
   return (
     <Autocomplete
       value={value}
@@ -270,7 +261,6 @@ export function CountryField({ value, onChange, autoFocus }: CountryFieldProps) 
       options={countries}
       placeholder="Country"
       autoFocus={autoFocus}
-      hint={supportedText}
     />
   );
 }

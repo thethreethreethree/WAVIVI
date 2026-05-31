@@ -295,7 +295,6 @@ export function Questionnaire({
               </span>
             }
             title="Where are we headed?"
-            hint="Country first, city if you've got one."
           >
             <CountryField
               value={country}
