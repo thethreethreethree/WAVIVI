@@ -15,17 +15,28 @@ import type { SusenEngine, SusenReply, SusenTurn } from "./engine";
 const SERVER_URL =
   process.env.NEXT_PUBLIC_SUSEN_SERVER_URL ?? "http://127.0.0.1:8787";
 
+/** Read the user's selected region id from the wv-region cookie (client-side). */
+function currentRegionId(): string | null {
+  if (typeof document === "undefined") return null;
+  const m = document.cookie.match(/(?:^|;\s*)wv-region=([^;]+)/);
+  return m && m[1] ? decodeURIComponent(m[1]) : null;
+}
+
 export const claudeSusen: SusenEngine = {
   async respond(input: string, history: SusenTurn[]): Promise<SusenReply> {
     try {
       const res = await fetch(`${SERVER_URL}/susen/respond`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          // Bypass ngrok's free-tier browser-warning interstitial on API calls.
+          "ngrok-skip-browser-warning": "true",
+        },
         body: JSON.stringify({
           input,
           history,
           channel: "susen_screen",
-          region_id: null,
+          region_id: currentRegionId(),
         }),
       });
       if (!res.ok) throw new Error(`susen server ${res.status}`);
