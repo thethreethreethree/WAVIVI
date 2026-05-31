@@ -24,6 +24,8 @@
  * Then: `export const susen = claudeSusen;`
  */
 
+import { claudeSusen } from "./claude";
+
 export interface SusenTurn {
   role: "user" | "susen";
   text: string;
@@ -91,8 +93,12 @@ export const ruleSusen: SusenEngine = {
   },
 };
 
-/** Active engine. Swap for a Claude-backed implementation when ready. */
-export const susen: SusenEngine = ruleSusen;
+/**
+ * Active engine. Claude-backed via the local S.U.S.E.N server; automatically
+ * falls back to `ruleSusen` if that server is offline.
+ * To revert to the offline rule engine, set this back to `ruleSusen`.
+ */
+export const susen: SusenEngine = claudeSusen;
 
 /** Susen's opening line on the assistant screen. */
 export const SUSEN_WELCOME =
