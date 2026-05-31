@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { RegionRow } from "@/lib/regions/current";
 import { createClient } from "@/lib/supabase/server";
 
 export interface ChatGroup {
@@ -149,10 +150,20 @@ export interface PublicChatGroup {
 
 /** Active (not archived) chat groups for the public /meet discover list.
  *  Sorted by featured DESC then created_at DESC, with up to 3 preview
- *  avatars per group fetched in a single follow-up query. */
-export async function listPublicChatGroups(): Promise<PublicChatGroup[]> {
+ *  avatars per group fetched in a single follow-up query.
+ *
+ *  When `region` is passed in (set via the top-bar region picker), the
+ *  list is filtered to groups whose `destination_country` matches the
+ *  region's country (case-insensitive); groups whose `destination_city`
+ *  is set also have to match the region's city, while groups with no
+ *  destination_city still surface (country-wide groups belong in every
+ *  city of that country). Passing `null` (the "Everywhere" picker
+ *  state) returns the unfiltered list — same as the other feeds. */
+export async function listPublicChatGroups(
+  region: RegionRow | null = null,
+): Promise<PublicChatGroup[]> {
   const supabase = await createClient();
-  const { data } = await supabase
+  let query = supabase
     .from("chat_groups")
     .select(
       "id, name, description, category, cover_image, destination_city, destination_country, featured, chat_group_members(count)",
@@ -160,6 +171,23 @@ export async function listPublicChatGroups(): Promise<PublicChatGroup[]> {
     .eq("archived", false)
     .order("featured", { ascending: false })
     .order("created_at", { ascending: false });
+
+  if (region?.country) {
+    // .ilike with no wildcards is case-insensitive equality. Region
+    // countries land here as "Philippines", DB rows might be
+    // "philippines" / "PH" depending on who created them.
+    query = query.ilike("destination_country", region.country);
+    if (region.city) {
+      // Allow either an exact city match OR a null destination_city
+      // (country-wide groups). PostgREST OR syntax: comma-separated
+      // alternatives, each in `column.operator.value` form.
+      query = query.or(
+        `destination_city.is.null,destination_city.ilike.${region.city}`,
+      );
+    }
+  }
+
+  const { data } = await query;
 
   type Row = {
     id: string;
