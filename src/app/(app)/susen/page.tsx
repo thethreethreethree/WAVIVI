@@ -9,6 +9,8 @@ import {
   MessageLocation,
 } from "@/components/ui/message-attachments";
 import {
+  canEditMessage,
+  EditPreview,
   QuotedReply,
   ReplyActionSheet,
   ReplyPreview,
@@ -20,6 +22,7 @@ import { useLongPress } from "@/hooks/use-long-press";
 import {
   appendSusenLocationAction,
   appendSusenTurnAction,
+  editSusenTurnAction,
   loadSusenHistoryAction,
 } from "@/lib/susen/actions";
 import { SUSEN_WELCOME, type SusenTurn, susen } from "@/lib/susen/engine";
@@ -32,6 +35,10 @@ export default function SusenPage() {
   const [draft, setDraft] = useState("");
   const [thinking, setThinking] = useState(false);
   const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
+  const [editing, setEditing] = useState<{
+    id: string;
+    originalText: string;
+  } | null>(null);
   const [actionTurnKey, setActionTurnKey] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [sharingLocation, setSharingLocation] = useState(false);
@@ -76,6 +83,25 @@ export default function SusenPage() {
   async function send(text: string) {
     const input = text.trim();
     if (!input || thinking) return;
+    if (editing) {
+      const editId = editing.id;
+      setDraft("");
+      setEditing(null);
+      const newEditedAt = await editSusenTurnAction(editId, input);
+      if (!newEditedAt) {
+        // Server rejected (window closed / not own / not text). Restore
+        // so the user can see what they were editing.
+        setDraft(input);
+        setEditing({ id: editId, originalText: input });
+        return;
+      }
+      setTurns((t) =>
+        t.map((tt) =>
+          tt.id === editId ? { ...tt, text: input, edited_at: newEditedAt } : tt,
+        ),
+      );
+      return;
+    }
     const reply = replyTarget?.id
       ? {
           id: replyTarget.id,
@@ -91,6 +117,7 @@ export default function SusenPage() {
     const userTurn: SusenTurn = {
       role: "user",
       text: input,
+      created_at: new Date().toISOString(),
       reply_to_id: reply?.id ?? null,
       reply_to_snippet: reply?.snippet ?? null,
       reply_to_author_name: reply?.authorName ?? null,
@@ -170,11 +197,21 @@ export default function SusenPage() {
 
   function beginReply(turn: SusenTurn) {
     setActionTurnKey(null);
+    setEditing(null);
     setReplyTarget({
       id: turn.id ?? null,
       authorName: turn.role === "user" ? "You" : SUSEN.name,
       snippet: snippetFor(turn.text),
     });
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }
+
+  function beginEdit(turn: SusenTurn) {
+    if (!turn.id || turn.role !== "user" || !turn.text) return;
+    setActionTurnKey(null);
+    setReplyTarget(null);
+    setEditing({ id: turn.id, originalText: turn.text });
+    setDraft(turn.text);
     setTimeout(() => inputRef.current?.focus(), 0);
   }
 
@@ -238,9 +275,19 @@ export default function SusenPage() {
               }}
               highlighted={turn.id != null && highlightId === turn.id}
               actionsOpen={actionTurnKey === turnKey}
+              canEdit={
+                turn.id != null &&
+                turn.role === "user" &&
+                canEditMessage({
+                  own: true,
+                  hasBody: Boolean(turn.text),
+                  createdAtIso: turn.created_at ?? "",
+                })
+              }
               onOpenActions={() => setActionTurnKey(turnKey)}
               onCloseActions={() => setActionTurnKey(null)}
               onReply={() => beginReply(turn)}
+              onEdit={() => beginEdit(turn)}
               onQuoteTap={
                 turn.reply_to_id
                   ? () => scrollToTurn(turn.reply_to_id!)
@@ -287,7 +334,16 @@ export default function SusenPage() {
         ))}
       </div>
 
-      {replyTarget && (
+      {editing && (
+        <EditPreview
+          originalSnippet={snippetFor(editing.originalText)}
+          onCancel={() => {
+            setEditing(null);
+            setDraft("");
+          }}
+        />
+      )}
+      {replyTarget && !editing && (
         <ReplyPreview
           target={replyTarget}
           onCancel={() => setReplyTarget(null)}
@@ -326,7 +382,13 @@ export default function SusenPage() {
           ref={inputRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder={replyTarget ? "Reply…" : "Ask Susen anything…"}
+          placeholder={
+            editing
+              ? "Edit your message…"
+              : replyTarget
+                ? "Reply…"
+                : "Ask Susen anything…"
+          }
           className="wc-frame flex-1 rounded-full bg-white/70 px-4 py-3
                      text-base outline-none placeholder:text-muted"
         />
@@ -347,18 +409,22 @@ function SusenBubble({
   registerRef,
   highlighted,
   actionsOpen,
+  canEdit,
   onOpenActions,
   onCloseActions,
   onReply,
+  onEdit,
   onQuoteTap,
 }: {
   turn: SusenTurn;
   registerRef: (el: HTMLDivElement | null) => void;
   highlighted: boolean;
   actionsOpen: boolean;
+  canEdit: boolean;
   onOpenActions: () => void;
   onCloseActions: () => void;
   onReply: () => void;
+  onEdit: () => void;
   onQuoteTap?: () => void;
 }) {
   const own = turn.role === "user";
@@ -420,8 +486,21 @@ function SusenBubble({
           <div
             className={`absolute top-full mt-1 ${own ? "right-0" : "left-0"}`}
           >
-            <ReplyActionSheet onReply={onReply} onClose={onCloseActions} />
+            <ReplyActionSheet
+              onReply={onReply}
+              onEdit={canEdit ? onEdit : undefined}
+              onClose={onCloseActions}
+            />
           </div>
+        )}
+        {turn.edited_at && turn.text && (
+          <span
+            className={`mt-0.5 block text-[10px] text-muted ${
+              own ? "text-right" : "text-left"
+            }`}
+          >
+            edited
+          </span>
         )}
       </div>
     </div>

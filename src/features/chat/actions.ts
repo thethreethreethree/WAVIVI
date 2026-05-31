@@ -211,6 +211,59 @@ export async function sendChatLocation(
   return { error: null, message: data as ChatMessageRow };
 }
 
+/** Edit a previously-sent chat message. Server enforces:
+ *   * caller owns the row
+ *   * row carries a text body (not image- or location-only)
+ *   * sent within the last 15 minutes (WhatsApp's window)
+ *  Returns the updated row on success so the client can swap it in. */
+export async function editChatMessage(
+  messageId: string,
+  newBody: string,
+): Promise<SendMessageResult> {
+  const trimmed = newBody.trim();
+  if (!trimmed) return { error: "Message can't be empty.", message: null };
+  if (trimmed.length > 2000) {
+    return { error: "Message is too long (2000 char max).", message: null };
+  }
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You need to be signed in.", message: null };
+
+  const { data: row } = await supabase
+    .from("chat_messages")
+    .select("user_id, body, created_at")
+    .eq("id", messageId)
+    .maybeSingle();
+  if (!row) return { error: "Message not found.", message: null };
+  const r = row as {
+    user_id: string;
+    body: string | null;
+    created_at: string;
+  };
+  if (r.user_id !== user.id) {
+    return { error: "You can only edit your own messages.", message: null };
+  }
+  if (!r.body) {
+    return { error: "This message has no text to edit.", message: null };
+  }
+  const ageMs = Date.now() - new Date(r.created_at).getTime();
+  if (ageMs > 15 * 60 * 1000) {
+    return { error: "Edit window has closed (15 min limit).", message: null };
+  }
+
+  const editedAt = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("chat_messages")
+    .update({ body: trimmed, edited_at: editedAt })
+    .eq("id", messageId)
+    .select("*")
+    .single();
+  if (error) return { error: error.message, message: null };
+  return { error: null, message: data as ChatMessageRow };
+}
+
 /** Leave a group. */
 export async function leaveGroup(groupId: string): Promise<ChatActionResult> {
   const supabase = await createClient();

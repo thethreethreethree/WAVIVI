@@ -739,6 +739,7 @@ export type ChatMessageRow = {
   location_lng: number | null;
   location_accuracy_m: number | null;
   location_label: string | null;
+  edited_at: string | null;
 };
 export type ChatMessageInsert = {
   id?: string;
@@ -757,6 +758,7 @@ export type ChatMessageInsert = {
   location_lng?: number | null;
   location_accuracy_m?: number | null;
   location_label?: string | null;
+  edited_at?: string | null;
 };
 export type ChatMessageUpdate = Partial<Omit<ChatMessageInsert, "id">>;
 
@@ -796,6 +798,7 @@ export type SusenMessageRow = {
   location_lng: number | null;
   location_accuracy_m: number | null;
   location_label: string | null;
+  edited_at: string | null;
 };
 export type SusenMessageInsert = {
   id?: string;
@@ -813,6 +816,7 @@ export type SusenMessageInsert = {
   location_lng?: number | null;
   location_accuracy_m?: number | null;
   location_label?: string | null;
+  edited_at?: string | null;
 };
 export type SusenMessageUpdate = Partial<SusenMessageInsert>;
 

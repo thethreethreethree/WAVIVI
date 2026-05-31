@@ -49,6 +49,13 @@ export interface SusenTurn {
   location_lng?: number | null;
   location_accuracy_m?: number | null;
   location_label?: string | null;
+  /** ISO timestamp when the user last edited their own message body.
+   *  Null when never edited. Susen's own turns are not editable. */
+  edited_at?: string | null;
+  /** ISO timestamp when the row was created. Carried so the UI can run
+   *  the 15-min edit-window check client-side. Live turns rendered
+   *  before the server insert completes can use new Date().toISOString(). */
+  created_at?: string;
 }
 
 /** Reply-target payload passed from the client to appendSusenTurn. */

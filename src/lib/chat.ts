@@ -44,6 +44,9 @@ export interface ChatMessage {
   location_lng: number | null;
   location_accuracy_m: number | null;
   location_label: string | null;
+  /** ISO timestamp the last time the author edited the text body. Null
+   *  when the message has not been edited since send. */
+  edited_at: string | null;
 }
 
 /** Look up a chat group by its stable id (matches the mock travel-group id). */

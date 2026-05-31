@@ -11,6 +11,8 @@ import {
   MessageLocation,
 } from "@/components/ui/message-attachments";
 import {
+  canEditMessage,
+  EditPreview,
   QuotedReply,
   ReplyActionSheet,
   ReplyPreview,
@@ -19,6 +21,7 @@ import {
 } from "@/components/ui/reply-bits";
 import { SusenAvatar } from "@/components/ui/susen-avatar";
 import {
+  editChatMessage,
   joinGroup,
   leaveGroup,
   sendChatImage,
@@ -78,6 +81,10 @@ export function ChatThread({
   const [pending, startTransition] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
   const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
+  const [editing, setEditing] = useState<{
+    id: string;
+    originalBody: string;
+  } | null>(null);
   const [actionMessageId, setActionMessageId] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -172,6 +179,26 @@ export function ChatThread({
     e.preventDefault();
     const body = draft.trim();
     if (!body || !currentUserId) return;
+    if (editing) {
+      const editId = editing.id;
+      setDraft("");
+      setEditing(null);
+      setError(null);
+      startTransition(async () => {
+        const res = await editChatMessage(editId, body);
+        if (res.error || !res.message) {
+          setError(res.error ?? "Could not edit.");
+          setDraft(body);
+          setEditing({ id: editId, originalBody: body });
+          return;
+        }
+        const updated = res.message;
+        setMessages((prev) =>
+          prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m)),
+        );
+      });
+      return;
+    }
     const replyPayload = replyTarget?.id
       ? {
           id: replyTarget.id,
@@ -304,6 +331,7 @@ export function ChatThread({
 
   function beginReply(m: ChatMessage) {
     setActionMessageId(null);
+    setEditing(null);
     setReplyTarget({
       id: m.id,
       authorName: m.user_id === currentUserId ? "You" : m.author_name,
@@ -317,6 +345,15 @@ export function ChatThread({
       ),
     });
     // Focus the composer so the keyboard pops on mobile.
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }
+
+  function beginEdit(m: ChatMessage) {
+    if (!m.body) return;
+    setActionMessageId(null);
+    setReplyTarget(null);
+    setEditing({ id: m.id, originalBody: m.body });
+    setDraft(m.body);
     setTimeout(() => inputRef.current?.focus(), 0);
   }
 
@@ -559,6 +596,11 @@ export function ChatThread({
                   sameRun={sameRun}
                   highlighted={highlightId === m.id}
                   actionsOpen={actionMessageId === m.id}
+                  canEdit={canEditMessage({
+                    own,
+                    hasBody: Boolean(m.body),
+                    createdAtIso: m.created_at,
+                  })}
                   registerRef={(el) => {
                     if (el) messageRefs.current.set(m.id, el);
                     else messageRefs.current.delete(m.id);
@@ -566,6 +608,7 @@ export function ChatThread({
                   onOpenActions={() => setActionMessageId(m.id)}
                   onCloseActions={() => setActionMessageId(null)}
                   onReply={() => beginReply(m)}
+                  onEdit={() => beginEdit(m)}
                   onQuoteTap={
                     m.reply_to_id ? () => scrollToMessage(m.reply_to_id!) : undefined
                   }
@@ -614,7 +657,16 @@ export function ChatThread({
         </div>
       ) : (
         <>
-          {replyTarget && (
+          {editing && (
+            <EditPreview
+              originalSnippet={snippetFor(editing.originalBody)}
+              onCancel={() => {
+                setEditing(null);
+                setDraft("");
+              }}
+            />
+          )}
+          {replyTarget && !editing && (
             <ReplyPreview
               target={replyTarget}
               onCancel={() => setReplyTarget(null)}
@@ -679,7 +731,13 @@ export function ChatThread({
               ref={inputRef}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder={replyTarget ? "Reply…" : "Say something nice…"}
+              placeholder={
+                editing
+                  ? "Edit your message…"
+                  : replyTarget
+                    ? "Reply…"
+                    : "Say something nice…"
+              }
               disabled={pending}
               className="flex-1 bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-muted"
             />
@@ -718,10 +776,12 @@ function MessageBubble({
   sameRun,
   highlighted,
   actionsOpen,
+  canEdit,
   registerRef,
   onOpenActions,
   onCloseActions,
   onReply,
+  onEdit,
   onQuoteTap,
 }: {
   message: ChatMessage;
@@ -729,10 +789,12 @@ function MessageBubble({
   sameRun: boolean;
   highlighted: boolean;
   actionsOpen: boolean;
+  canEdit: boolean;
   registerRef: (el: HTMLDivElement | null) => void;
   onOpenActions: () => void;
   onCloseActions: () => void;
   onReply: () => void;
+  onEdit: () => void;
   onQuoteTap?: () => void;
 }) {
   const longPress = useLongPress(onOpenActions, { delayMs: 450 });
@@ -789,8 +851,21 @@ function MessageBubble({
         <div
           className={`absolute top-full mt-1 ${own ? "right-0" : "left-0"}`}
         >
-          <ReplyActionSheet onReply={onReply} onClose={onCloseActions} />
+          <ReplyActionSheet
+            onReply={onReply}
+            onEdit={canEdit ? onEdit : undefined}
+            onClose={onCloseActions}
+          />
         </div>
+      )}
+      {message.edited_at && message.body && (
+        <span
+          className={`mt-0.5 block text-[10px] text-muted ${
+            own ? "text-right" : "text-left"
+          }`}
+        >
+          edited
+        </span>
       )}
     </div>
   );
