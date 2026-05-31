@@ -54,13 +54,15 @@ export function QuotedReply({
       className={`${base} ${skin} disabled:cursor-default`}
     >
       <span
-        className={`block truncate font-semibold ${
+        className={`line-clamp-1 block break-words font-semibold ${
           isOwn ? "text-white" : "text-glow"
         }`}
       >
         {target.authorName}
       </span>
-      <span className="block truncate opacity-90">{target.snippet}</span>
+      <span className="line-clamp-2 block break-words opacity-90">
+        {target.snippet}
+      </span>
     </button>
   );
 }
