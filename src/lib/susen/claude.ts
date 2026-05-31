@@ -10,10 +10,22 @@
  * If the S.U.S.E.N server is down, it falls back to the built-in rule engine so
  * the app never breaks.
  */
+import { createClient } from "@/lib/supabase/client";
+
 import type { SusenEngine, SusenReply, SusenTurn } from "./engine";
 
 const SERVER_URL =
   process.env.NEXT_PUBLIC_SUSEN_SERVER_URL ?? "http://127.0.0.1:8787";
+
+/** The logged-in user's email (admin instructions are captured for dev). */
+async function currentAuthor(): Promise<string | null> {
+  try {
+    const { data } = await createClient().auth.getSession();
+    return data.session?.user?.email ?? null;
+  } catch {
+    return null;
+  }
+}
 
 /** Read the user's selected region id from the wv-region cookie (client-side). */
 function currentRegionId(): string | null {
@@ -37,6 +49,8 @@ export const claudeSusen: SusenEngine = {
           history,
           channel: "susen_screen",
           region_id: currentRegionId(),
+          author: await currentAuthor(),
+          source: "app",
         }),
       });
       if (!res.ok) throw new Error(`susen server ${res.status}`);
