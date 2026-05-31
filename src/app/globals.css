@@ -316,6 +316,14 @@ h3 {
 .wtn-input:disabled::placeholder {
   color: var(--color-muted);
 }
+/* Soft variant — used on optional fields that should read as subtle
+ * until the user fills them in (e.g. trip-planner City). Apply with
+ * .wtn-input--soft alongside .wtn-input; the field is still fully
+ * interactive, it just dims itself when empty. */
+.wtn-input--soft:placeholder-shown:not(:focus) {
+  opacity: 0.55;
+  background: color-mix(in oklab, var(--color-surface) 70%, transparent);
+}
 
 /* Route fade-in — replaces the framer-motion page transition. */
 @keyframes pageFade {

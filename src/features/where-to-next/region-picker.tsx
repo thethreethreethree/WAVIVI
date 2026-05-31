@@ -106,7 +106,12 @@ interface AutocompleteProps {
   autoFocus?: boolean;
   /** Extra hint shown below the field (small text). */
   hint?: string;
+  /** Classes applied to the wrapper (positioning, spacing). */
   className?: string;
+  /** Classes applied to the <input> on top of the base `wtn-input`. Use
+   *  for variants like the soft/dim-when-empty treatment on optional
+   *  fields. */
+  inputClassName?: string;
 }
 
 function Autocomplete({
@@ -118,6 +123,7 @@ function Autocomplete({
   autoFocus,
   hint,
   className,
+  inputClassName,
 }: AutocompleteProps) {
   const inputId = useId();
   const listId = useId();
@@ -203,7 +209,7 @@ function Autocomplete({
             setOpen(false);
           }
         }}
-        className="wtn-input"
+        className={`wtn-input ${inputClassName ?? ""}`}
       />
 
       {open && matches.length > 0 && (
@@ -297,26 +303,10 @@ export function CityField({ value, onChange, country }: CityFieldProps) {
     return out.sort((a, b) => a.localeCompare(b));
   }, [catalog, country]);
 
-  const countryInSystem = useMemo(() => {
-    const q = country.trim().toLowerCase();
-    if (!q || !catalog) return false;
-    return catalog.countries.some((c) => c.toLowerCase() === q);
-  }, [catalog, country]);
-
-  let hint: string | undefined;
-  if (!country.trim()) {
-    // No hint here — the disabled visual state already signals that
-    // the field is gated on the Country above. A redundant text line
-    // just adds noise.
-    hint = undefined;
-  } else if (countryInSystem && cities.length === 0) {
-    hint = `No destinations indexed in ${country.trim()} yet — type any city freely.`;
-  } else if (countryInSystem) {
-    hint = `${cities.length} destination${cities.length === 1 ? "" : "s"} in our system. Type any city freely.`;
-  } else if (catalog) {
-    hint = `${country.trim()} isn't in our system yet — type any city freely.`;
-  }
-
+  // The data-driven hint text (destination counts, free-form notes)
+  // reads as clutter once the user has the dropdown of in-system
+  // cities on focus. The dim-on-empty visual + dropdown affordance
+  // do the work the hint text was doing.
   return (
     <Autocomplete
       value={value}
@@ -324,8 +314,8 @@ export function CityField({ value, onChange, country }: CityFieldProps) {
       options={cities}
       placeholder="City"
       disabled={!country.trim()}
-      hint={hint}
       className="mt-2"
+      inputClassName="wtn-input--soft"
     />
   );
 }
