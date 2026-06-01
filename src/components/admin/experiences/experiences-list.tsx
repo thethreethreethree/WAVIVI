@@ -4,8 +4,13 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { ExperienceEditor } from "./experience-editor";
+import {
+  CityFilter,
+  CityLabel,
+  type CityFilterValue,
+} from "@/components/admin/cities/city-filter";
 import { photoThumb } from "@/lib/utils/images";
-import type { ExperienceRow } from "@/types/supabase";
+import type { CityRow, ExperienceRow } from "@/types/supabase";
 
 const CHANNELS = [
   { key: "instagram", label: "IG", icon: "📷" },
@@ -28,11 +33,14 @@ const categoryKey = (e: ExperienceRow) => e.category || "other";
 /** Filterable list of experiences in a region, with edit + delete. */
 export function ExperiencesList({
   experiences,
+  cities = [],
 }: {
   experiences: ExperienceRow[];
+  cities?: CityRow[];
 }) {
   const router = useRouter();
   const [categoryFilter, setCategoryFilter] = useState<string | "all">("all");
+  const [cityFilter, setCityFilter] = useState<CityFilterValue>("all");
   const [minRating, setMinRating] = useState(0);
   const [needs, setNeeds] = useState<ChannelKey[]>([]);
   const [editing, setEditing] = useState<ExperienceRow | null>(null);
@@ -40,6 +48,12 @@ export function ExperiencesList({
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+
+  const cityNameById = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const c of cities) m[c.id] = c.name;
+    return m;
+  }, [cities]);
 
   // Categories present in the data, with counts, sorted by frequency.
   const categories = useMemo(() => {
@@ -59,10 +73,18 @@ export function ExperiencesList({
       experiences.filter((e) => {
         if (categoryFilter !== "all" && categoryKey(e) !== categoryFilter)
           return false;
+        if (cityFilter === "unset" && e.city_id !== null) return false;
+        if (
+          cityFilter !== "all" &&
+          cityFilter !== "unset" &&
+          e.city_id !== cityFilter
+        ) {
+          return false;
+        }
         if ((e.backpack_rating ?? 0) < minRating) return false;
         return needs.every((k) => hasChannel(e, k));
       }),
-    [experiences, categoryFilter, minRating, needs],
+    [experiences, categoryFilter, cityFilter, minRating, needs],
   );
 
   async function remove(id: string) {
@@ -170,6 +192,13 @@ export function ExperiencesList({
 
   return (
     <div className="flex flex-col gap-3">
+      <CityFilter
+        cities={cities}
+        rows={experiences}
+        value={cityFilter}
+        onChange={setCityFilter}
+      />
+
       {/* Category filter chips */}
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Chip
@@ -275,7 +304,10 @@ export function ExperiencesList({
 
       {visible.length === 0 ? (
         <p className="rounded-2xl bg-surface px-4 py-8 text-center text-sm text-muted shadow-card ring-1 ring-border">
-          {minRating > 0 || needs.length > 0 || categoryFilter !== "all"
+          {minRating > 0 ||
+          needs.length > 0 ||
+          categoryFilter !== "all" ||
+          cityFilter !== "all"
             ? "No experiences match these filters."
             : "No experiences in this region yet — import a CSV above."}
         </p>
@@ -314,11 +346,17 @@ export function ExperiencesList({
                 <span className="block truncate text-sm font-semibold">
                   {e.name}
                 </span>
-                <span className="block truncate text-xs text-muted">
-                  {[e.category, e.activity_type]
-                    .filter((v) => v && v !== "other")
-                    .join(" · ")}
-                  {e.address ? ` · ${e.address}` : ""}
+                <span className="flex items-center gap-1.5 truncate text-xs text-muted">
+                  <CityLabel
+                    cityId={e.city_id}
+                    cityNameById={cityNameById}
+                  />
+                  <span className="truncate">
+                    {[e.category, e.activity_type]
+                      .filter((v) => v && v !== "other")
+                      .join(" · ")}
+                    {e.address ? ` · ${e.address}` : ""}
+                  </span>
                 </span>
                 <span className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
                   <span className="font-bold text-foreground">

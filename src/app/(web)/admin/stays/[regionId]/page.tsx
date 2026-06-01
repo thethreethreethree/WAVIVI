@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { StaysCsvImport } from "@/components/admin/stays/csv-import";
 import { StaysList } from "@/components/admin/stays/stays-list";
 import { createClient } from "@/lib/supabase/server";
-import type { RegionRow, StayRow } from "@/types/supabase";
+import type { CityRow, RegionRow, StayRow } from "@/types/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -16,11 +16,16 @@ export default async function RegionStaysPage({
   const { regionId } = await params;
   const supabase = await createClient();
 
-  const [regionRes, staysRes] = await Promise.all([
+  const [regionRes, staysRes, citiesRes] = await Promise.all([
     supabase.from("regions").select("*").eq("id", regionId).single(),
     supabase
       .from("stays")
       .select("*")
+      .eq("region_id", regionId)
+      .order("name", { ascending: true }),
+    supabase
+      .from("cities")
+      .select("id, region_id, slug, name, created_at")
       .eq("region_id", regionId)
       .order("name", { ascending: true }),
   ]);
@@ -29,6 +34,7 @@ export default async function RegionStaysPage({
   if (!region) notFound();
 
   const stays = (staysRes.data ?? []) as StayRow[];
+  const cities = (citiesRes.data ?? []) as CityRow[];
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-8">
@@ -68,7 +74,7 @@ export default async function RegionStaysPage({
           Stays in this region
         </h2>
         <div className="mt-3">
-          <StaysList stays={stays} />
+          <StaysList stays={stays} cities={cities} />
         </div>
       </section>
     </div>

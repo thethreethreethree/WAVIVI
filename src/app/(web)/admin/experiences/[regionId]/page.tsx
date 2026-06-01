@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ExperiencesCsvImport } from "@/components/admin/experiences/csv-import";
 import { ExperiencesList } from "@/components/admin/experiences/experiences-list";
 import { createClient } from "@/lib/supabase/server";
-import type { ExperienceRow, RegionRow } from "@/types/supabase";
+import type { CityRow, ExperienceRow, RegionRow } from "@/types/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -16,11 +16,16 @@ export default async function RegionExperiencesPage({
   const { regionId } = await params;
   const supabase = await createClient();
 
-  const [regionRes, experiencesRes] = await Promise.all([
+  const [regionRes, experiencesRes, citiesRes] = await Promise.all([
     supabase.from("regions").select("*").eq("id", regionId).single(),
     supabase
       .from("experiences")
       .select("*")
+      .eq("region_id", regionId)
+      .order("name", { ascending: true }),
+    supabase
+      .from("cities")
+      .select("id, region_id, slug, name, created_at")
       .eq("region_id", regionId)
       .order("name", { ascending: true }),
   ]);
@@ -29,6 +34,7 @@ export default async function RegionExperiencesPage({
   if (!region) notFound();
 
   const experiences = (experiencesRes.data ?? []) as ExperienceRow[];
+  const cities = (citiesRes.data ?? []) as CityRow[];
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-8">
@@ -68,7 +74,7 @@ export default async function RegionExperiencesPage({
           Experiences in this region
         </h2>
         <div className="mt-3">
-          <ExperiencesList experiences={experiences} />
+          <ExperiencesList experiences={experiences} cities={cities} />
         </div>
       </section>
     </div>

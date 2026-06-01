@@ -4,8 +4,13 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { StayEditor } from "./stay-editor";
+import {
+  CityFilter,
+  CityLabel,
+  type CityFilterValue,
+} from "@/components/admin/cities/city-filter";
 import { photoThumb } from "@/lib/utils/images";
-import type { StayRow, StayType } from "@/types/supabase";
+import type { CityRow, StayRow, StayType } from "@/types/supabase";
 
 const STAY_TYPE_LABEL: Record<StayType, string> = {
   hostel: "Hostel",
@@ -35,9 +40,16 @@ function hasChannel(s: StayRow, key: ChannelKey): boolean {
 const RATING_STEPS = [0, 1, 2, 3, 4, 4.5] as const;
 
 /** Filterable list of stays in a region, with edit + delete. */
-export function StaysList({ stays }: { stays: StayRow[] }) {
+export function StaysList({
+  stays,
+  cities = [],
+}: {
+  stays: StayRow[];
+  cities?: CityRow[];
+}) {
   const router = useRouter();
   const [typeFilter, setTypeFilter] = useState<StayType | "all">("all");
+  const [cityFilter, setCityFilter] = useState<CityFilterValue>("all");
   const [minRating, setMinRating] = useState(0);
   const [needs, setNeeds] = useState<ChannelKey[]>([]);
   const [editing, setEditing] = useState<StayRow | null>(null);
@@ -52,6 +64,13 @@ export function StaysList({ stays }: { stays: StayRow[] }) {
     return c;
   }, [stays]);
 
+  // City name lookup, used by every row's inline CityLabel.
+  const cityNameById = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const c of cities) m[c.id] = c.name;
+    return m;
+  }, [cities]);
+
   const toggleNeed = (key: ChannelKey) =>
     setNeeds((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]));
 
@@ -59,10 +78,18 @@ export function StaysList({ stays }: { stays: StayRow[] }) {
     () =>
       stays.filter((s) => {
         if (typeFilter !== "all" && s.stay_type !== typeFilter) return false;
+        if (cityFilter === "unset" && s.city_id !== null) return false;
+        if (
+          cityFilter !== "all" &&
+          cityFilter !== "unset" &&
+          s.city_id !== cityFilter
+        ) {
+          return false;
+        }
         if ((s.backpack_rating ?? 0) < minRating) return false;
         return needs.every((k) => hasChannel(s, k));
       }),
-    [stays, typeFilter, minRating, needs],
+    [stays, typeFilter, cityFilter, minRating, needs],
   );
 
   async function remove(id: string) {
@@ -170,6 +197,14 @@ export function StaysList({ stays }: { stays: StayRow[] }) {
 
   return (
     <div className="flex flex-col gap-3">
+      {/* City filter chips */}
+      <CityFilter
+        cities={cities}
+        rows={stays}
+        value={cityFilter}
+        onChange={setCityFilter}
+      />
+
       {/* Type filter chips */}
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Chip
@@ -275,7 +310,7 @@ export function StaysList({ stays }: { stays: StayRow[] }) {
 
       {visible.length === 0 ? (
         <p className="rounded-2xl bg-surface px-4 py-8 text-center text-sm text-muted shadow-card ring-1 ring-border">
-          {minRating > 0 || needs.length > 0
+          {minRating > 0 || needs.length > 0 || cityFilter !== "all"
             ? "No stays match these filters."
             : "No stays in this region yet — import a CSV above."}
         </p>
@@ -314,9 +349,15 @@ export function StaysList({ stays }: { stays: StayRow[] }) {
                 <span className="block truncate text-sm font-semibold">
                   {s.name}
                 </span>
-                <span className="block truncate text-xs text-muted">
-                  {STAY_TYPE_LABEL[s.stay_type]}
-                  {s.address ? ` · ${s.address}` : ""}
+                <span className="flex items-center gap-1.5 truncate text-xs text-muted">
+                  <CityLabel
+                    cityId={s.city_id}
+                    cityNameById={cityNameById}
+                  />
+                  <span className="truncate">
+                    {STAY_TYPE_LABEL[s.stay_type]}
+                    {s.address ? ` · ${s.address}` : ""}
+                  </span>
                 </span>
                 <span className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
                   <span className="font-bold text-foreground">

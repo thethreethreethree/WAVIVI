@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { RestaurantsCsvImport } from "@/components/admin/restaurants/csv-import";
 import { RestaurantsList } from "@/components/admin/restaurants/restaurants-list";
 import { createClient } from "@/lib/supabase/server";
-import type { RegionRow, RestaurantRow } from "@/types/supabase";
+import type { CityRow, RegionRow, RestaurantRow } from "@/types/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -16,11 +16,16 @@ export default async function RegionEatPage({
   const { regionId } = await params;
   const supabase = await createClient();
 
-  const [regionRes, restaurantsRes] = await Promise.all([
+  const [regionRes, restaurantsRes, citiesRes] = await Promise.all([
     supabase.from("regions").select("*").eq("id", regionId).single(),
     supabase
       .from("restaurants")
       .select("*")
+      .eq("region_id", regionId)
+      .order("name", { ascending: true }),
+    supabase
+      .from("cities")
+      .select("id, region_id, slug, name, created_at")
       .eq("region_id", regionId)
       .order("name", { ascending: true }),
   ]);
@@ -29,6 +34,7 @@ export default async function RegionEatPage({
   if (!region) notFound();
 
   const restaurants = (restaurantsRes.data ?? []) as RestaurantRow[];
+  const cities = (citiesRes.data ?? []) as CityRow[];
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-8">
@@ -60,7 +66,7 @@ export default async function RegionEatPage({
           Restaurants in this region
         </h2>
         <div className="mt-3">
-          <RestaurantsList restaurants={restaurants} />
+          <RestaurantsList restaurants={restaurants} cities={cities} />
         </div>
       </section>
     </div>

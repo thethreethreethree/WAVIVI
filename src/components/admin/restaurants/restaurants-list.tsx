@@ -4,8 +4,13 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { RestaurantEditor } from "./restaurant-editor";
+import {
+  CityFilter,
+  CityLabel,
+  type CityFilterValue,
+} from "@/components/admin/cities/city-filter";
 import { photoThumb } from "@/lib/utils/images";
-import type { RestaurantRow } from "@/types/supabase";
+import type { CityRow, RestaurantRow } from "@/types/supabase";
 
 const CHANNELS = [
   { key: "instagram", label: "IG", icon: "📷" },
@@ -26,11 +31,14 @@ const RATING_STEPS = [0, 1, 2, 3, 4, 4.5] as const;
 /** Filterable list of restaurants in a region, with edit + delete. */
 export function RestaurantsList({
   restaurants,
+  cities = [],
 }: {
   restaurants: RestaurantRow[];
+  cities?: CityRow[];
 }) {
   const router = useRouter();
   const [cuisineFilter, setCuisineFilter] = useState<string | "all">("all");
+  const [cityFilter, setCityFilter] = useState<CityFilterValue>("all");
   const [minRating, setMinRating] = useState(0);
   const [needs, setNeeds] = useState<ChannelKey[]>([]);
   const [editing, setEditing] = useState<RestaurantRow | null>(null);
@@ -38,6 +46,12 @@ export function RestaurantsList({
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+
+  const cityNameById = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const c of cities) m[c.id] = c.name;
+    return m;
+  }, [cities]);
 
   // Cuisines present in the data, with counts, sorted by frequency.
   const cuisines = useMemo(() => {
@@ -57,10 +71,18 @@ export function RestaurantsList({
       restaurants.filter((r) => {
         if (cuisineFilter !== "all" && (r.cuisine || "other") !== cuisineFilter)
           return false;
+        if (cityFilter === "unset" && r.city_id !== null) return false;
+        if (
+          cityFilter !== "all" &&
+          cityFilter !== "unset" &&
+          r.city_id !== cityFilter
+        ) {
+          return false;
+        }
         if ((r.backpack_rating ?? 0) < minRating) return false;
         return needs.every((k) => hasChannel(r, k));
       }),
-    [restaurants, cuisineFilter, minRating, needs],
+    [restaurants, cuisineFilter, cityFilter, minRating, needs],
   );
 
   async function remove(id: string) {
@@ -168,6 +190,13 @@ export function RestaurantsList({
 
   return (
     <div className="flex flex-col gap-3">
+      <CityFilter
+        cities={cities}
+        rows={restaurants}
+        value={cityFilter}
+        onChange={setCityFilter}
+      />
+
       {/* Cuisine filter chips */}
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Chip
@@ -273,7 +302,10 @@ export function RestaurantsList({
 
       {visible.length === 0 ? (
         <p className="rounded-2xl bg-surface px-4 py-8 text-center text-sm text-muted shadow-card ring-1 ring-border">
-          {minRating > 0 || needs.length > 0 || cuisineFilter !== "all"
+          {minRating > 0 ||
+          needs.length > 0 ||
+          cuisineFilter !== "all" ||
+          cityFilter !== "all"
             ? "No restaurants match these filters."
             : "No restaurants in this region yet — import a CSV above."}
         </p>
@@ -312,9 +344,15 @@ export function RestaurantsList({
                 <span className="block truncate text-sm font-semibold">
                   {r.name}
                 </span>
-                <span className="block truncate text-xs text-muted">
-                  {[r.cuisine, r.price_range].filter(Boolean).join(" · ")}
-                  {r.address ? ` · ${r.address}` : ""}
+                <span className="flex items-center gap-1.5 truncate text-xs text-muted">
+                  <CityLabel
+                    cityId={r.city_id}
+                    cityNameById={cityNameById}
+                  />
+                  <span className="truncate">
+                    {[r.cuisine, r.price_range].filter(Boolean).join(" · ")}
+                    {r.address ? ` · ${r.address}` : ""}
+                  </span>
                 </span>
                 <span className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
                   <span className="font-bold text-foreground">
