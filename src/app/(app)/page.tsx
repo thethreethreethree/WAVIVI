@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AppTopBar } from "@/components/ui/app-top-bar";
 import { CardImage } from "@/components/ui/card-image";
 import { RadialHub } from "@/components/ui/radial-hub";
+import { getCurrentCity } from "@/lib/cities/current";
 import { getCurrentRegion } from "@/lib/regions/current";
 import { withinRegionRadius } from "@/lib/regions/within-radius";
 import { createClient } from "@/lib/supabase/server";
@@ -20,8 +21,15 @@ type ForYouCard = {
 
 export default async function Home() {
   const supabase = await createClient();
-  const region = await getCurrentRegion();
+  const [region, city] = await Promise.all([
+    getCurrentRegion(),
+    getCurrentCity(),
+  ]);
   const regionId = region?.id ?? null;
+  // City scope only sticks when it belongs to the active region — a
+  // stale city cookie from a previous region is ignored.
+  const cityId =
+    city && regionId && city.region_id === regionId ? city.id : null;
 
   // "For you" picks. When a region is selected, pull live top-rated
   // stays / restaurants / experiences from that region (2 of each).
@@ -52,38 +60,50 @@ export default async function Home() {
     const QUALITY_MIN_REVIEWS = 20;
     const PER_CAT_FETCH = 10;
     const PER_CAT_KEEP = 1;
+    // Build the three place queries up front so we can conditionally
+    // tack on the city filter — chainable Supabase builders don't
+    // play with inline conditionals.
+    let staysQ = supabase
+      .from("stays")
+      .select("id, name, photo_url, stay_type, latitude, longitude")
+      .eq("active", true)
+      .eq("region_id", regionId)
+      .eq("stay_type", "hostel")
+      .gte("backpack_rating", QUALITY_MIN_RATING)
+      .gte("review_count", QUALITY_MIN_REVIEWS)
+      .order("backpack_rating", { ascending: false })
+      .limit(PER_CAT_FETCH);
+    if (cityId) staysQ = staysQ.eq("city_id", cityId);
+
+    let eatsQ = supabase
+      .from("restaurants")
+      .select("id, name, photo_url, cuisine, latitude, longitude")
+      .eq("active", true)
+      .eq("region_id", regionId)
+      .gte("backpack_rating", QUALITY_MIN_RATING)
+      .gte("review_count", QUALITY_MIN_REVIEWS)
+      .order("backpack_rating", { ascending: false })
+      .limit(PER_CAT_FETCH);
+    if (cityId) eatsQ = eatsQ.eq("city_id", cityId);
+
+    let expsQ = supabase
+      .from("experiences")
+      .select("id, name, photo_url, category, latitude, longitude")
+      .eq("active", true)
+      .eq("region_id", regionId)
+      .gte("backpack_rating", QUALITY_MIN_RATING)
+      .gte("review_count", QUALITY_MIN_REVIEWS)
+      .order("backpack_rating", { ascending: false })
+      .limit(PER_CAT_FETCH);
+    if (cityId) expsQ = expsQ.eq("city_id", cityId);
+
     const [staysRes, eatsRes, expsRes, groupRes] = await Promise.all([
       // Stay slot is specifically a hostel — fits the Wondavu traveller
       // audience. If no hostel in the region meets the quality bar, the
       // stay card simply doesn't appear (no fallback to BnBs/hotels).
-      supabase
-        .from("stays")
-        .select("id, name, photo_url, stay_type, latitude, longitude")
-        .eq("active", true)
-        .eq("region_id", regionId)
-        .eq("stay_type", "hostel")
-        .gte("backpack_rating", QUALITY_MIN_RATING)
-        .gte("review_count", QUALITY_MIN_REVIEWS)
-        .order("backpack_rating", { ascending: false })
-        .limit(PER_CAT_FETCH),
-      supabase
-        .from("restaurants")
-        .select("id, name, photo_url, cuisine, latitude, longitude")
-        .eq("active", true)
-        .eq("region_id", regionId)
-        .gte("backpack_rating", QUALITY_MIN_RATING)
-        .gte("review_count", QUALITY_MIN_REVIEWS)
-        .order("backpack_rating", { ascending: false })
-        .limit(PER_CAT_FETCH),
-      supabase
-        .from("experiences")
-        .select("id, name, photo_url, category, latitude, longitude")
-        .eq("active", true)
-        .eq("region_id", regionId)
-        .gte("backpack_rating", QUALITY_MIN_RATING)
-        .gte("review_count", QUALITY_MIN_REVIEWS)
-        .order("backpack_rating", { ascending: false })
-        .limit(PER_CAT_FETCH),
+      staysQ,
+      eatsQ,
+      expsQ,
       // Chat group — featured first, then most recent. Groups don't
       // carry a rating, so no quality filter; featured + non-archived
       // is the curation signal. No region scoping yet (chat_groups

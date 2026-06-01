@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { StayList, type StayPicker } from "@/features/stays/stay-list";
+import { getCurrentCity } from "@/lib/cities/current";
 import { getCurrentRegion } from "@/lib/regions/current";
 import { withinRegionRadius } from "@/lib/regions/within-radius";
 import { createClient } from "@/lib/supabase/server";
@@ -13,13 +14,21 @@ const MAX_PICKERS = 3;
 
 export default async function StayPage() {
   const supabase = await createClient();
-  const region = await getCurrentRegion();
+  const [region, city] = await Promise.all([
+    getCurrentRegion(),
+    getCurrentCity(),
+  ]);
   let query = supabase
     .from("stays")
     .select("*")
     .eq("active", true)
     .order("backpack_rating", { ascending: false });
   if (region) query = query.eq("region_id", region.id);
+  // City scope only applies when the city belongs to the active region —
+  // a stale city cookie from a previous region must not narrow the list.
+  if (city && region && city.region_id === region.id) {
+    query = query.eq("city_id", city.id);
+  }
   const { data } = await query;
   // Drop venues the ingest tagged with this region but that sit outside
   // the region's centre+radius — usually venues in a neighbouring region

@@ -5,6 +5,10 @@ import { ThemedIcon } from "@/components/ui/themed-icon";
 import { WondavuLogoToggle } from "@/components/ui/wondavu-logo-toggle";
 import { InstallPill } from "@/features/pwa";
 import {
+  getCurrentCityId,
+  listCitiesForRegions,
+} from "@/lib/cities/current";
+import {
   getCurrentRegionId,
   listActiveRegions,
 } from "@/lib/regions/current";
@@ -19,14 +23,23 @@ export async function AppTopBar({
 }) {
   // Region picker — server fetches the list + current id once per render so
   // the client component receives a fully-rendered, server-data sheet.
-  const [regions, currentId] = await Promise.all([
+  const [regions, currentId, currentCityId] = await Promise.all([
     listActiveRegions(),
     getCurrentRegionId(),
+    getCurrentCityId(),
   ]);
+  // City list is fetched in one shot for every active region so the
+  // picker can render expandable groups without a second round-trip.
+  const cities = await listCitiesForRegions(regions.map((r) => r.id));
   const current = currentId
     ? regions.find((r) => r.id === currentId) ?? null
     : null;
-  const currentLabel = current?.display_name ?? "Everywhere";
+  const currentCity = currentCityId
+    ? cities.find((c) => c.id === currentCityId) ?? null
+    : null;
+  const currentLabel = currentCity
+    ? `${currentCity.name}${current ? `, ${current.display_name}` : ""}`
+    : (current?.display_name ?? "Everywhere");
 
   return (
     <header className="flex items-start justify-between px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
@@ -41,7 +54,9 @@ export async function AppTopBar({
       <div className="flex items-center gap-3.5">
         <RegionPicker
           regions={regions}
+          cities={cities}
           currentId={currentId}
+          currentCityId={currentCityId}
           currentLabel={currentLabel}
         />
         {/* tb-trio-button = hook used by the Journal-scoped overrides in
