@@ -153,16 +153,24 @@ function qualityBadge(rating: number | null): string {
 export function ToolboxMap({
   initialCategory,
   initialRegion,
+  initialRegionLabel,
 }: {
   initialCategory?: CategoryId;
   initialRegion?: string;
+  /** Display name for the current region. Passed in from the server so
+   *  the read-only label can render without a second fetch. `null` =
+   *  no region picked yet ("Everywhere"). */
+  initialRegionLabel?: string | null;
 }) {
   const router = useRouter();
   const [active, setActive] = useState<CategoryId | "all">(
     initialCategory ?? "all",
   );
   const [regions, setRegions] = useState<Region[]>([]);
-  const [region, setRegion] = useState<string>(initialRegion ?? "");
+  // Region is driven by the global wv-region cookie via the page
+  // wrapper — no per-map selector. The state still mirrors the prop
+  // so existing fetch/center effects keep working unchanged.
+  const region = initialRegion ?? "";
   const [utilities, setUtilities] = useState<UtilityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [located, setLocated] = useState(false);
@@ -183,6 +191,8 @@ export function ToolboxMap({
   const userPosRef = useRef<{ lat: number; lng: number } | null>(null);
 
   // --- Load regions (once) --------------------------------------------------
+  // We still need the active region's lat/lng to centre the map at the
+  // default zoom — the picker doesn't supply coordinates, only the id.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -193,14 +203,11 @@ export function ToolboxMap({
         if (cancelled) return;
         const list: Region[] = json.regions ?? [];
         setRegions(list);
-        // Honour the global region cookie passed as initialRegion if it's
-        // still in the active list; otherwise fall back to the first one.
-        const preferred =
-          initialRegion && list.some((r) => r.id === initialRegion)
-            ? initialRegion
-            : list[0]?.id ?? "";
-        if (preferred) setRegion(preferred);
-        else setNotice("No regions yet — add one in the admin Toolbox.");
+        if (!initialRegion && list.length === 0) {
+          setNotice("No regions yet — add one in the admin Toolbox.");
+        } else if (!initialRegion) {
+          setNotice("Pick a region from the globe at the top.");
+        }
       } catch (err) {
         if (!cancelled) {
           setNotice(`Couldn't load regions (${String(err)}).`);
@@ -424,44 +431,16 @@ export function ToolboxMap({
           </div>
         </div>
 
-        {/* Region row */}
+        {/* Region row — driven by the global wv-region cookie; tap the
+            globe in the top bar to change. */}
         <div className="relative flex items-center gap-2.5">
-          <label
-            htmlFor="tb-region"
-            className="shrink-0 text-xs font-bold text-white"
-          >
+          <span className="shrink-0 text-xs font-bold text-white">
             📍 Region
-          </label>
+          </span>
           <div className="wc-frame wc-frame-white relative min-w-0 flex-1 rounded-xl">
-            <select
-              id="tb-region"
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-              className="w-full appearance-none bg-transparent px-3 py-1.5 pr-8 text-xs font-bold text-white outline-none"
-            >
-              {regions.length === 0 && (
-                <option value="" className="text-foreground">
-                  Loading regions…
-                </option>
-              )}
-              {regions.map((r) => (
-                <option key={r.id} value={r.id} className="text-foreground">
-                  {r.display_name}
-                </option>
-              ))}
-            </select>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white"
-              aria-hidden
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
+            <span className="block truncate px-3 py-1.5 text-xs font-bold text-white">
+              {initialRegionLabel ?? "Everywhere — pick a region in the top bar"}
+            </span>
           </div>
           <span className="shrink-0 text-[11px] font-semibold text-white/80">
             {totalCount} shown
