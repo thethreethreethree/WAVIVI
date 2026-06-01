@@ -299,9 +299,6 @@ export function RegionPicker({
                               )}
                             </span>
                             <span className="flex items-center gap-2 text-muted">
-                              {regionActive && pinnedCount === 0 && (
-                                <span className="text-glow">✓</span>
-                              )}
                               {hasCities && (
                                 <span
                                   aria-hidden
@@ -392,7 +389,7 @@ function ExpandedCityPanel({
               : "text-muted ring-1 ring-border hover:text-foreground"
           }`}
         >
-          {allOn ? "✓ All cities" : "Select all"}
+          {allOn ? "All cities" : "Select all"}
         </button>
       </div>
       <div className="flex flex-wrap gap-1.5">
