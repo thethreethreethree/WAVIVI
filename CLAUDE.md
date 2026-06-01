@@ -5,6 +5,8 @@ find events, and feel the "vibe" of every place. Built as an installable PWA.
 
 @AGENTS.md
 
+@CLAUDE-problem-solving.md
+
 ## Stack
 
 - **Framework:** Next.js 16 (App Router) + React 19 + TypeScript
