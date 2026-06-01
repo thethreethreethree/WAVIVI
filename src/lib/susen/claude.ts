@@ -36,38 +36,49 @@ function currentRegionId(): string | null {
 
 export const claudeSusen: SusenEngine = {
   async respond(input: string, history: SusenTurn[]): Promise<SusenReply> {
-    try {
-      const res = await fetch(`${SERVER_URL}/susen/respond`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Bypass ngrok's free-tier browser-warning interstitial on API calls.
-          "ngrok-skip-browser-warning": "true",
-        },
-        body: JSON.stringify({
-          input,
-          history,
-          channel: "susen_screen",
-          region_id: currentRegionId(),
-          author: await currentAuthor(),
-          source: "app",
-        }),
-      });
-      if (!res.ok) throw new Error(`susen server ${res.status}`);
-      const data = (await res.json()) as { text: string };
-      // Visible proof in the browser console that the LIVE engine answered.
-      console.info("%c[Susen] live reply from server", "color:#6db5a4", SERVER_URL);
-      return { text: data.text };
-    } catch (err) {
-      // Server offline -> degrade to the built-in rule engine (lazy import to
-      // avoid a static import cycle with engine.ts).
-      console.warn(
-        "[Susen] could NOT reach the server, using rule fallback →",
-        SERVER_URL,
-        err,
-      );
-      const { ruleSusen } = await import("./engine");
-      return ruleSusen.respond(input, history);
+    const body = JSON.stringify({
+      input,
+      history,
+      channel: "susen_screen",
+      region_id: currentRegionId(),
+      author: await currentAuthor(),
+      source: "app",
+    });
+
+    // Retry across brief blips (server restarts, ngrok reconnects) so we only
+    // fall back to the rule engine on a real, sustained outage.
+    const delaysMs = [0, 2000, 3000]; // 3 attempts, ~5s of coverage
+    for (let i = 0; i < delaysMs.length; i++) {
+      const wait = delaysMs[i] ?? 0;
+      if (wait) await new Promise((r) => setTimeout(r, wait));
+      try {
+        const res = await fetch(`${SERVER_URL}/susen/respond`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // Bypass ngrok's free-tier browser-warning interstitial on API calls.
+            "ngrok-skip-browser-warning": "true",
+          },
+          body,
+        });
+        if (!res.ok) throw new Error(`susen server ${res.status}`);
+        const data = (await res.json()) as { text: string };
+        console.info("%c[Susen] live reply from server", "color:#6db5a4", SERVER_URL);
+        return { text: data.text };
+      } catch (err) {
+        if (i < delaysMs.length - 1) continue; // brief blip — retry
+        // Sustained outage -> degrade to the built-in rule engine (lazy import
+        // to avoid a static import cycle with engine.ts).
+        console.warn(
+          "[Susen] could NOT reach the server after retries, using rule fallback →",
+          SERVER_URL,
+          err,
+        );
+        const { ruleSusen } = await import("./engine");
+        return ruleSusen.respond(input, history);
+      }
     }
+    const { ruleSusen } = await import("./engine");
+    return ruleSusen.respond(input, history);
   },
 };
