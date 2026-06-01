@@ -34,10 +34,16 @@ function distanceM(aLat: number, aLng: number, bLat: number, bLng: number) {
 
 const snapHalf = (n: number) => Math.round(n * 2) / 2;
 
+/** See `CityResolver` in stays/csv-import-engine.ts — same contract. */
+export type CityResolver = (
+  cityName: string | null,
+) => string | null | Promise<string | null>;
+
 export async function importRestaurantsCsv(
   regionId: string,
   defaultCuisine: string,
   rows: RestaurantCsvRow[],
+  cityResolver?: CityResolver,
 ): Promise<RestaurantImportResult> {
   const supabase = createAdminClient();
 
@@ -106,6 +112,10 @@ export async function importRestaurantsCsv(
       [],
     );
 
+    const resolvedCityId = cityResolver
+      ? await cityResolver(row.city)
+      : null;
+
     if (best) {
       claimed.add(best.id);
       const fresh = !best.admin_edited;
@@ -116,6 +126,9 @@ export async function importRestaurantsCsv(
         longitude: row.longitude,
         google_maps_url: mapsUrl,
       };
+      if (resolvedCityId && (fresh || !best.city_id)) {
+        update.city_id = resolvedCityId;
+      }
       // Re-classify on re-import (unless an admin hand-curated the row).
       if (fresh) update.cuisine = resolvedCuisine;
       if (row.priceRange && (fresh || !best.price_range))
@@ -148,6 +161,7 @@ export async function importRestaurantsCsv(
     } else {
       const insert: RestaurantInsert = {
         region_id: regionId,
+        city_id: resolvedCityId,
         cuisine: resolvedCuisine,
         name: row.name,
         description: row.description,

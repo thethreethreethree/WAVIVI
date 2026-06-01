@@ -147,6 +147,28 @@ export type RegionInsert = {
 
 export type RegionUpdate = Partial<Omit<RegionInsert, "id">>;
 
+/* ── Cities (migration 0046) ───────────────────────────────────────────
+ * A region (province / scan area) groups many cities. Slugs are unique
+ * per-region, not globally, so two provinces can each have a "Carmen".
+ * Place rows (stays/restaurants/experiences) get an optional city_id FK
+ * onto this table. */
+export type CityRow = {
+  id: string;
+  region_id: string;
+  slug: string;
+  name: string;
+  created_at: string;
+};
+
+export type CityInsert = {
+  id?: string;
+  region_id: string;
+  slug: string;
+  name: string;
+};
+
+export type CityUpdate = Partial<Omit<CityInsert, "region_id">>;
+
 export type UtilityRow = {
   id: string;
   region_id: string | null;
@@ -307,6 +329,10 @@ export type StayType =
 export type StayRow = {
   id: string;
   region_id: string | null;
+  /** Migration 0046: links each place to its city under the parent region.
+   *  Nullable so legacy rows (pre-cities) and per-region uploaders that
+   *  don't supply a city resolver leave it null. */
+  city_id: string | null;
   stay_type: StayType;
   name: string;
   latitude: number;
@@ -355,6 +381,7 @@ export type StayRow = {
 export type StayInsert = {
   id?: string;
   region_id?: string | null;
+  city_id?: string | null;
   stay_type?: StayType;
   name: string;
   latitude: number;
@@ -398,6 +425,8 @@ export type StayUpdate = Partial<Omit<StayInsert, "source_ref">>;
 export type ExperienceRow = {
   id: string;
   region_id: string | null;
+  /** Migration 0046 — see StayRow.city_id. */
+  city_id: string | null;
   /** Broad theme for filter chips (Adventure, Water & Beach, …). */
   category: string;
   activity_type: string;
@@ -443,6 +472,7 @@ export type ExperienceRow = {
 export type ExperienceInsert = {
   id?: string;
   region_id?: string | null;
+  city_id?: string | null;
   category?: string;
   activity_type?: string;
   day_bucket?: string | null;
@@ -566,6 +596,8 @@ export type EventUpdate = Partial<Omit<EventInsert, "source_ref">>;
 export type RestaurantRow = {
   id: string;
   region_id: string | null;
+  /** Migration 0046 — see StayRow.city_id. */
+  city_id: string | null;
   cuisine: string;
   name: string;
   description: string | null;
@@ -605,6 +637,7 @@ export type RestaurantRow = {
 export type RestaurantInsert = {
   id?: string;
   region_id?: string | null;
+  city_id?: string | null;
   cuisine?: string;
   name: string;
   description?: string | null;
@@ -1127,6 +1160,7 @@ export type Database = {
     Tables: {
       profiles: TableShape<ProfileRow, ProfileInsert, ProfileUpdate>;
       regions: TableShape<RegionRow, RegionInsert, RegionUpdate>;
+      cities: TableShape<CityRow, CityInsert, CityUpdate>;
       traveler_utilities: TableShape<UtilityRow, UtilityInsert, UtilityUpdate>;
       traveler_reports: TableShape<ReportRow, ReportInsert, ReportUpdate>;
       utility_votes: TableShape<

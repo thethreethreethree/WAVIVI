@@ -55,10 +55,16 @@ function distanceM(
 /** Snap a 0–5 rating to the nearest half (for the backpack display). */
 const snapHalf = (n: number) => Math.round(n * 2) / 2;
 
+/** See `CityResolver` in stays/csv-import-engine.ts — same contract. */
+export type CityResolver = (
+  cityName: string | null,
+) => string | null | Promise<string | null>;
+
 export async function importExperiencesCsv(
   regionId: string,
   defaultActivityType: string,
   rows: ExperienceCsvRow[],
+  cityResolver?: CityResolver,
 ): Promise<ExperienceImportResult> {
   const supabase = createAdminClient();
 
@@ -138,6 +144,10 @@ export async function importExperiencesCsv(
       [],
     );
 
+    const resolvedCityId = cityResolver
+      ? await cityResolver(row.city)
+      : null;
+
     if (best) {
       // --- Update an existing experience ----------------------------------
       claimed.add(best.id);
@@ -149,6 +159,9 @@ export async function importExperiencesCsv(
         longitude: row.longitude,
         google_maps_url: mapsUrl,
       };
+      if (resolvedCityId && (fresh || !best.city_id)) {
+        update.city_id = resolvedCityId;
+      }
       // Re-classify on re-import (unless an admin hand-curated the row).
       if (fresh) {
         update.activity_type = resolvedType;
@@ -187,6 +200,7 @@ export async function importExperiencesCsv(
       // --- Insert a new experience -----------------------------------------
       const insert: ExperienceInsert = {
         region_id: regionId,
+        city_id: resolvedCityId,
         category: resolvedCategory,
         activity_type: resolvedType,
         day_bucket: row.dayBucket,

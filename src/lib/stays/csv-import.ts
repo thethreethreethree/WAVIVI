@@ -52,6 +52,10 @@ export interface StayCsvRow {
   longitude: number;
   /** Stable dedup ref from the Google Maps link, or a coord-based fallback. */
   placeRef: string;
+  /** Raw value of the CSV's `City` column when present. The batch-city
+   *  import action resolves this to a city_id via a `cityResolver` it
+   *  passes to the engine; legacy per-region uploaders leave it null. */
+  city: string | null;
 }
 
 /**
@@ -349,6 +353,7 @@ export function parseStaysCsv(text: string): StayCsvParseResult {
     lat: col("latitude", "lat"),
     lng: col("longitude", "lng", "lon"),
     link: col("google maps link", "google maps url", "link", "url"),
+    city: col("city", "town", "municipality"),
   };
 
   if (idx.title === -1 || idx.lat === -1 || idx.lng === -1) {
@@ -436,6 +441,7 @@ export function parseStaysCsv(text: string): StayCsvParseResult {
       longitude: lng,
       placeRef:
         extractPlaceRef(link) ?? `csv:${lat.toFixed(5)},${lng.toFixed(5)}`,
+      city: text(idx.city),
     });
   }
 

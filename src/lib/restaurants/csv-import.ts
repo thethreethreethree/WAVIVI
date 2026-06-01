@@ -128,6 +128,9 @@ export interface RestaurantCsvRow {
   latitude: number;
   longitude: number;
   placeRef: string;
+  /** Raw value of the CSV's `City` column when present. The batch-city
+   *  import action resolves this to a city_id via a `cityResolver`. */
+  city: string | null;
 }
 
 export interface RestaurantCsvParseResult {
@@ -218,6 +221,7 @@ export function parseRestaurantsCsv(text: string): RestaurantCsvParseResult {
     lat: col("latitude", "lat"),
     lng: col("longitude", "lng", "lon"),
     link: col("google maps link", "google maps url", "link", "url"),
+    city: col("city", "town", "municipality"),
   };
 
   if (idx.title === -1 || idx.lat === -1 || idx.lng === -1) {
@@ -285,6 +289,7 @@ export function parseRestaurantsCsv(text: string): RestaurantCsvParseResult {
       longitude: lng,
       placeRef:
         extractPlaceRef(link) ?? `csv:${lat.toFixed(5)},${lng.toFixed(5)}`,
+      city: text(idx.city),
     });
   }
 

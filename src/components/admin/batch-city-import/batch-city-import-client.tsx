@@ -6,6 +6,8 @@ import {
   applyBucketImport,
   type BatchBucketResult,
   type BatchCityImportResult,
+  type CityIdMap,
+  ensureCitiesForRegion,
   finishBatchCityImport,
   type ImportBucket,
 } from "./actions";
@@ -95,6 +97,12 @@ export function BatchCityImportClient({
   const [regionId, setRegionId] = useState<string>("");
   const [csvText, setCsvText] = useState("");
   const [result, setResult] = useState<BatchCityImportResult | null>(null);
+  /** Cities count summary from the pre-warm step, shown alongside the
+   *  per-bucket results so admins can see the region's city list grow. */
+  const [citiesSummary, setCitiesSummary] = useState<{
+    created: number;
+    matched: number;
+  } | null>(null);
   const [pending, startTransition] = useTransition();
   const [dragOver, setDragOver] = useState(false);
   const [dropError, setDropError] = useState<string | null>(null);
@@ -177,8 +185,36 @@ export function BatchCityImportClient({
   function onApply() {
     if (!split) return;
     setResult(null);
+    setCitiesSummary(null);
     setProgress("");
     startTransition(async () => {
+      // Pre-warm cities for this region from the CSV's distinct City
+      // cells. Returns the verbatim-name → city_id map we thread through
+      // every chunked applyBucketImport call so each row writes a
+      // city_id at insert time.
+      setProgress(
+        `cities: pre-warming ${split.cityNames.length} unique value(s)…`,
+      );
+      const cities = await ensureCitiesForRegion(regionId, split.cityNames);
+      if (!cities.ok) {
+        setProgress("");
+        setResult({
+          ok: false,
+          error: cities.error ?? "City pre-warm failed.",
+          counts: split.counts,
+          decisions: split.decisions.slice(0, 200),
+          stays: null,
+          restaurants: null,
+          experiences: null,
+        });
+        return;
+      }
+      setCitiesSummary({
+        created: cities.created,
+        matched: cities.matched,
+      });
+      const cityIdMap: CityIdMap = cities.cityIdMap;
+
       // Chunked apply: split each bucket's mini-CSV into N-row pieces
       // and process them sequentially. Each server call is independent
       // and fits easily in Vercel's budget, so a 600-row import never
@@ -216,6 +252,7 @@ export function BatchCityImportClient({
             chunks[i],
             b.name,
             skipPhotoMirror,
+            cityIdMap,
           );
           if (!res.ok || !res.result) {
             topError = `${b.name} chunk ${i + 1}: ${res.error ?? "unknown error"}`;
@@ -251,6 +288,7 @@ export function BatchCityImportClient({
   function clearAll() {
     setCsvText("");
     setResult(null);
+    setCitiesSummary(null);
   }
 
   return (
@@ -379,7 +417,12 @@ export function BatchCityImportClient({
             </p>
           ) : (
             <>
-              <div className="mt-2 grid grid-cols-4 gap-3 text-center text-xs">
+              <div className="mt-2 grid grid-cols-5 gap-3 text-center text-xs">
+                <Stat
+                  label="Cities"
+                  value={split.cityNames.length}
+                  tone="cool"
+                />
                 <Stat label="Stays" value={split.counts.stays} tone="cool" />
                 <Stat
                   label="Restaurants"
@@ -485,6 +528,20 @@ export function BatchCityImportClient({
             </p>
           ) : (
             <div className="mt-2 flex flex-col gap-3">
+              {citiesSummary && (
+                <div className="rounded-xl bg-cool/10 px-3 py-2 text-xs text-foreground">
+                  <span className="font-bold">Cities:</span>{" "}
+                  created{" "}
+                  <strong className="text-cool">
+                    {citiesSummary.created}
+                  </strong>
+                  , matched{" "}
+                  <strong className="text-cool">
+                    {citiesSummary.matched}
+                  </strong>{" "}
+                  existing.
+                </div>
+              )}
               <BucketResultRow label="Stays" data={result.stays} />
               <BucketResultRow label="Restaurants" data={result.restaurants} />
               <BucketResultRow label="Experiences" data={result.experiences} />

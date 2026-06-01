@@ -8,9 +8,29 @@ import { parseRestaurantsCsv } from "@/lib/restaurants/csv-import";
 import { importRestaurantsCsv } from "@/lib/restaurants/csv-import-engine";
 import { parseStaysCsv } from "@/lib/stays/csv-import";
 import { importStaysCsv } from "@/lib/stays/csv-import-engine";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/toolbox/admin";
 
 import { splitCityCsv } from "./csv-router";
+
+/** Lowercase + kebab-case slug. "Cebu City" → "cebu-city",
+ *  "Malapascua Island" → "malapascua-island". Kept tight on purpose so
+ *  two slightly-different spellings don't fork the city — admins can
+ *  rename later, but they should never end up with two "Cebu City" rows. */
+export function citySlug(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]+/gu, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+/** A name→city_id map for a single region. Used by the client to drive
+ *  every chunk call. Keys are the verbatim CSV `City` cell values so
+ *  the engine's `row.city` looks up directly without re-slugifying. */
+export type CityIdMap = Record<string, string>;
 
 export interface BatchBucketResult {
   parsed: number;
@@ -28,6 +48,158 @@ export interface ApplyChunkResult {
   result: BatchBucketResult | null;
 }
 
+/** Result of pre-warming the cities table from a fresh CSV. */
+export interface EnsureCitiesResult {
+  ok: boolean;
+  error: string | null;
+  /** Verbatim City-cell → city_id, ready to hand to applyBucketImport
+   *  on every subsequent chunk call. */
+  cityIdMap: CityIdMap;
+  /** How many cities the action newly inserted vs. matched to existing
+   *  rows. Surfaced in the result panel so admins can see the region
+   *  growing over time. */
+  created: number;
+  matched: number;
+}
+
+/** Upsert one city per unique CSV `City` value for the given region.
+ *  Returns the full name→city_id map for the client to thread through
+ *  every chunked applyBucketImport call.
+ *
+ *  Idempotent: calling twice with the same names is a no-op the second
+ *  time (unique constraint on (region_id, slug) collapses dupes). */
+export async function ensureCitiesForRegion(
+  regionId: string,
+  cityNames: string[],
+): Promise<EnsureCitiesResult> {
+  try {
+    const { isAdmin } = await requireAdmin();
+    if (!isAdmin) {
+      return {
+        ok: false,
+        error: "Not authorised.",
+        cityIdMap: {},
+        created: 0,
+        matched: 0,
+      };
+    }
+    if (!regionId) {
+      return {
+        ok: false,
+        error: "Pick a region first.",
+        cityIdMap: {},
+        created: 0,
+        matched: 0,
+      };
+    }
+
+    // Dedupe by slug — two CSV cells like "Cebu City" and "cebu city"
+    // collapse to one row. We keep the first-seen casing as the canonical
+    // display name; admins can rename later.
+    const bySlug = new Map<string, string>();
+    for (const raw of cityNames) {
+      const name = raw?.trim();
+      if (!name) continue;
+      const slug = citySlug(name);
+      if (!slug) continue;
+      if (!bySlug.has(slug)) bySlug.set(slug, name);
+    }
+
+    if (bySlug.size === 0) {
+      return {
+        ok: true,
+        error: null,
+        cityIdMap: {},
+        created: 0,
+        matched: 0,
+      };
+    }
+
+    const supabase = createAdminClient();
+    const slugs = Array.from(bySlug.keys());
+
+    // 1) Look up rows already in this region by slug.
+    const { data: existing, error: existErr } = await supabase
+      .from("cities")
+      .select("id, slug, name")
+      .eq("region_id", regionId)
+      .in("slug", slugs);
+    if (existErr) {
+      return {
+        ok: false,
+        error: `City lookup failed: ${existErr.message}`,
+        cityIdMap: {},
+        created: 0,
+        matched: 0,
+      };
+    }
+    const existingBySlug = new Map<string, { id: string; name: string }>();
+    for (const row of existing ?? []) {
+      existingBySlug.set(row.slug, { id: row.id, name: row.name });
+    }
+
+    // 2) Insert only the slugs that don't exist yet.
+    const toInsert = slugs
+      .filter((s) => !existingBySlug.has(s))
+      .map((s) => ({
+        region_id: regionId,
+        slug: s,
+        name: bySlug.get(s)!,
+      }));
+
+    let inserted: { id: string; slug: string; name: string }[] = [];
+    if (toInsert.length > 0) {
+      const { data, error } = await supabase
+        .from("cities")
+        .insert(toInsert)
+        .select("id, slug, name");
+      if (error) {
+        return {
+          ok: false,
+          error: `City insert failed: ${error.message}`,
+          cityIdMap: {},
+          created: 0,
+          matched: 0,
+        };
+      }
+      inserted = data ?? [];
+    }
+
+    // 3) Build the verbatim-name → id map for every CSV value (not just
+    //    the unique slugs) so the engine can look up by the raw cell.
+    const slugToId = new Map<string, string>();
+    for (const [slug, info] of existingBySlug) slugToId.set(slug, info.id);
+    for (const row of inserted) slugToId.set(row.slug, row.id);
+
+    const cityIdMap: CityIdMap = {};
+    for (const raw of cityNames) {
+      const name = raw?.trim();
+      if (!name) continue;
+      const slug = citySlug(name);
+      const id = slugToId.get(slug);
+      if (id) cityIdMap[name] = id;
+    }
+
+    return {
+      ok: true,
+      error: null,
+      cityIdMap,
+      created: inserted.length,
+      matched: existingBySlug.size,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[batch-city-import] ensureCitiesForRegion threw:", err);
+    return {
+      ok: false,
+      error: msg,
+      cityIdMap: {},
+      created: 0,
+      matched: 0,
+    };
+  }
+}
+
 /**
  * Process ONE mini-CSV (one bucket, one chunk of rows). The client
  * splits each bucket CSV into row-chunks and calls this once per chunk
@@ -40,12 +212,18 @@ export interface ApplyChunkResult {
  * canonical parseStaysCsv / parseRestaurantsCsv / parseExperiencesCsv +
  * import engines — same dedup / upsert semantics as the per-region
  * uploaders, just over a slice.
+ *
+ * `cityIdMap` is the name→city_id map returned by `ensureCitiesForRegion`
+ * at the start of the run. The action wraps it in a `cityResolver` and
+ * hands it to the engine so each row writes the right city_id. When the
+ * map is empty/omitted (legacy callers), rows land with city_id null.
  */
 export async function applyBucketImport(
   regionId: string,
   chunkCsv: string,
   bucket: ImportBucket,
   skipPhotoMirror: boolean,
+  cityIdMap: CityIdMap = {},
 ): Promise<ApplyChunkResult> {
   try {
     try {
@@ -62,6 +240,16 @@ export async function applyBucketImport(
 
     const csv = skipPhotoMirror ? stripPhotoColumns(chunkCsv) : chunkCsv;
 
+    // Wrap the name→id map in the engine-shaped resolver. Sync return
+    // is fine — no DB lookup per row, just a map hit. Unknown / blank
+    // city cells return null and the engine leaves city_id unset.
+    const cityResolver = (cityName: string | null): string | null => {
+      if (!cityName) return null;
+      const trimmed = cityName.trim();
+      if (!trimmed) return null;
+      return cityIdMap[trimmed] ?? null;
+    };
+
     if (bucket === "stays") {
       const { rows, errors } = parseStaysCsv(csv);
       if (rows.length === 0) {
@@ -71,7 +259,7 @@ export async function applyBucketImport(
           result: { parsed: 0, added: 0, updated: 0, skipped: 0, errors },
         };
       }
-      const res = await importStaysCsv(regionId, "hotel", rows);
+      const res = await importStaysCsv(regionId, "hotel", rows, cityResolver);
       return {
         ok: true,
         error: null,
@@ -87,7 +275,12 @@ export async function applyBucketImport(
           result: { parsed: 0, added: 0, updated: 0, skipped: 0, errors },
         };
       }
-      const res = await importRestaurantsCsv(regionId, "auto", rows);
+      const res = await importRestaurantsCsv(
+        regionId,
+        "auto",
+        rows,
+        cityResolver,
+      );
       return {
         ok: true,
         error: null,
@@ -103,7 +296,12 @@ export async function applyBucketImport(
         result: { parsed: 0, added: 0, updated: 0, skipped: 0, errors },
       };
     }
-    const res = await importExperiencesCsv(regionId, "auto", rows);
+    const res = await importExperiencesCsv(
+      regionId,
+      "auto",
+      rows,
+      cityResolver,
+    );
     return {
       ok: true,
       error: null,

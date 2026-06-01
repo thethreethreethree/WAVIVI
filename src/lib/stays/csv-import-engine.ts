@@ -50,10 +50,20 @@ function distanceM(
 /** Snap a 0–5 rating to the nearest half (for the backpack display). */
 const snapHalf = (n: number) => Math.round(n * 2) / 2;
 
+/** Resolves a CSV row's `City` cell to a `city_id`. The batch-city
+ *  import passes one of these (closing over a pre-built name→id map);
+ *  legacy per-region uploaders omit it and the engine leaves city_id
+ *  unstamped. Returning null is the same as "no city" — the row is
+ *  still imported, just unbucketed at the city layer. */
+export type CityResolver = (
+  cityName: string | null,
+) => string | null | Promise<string | null>;
+
 export async function importStaysCsv(
   regionId: string,
   defaultStayType: StayType,
   rows: StayCsvRow[],
+  cityResolver?: CityResolver,
 ): Promise<StayImportResult> {
   const supabase = createAdminClient();
 
@@ -130,6 +140,13 @@ export async function importStaysCsv(
       row.photoUrls,
     );
 
+    // Resolve city_id once per row. Skipped entirely when no resolver is
+    // wired (legacy per-region uploads) so we don't pay for a lookup
+    // that can't return anything useful.
+    const resolvedCityId = cityResolver
+      ? await cityResolver(row.city)
+      : null;
+
     if (best) {
       // --- Update an existing stay -----------------------------------------
       claimed.add(best.id);
@@ -144,6 +161,12 @@ export async function importStaysCsv(
         longitude: row.longitude,
         google_maps_url: mapsUrl,
       };
+      // Backfill city_id whenever the import has one and the row is
+      // either fresh or currently unbucketed — never overwrite a
+      // hand-set city on an admin-edited row.
+      if (resolvedCityId && (fresh || !best.city_id)) {
+        update.city_id = resolvedCityId;
+      }
       if (row.description && (fresh || !best.description))
         update.description = row.description;
       if (row.website && (fresh || !best.website)) update.website = row.website;
@@ -179,6 +202,7 @@ export async function importStaysCsv(
       // --- Insert a new stay ------------------------------------------------
       const insert: StayInsert = {
         region_id: regionId,
+        city_id: resolvedCityId,
         stay_type: resolvedType,
         name: row.name,
         description: row.description,

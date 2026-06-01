@@ -42,6 +42,10 @@ export interface SplitResult {
   experiences: string | null;
   decisions: RouterRowDecision[];
   counts: { stays: number; restaurants: number; experiences: number; unrouted: number };
+  /** All distinct, non-empty City-cell values seen across the whole CSV,
+   *  in first-seen order. The batch import action upserts one row per
+   *  value into `cities` so the engine can stamp city_id at insert time. */
+  cityNames: string[];
   headerError: string | null;
 }
 
@@ -153,6 +157,7 @@ export function splitCityCsv(input: string): SplitResult {
       experiences: null,
       decisions: [],
       counts: { stays: 0, restaurants: 0, experiences: 0, unrouted: 0 },
+      cityNames: [],
       headerError: "CSV is empty.",
     };
   }
@@ -165,11 +170,15 @@ export function splitCityCsv(input: string): SplitResult {
       experiences: null,
       decisions: [],
       counts: { stays: 0, restaurants: 0, experiences: 0, unrouted: 0 },
+      cityNames: [],
       headerError: 'Header must include a "Title" (or "Name") column.',
     };
   }
   const sourceQueryIdx = headerIndex(headers, "Source Query", "SourceQuery", "Query");
   const industryIdx = headerIndex(headers, "Industry", "Type", "Category");
+  // The batch-city import seeds one row in `cities` per distinct value in
+  // this column. Same aliases the per-bucket parsers accept.
+  const cityIdx = headerIndex(headers, "City", "Town", "Municipality");
   // Some upstream scrapers export the review count with a leading minus
   // (e.g. "-564") and thousands-comma ("-1,074"). The stays/restaurants/
   // experiences engines run that through `Math.max(0, num)` which zeroes
@@ -210,6 +219,9 @@ export function splitCityCsv(input: string): SplitResult {
 
   const decisions: RouterRowDecision[] = [];
   const counts = { stays: 0, restaurants: 0, experiences: 0, unrouted: 0 };
+  // First-seen wins for casing so admins can rename canonicals later.
+  const cityNameSet = new Set<string>();
+  const cityNames: string[] = [];
 
   for (let i = 1; i < grid.length; i++) {
     const raw = grid[i];
@@ -227,6 +239,19 @@ export function splitCityCsv(input: string): SplitResult {
         // still surface as parse warnings downstream.
         const normalised = cur.replace(/^-/, "").replace(/,/g, "");
         if (/^\d+$/.test(normalised)) cells[reviewsIdx] = normalised;
+      }
+    }
+
+    // Collect this row's City cell — dedupe by lower-case but keep the
+    // first-seen casing so admins can rename canonicals later.
+    if (cityIdx >= 0) {
+      const cell = (cells[cityIdx] ?? "").trim();
+      if (cell) {
+        const key = cell.toLowerCase();
+        if (!cityNameSet.has(key)) {
+          cityNameSet.add(key);
+          cityNames.push(cell);
+        }
       }
     }
 
@@ -313,6 +338,7 @@ export function splitCityCsv(input: string): SplitResult {
     experiences: counts.experiences > 0 ? experiencesRows.join("\n") : null,
     decisions,
     counts,
+    cityNames,
     headerError: null,
   };
 }
