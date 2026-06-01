@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AppTopBar } from "@/components/ui/app-top-bar";
 import { CardImage } from "@/components/ui/card-image";
 import { RadialHub } from "@/components/ui/radial-hub";
-import { getCurrentCity } from "@/lib/cities/current";
+import { getCurrentCities } from "@/lib/cities/current";
 import { getCurrentRegion } from "@/lib/regions/current";
 import { withinRegionRadius } from "@/lib/regions/within-radius";
 import { createClient } from "@/lib/supabase/server";
@@ -21,15 +21,18 @@ type ForYouCard = {
 
 export default async function Home() {
   const supabase = await createClient();
-  const [region, city] = await Promise.all([
+  const [region, currentCities] = await Promise.all([
     getCurrentRegion(),
-    getCurrentCity(),
+    getCurrentCities(),
   ]);
   const regionId = region?.id ?? null;
-  // City scope only sticks when it belongs to the active region — a
-  // stale city cookie from a previous region is ignored.
-  const cityId =
-    city && regionId && city.region_id === regionId ? city.id : null;
+  // City scope only sticks when cities belong to the active region —
+  // a stale cookie from a previous region is ignored.
+  const cityIds = regionId
+    ? currentCities
+        .filter((c) => c.region_id === regionId)
+        .map((c) => c.id)
+    : [];
 
   // "For you" picks. When a region is selected, pull live top-rated
   // stays / restaurants / experiences from that region (2 of each).
@@ -73,7 +76,7 @@ export default async function Home() {
       .gte("review_count", QUALITY_MIN_REVIEWS)
       .order("backpack_rating", { ascending: false })
       .limit(PER_CAT_FETCH);
-    if (cityId) staysQ = staysQ.eq("city_id", cityId);
+    if (cityIds.length > 0) staysQ = staysQ.in("city_id", cityIds);
 
     let eatsQ = supabase
       .from("restaurants")
@@ -84,7 +87,7 @@ export default async function Home() {
       .gte("review_count", QUALITY_MIN_REVIEWS)
       .order("backpack_rating", { ascending: false })
       .limit(PER_CAT_FETCH);
-    if (cityId) eatsQ = eatsQ.eq("city_id", cityId);
+    if (cityIds.length > 0) eatsQ = eatsQ.in("city_id", cityIds);
 
     let expsQ = supabase
       .from("experiences")
@@ -95,7 +98,7 @@ export default async function Home() {
       .gte("review_count", QUALITY_MIN_REVIEWS)
       .order("backpack_rating", { ascending: false })
       .limit(PER_CAT_FETCH);
-    if (cityId) expsQ = expsQ.eq("city_id", cityId);
+    if (cityIds.length > 0) expsQ = expsQ.in("city_id", cityIds);
 
     const [staysRes, eatsRes, expsRes, groupRes] = await Promise.all([
       // Stay slot is specifically a hostel — fits the Wondavu traveller

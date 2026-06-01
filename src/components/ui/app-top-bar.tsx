@@ -5,7 +5,7 @@ import { ThemedIcon } from "@/components/ui/themed-icon";
 import { WondavuLogoToggle } from "@/components/ui/wondavu-logo-toggle";
 import { InstallPill } from "@/features/pwa";
 import {
-  getCurrentCityId,
+  getCurrentCityIds,
   listCitiesForRegions,
 } from "@/lib/cities/current";
 import {
@@ -23,10 +23,10 @@ export async function AppTopBar({
 }) {
   // Region picker — server fetches the list + current id once per render so
   // the client component receives a fully-rendered, server-data sheet.
-  const [regions, currentId, currentCityId] = await Promise.all([
+  const [regions, currentId, currentCityIds] = await Promise.all([
     listActiveRegions(),
     getCurrentRegionId(),
-    getCurrentCityId(),
+    getCurrentCityIds(),
   ]);
   // City list is fetched in one shot for every active region so the
   // picker can render expandable groups without a second round-trip.
@@ -34,12 +34,26 @@ export async function AppTopBar({
   const current = currentId
     ? regions.find((r) => r.id === currentId) ?? null
     : null;
-  const currentCity = currentCityId
-    ? cities.find((c) => c.id === currentCityId) ?? null
-    : null;
-  const currentLabel = currentCity
-    ? `${currentCity.name}${current ? `, ${current.display_name}` : ""}`
-    : (current?.display_name ?? "Everywhere");
+  // Only treat city ids as live when they belong to the active region
+  // — a stale cookie from a previous region must not light up the
+  // top-bar label or the picker badge.
+  const validCityIds = currentId
+    ? currentCityIds.filter((id) =>
+        cities.some((c) => c.id === id && c.region_id === currentId),
+      )
+    : [];
+  const validCities = validCityIds
+    .map((id) => cities.find((c) => c.id === id))
+    .filter((c): c is NonNullable<typeof c> => Boolean(c));
+  const currentLabel = (() => {
+    if (validCities.length === 1 && current) {
+      return `${validCities[0].name}, ${current.display_name}`;
+    }
+    if (validCities.length > 1 && current) {
+      return `${current.display_name} · ${validCities.length} cities`;
+    }
+    return current?.display_name ?? "Everywhere";
+  })();
 
   return (
     <header className="flex items-start justify-between px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
@@ -56,7 +70,7 @@ export async function AppTopBar({
           regions={regions}
           cities={cities}
           currentId={currentId}
-          currentCityId={currentCityId}
+          currentCityIds={validCityIds}
           currentLabel={currentLabel}
         />
         {/* tb-trio-button = hook used by the Journal-scoped overrides in

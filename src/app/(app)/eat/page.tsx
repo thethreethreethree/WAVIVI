@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { RestaurantList } from "@/features/restaurants/restaurant-list";
-import { getCurrentCity } from "@/lib/cities/current";
+import { getCurrentCities } from "@/lib/cities/current";
 import { getCurrentRegion } from "@/lib/regions/current";
 import { withinRegionRadius } from "@/lib/regions/within-radius";
 import { createClient } from "@/lib/supabase/server";
@@ -12,9 +12,9 @@ export const dynamic = "force-dynamic";
 
 export default async function EatPage() {
   const supabase = await createClient();
-  const [region, city] = await Promise.all([
+  const [region, cities] = await Promise.all([
     getCurrentRegion(),
-    getCurrentCity(),
+    getCurrentCities(),
   ]);
   let query = supabase
     .from("restaurants")
@@ -22,9 +22,10 @@ export default async function EatPage() {
     .eq("active", true)
     .order("backpack_rating", { ascending: false });
   if (region) query = query.eq("region_id", region.id);
-  if (city && region && city.region_id === region.id) {
-    query = query.eq("city_id", city.id);
-  }
+  const validCityIds = region
+    ? cities.filter((c) => c.region_id === region.id).map((c) => c.id)
+    : [];
+  if (validCityIds.length > 0) query = query.in("city_id", validCityIds);
   const { data } = await query;
   // Drop venues outside the region's centre+radius (see /stay for the why).
   const restaurants = withinRegionRadius(

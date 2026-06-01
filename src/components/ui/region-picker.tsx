@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 
-import { setRegionAndCity } from "@/lib/cities/actions";
+import { setRegionAndCities } from "@/lib/cities/actions";
 import type { CurrentCity } from "@/lib/cities/current";
 import type { RegionRow } from "@/lib/regions/current";
 
@@ -18,13 +18,15 @@ export function RegionPicker({
   regions,
   cities = [],
   currentId,
-  currentCityId,
+  currentCityIds = [],
   currentLabel,
 }: {
   regions: RegionRow[];
   cities?: CurrentCity[];
   currentId: string | null;
-  currentCityId?: string | null;
+  /** Cities the user has currently pinned, if any. Empty array = whole
+   *  region (the "All cities" toggle is treated as on). */
+  currentCityIds?: string[];
   currentLabel: string;
 }) {
   const theme = useThemeContext();
@@ -32,6 +34,60 @@ export function RegionPicker({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [pending, startTransition] = useTransition();
+  // Single-region expansion — keeps the sheet short. Auto-opens onto
+  // the user's current region so they see their pinned cities without
+  // an extra tap.
+  const [expandedRegionId, setExpandedRegionId] = useState<string | null>(
+    currentCityIds.length > 0 ? currentId : null,
+  );
+  // Pending city selections inside the expanded panel — committed by
+  // tapping Apply. Initialised from the saved cookie when we open the
+  // matching region, empty otherwise.
+  const [pendingCityIds, setPendingCityIds] = useState<Set<string>>(
+    () => new Set(currentCityIds),
+  );
+
+  function openRegion(regionId: string, regionCities: CurrentCity[]): void {
+    setExpandedRegionId(regionId);
+    // If we're re-opening the user's current region, pre-fill toggles
+    // with the saved set. For any other region the panel starts blank
+    // (= "All cities") so a first tap reads as "show everything here".
+    if (regionId === currentId) {
+      setPendingCityIds(new Set(currentCityIds));
+    } else {
+      setPendingCityIds(new Set());
+    }
+    // Bonus: warn if the cookie has dangling ids that aren't in this
+    // region — shouldn't happen but a quiet console.log helps debug.
+    if (regionId === currentId) {
+      const known = new Set(regionCities.map((c) => c.id));
+      for (const id of currentCityIds) {
+        if (!known.has(id)) {
+          console.warn("[region-picker] stale city id in cookie:", id);
+        }
+      }
+    }
+  }
+  function collapse(): void {
+    setExpandedRegionId(null);
+  }
+  function togglePendingCity(cityId: string): void {
+    setPendingCityIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(cityId)) next.delete(cityId);
+      else next.add(cityId);
+      return next;
+    });
+  }
+  function selectAllCities(regionCities: CurrentCity[]): void {
+    // "All" semantics in this picker = no city scoping at all (we
+    // store an empty set and Apply will clear the city cookie). So
+    // tapping Select All when nothing is pinned is a no-op; tapping
+    // when SOME cities are pinned clears them.
+    if (pendingCityIds.size === 0) return;
+    void regionCities;
+    setPendingCityIds(new Set());
+  }
 
   // City rows indexed by their region for O(1) sub-row rendering.
   const citiesByRegion = useMemo(() => {
@@ -73,25 +129,29 @@ export function RegionPicker({
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [filtered]);
 
-  function chooseRegion(id: string) {
+  function chooseWholeRegion(id: string) {
     startTransition(async () => {
-      await setRegionAndCity(id);
+      await setRegionAndCities(id, []);
       setOpen(false);
       setQuery("");
+      setExpandedRegionId(null);
     });
   }
-  function chooseCity(regionId: string, cityId: string) {
+  function applyExpanded(regionId: string) {
+    const ids = Array.from(pendingCityIds);
     startTransition(async () => {
-      await setRegionAndCity(regionId, cityId);
+      await setRegionAndCities(regionId, ids);
       setOpen(false);
       setQuery("");
+      setExpandedRegionId(null);
     });
   }
   function clear() {
     startTransition(async () => {
-      await setRegionAndCity("");
+      await setRegionAndCities("", []);
       setOpen(false);
       setQuery("");
+      setExpandedRegionId(null);
     });
   }
 
@@ -200,66 +260,72 @@ export function RegionPicker({
                   <ul>
                     {rows.map((r) => {
                       const regionChosen = r.id === currentId;
-                      // The region row is "active" only when the user picked
-                      // the whole region (no city) — picking a child city
-                      // dims the region row so the ✓ moves to the city.
-                      const regionActive =
-                        regionChosen && !currentCityId;
                       const regionCities = citiesByRegion.get(r.id) ?? [];
+                      const hasCities = regionCities.length > 0;
+                      const isExpanded = expandedRegionId === r.id;
+                      // Active ribbon on the collapsed row: lit when this
+                      // region is the user's current scope. Pinned-city
+                      // count appears as a small "+N" pill so the user can
+                      // see at a glance which region they've narrowed.
+                      const pinnedCount =
+                        regionChosen ? currentCityIds.length : 0;
+                      const regionActive = regionChosen;
                       return (
                         <li key={r.id}>
                           <button
                             type="button"
                             disabled={pending}
-                            onClick={() => chooseRegion(r.id)}
+                            onClick={() => {
+                              if (!hasCities) {
+                                chooseWholeRegion(r.id);
+                                return;
+                              }
+                              if (isExpanded) collapse();
+                              else openRegion(r.id, regionCities);
+                            }}
                             className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition active:scale-[0.99] ${
                               regionActive
                                 ? "bg-glow/15"
                                 : "hover:bg-surface-elevated"
                             }`}
                           >
-                            <span className="block min-w-0 text-base font-semibold text-foreground">
+                            <span className="flex min-w-0 items-center gap-2 text-base font-semibold text-foreground">
                               {r.display_name}
-                              {regionCities.length > 0 && (
-                                <span className="ml-1.5 text-xs font-medium text-muted">
-                                  · all
+                              {pinnedCount > 0 && (
+                                <span className="rounded-full bg-glow/25 px-2 py-0.5 text-[10px] font-extrabold text-foreground">
+                                  {pinnedCount}{" "}
+                                  {pinnedCount === 1 ? "city" : "cities"}
                                 </span>
                               )}
                             </span>
-                            {regionActive && (
-                              <span className="text-glow">✓</span>
-                            )}
+                            <span className="flex items-center gap-2 text-muted">
+                              {regionActive && pinnedCount === 0 && (
+                                <span className="text-glow">✓</span>
+                              )}
+                              {hasCities && (
+                                <span
+                                  aria-hidden
+                                  className={`text-base transition-transform ${
+                                    isExpanded ? "rotate-180" : ""
+                                  }`}
+                                >
+                                  ▾
+                                </span>
+                              )}
+                            </span>
                           </button>
-                          {regionCities.length > 0 && (
-                            <ul className="ml-4 border-l border-border/60 pl-3">
-                              {regionCities.map((c) => {
-                                const cityActive =
-                                  regionChosen && currentCityId === c.id;
-                                return (
-                                  <li key={c.id}>
-                                    <button
-                                      type="button"
-                                      disabled={pending}
-                                      onClick={() =>
-                                        chooseCity(r.id, c.id)
-                                      }
-                                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left transition active:scale-[0.99] ${
-                                        cityActive
-                                          ? "bg-glow/15"
-                                          : "hover:bg-surface-elevated"
-                                      }`}
-                                    >
-                                      <span className="block min-w-0 text-sm font-semibold text-foreground">
-                                        {c.name}
-                                      </span>
-                                      {cityActive && (
-                                        <span className="text-glow">✓</span>
-                                      )}
-                                    </button>
-                                  </li>
-                                );
-                              })}
-                            </ul>
+                          {isExpanded && hasCities && (
+                            <ExpandedCityPanel
+                              regionName={r.display_name}
+                              cities={regionCities}
+                              pending={pendingCityIds}
+                              onToggle={togglePendingCity}
+                              onSelectAll={() =>
+                                selectAllCities(regionCities)
+                              }
+                              onApply={() => applyExpanded(r.id)}
+                              disabled={pending}
+                            />
                           )}
                         </li>
                       );
@@ -280,5 +346,86 @@ export function RegionPicker({
         </div>
       )}
     </>
+  );
+}
+
+/** Drawer-style panel rendered beneath a region row when expanded.
+ *  Lays the region's cities out as toggle pills, with a "Select all"
+ *  master toggle on the left and Apply on the right. */
+function ExpandedCityPanel({
+  regionName,
+  cities,
+  pending,
+  onToggle,
+  onSelectAll,
+  onApply,
+  disabled,
+}: {
+  regionName: string;
+  cities: CurrentCity[];
+  pending: Set<string>;
+  onToggle: (cityId: string) => void;
+  onSelectAll: () => void;
+  onApply: () => void;
+  disabled: boolean;
+}) {
+  // "Select all" semantics in this picker: when nothing is pinned the
+  // app already shows the whole region, so the master toggle reads as
+  // ON. Tapping it clears any partial selection back to ON.
+  const allOn = pending.size === 0;
+  return (
+    <div className="ml-4 mt-1 mb-2 rounded-xl bg-surface-elevated/60 p-3 ring-1 ring-border">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
+          {pending.size === 0
+            ? `All of ${regionName}`
+            : `${pending.size} of ${cities.length} pinned`}
+        </span>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onSelectAll}
+          aria-pressed={allOn}
+          className={`rounded-full px-3 py-1 text-xs font-bold transition-colors ${
+            allOn
+              ? "bg-glow text-white"
+              : "text-muted ring-1 ring-border hover:text-foreground"
+          }`}
+        >
+          {allOn ? "✓ All cities" : "Select all"}
+        </button>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {cities.map((c) => {
+          const on = pending.has(c.id);
+          return (
+            <button
+              key={c.id}
+              type="button"
+              disabled={disabled}
+              onClick={() => onToggle(c.id)}
+              aria-pressed={on}
+              className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                on
+                  ? "bg-cool text-white"
+                  : "text-muted ring-1 ring-border hover:text-foreground"
+              }`}
+            >
+              {c.name}
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex justify-end">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onApply}
+          className="rounded-full bg-sunset px-4 py-1.5 text-xs font-bold text-white disabled:opacity-60"
+        >
+          {disabled ? "Applying…" : "Apply"}
+        </button>
+      </div>
+    </div>
   );
 }

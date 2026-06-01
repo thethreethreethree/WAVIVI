@@ -7,37 +7,50 @@ import { REGION_COOKIE } from "@/lib/regions/current";
 
 import { CITY_COOKIE } from "./current";
 
-/** Server action behind the region picker. Sets BOTH the region cookie
- *  and (optionally) the city cookie atomically, so the app never ends
- *  up showing places from City A scoped to Region B.
+const COOKIE_OPTS = {
+  path: "/",
+  maxAge: 60 * 60 * 24 * 365,
+  sameSite: "lax" as const,
+};
+
+/** Multi-city variant of the picker action. Stores any number of city
+ *  ids under one region, comma-separated. Empty array = "whole region"
+ *  (no city scoping).
  *
- *  - regionId="" + cityId="" → "show everywhere" (clears both)
- *  - regionId set, cityId omitted → whole region (clears city)
- *  - regionId + cityId → drill into that city under that region */
-export async function setRegionAndCity(
+ *  - regionId="" → "show everywhere" (clears both cookies)
+ *  - regionId, cityIds=[] → whole region (clears city cookie)
+ *  - regionId, cityIds=[a,b] → only those cities under that region */
+export async function setRegionAndCities(
   regionId: string,
-  cityId?: string,
+  cityIds: string[] = [],
 ): Promise<void> {
   const c = await cookies();
   if (regionId) {
-    c.set(REGION_COOKIE, regionId, {
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: "lax",
-    });
+    c.set(REGION_COOKIE, regionId, COOKIE_OPTS);
   } else {
     c.delete(REGION_COOKIE);
   }
-  if (cityId) {
-    c.set(CITY_COOKIE, cityId, {
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: "lax",
-    });
+  // Dedupe + drop blanks before serialising so a noisy input can't
+  // poison the cookie.
+  const clean = Array.from(
+    new Set(cityIds.map((id) => id.trim()).filter(Boolean)),
+  );
+  if (clean.length > 0) {
+    c.set(CITY_COOKIE, clean.join(","), COOKIE_OPTS);
   } else {
     c.delete(CITY_COOKIE);
   }
   revalidatePath("/", "layout");
+}
+
+/** Back-compat single-city wrapper — older callers (the data-import
+ *  flow + tests) still hit this. New code should use
+ *  `setRegionAndCities`. */
+export async function setRegionAndCity(
+  regionId: string,
+  cityId?: string,
+): Promise<void> {
+  return setRegionAndCities(regionId, cityId ? [cityId] : []);
 }
 
 /** Clear just the city cookie — used by the "show all of region"

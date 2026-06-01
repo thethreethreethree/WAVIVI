@@ -2,10 +2,13 @@ import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
 
-/** Cookie that holds the user's currently-selected city id. Always
- *  scoped INSIDE a region — selecting a city implies the region it
- *  belongs to, and clearing the region clears the city. */
-export const CITY_COOKIE = "wv-city";
+/** Cookie that holds the user's currently-selected city ids — comma
+ *  separated so travellers can pin several cities at once (e.g. only
+ *  Cebu City + Moalboal across the whole Cebu region). Empty / missing
+ *  cookie = "whole region", same as picking the region's "All cities"
+ *  master checkbox. Always scoped INSIDE a region — clearing the
+ *  region clears the city set. */
+export const CITY_COOKIE = "wv-cities";
 
 export type CurrentCity = {
   id: string;
@@ -14,25 +17,52 @@ export type CurrentCity = {
   name: string;
 };
 
-/** Read the cookie on the server. Returns `null` when no city is
- *  chosen — list pages should still apply their region filter only. */
-export async function getCurrentCityId(): Promise<string | null> {
-  const c = await cookies();
-  return c.get(CITY_COOKIE)?.value ?? null;
+/** Parse the comma-separated cookie into a UUID array. Filters blanks
+ *  + de-dupes so a malformed cookie can't poison downstream queries. */
+function parseCityIds(raw: string | undefined): string[] {
+  if (!raw) return [];
+  const set = new Set<string>();
+  for (const part of raw.split(",")) {
+    const v = part.trim();
+    if (v) set.add(v);
+  }
+  return Array.from(set);
 }
 
-/** Fetch the full city row for the current selection, or `null`. Used
- *  by list pages so they can show "showing Cebu City · clear" UI. */
-export async function getCurrentCity(): Promise<CurrentCity | null> {
-  const id = await getCurrentCityId();
-  if (!id) return null;
+/** Read the cookie on the server. Returns `[]` when no cities are
+ *  pinned — list pages should fall back to their region filter only. */
+export async function getCurrentCityIds(): Promise<string[]> {
+  const c = await cookies();
+  return parseCityIds(c.get(CITY_COOKIE)?.value);
+}
+
+/** Back-compat shim — first selected id, or `null`. Existing callers
+ *  that only care about a single city read this until they migrate. */
+export async function getCurrentCityId(): Promise<string | null> {
+  const ids = await getCurrentCityIds();
+  return ids[0] ?? null;
+}
+
+/** Fetch the full city rows for the current selection. Used by the
+ *  top bar to render the picker label and by list pages to show
+ *  "Cebu City, Moalboal · clear" UI when admins narrow the scope. */
+export async function getCurrentCities(): Promise<CurrentCity[]> {
+  const ids = await getCurrentCityIds();
+  if (ids.length === 0) return [];
   const supabase = await createClient();
   const { data } = await supabase
     .from("cities")
     .select("id, region_id, slug, name")
-    .eq("id", id)
-    .maybeSingle<CurrentCity>();
-  return data ?? null;
+    .in("id", ids)
+    .returns<CurrentCity[]>();
+  return data ?? [];
+}
+
+/** Back-compat shim — single-city version. Returns the first matching
+ *  row or null. */
+export async function getCurrentCity(): Promise<CurrentCity | null> {
+  const cities = await getCurrentCities();
+  return cities[0] ?? null;
 }
 
 /** Cities under one region, name-sorted — for the picker sheet. */

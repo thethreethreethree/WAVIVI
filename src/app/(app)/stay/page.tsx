@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { StayList, type StayPicker } from "@/features/stays/stay-list";
-import { getCurrentCity } from "@/lib/cities/current";
+import { getCurrentCities } from "@/lib/cities/current";
 import { getCurrentRegion } from "@/lib/regions/current";
 import { withinRegionRadius } from "@/lib/regions/within-radius";
 import { createClient } from "@/lib/supabase/server";
@@ -14,9 +14,9 @@ const MAX_PICKERS = 3;
 
 export default async function StayPage() {
   const supabase = await createClient();
-  const [region, city] = await Promise.all([
+  const [region, cities] = await Promise.all([
     getCurrentRegion(),
-    getCurrentCity(),
+    getCurrentCities(),
   ]);
   let query = supabase
     .from("stays")
@@ -24,11 +24,12 @@ export default async function StayPage() {
     .eq("active", true)
     .order("backpack_rating", { ascending: false });
   if (region) query = query.eq("region_id", region.id);
-  // City scope only applies when the city belongs to the active region —
-  // a stale city cookie from a previous region must not narrow the list.
-  if (city && region && city.region_id === region.id) {
-    query = query.eq("city_id", city.id);
-  }
+  // City scope only applies for cities under the active region — a
+  // stale cookie from a previous region must not narrow the list.
+  const validCityIds = region
+    ? cities.filter((c) => c.region_id === region.id).map((c) => c.id)
+    : [];
+  if (validCityIds.length > 0) query = query.in("city_id", validCityIds);
   const { data } = await query;
   // Drop venues the ingest tagged with this region but that sit outside
   // the region's centre+radius — usually venues in a neighbouring region
