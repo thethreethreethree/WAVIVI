@@ -12,12 +12,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/toolbox/admin";
 
 import { splitCityCsv } from "./csv-router";
-import { citySlug, type CityIdMap } from "./slug";
+import { citySlug } from "./slug";
+import type { CityIdMap } from "./slug";
 
-// Re-export so existing call sites (batch-city-import-client.tsx) can
-// keep importing CityIdMap from "./actions" without a churny refactor.
-// `citySlug` itself is used internally by ensureCitiesForRegion.
-export type { CityIdMap };
+// Don't re-export CityIdMap from this "use server" module — Turbopack's
+// server-actions transform doesn't fully erase the type re-export and
+// leaves a `CityIdMap` ReferenceError at module evaluation in the
+// production build. Client/server callers import the type from
+// "./slug" directly.
 
 export interface BatchBucketResult {
   parsed: number;

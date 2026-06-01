@@ -6,11 +6,11 @@ import {
   applyBucketImport,
   type BatchBucketResult,
   type BatchCityImportResult,
-  type CityIdMap,
   ensureCitiesForRegion,
   finishBatchCityImport,
   type ImportBucket,
 } from "./actions";
+import type { CityIdMap } from "./slug";
 import { splitCityCsv } from "./csv-router";
 
 /** Chunk size for client-driven applies. Keeps every server call well
