@@ -27,6 +27,17 @@ export default function Error({
         An unexpected error occurred. Try again — and if it keeps happening,
         let us know.
       </p>
+      {/* Diagnostic block — collapsed by default. Shows the error message
+       *  (when not obscured by Next prod sanitisation) and the digest, which
+       *  cross-references with Vercel function logs so we can find the real
+       *  stack trace even when the message is hidden. */}
+      <details className="mt-4 max-w-md text-left text-[11px] text-muted">
+        <summary className="cursor-pointer text-center">Details</summary>
+        <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-words rounded-lg bg-foreground/5 px-3 py-2 font-mono">
+          {error.message || "(no message)"}
+          {error.digest ? `\n\ndigest: ${error.digest}` : ""}
+        </pre>
+      </details>
       <button
         type="button"
         onClick={reset}
