@@ -30,6 +30,11 @@ export function BatchCityImportClient({
   const [pending, startTransition] = useTransition();
   const [dragOver, setDragOver] = useState(false);
   const [dropError, setDropError] = useState<string | null>(null);
+  /** Skipping the inline photo mirror keeps a 600-row apply under a
+   *  minute instead of timing out at 5 (fetch + sharp + upload per row
+   *  dominates). Rows still land with their Google Maps URL — the photos
+   *  get filled in later from the /admin/photo-mirror backfill page. */
+  const [skipPhotoMirror, setSkipPhotoMirror] = useState(true);
 
   /** Read one File as text and stash it as the CSV. Shared by the file
    *  picker and the drop handler. */
@@ -102,7 +107,9 @@ export function BatchCityImportClient({
   function onApply() {
     setResult(null);
     startTransition(async () => {
-      const res = await applyBatchCityImport(regionId, csvText);
+      const res = await applyBatchCityImport(regionId, csvText, {
+        skipPhotoMirror,
+      });
       setResult(res);
     });
   }
@@ -279,11 +286,36 @@ export function BatchCityImportClient({
                   </ul>
                 </details>
               )}
+              <label className="mt-3 flex items-start gap-2 rounded-xl bg-foreground/5 px-3 py-2 text-[11px] text-muted">
+                <input
+                  type="checkbox"
+                  checked={skipPhotoMirror}
+                  onChange={(e) => setSkipPhotoMirror(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span>
+                  <strong className="text-foreground">
+                    Skip photo mirror
+                  </strong>{" "}
+                  (recommended for big imports). Rows land instantly with
+                  their Google Maps URLs; backfill the WebP photos later
+                  from{" "}
+                  <a
+                    href="/admin/photo-mirror"
+                    className="font-bold text-glow underline-offset-2 hover:underline"
+                  >
+                    /admin/photo-mirror
+                  </a>
+                  . Leave unchecked to fetch + downscale + upload every
+                  photo inline (≈700 ms / row — 600 rows ≈ 7 min, often
+                  times out).
+                </span>
+              </label>
               <button
                 type="button"
                 onClick={onApply}
                 disabled={!canApply}
-                className="mt-3 rounded-full bg-sunset px-5 py-2 text-sm font-bold text-white shadow-card hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-2 rounded-full bg-sunset px-5 py-2 text-sm font-bold text-white shadow-card hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {pending
                   ? "Applying…"

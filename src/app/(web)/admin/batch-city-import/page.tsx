@@ -7,6 +7,11 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
+// Inline photo mirroring during a full-city ingest can take several
+// minutes for a 500-row CSV (fetch + sharp + upload per row). 300s is the
+// Vercel hard cap for serverless and matches the scan route. Skip-mirror
+// mode fits within the default but this lets the heavy path run.
+export const maxDuration = 300;
 
 export default async function BatchCityImportPage() {
   const supabase = await createClient();

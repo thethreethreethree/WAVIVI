@@ -54,9 +54,105 @@ export interface BatchCityImportResult {
  * Old per-region uploaders (Stays / Eat / Experiences per region) are
  * untouched — this is an additive code path.
  */
+/** Strip the Photo / Image columns out of a sub-CSV so the per-row
+ *  photo mirror has nothing to fetch. Mirroring otherwise dominates the
+ *  wall-clock on big imports (fetch + sharp + upload per row at
+ *  ~500–700 ms each), which exceeds the serverless time budget long
+ *  before the 600 rows finish. With photos cleared, rows still land
+ *  with their google_maps_url and can be backfilled later from
+ *  /admin/photo-mirror. */
+function stripPhotoColumns(csv: string): string {
+  const lines = csv.split(/\r?\n/);
+  if (lines.length === 0) return csv;
+  const header = lines[0];
+  const cols = header.split(",");
+  const PHOTO_ALIASES = new Set([
+    "photo",
+    "photos",
+    "image",
+    "images",
+    "photo url",
+    "photo_url",
+    "photourl",
+    "image url",
+    "image_url",
+    "imageurl",
+    "photo urls",
+    "photo_urls",
+    "ig_img_1",
+    "ig_img_2",
+    "ig_img_3",
+    "ig_img_4",
+    "ig_img_5",
+    "ig_img_6",
+  ]);
+  const toBlank: number[] = [];
+  for (let i = 0; i < cols.length; i++) {
+    const h = cols[i].trim().toLowerCase().replace(/^"|"$/g, "");
+    if (PHOTO_ALIASES.has(h)) toBlank.push(i);
+  }
+  if (toBlank.length === 0) return csv;
+  // Rebuild every row with the target columns blanked. We don't use a
+  // full CSV parser here — the router already emitted RFC-4180-quoted
+  // cells, and we only touch indices, not the cell content.
+  const blankIndex = new Set(toBlank);
+  const out: string[] = [header];
+  for (let li = 1; li < lines.length; li++) {
+    const line = lines[li];
+    if (line === "") {
+      out.push(line);
+      continue;
+    }
+    const cells = splitCsvLine(line);
+    for (const idx of blankIndex) {
+      if (idx < cells.length) cells[idx] = "";
+    }
+    out.push(cells.join(","));
+  }
+  return out.join("\n");
+}
+
+/** RFC-4180 line splitter — handles quoted cells containing commas /
+ *  doubled-quotes. Used only for the skip-photo path; the rest of the
+ *  pipeline goes through the canonical parseCsv. */
+function splitCsvLine(line: string): string[] {
+  const out: string[] = [];
+  let cur = "";
+  let inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuote) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') {
+          cur += '"';
+          i++;
+        } else {
+          inQuote = false;
+          cur += ch;
+        }
+      } else {
+        cur += ch;
+      }
+    } else {
+      if (ch === ",") {
+        out.push(cur);
+        cur = "";
+      } else if (ch === '"' && cur === "") {
+        inQuote = true;
+        cur += ch;
+      } else {
+        cur += ch;
+      }
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
 export async function applyBatchCityImport(
   regionId: string,
   csvText: string,
+  options: { skipPhotoMirror?: boolean } = {},
 ): Promise<BatchCityImportResult> {
   const empty = {
     counts: { stays: 0, restaurants: 0, experiences: 0, unrouted: 0 },
@@ -94,8 +190,24 @@ export async function applyBatchCityImport(
   let restaurantsResult: BatchBucketResult | null = null;
   let experiencesResult: BatchBucketResult | null = null;
 
-  if (split.stays) {
-    const { rows, errors } = parseStaysCsv(split.stays);
+  const staysCsv = split.stays
+    ? options.skipPhotoMirror
+      ? stripPhotoColumns(split.stays)
+      : split.stays
+    : null;
+  const restaurantsCsv = split.restaurants
+    ? options.skipPhotoMirror
+      ? stripPhotoColumns(split.restaurants)
+      : split.restaurants
+    : null;
+  const experiencesCsv = split.experiences
+    ? options.skipPhotoMirror
+      ? stripPhotoColumns(split.experiences)
+      : split.experiences
+    : null;
+
+  if (staysCsv) {
+    const { rows, errors } = parseStaysCsv(staysCsv);
     if (rows.length === 0) {
       staysResult = { parsed: 0, added: 0, updated: 0, skipped: 0, errors };
     } else {
@@ -107,8 +219,8 @@ export async function applyBatchCityImport(
     }
   }
 
-  if (split.restaurants) {
-    const { rows, errors } = parseRestaurantsCsv(split.restaurants);
+  if (restaurantsCsv) {
+    const { rows, errors } = parseRestaurantsCsv(restaurantsCsv);
     if (rows.length === 0) {
       restaurantsResult = { parsed: 0, added: 0, updated: 0, skipped: 0, errors };
     } else {
@@ -120,8 +232,8 @@ export async function applyBatchCityImport(
     }
   }
 
-  if (split.experiences) {
-    const { rows, errors } = parseExperiencesCsv(split.experiences);
+  if (experiencesCsv) {
+    const { rows, errors } = parseExperiencesCsv(experiencesCsv);
     if (rows.length === 0) {
       experiencesResult = { parsed: 0, added: 0, updated: 0, skipped: 0, errors };
     } else {
