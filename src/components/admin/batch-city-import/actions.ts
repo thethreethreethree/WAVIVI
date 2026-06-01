@@ -162,6 +162,12 @@ export async function applyBatchCityImport(
     experiences: null,
   };
 
+  // Outer safety net — anything that escapes the per-step try/catches
+  // (a thrown revalidatePath, an OOM, an unhandled rejection from an
+  // engine that doesn't itself await) lands here instead of bubbling
+  // into the page-level error boundary. The client renders the result
+  // panel either way, and the admin can read the actual cause.
+  try {
   try {
     const { isAdmin } = await requireAdmin();
     if (!isAdmin) {
@@ -297,11 +303,15 @@ export async function applyBatchCityImport(
 
   // Bust caches the per-region pages rely on — same paths the legacy
   // uploaders revalidate via their API routes.
-  revalidatePath("/", "layout");
-  revalidatePath(`/admin/stays/${regionId}`);
-  revalidatePath(`/admin/eat/${regionId}`);
-  revalidatePath(`/admin/experiences/${regionId}`);
-  revalidatePath("/admin/data-quality");
+  try {
+    revalidatePath("/", "layout");
+    revalidatePath(`/admin/stays/${regionId}`);
+    revalidatePath(`/admin/eat/${regionId}`);
+    revalidatePath(`/admin/experiences/${regionId}`);
+    revalidatePath("/admin/data-quality");
+  } catch (err) {
+    console.warn("[batch-city-import] revalidatePath failed", err);
+  }
 
   return {
     ok: true,
@@ -312,4 +322,13 @@ export async function applyBatchCityImport(
     restaurants: restaurantsResult,
     experiences: experiencesResult,
   };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[batch-city-import] unhandled action error:", err);
+    return {
+      ok: false,
+      error: `Unhandled error in batch import: ${msg}`,
+      ...empty,
+    };
+  }
 }
