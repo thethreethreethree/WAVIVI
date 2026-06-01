@@ -6,7 +6,7 @@
  * changes, so they can never go stale. The cache is just an offline safety
  * net, never a source of stale code or images. */
 
-const CACHE = "wavivi-v4";
+const CACHE = "wavivi-v5";
 const OFFLINE_URL = "/offline";
 
 self.addEventListener("install", (event) => {
@@ -38,6 +38,12 @@ self.addEventListener("fetch", (event) => {
   // Leave cross-origin requests alone (map tiles, Supabase, fonts…).
   if (url.origin !== self.location.origin) return;
 
+  // Cache.put() rejects partial (206) and opaque responses — that
+  // rejection becomes an unhandled promise that pollutes the console
+  // and can break the navigate handler downstream. Centralised guard.
+  const isCacheable = (res) =>
+    res && res.ok && res.status === 200 && res.type === "basic";
+
   // Immutable hashed build assets — cache-first (safe, URL-versioned).
   if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(
@@ -45,8 +51,13 @@ self.addEventListener("fetch", (event) => {
         (cached) =>
           cached ||
           fetch(request).then((res) => {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(request, copy));
+            if (isCacheable(res)) {
+              const copy = res.clone();
+              caches
+                .open(CACHE)
+                .then((c) => c.put(request, copy))
+                .catch(() => {});
+            }
             return res;
           }),
       ),
@@ -55,12 +66,26 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Page navigations — always network; offline page as the fallback.
+  // Wrap in an async IIFE so we always resolve to a Response (never
+  // `undefined`) — otherwise respondWith rejects with
+  // "Failed to convert value to 'Response'" and the page errors.
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(
-        async () =>
-          (await caches.match(request)) || caches.match(OFFLINE_URL),
-      ),
+      (async () => {
+        try {
+          return await fetch(request);
+        } catch {
+          const cached = await caches.match(request);
+          if (cached) return cached;
+          const offline = await caches.match(OFFLINE_URL);
+          if (offline) return offline;
+          // Last-resort fallback so respondWith never sees undefined.
+          return new Response("Offline", {
+            status: 503,
+            headers: { "content-type": "text/plain; charset=utf-8" },
+          });
+        }
+      })(),
     );
     return;
   }
@@ -70,12 +95,19 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(request)
       .then((res) => {
-        if (res.ok) {
+        if (isCacheable(res)) {
           const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(request, copy));
+          caches
+            .open(CACHE)
+            .then((c) => c.put(request, copy))
+            .catch(() => {});
         }
         return res;
       })
-      .catch(() => caches.match(request)),
+      .catch(async () => {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        return new Response("", { status: 504 });
+      }),
   );
 });
