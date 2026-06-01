@@ -162,9 +162,14 @@ export async function applyBatchCityImport(
     experiences: null,
   };
 
-  const { isAdmin } = await requireAdmin();
-  if (!isAdmin) {
-    return { ok: false, error: "Not authorised.", ...empty };
+  try {
+    const { isAdmin } = await requireAdmin();
+    if (!isAdmin) {
+      return { ok: false, error: "Not authorised.", ...empty };
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: `Auth check failed: ${msg}`, ...empty };
   }
   if (!regionId) {
     return { ok: false, error: "Pick a region first.", ...empty };
@@ -173,7 +178,13 @@ export async function applyBatchCityImport(
     return { ok: false, error: "CSV is empty.", ...empty };
   }
 
-  const split = splitCityCsv(csvText);
+  let split: ReturnType<typeof splitCityCsv>;
+  try {
+    split = splitCityCsv(csvText);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: `CSV split failed: ${msg}`, ...empty };
+  }
   if (split.headerError) {
     return {
       ok: false,
@@ -206,39 +217,81 @@ export async function applyBatchCityImport(
       : split.experiences
     : null;
 
+  // Per-bucket try/catch. Without this, a throw inside any engine call
+  // (a Supabase RLS hit, a bad-row blow-up, a Storage timeout) crashes
+  // the entire server action and the page renders the global error
+  // boundary — admins see "Something went off-course" with no clue what
+  // failed. Caught errors surface in the result panel as a parse warning
+  // on the bucket that threw, and the other buckets still report.
+  const recordThrow = (
+    bucket: "stays" | "restaurants" | "experiences",
+    err: unknown,
+    rowCount: number,
+  ): BatchBucketResult => {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[batch-city-import] ${bucket} threw:`, err);
+    return {
+      parsed: rowCount,
+      added: 0,
+      updated: 0,
+      skipped: rowCount,
+      errors: [`Engine threw before finishing: ${msg}`],
+    };
+  };
+
   if (staysCsv) {
-    const { rows, errors } = parseStaysCsv(staysCsv);
-    if (rows.length === 0) {
-      staysResult = { parsed: 0, added: 0, updated: 0, skipped: 0, errors };
-    } else {
-      // `defaultStayType` is the fallback when a row has no per-row
-      // Industry. The router already injected an Industry per row from
-      // the Source Query, so "hotel" is just a belt-and-braces default.
-      const res = await importStaysCsv(regionId, "hotel", rows);
-      staysResult = { parsed: rows.length, ...res, errors };
+    try {
+      const { rows, errors } = parseStaysCsv(staysCsv);
+      if (rows.length === 0) {
+        staysResult = { parsed: 0, added: 0, updated: 0, skipped: 0, errors };
+      } else {
+        // `defaultStayType` is the fallback when a row has no per-row
+        // Industry. The router already injected an Industry per row from
+        // the Source Query, so "hotel" is just a belt-and-braces default.
+        const res = await importStaysCsv(regionId, "hotel", rows);
+        staysResult = { parsed: rows.length, ...res, errors };
+      }
+    } catch (err) {
+      staysResult = recordThrow("stays", err, split.counts.stays);
     }
   }
 
   if (restaurantsCsv) {
-    const { rows, errors } = parseRestaurantsCsv(restaurantsCsv);
-    if (rows.length === 0) {
-      restaurantsResult = { parsed: 0, added: 0, updated: 0, skipped: 0, errors };
-    } else {
-      // "auto" tells the restaurants engine to keyword-classify cuisine
-      // from the name when the Cuisine cell is blank, matching how the
-      // per-region restaurant uploader behaves.
-      const res = await importRestaurantsCsv(regionId, "auto", rows);
-      restaurantsResult = { parsed: rows.length, ...res, errors };
+    try {
+      const { rows, errors } = parseRestaurantsCsv(restaurantsCsv);
+      if (rows.length === 0) {
+        restaurantsResult = { parsed: 0, added: 0, updated: 0, skipped: 0, errors };
+      } else {
+        // "auto" tells the restaurants engine to keyword-classify cuisine
+        // from the name when the Cuisine cell is blank, matching how the
+        // per-region restaurant uploader behaves.
+        const res = await importRestaurantsCsv(regionId, "auto", rows);
+        restaurantsResult = { parsed: rows.length, ...res, errors };
+      }
+    } catch (err) {
+      restaurantsResult = recordThrow(
+        "restaurants",
+        err,
+        split.counts.restaurants,
+      );
     }
   }
 
   if (experiencesCsv) {
-    const { rows, errors } = parseExperiencesCsv(experiencesCsv);
-    if (rows.length === 0) {
-      experiencesResult = { parsed: 0, added: 0, updated: 0, skipped: 0, errors };
-    } else {
-      const res = await importExperiencesCsv(regionId, "auto", rows);
-      experiencesResult = { parsed: rows.length, ...res, errors };
+    try {
+      const { rows, errors } = parseExperiencesCsv(experiencesCsv);
+      if (rows.length === 0) {
+        experiencesResult = { parsed: 0, added: 0, updated: 0, skipped: 0, errors };
+      } else {
+        const res = await importExperiencesCsv(regionId, "auto", rows);
+        experiencesResult = { parsed: rows.length, ...res, errors };
+      }
+    } catch (err) {
+      experiencesResult = recordThrow(
+        "experiences",
+        err,
+        split.counts.experiences,
+      );
     }
   }
 
