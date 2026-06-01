@@ -1,0 +1,99 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import type { ClassificationSource } from "@/lib/data-quality/classification-audit";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/toolbox/admin";
+import type { ExperienceUpdate, StayType } from "@/types/supabase";
+
+export interface ClassificationActionResult {
+  ok: boolean;
+  error: string | null;
+}
+
+async function assertAdmin(): Promise<ClassificationActionResult | null> {
+  try {
+    const { isAdmin } = await requireAdmin();
+    if (!isAdmin) return { ok: false, error: "Not authorised." };
+    return null;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: `Auth check failed: ${msg}` };
+  }
+}
+
+/** Apply the audit's proposed reclassification to one row and stamp
+ *  `admin_edited=true` so the next CSV re-import doesn't undo it.
+ *  Experiences get both `activity_type` and `category` rewritten when
+ *  the audit supplied both. */
+export async function applyClassification(
+  source: ClassificationSource,
+  id: string,
+  proposed: string,
+  proposedCategory?: string,
+): Promise<ClassificationActionResult> {
+  const auth = await assertAdmin();
+  if (auth) return auth;
+
+  const supabase = createAdminClient();
+
+  if (source === "stays") {
+    // The audit's `proposed` is already constrained to the StayType
+    // union by the classifier — the assertion just transports that
+    // through the server-action boundary where the enum gets erased
+    // to a plain string.
+    const { error } = await supabase
+      .from("stays")
+      .update({ stay_type: proposed as StayType, admin_edited: true })
+      .eq("id", id);
+    if (error) return { ok: false, error: error.message };
+  } else if (source === "restaurants") {
+    const { error } = await supabase
+      .from("restaurants")
+      .update({ cuisine: proposed, admin_edited: true })
+      .eq("id", id);
+    if (error) return { ok: false, error: error.message };
+  } else {
+    // experiences — write both fields together when the audit said
+    // they should change as a pair; otherwise touch only the activity
+    // type (the category-only path comes through with both set).
+    const update: ExperienceUpdate = { admin_edited: true };
+    if (proposedCategory) {
+      update.activity_type = proposed;
+      update.category = proposedCategory;
+    } else {
+      update.activity_type = proposed;
+    }
+    const { error } = await supabase
+      .from("experiences")
+      .update(update)
+      .eq("id", id);
+    if (error) return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/admin/data-quality");
+  return { ok: true, error: null };
+}
+
+/** Acknowledge that the stored classification is correct after all.
+ *  Same effect as Apply but without the column change — just sets
+ *  `admin_edited=true` so the row stops nagging the audit on every
+ *  reload. */
+export async function ignoreClassification(
+  source: ClassificationSource,
+  id: string,
+): Promise<ClassificationActionResult> {
+  const auth = await assertAdmin();
+  if (auth) return auth;
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from(source)
+    .update({ admin_edited: true })
+    .eq("id", id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/data-quality");
+  return { ok: true, error: null };
+}

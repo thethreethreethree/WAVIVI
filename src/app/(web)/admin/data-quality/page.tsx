@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { ClassificationSection } from "@/components/admin/data-quality/classification-section";
 import { ExportDataQualityCsvButton } from "@/components/admin/data-quality/export-button";
 import {
   type Source,
@@ -94,36 +95,48 @@ export default async function DataQualityPage() {
   const dateLabel = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Data quality</h1>
-          <p className="mt-1 text-sm text-muted">
-            Rows whose <code className="font-mono text-xs">photo_url</code> is
-            missing or points at a known placeholder image (Google default
-            avatar, Street View thumb, Unsplash stock, etc.). Fix by opening
-            the row&apos;s admin page and either uploading a real photo or
-            clearing the URL — a null falls back to the clean 🏠 / 🌅 brand
-            glyph instead of a busted Google placeholder.
-          </p>
-          <p className="mt-2 text-xs text-muted">
-            <strong>Faster path:</strong> click{" "}
-            <strong>↓ Export CSV</strong>, drop new photo URLs into the blank{" "}
-            <code className="font-mono text-[11px]">Image</code> column, then
-            re-upload through{" "}
-            <Link
-              href="/admin/partner-import"
-              className="font-bold text-glow underline-offset-2 hover:underline"
-            >
-              /admin/partner-import
-            </Link>{" "}
-            to fix the whole batch at once.
-          </p>
-        </div>
-        {totalBad > 0 && (
-          <ExportDataQualityCsvButton dateLabel={dateLabel} />
-        )}
+    <div className="flex flex-col gap-10">
+      <header>
+        <h1 className="text-2xl font-bold tracking-tight">Data quality</h1>
+        <p className="mt-1 text-sm text-muted">
+          Two audits live here. <strong>Photo quality</strong> flags rows whose
+          image is missing or a placeholder; <strong>Classification quality</strong>{" "}
+          flags rows whose stored type/cuisine/category disagrees with what the
+          name suggests (e.g. a stay labelled <code>hotel</code> whose name
+          contains <code>Hostel</code>).
+        </p>
       </header>
+
+      <section className="flex flex-col gap-4">
+        <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-lg font-bold tracking-tight">Photo quality</h2>
+            <p className="mt-1 text-sm text-muted">
+              Rows whose <code className="font-mono text-xs">photo_url</code> is
+              missing or points at a known placeholder image (Google default
+              avatar, Street View thumb, Unsplash stock, etc.). Fix by opening
+              the row&apos;s admin page and either uploading a real photo or
+              clearing the URL — a null falls back to the clean 🏠 / 🌅 brand
+              glyph instead of a busted Google placeholder.
+            </p>
+            <p className="mt-2 text-xs text-muted">
+              <strong>Faster path:</strong> click{" "}
+              <strong>↓ Export CSV</strong>, drop new photo URLs into the blank{" "}
+              <code className="font-mono text-[11px]">Image</code> column, then
+              re-upload through{" "}
+              <Link
+                href="/admin/partner-import"
+                className="font-bold text-glow underline-offset-2 hover:underline"
+              >
+                /admin/partner-import
+              </Link>{" "}
+              to fix the whole batch at once.
+            </p>
+          </div>
+          {totalBad > 0 && (
+            <ExportDataQualityCsvButton dateLabel={dateLabel} />
+          )}
+        </header>
 
       <div className="rounded-2xl bg-sunset p-4 text-white shadow-card">
         <p className="text-xs font-bold uppercase tracking-wider text-white/80">
@@ -229,6 +242,9 @@ export default async function DataQualityPage() {
           )}
         </section>
       ))}
+      </section>
+
+      <ClassificationSection />
     </div>
   );
 }
