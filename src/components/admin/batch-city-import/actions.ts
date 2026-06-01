@@ -20,6 +20,119 @@ export interface BatchBucketResult {
   errors: string[];
 }
 
+export type ImportBucket = "stays" | "restaurants" | "experiences";
+
+export interface ApplyChunkResult {
+  ok: boolean;
+  error: string | null;
+  result: BatchBucketResult | null;
+}
+
+/**
+ * Process ONE mini-CSV (one bucket, one chunk of rows). The client
+ * splits each bucket CSV into row-chunks and calls this once per chunk
+ * — keeps every server call comfortably inside Vercel's serverless
+ * time budget so a 600-row import doesn't 504 mid-flight like it does
+ * when applyBatchCityImport tries to do all three buckets in one shot.
+ *
+ * `chunkCsv` is a self-contained CSV: the original split's header row
+ * plus only the rows the client wants this call to handle. Re-uses the
+ * canonical parseStaysCsv / parseRestaurantsCsv / parseExperiencesCsv +
+ * import engines — same dedup / upsert semantics as the per-region
+ * uploaders, just over a slice.
+ */
+export async function applyBucketImport(
+  regionId: string,
+  chunkCsv: string,
+  bucket: ImportBucket,
+  skipPhotoMirror: boolean,
+): Promise<ApplyChunkResult> {
+  try {
+    try {
+      const { isAdmin } = await requireAdmin();
+      if (!isAdmin) return { ok: false, error: "Not authorised.", result: null };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { ok: false, error: `Auth check failed: ${msg}`, result: null };
+    }
+    if (!regionId) return { ok: false, error: "Pick a region first.", result: null };
+    if (!chunkCsv || !chunkCsv.trim()) {
+      return { ok: false, error: "Chunk is empty.", result: null };
+    }
+
+    const csv = skipPhotoMirror ? stripPhotoColumns(chunkCsv) : chunkCsv;
+
+    if (bucket === "stays") {
+      const { rows, errors } = parseStaysCsv(csv);
+      if (rows.length === 0) {
+        return {
+          ok: true,
+          error: null,
+          result: { parsed: 0, added: 0, updated: 0, skipped: 0, errors },
+        };
+      }
+      const res = await importStaysCsv(regionId, "hotel", rows);
+      return {
+        ok: true,
+        error: null,
+        result: { parsed: rows.length, ...res, errors },
+      };
+    }
+    if (bucket === "restaurants") {
+      const { rows, errors } = parseRestaurantsCsv(csv);
+      if (rows.length === 0) {
+        return {
+          ok: true,
+          error: null,
+          result: { parsed: 0, added: 0, updated: 0, skipped: 0, errors },
+        };
+      }
+      const res = await importRestaurantsCsv(regionId, "auto", rows);
+      return {
+        ok: true,
+        error: null,
+        result: { parsed: rows.length, ...res, errors },
+      };
+    }
+    // experiences
+    const { rows, errors } = parseExperiencesCsv(csv);
+    if (rows.length === 0) {
+      return {
+        ok: true,
+        error: null,
+        result: { parsed: 0, added: 0, updated: 0, skipped: 0, errors },
+      };
+    }
+    const res = await importExperiencesCsv(regionId, "auto", rows);
+    return {
+      ok: true,
+      error: null,
+      result: { parsed: rows.length, ...res, errors },
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[batch-city-import] applyBucketImport(${bucket}) threw:`, err);
+    return { ok: false, error: msg, result: null };
+  }
+}
+
+/** Revalidate the per-region admin pages after the client has finished
+ *  all chunks. Cheap, fire-and-forget — the client calls this once at the
+ *  end so we're not busting caches between every chunk. */
+export async function finishBatchCityImport(regionId: string): Promise<void> {
+  try {
+    const { isAdmin } = await requireAdmin();
+    if (!isAdmin) return;
+    revalidatePath("/", "layout");
+    revalidatePath(`/admin/stays/${regionId}`);
+    revalidatePath(`/admin/eat/${regionId}`);
+    revalidatePath(`/admin/experiences/${regionId}`);
+    revalidatePath("/admin/data-quality");
+  } catch (err) {
+    console.warn("[batch-city-import] finish revalidate failed:", err);
+  }
+}
+
 export interface BatchCityImportResult {
   ok: boolean;
   /** Top-level error (auth, bad input). Per-bucket errors live in
