@@ -105,9 +105,29 @@ export default async function DataQualityPage() {
           name suggests (e.g. a stay labelled <code>hotel</code> whose name
           contains <code>Hostel</code>).
         </p>
+        {/* Jump buttons — anchor links straight to each audit's section
+            so admins don't have to scroll a long page to get to the
+            classification list at the bottom. */}
+        <div className="mt-3 flex flex-wrap gap-2">
+          <a
+            href="#photo-quality"
+            className="rounded-full bg-sunset px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+          >
+            ↓ Photo quality
+          </a>
+          <a
+            href="#classification-quality"
+            className="rounded-full bg-cool px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+          >
+            ↓ Classification quality
+          </a>
+        </div>
       </header>
 
-      <section className="flex flex-col gap-4">
+      <section
+        id="photo-quality"
+        className="scroll-mt-20 flex flex-col gap-4"
+      >
         <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-lg font-bold tracking-tight">Photo quality</h2>
@@ -244,7 +264,9 @@ export default async function DataQualityPage() {
       ))}
       </section>
 
-      <ClassificationSection />
+      <section id="classification-quality" className="scroll-mt-20">
+        <ClassificationSection />
+      </section>
     </div>
   );
 }

@@ -5,12 +5,18 @@ import {
 } from "@/lib/data-quality/classification-audit";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import { ClassificationSuspectRow } from "./classification-suspect-row";
+import { ClassificationGroupClient } from "./classification-group-client";
 
 const SECTION_LABEL: Record<ClassificationSource, string> = {
   stays: "Stays",
   restaurants: "Restaurants",
   experiences: "Experiences",
+};
+
+const SECTION_ANCHOR: Record<ClassificationSource, string> = {
+  stays: "class-stays",
+  restaurants: "class-restaurants",
+  experiences: "class-experiences",
 };
 
 /** Server component — runs the cross-table audit, groups suspects by
@@ -23,11 +29,15 @@ export async function ClassificationSection() {
     supabase.from("regions").select("id, display_name"),
   ]);
 
-  const regionLabel = new Map<string, string>(
-    (
-      (regionsRes.data ?? []) as { id: string; display_name: string }[]
-    ).map((r) => [r.id, r.display_name]),
-  );
+  // Plain object so the lookup can cross the server→client boundary;
+  // Maps don't serialise through the RSC payload.
+  const regionLabel: Record<string, string> = {};
+  for (const r of (regionsRes.data ?? []) as {
+    id: string;
+    display_name: string;
+  }[]) {
+    regionLabel[r.id] = r.display_name;
+  }
 
   const bySource: Record<ClassificationSource, ClassificationSuspect[]> = {
     stays: [],
@@ -55,6 +65,19 @@ export async function ClassificationSection() {
           <strong>Ignore</strong> keeps the current label and locks the row
           too — either way it stops showing up in this audit.
         </p>
+        {/* Per-source jump buttons mirror the page-level ones so admins
+            can dive straight into the table they care about. */}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {(["stays", "restaurants", "experiences"] as const).map((src) => (
+            <a
+              key={src}
+              href={`#${SECTION_ANCHOR[src]}`}
+              className="rounded-full bg-foreground/10 px-3 py-1.5 text-xs font-bold text-foreground hover:bg-foreground/15"
+            >
+              ↓ {SECTION_LABEL[src]} ({bySource[src].length})
+            </a>
+          ))}
+        </div>
       </header>
 
       <div className="rounded-2xl bg-cool p-4 text-white shadow-card">
@@ -85,36 +108,16 @@ export async function ClassificationSection() {
         </div>
       </div>
 
-      {(["stays", "restaurants", "experiences"] as const).map((src) => {
-        const rows = bySource[src];
-        return (
-          <div key={src}>
-            <h3 className="mb-2 text-sm font-bold">
-              {SECTION_LABEL[src]} ({rows.length})
-            </h3>
-            {rows.length === 0 ? (
-              <p className="rounded-2xl bg-surface px-4 py-6 text-center text-sm text-muted ring-1 ring-border">
-                Nothing flagged — every {src} row matches its name/description
-                signal.
-              </p>
-            ) : (
-              <ul className="divide-y divide-border overflow-hidden rounded-2xl bg-surface shadow-card ring-1 ring-border">
-                {rows.map((s) => (
-                  <ClassificationSuspectRow
-                    key={`${s.source}-${s.id}`}
-                    suspect={s}
-                    regionLabel={
-                      s.region_id
-                        ? regionLabel.get(s.region_id) ?? s.region_id
-                        : "—"
-                    }
-                  />
-                ))}
-              </ul>
-            )}
-          </div>
-        );
-      })}
+      {(["stays", "restaurants", "experiences"] as const).map((src) => (
+        <ClassificationGroupClient
+          key={src}
+          source={src}
+          label={SECTION_LABEL[src]}
+          anchorId={SECTION_ANCHOR[src]}
+          suspects={bySource[src]}
+          regionLabel={regionLabel}
+        />
+      ))}
     </section>
   );
 }

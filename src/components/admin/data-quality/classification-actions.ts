@@ -76,6 +76,73 @@ export async function applyClassification(
   return { ok: true, error: null };
 }
 
+/** Bulk variant of [[applyClassification]] — processes a list of
+ *  suspects in one server round-trip. Each item is applied
+ *  independently; per-item failures are collected and returned, so
+ *  one bad row doesn't abort the whole batch. */
+export async function applyClassificationBatch(
+  items: {
+    source: ClassificationSource;
+    id: string;
+    proposed: string;
+    proposedCategory?: string;
+  }[],
+): Promise<ClassificationActionResult & { applied: number; failed: number }> {
+  const auth = await assertAdmin();
+  if (auth) return { ...auth, applied: 0, failed: items.length };
+
+  let applied = 0;
+  let failed = 0;
+  let firstError: string | null = null;
+  for (const item of items) {
+    const res = await applyClassification(
+      item.source,
+      item.id,
+      item.proposed,
+      item.proposedCategory,
+    );
+    if (res.ok) applied++;
+    else {
+      failed++;
+      if (!firstError) firstError = res.error;
+    }
+  }
+
+  return {
+    ok: failed === 0,
+    error: failed > 0 ? `${failed} failed — first: ${firstError}` : null,
+    applied,
+    failed,
+  };
+}
+
+/** Bulk variant of [[ignoreClassification]]. */
+export async function ignoreClassificationBatch(
+  items: { source: ClassificationSource; id: string }[],
+): Promise<ClassificationActionResult & { applied: number; failed: number }> {
+  const auth = await assertAdmin();
+  if (auth) return { ...auth, applied: 0, failed: items.length };
+
+  let applied = 0;
+  let failed = 0;
+  let firstError: string | null = null;
+  for (const item of items) {
+    const res = await ignoreClassification(item.source, item.id);
+    if (res.ok) applied++;
+    else {
+      failed++;
+      if (!firstError) firstError = res.error;
+    }
+  }
+
+  return {
+    ok: failed === 0,
+    error: failed > 0 ? `${failed} failed — first: ${firstError}` : null,
+    applied,
+    failed,
+  };
+}
+
 /** Acknowledge that the stored classification is correct after all.
  *  Same effect as Apply but without the column change — just sets
  *  `admin_edited=true` so the row stops nagging the audit on every
