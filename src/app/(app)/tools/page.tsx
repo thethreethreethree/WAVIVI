@@ -7,7 +7,10 @@ import { Icon } from "@/components/ui/icon";
 import { SearchField } from "@/components/ui/search-field";
 import { SusenAvatar } from "@/components/ui/susen-avatar";
 import type { CategoryId } from "@/lib/toolbox/categories";
-import { travelerServices } from "@/lib/travejor/tools";
+import {
+  MORE_TOOLS_TILE_ID,
+  travelerServices,
+} from "@/lib/travejor/tools";
 
 /** Maps a Tools-page tile id to its Toolbox category id. */
 const TILE_TO_CATEGORY: Record<string, CategoryId> = {
@@ -28,13 +31,21 @@ const TILE_TO_CATEGORY: Record<string, CategoryId> = {
 export default function ToolsPage() {
   const [query, setQuery] = useState("");
 
-  const services = useMemo(
-    () =>
-      travelerServices.filter((s) =>
-        s.label.toLowerCase().includes(query.toLowerCase()),
-      ),
-    [query],
-  );
+  // Two views of the same dataset:
+  // - searchHits: search is global — typing "police" still finds Police
+  //   even though it's hidden from the default grid (groupedUnder).
+  // - gridServices: when there's no search, the dashboard shows only
+  //   top-level tiles (the four grouped categories live behind the
+  //   "More tools" tile to keep the main grid uncluttered).
+  const services = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (q) {
+      return travelerServices.filter((s) =>
+        s.label.toLowerCase().includes(q),
+      );
+    }
+    return travelerServices.filter((s) => !s.groupedUnder);
+  }, [query]);
 
   return (
     <div className="flex flex-1 flex-col px-5 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
@@ -100,9 +111,16 @@ export default function ToolsPage() {
         {services.map((service) => (
           <Link
             key={service.id}
-            href={`/tools/map?category=${
-              TILE_TO_CATEGORY[service.id] ?? service.id
-            }`}
+            // The "More tools" tile is a group entry — it routes to its
+            // own sub-page (/tools/more) instead of the map. Every other
+            // tile drills straight into the map filtered by category.
+            href={
+              service.id === MORE_TOOLS_TILE_ID
+                ? "/tools/more"
+                : `/tools/map?category=${
+                    TILE_TO_CATEGORY[service.id] ?? service.id
+                  }`
+            }
             className="group flex flex-col items-center gap-2"
           >
             <span className="relative flex h-[104px] w-[104px] items-center justify-center text-glow">

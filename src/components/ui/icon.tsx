@@ -123,6 +123,22 @@ const PATHS: Record<string, React.ReactNode> = {
       <path d="M7 6.5h.01M10 6.5h.01" />
     </>
   ),
+  // 3×3 dot grid — universal "more" / "apps" affordance. Themes that have
+  // a painted PNG (Pen-style watercolor in /icons/orange/more_tools.png)
+  // hide this SVG via the standard tj-icon-svg/has-orange CSS pairing.
+  moreTools: (
+    <>
+      <circle cx="5.5" cy="5.5" r="1.5" />
+      <circle cx="12"  cy="5.5" r="1.5" />
+      <circle cx="18.5" cy="5.5" r="1.5" />
+      <circle cx="5.5" cy="12"  r="1.5" />
+      <circle cx="12"  cy="12"  r="1.5" />
+      <circle cx="18.5" cy="12"  r="1.5" />
+      <circle cx="5.5" cy="18.5" r="1.5" />
+      <circle cx="12"  cy="18.5" r="1.5" />
+      <circle cx="18.5" cy="18.5" r="1.5" />
+    </>
+  ),
   // --- Feed ----------------------------------------------------------------
   heart: <path d="M12 20s-7-4.3-9.3-9C1.3 8.4 2.6 5 6 5c2.2 0 3.4 1.4 4 2.3C10.6 6.4 11.8 5 14 5c3.4 0 4.7 3.4 3.3 6-2.3 4.7-9.3 9-9.3 9z" />,
   comment: (

@@ -23,6 +23,7 @@ export const ORANGE_ICONS: Partial<Record<IconName, string>> = {
   police: `${O}/police.png`,
   embassy: `${O}/embassy.png`,
   laundry: `${O}/laundry.png`,
+  moreTools: `${O}/more_tools.png`,
   // --- Radial hub ---
   meet: `${O}/16_follow_users.png`,
   calendar: `${O}/calendar.png`,
