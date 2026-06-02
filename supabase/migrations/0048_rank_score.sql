@@ -88,5 +88,9 @@ create index if not exists experiences_region_rank_idx
 create index if not exists events_region_rank_idx
   on public.events (region_id, active, rank_score desc nulls last);
 
+-- traveler_utilities has no `active` column (no soft-delete on the
+-- toolbox table — the scraper deletes / replaces rows wholesale on
+-- re-scan). Index just (region_id, rank_score DESC NULLS LAST) so the
+-- /api/utilities sort can still do a backward index scan.
 create index if not exists traveler_utilities_region_rank_idx
-  on public.traveler_utilities (region_id, active, rank_score desc nulls last);
+  on public.traveler_utilities (region_id, rank_score desc nulls last);
