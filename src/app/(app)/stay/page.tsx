@@ -22,7 +22,7 @@ export default async function StayPage() {
     .from("stays")
     .select("*")
     .eq("active", true)
-    .order("backpack_rating", { ascending: false });
+    .order("rank_score", { ascending: false, nullsFirst: false });
   if (region) query = query.eq("region_id", region.id);
   // City scope only applies for cities under the active region — a
   // stale cookie from a previous region must not narrow the list.

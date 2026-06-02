@@ -74,7 +74,7 @@ export default async function Home() {
       .eq("stay_type", "hostel")
       .gte("backpack_rating", QUALITY_MIN_RATING)
       .gte("review_count", QUALITY_MIN_REVIEWS)
-      .order("backpack_rating", { ascending: false })
+      .order("rank_score", { ascending: false, nullsFirst: false })
       .limit(PER_CAT_FETCH);
     if (cityIds.length > 0) staysQ = staysQ.in("city_id", cityIds);
 
@@ -85,7 +85,7 @@ export default async function Home() {
       .eq("region_id", regionId)
       .gte("backpack_rating", QUALITY_MIN_RATING)
       .gte("review_count", QUALITY_MIN_REVIEWS)
-      .order("backpack_rating", { ascending: false })
+      .order("rank_score", { ascending: false, nullsFirst: false })
       .limit(PER_CAT_FETCH);
     if (cityIds.length > 0) eatsQ = eatsQ.in("city_id", cityIds);
 
@@ -96,7 +96,7 @@ export default async function Home() {
       .eq("region_id", regionId)
       .gte("backpack_rating", QUALITY_MIN_RATING)
       .gte("review_count", QUALITY_MIN_REVIEWS)
-      .order("backpack_rating", { ascending: false })
+      .order("rank_score", { ascending: false, nullsFirst: false })
       .limit(PER_CAT_FETCH);
     if (cityIds.length > 0) expsQ = expsQ.in("city_id", cityIds);
 

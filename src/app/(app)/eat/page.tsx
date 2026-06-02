@@ -20,7 +20,7 @@ export default async function EatPage() {
     .from("restaurants")
     .select("*")
     .eq("active", true)
-    .order("backpack_rating", { ascending: false });
+    .order("rank_score", { ascending: false, nullsFirst: false });
   if (region) query = query.eq("region_id", region.id);
   const validCityIds = region
     ? cities.filter((c) => c.region_id === region.id).map((c) => c.id)

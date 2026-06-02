@@ -137,7 +137,7 @@ async function ActivitiesAndPlaces({ plan }: { plan: TravelPlanRow }) {
     .from("stays")
     .select("id, name, photo_url, stay_type, address, rating, backpack_rating")
     .eq("active", true)
-    .order("backpack_rating", { ascending: false })
+    .order("rank_score", { ascending: false, nullsFirst: false })
     .limit(6);
   query = query.or(
     [

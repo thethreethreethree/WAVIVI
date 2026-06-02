@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
       .select(cols)
       .eq("active", true)
       .ilike("name", ilike)
-      .order("backpack_rating", { ascending: false })
+      .order("rank_score", { ascending: false, nullsFirst: false })
       .limit(6);
     if (regionId) qb = qb.eq("region_id", regionId);
     return qb;

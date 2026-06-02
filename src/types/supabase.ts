@@ -191,6 +191,10 @@ export type UtilityRow = {
   email: string | null;
   reliability_score: number;
   backpack_rating: number;
+  /** Migration 0048 — Bayesian-weighted ranking score for list pages.
+   *  Generated column; never written by callers (Insert/Update types
+   *  intentionally omit it). See src/lib/ranking.ts for the formula. */
+  rank_score: number | null;
   admin_edited: boolean;
   crowd_level: CrowdLevel | null;
   description: string | null;
@@ -345,6 +349,10 @@ export type StayRow = {
   thumbs_down: number;
   backpack_rating: number;
   reliability_score: number;
+  /** Migration 0048 — Bayesian-weighted ranking score for list pages.
+   *  Generated column; never written by callers (Insert/Update types
+   *  intentionally omit it). See src/lib/ranking.ts for the formula. */
+  rank_score: number | null;
   admin_edited: boolean;
   phone: string | null;
   website: string | null;
@@ -444,6 +452,10 @@ export type ExperienceRow = {
   thumbs_down: number;
   backpack_rating: number;
   reliability_score: number;
+  /** Migration 0048 — Bayesian-weighted ranking score for list pages.
+   *  Generated column; never written by callers (Insert/Update types
+   *  intentionally omit it). See src/lib/ranking.ts for the formula. */
+  rank_score: number | null;
   admin_edited: boolean;
   phone: string | null;
   website: string | null;
@@ -530,6 +542,10 @@ export type EventRow = {
   thumbs_down: number;
   backpack_rating: number;
   reliability_score: number;
+  /** Migration 0048 — Bayesian-weighted ranking score for list pages.
+   *  Generated column; never written by callers (Insert/Update types
+   *  intentionally omit it). See src/lib/ranking.ts for the formula. */
+  rank_score: number | null;
   admin_edited: boolean;
   phone: string | null;
   website: string | null;
@@ -611,6 +627,10 @@ export type RestaurantRow = {
   thumbs_down: number;
   backpack_rating: number;
   reliability_score: number;
+  /** Migration 0048 — Bayesian-weighted ranking score for list pages.
+   *  Generated column; never written by callers (Insert/Update types
+   *  intentionally omit it). See src/lib/ranking.ts for the formula. */
+  rank_score: number | null;
   admin_edited: boolean;
   phone: string | null;
   website: string | null;

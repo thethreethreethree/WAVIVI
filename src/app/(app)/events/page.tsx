@@ -19,7 +19,7 @@ export default async function EventsPage() {
     .from("events")
     .select("*")
     .eq("active", true)
-    .order("backpack_rating", { ascending: false });
+    .order("rank_score", { ascending: false, nullsFirst: false });
   if (region) query = query.eq("region_id", region.id);
   const { data } = await query;
   // Drop venues outside the region's centre+radius (see /stay for the why).

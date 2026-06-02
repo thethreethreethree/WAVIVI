@@ -47,7 +47,9 @@ export async function GET(req: NextRequest) {
   }
 
   const limit = Math.min(Number(sp.get("limit")) || 2000, 5000);
-  query = query.order("backpack_rating", { ascending: false }).limit(limit);
+  query = query
+    .order("rank_score", { ascending: false, nullsFirst: false })
+    .limit(limit);
 
   const { data, error } = await query;
   if (error) {
