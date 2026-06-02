@@ -30,6 +30,8 @@
 
 import type { StayType } from "@/types/supabase";
 
+import { classifyStayFromText } from "./classify";
+
 export interface StayCsvRow {
   name: string;
   stayType: StayType | null;
@@ -410,7 +412,9 @@ export function parseStaysCsv(text: string): StayCsvParseResult {
       .filter((u) => u && /^https?:\/\//i.test(u));
     const photoUrls = Array.from(new Set(galleryCandidates));
 
-    const stayType =
+    // Cell-based read first — the scraper usually fills "Industry"
+    // with a Google-derived label that's correct often enough to keep.
+    const cellStayType =
       idx.type === -1 ? null : normaliseStayType(f[idx.type] ?? "");
 
     const text = (i: number, alt = ""): string | null => {
@@ -419,10 +423,25 @@ export function parseStaysCsv(text: string): StayCsvParseResult {
       return v || (alt || null);
     };
 
+    const description = text(idx.description);
+
+    // Name-aware override. When the row's NAME (or description) carries
+    // a strong stay-type signal — "Hostel", "Resort", "B&B" — we trust
+    // it over the Industry cell, which routinely says "Hotel" for what
+    // is plainly a hostel. Only HIGH-confidence matches override; the
+    // medium-confidence rules (generic words like "hotel" or "lodge")
+    // are too noisy for first-write and stay in the audit's review
+    // queue. This is the same classifier the data-quality audit runs
+    // — single source of truth, future imports land correctly the
+    // first time instead of relying on the audit to clean up later.
+    const nameSignal = classifyStayFromText(name, description);
+    const stayType: StayType | null =
+      nameSignal?.confidence === "high" ? nameSignal.proposed : cellStayType;
+
     rows.push({
       name,
       stayType,
-      description: text(idx.description),
+      description,
       rating,
       reviewCount:
         idx.reviews === -1 ? 0 : Math.max(0, num(f[idx.reviews]) ?? 0),

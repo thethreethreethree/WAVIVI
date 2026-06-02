@@ -167,6 +167,15 @@ export async function importStaysCsv(
       if (resolvedCityId && (fresh || !best.city_id)) {
         update.city_id = resolvedCityId;
       }
+      // Refresh stay_type on re-import for fresh rows. The parser
+      // applies the name-aware classifier so `row.stayType` carries
+      // the corrected value when the original ingest landed on the
+      // wrong cell-based label (classic "Industry: Hotel but the name
+      // is a Hostel" case). admin_edited rows are skipped — a
+      // hand-curated type is the source of truth.
+      if (fresh && row.stayType && row.stayType !== best.stay_type) {
+        update.stay_type = row.stayType;
+      }
       if (row.description && (fresh || !best.description))
         update.description = row.description;
       if (row.website && (fresh || !best.website)) update.website = row.website;
