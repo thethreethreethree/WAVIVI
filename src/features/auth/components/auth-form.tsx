@@ -5,7 +5,11 @@ import { useActionState } from "react";
 
 import { signIn, signUp } from "@/features/auth/actions";
 import { GoogleButton } from "@/features/auth/components/google-button";
-import { type AuthState, initialAuthState } from "@/features/auth/types";
+import {
+  type AuthState,
+  initialAuthState,
+  PASSWORD_RULE_HINT,
+} from "@/features/auth/types";
 
 type Mode = "login" | "signup";
 
@@ -49,6 +53,7 @@ export function AuthForm({
             type="text"
             placeholder="Alex Rivera"
             autoComplete="name"
+            defaultValue={state.values?.displayName ?? ""}
           />
           <Field
             label="Username"
@@ -56,6 +61,7 @@ export function AuthForm({
             type="text"
             placeholder="alexrivera"
             autoComplete="username"
+            defaultValue={state.values?.username ?? ""}
           />
         </>
       )}
@@ -66,6 +72,7 @@ export function AuthForm({
         type="email"
         placeholder="you@example.com"
         autoComplete="email"
+        defaultValue={state.values?.email ?? ""}
       />
       <Field
         label="Password"
@@ -73,6 +80,10 @@ export function AuthForm({
         type="password"
         placeholder="••••••••"
         autoComplete={mode === "login" ? "current-password" : "new-password"}
+        // Surface the password rule UP FRONT for signup so users see it
+        // BEFORE submit. Skipped for login — the existing-password rule
+        // isn't enforced at sign-in.
+        hint={mode === "signup" ? PASSWORD_RULE_HINT : undefined}
       />
 
       {state.error && (
@@ -131,15 +142,22 @@ export function AuthForm({
 function Field({
   label,
   name,
+  hint,
   ...props
 }: {
   label: string;
   name: string;
+  /** Optional one-liner shown beneath the input — used to show the
+   *  password complexity rule BEFORE the user submits. */
+  hint?: string;
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-base font-semibold text-muted">{label}</span>
       <input name={name} required className={fieldClass} {...props} />
+      {hint && (
+        <span className="text-xs text-muted/80">{hint}</span>
+      )}
     </label>
   );
 }
