@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { serverEnv } from "@/lib/env";
-import { SUSEN_SYSTEM_PROMPT } from "@/lib/susen/persona";
 import type { SusenTurn } from "@/lib/susen/engine";
+import {
+  formatInventoryForPrompt,
+  loadSusenInventory,
+} from "@/lib/susen/inventory";
+import { SUSEN_SYSTEM_PROMPT } from "@/lib/susen/persona";
 
 /**
  * Susen chat backend — proxies the conversation to DeepSeek's
@@ -79,11 +83,24 @@ export async function POST(req: Request) {
     );
   }
 
+  // RAG: load the user's current-region inventory (top stays /
+  // restaurants / experiences by rank_score) and append it to the
+  // system prompt so the model can answer "is there a cafe in El
+  // Nido?" against real data instead of guessing. Inventory load
+  // fails gracefully — the model behaves like the original
+  // prompt-only setup if the lookup errors out.
+  const inventory = await loadSusenInventory(regionId);
+  const inventoryBlock = formatInventoryForPrompt(inventory);
+
   // Compose the message array. Region context (when present) rides on
   // the system prompt so the model has it without a hidden user turn.
-  const systemContent = regionId
-    ? `${SUSEN_SYSTEM_PROMPT}\n\nCURRENT REGION\nThe traveller has selected region id "${regionId}". Tailor recommendations to that region when relevant; if you don't know it, ask rather than invent.`
-    : SUSEN_SYSTEM_PROMPT;
+  let systemContent = SUSEN_SYSTEM_PROMPT;
+  if (regionId) {
+    systemContent += `\n\nCURRENT REGION\nThe traveller has selected region id "${regionId}"${
+      inventory.regionName ? ` (${inventory.regionName})` : ""
+    }. Tailor recommendations to that region when relevant.`;
+  }
+  if (inventoryBlock) systemContent += inventoryBlock;
   const messages: ChatMessage[] = [
     { role: "system", content: systemContent },
     ...history
