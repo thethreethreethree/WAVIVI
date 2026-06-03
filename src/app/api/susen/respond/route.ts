@@ -101,9 +101,15 @@ export async function POST(req: Request) {
   const inventoryBlock = formatInventoryForPrompt(inventory);
 
   // Single source of truth for the diagnostic log line. Goes to
-  // Vercel function logs — surfaces in `vercel logs` and the
-  // dashboard's Logs tab. If Susen ever lies again, the first
-  // question is "did the inventory load?", which this answers.
+  // Vercel function logs. Now includes a per-category breakdown
+  // for restaurants — the cohort fix from c395394 ships even niche
+  // cuisines (Cafe / Bar / Vegan) into the prompt; this lets us
+  // verify they show up in production without re-asking the model.
+  const tally = (items: { category: string }[]): Record<string, number> => {
+    const t: Record<string, number> = {};
+    for (const i of items) t[i.category] = (t[i.category] ?? 0) + 1;
+    return t;
+  };
   console.error(
     "[susen] respond",
     JSON.stringify({
@@ -114,6 +120,8 @@ export async function POST(req: Request) {
       stays: inventory.stays.length,
       restaurants: inventory.restaurants.length,
       experiences: inventory.experiences.length,
+      restaurantCategories: tally(inventory.restaurants),
+      stayCategories: tally(inventory.stays),
       inputPreview: input.slice(0, 80),
     }),
   );

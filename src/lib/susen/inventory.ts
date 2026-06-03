@@ -83,12 +83,26 @@ export async function detectRegionFromInput(
  * to the client raw — only DeepSeek sees it, then its summary.
  */
 
-/** Max items per category to ship into the system prompt. 20 each
- *  keeps the JSON well under DeepSeek's input window even for chatty
- *  follow-ups, and 20 is enough that ranking + cuisine filters give
- *  Susen enough breadth to answer typical "is there a cafe / vegan
- *  spot / dive shop" questions without missing the obvious. */
-const TOP_N = 20;
+/** Composition of the inventory shipped per table. Top-rated rows
+ *  alone aren't enough — for El Nido they're pizzerias and seafood
+ *  spots, and a "cafe" question against a pure top-rated list gets
+ *  the model lying about "no cafes" when several exist further down
+ *  the rank. So we mix two cohorts and dedupe:
+ *
+ *  1. TOP_OVERALL rows by rank_score regardless of category.
+ *  2. TOP_PER_CATEGORY rows per distinct category, so every cuisine
+ *     / stay-type / activity-type present in the region surfaces at
+ *     least one canonical example.
+ *
+ *  3. Combined list is capped at MAX_PER_TABLE to keep the prompt
+ *     bounded — rarely binding because dedupe usually collapses
+ *     overlap. CANDIDATE_POOL is the size of the rank-ordered fetch
+ *     we slice both cohorts from; bigger means cohort top-2 still
+ *     reaches niche categories. */
+const TOP_OVERALL = 12;
+const TOP_PER_CATEGORY = 2;
+const MAX_PER_TABLE = 30;
+const CANDIDATE_POOL = 200;
 
 export interface InventoryItem {
   name: string;
@@ -159,7 +173,7 @@ export async function loadSusenInventory(
           .eq("active", true)
           .eq("region_id", regionId)
           .order("rank_score", { ascending: false, nullsFirst: false })
-          .limit(TOP_N),
+          .limit(CANDIDATE_POOL),
         supabase
           .from("restaurants")
           .select(
@@ -168,7 +182,7 @@ export async function loadSusenInventory(
           .eq("active", true)
           .eq("region_id", regionId)
           .order("rank_score", { ascending: false, nullsFirst: false })
-          .limit(TOP_N),
+          .limit(CANDIDATE_POOL),
         supabase
           .from("experiences")
           .select(
@@ -177,7 +191,7 @@ export async function loadSusenInventory(
           .eq("active", true)
           .eq("region_id", regionId)
           .order("rank_score", { ascending: false, nullsFirst: false })
-          .limit(TOP_N),
+          .limit(CANDIDATE_POOL),
         supabase
           .from("cities")
           .select("id, name")
@@ -186,27 +200,76 @@ export async function loadSusenInventory(
       ]);
 
     const cityName = indexCities(citiesRes.data);
-    const map = <Row extends { city_id: string | null; address: string | null }>(
+
+    /** Project a raw row into the prompt-friendly InventoryItem
+     *  shape. Pure — no DB access, no side effects. */
+    const project = <
+      Row extends { city_id: string | null; address: string | null },
+    >(
+      r: Row,
+      category: (r: Row) => string,
+      rating: (r: Row) => number | null,
+      reviews: (r: Row) => number,
+      rank: (r: Row) => number | null,
+      name: (r: Row) => string,
+    ): InventoryItem => ({
+      name: name(r),
+      category: category(r) || "other",
+      rating: rating(r),
+      reviews: reviews(r) ?? 0,
+      rank: round2(rank(r)),
+      city: r.city_id ? cityName.get(r.city_id) ?? null : null,
+      address: r.address ?? null,
+    });
+
+    /** Build the combined cohort for one table from the rank-ordered
+     *  candidate pool. The pool comes in rank_score DESC already, so:
+     *    1. Take the first TOP_OVERALL.
+     *    2. Walk the pool grouping by category; take the first
+     *       TOP_PER_CATEGORY per category. Because the pool is already
+     *       sorted, "first per category" IS "highest-ranked per
+     *       category" — no second sort needed.
+     *    3. Concatenate, dedupe by name (cheap stable identity
+     *       within a region — the unique constraints in the place
+     *       tables make collisions very rare), cap at MAX_PER_TABLE. */
+    const buildCohort = <
+      Row extends { city_id: string | null; address: string | null },
+    >(
       rows: Row[] | null,
       category: (r: Row) => string,
       rating: (r: Row) => number | null,
       reviews: (r: Row) => number,
       rank: (r: Row) => number | null,
       name: (r: Row) => string,
-    ): InventoryItem[] =>
-      (rows ?? []).map((r) => ({
-        name: name(r),
-        category: category(r) || "other",
-        rating: rating(r),
-        reviews: reviews(r) ?? 0,
-        rank: round2(rank(r)),
-        city: r.city_id ? cityName.get(r.city_id) ?? null : null,
-        address: r.address ?? null,
-      }));
+    ): InventoryItem[] => {
+      const pool = rows ?? [];
+      if (pool.length === 0) return [];
+      const overall = pool.slice(0, TOP_OVERALL);
+      const perCategorySeen = new Map<string, number>();
+      const perCategory: Row[] = [];
+      for (const r of pool) {
+        const cat = (category(r) || "other").toLowerCase();
+        const seen = perCategorySeen.get(cat) ?? 0;
+        if (seen < TOP_PER_CATEGORY) {
+          perCategory.push(r);
+          perCategorySeen.set(cat, seen + 1);
+        }
+      }
+      const seenNames = new Set<string>();
+      const merged: InventoryItem[] = [];
+      for (const r of [...overall, ...perCategory]) {
+        const item = project(r, category, rating, reviews, rank, name);
+        if (seenNames.has(item.name)) continue;
+        seenNames.add(item.name);
+        merged.push(item);
+        if (merged.length >= MAX_PER_TABLE) break;
+      }
+      return merged;
+    };
 
     return {
       regionName: regionRes.data?.display_name ?? null,
-      stays: map(
+      stays: buildCohort(
         staysRes.data as
           | {
               name: string;
@@ -224,7 +287,7 @@ export async function loadSusenInventory(
         (r) => r.rank_score,
         (r) => r.name,
       ),
-      restaurants: map(
+      restaurants: buildCohort(
         restaurantsRes.data as
           | {
               name: string;
@@ -242,7 +305,7 @@ export async function loadSusenInventory(
         (r) => r.rank_score,
         (r) => r.name,
       ),
-      experiences: map(
+      experiences: buildCohort(
         experiencesRes.data as
           | {
               name: string;
