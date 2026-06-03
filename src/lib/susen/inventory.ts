@@ -99,15 +99,23 @@ export async function detectRegionFromInput(
  *     overlap. CANDIDATE_POOL is the size of the rank-ordered fetch
  *     we slice both cohorts from; bigger means cohort top-2 still
  *     reaches niche categories. */
-const TOP_OVERALL = 12;
-const TOP_PER_CATEGORY = 2;
-// Cap raised from 30 → 40 on 2026-06-03. El Nido has 14 cuisine
-// buckets active (Italian, Filipino, Cafe, Bar, Vegan, …); at K=2
-// per cuisine that's 28 perCategory slots before overall extras,
-// so 30 was too tight to fit both the per-category set AND any
-// genuine top-overall extras. 40 leaves ~12 extras after a
-// 14-bucket region and still ~3.5k tokens at the prompt — well
-// inside DeepSeek's window.
+// 2026-06-03 final iteration. Three earlier attempts (97b4754,
+// de3b3b6, 0272f8a) tried "TOP_PER_CATEGORY=2 + raise cap" and
+// each still missed Cafe in the production log. The Q10 lesson
+// finally landed — those were variations on "LIMIT per category",
+// when what we actually needed was "GUARANTEE per category". The
+// cap was always going to fire before niche cuisines reached
+// merged if they hadn't been pre-secured. Now we:
+//
+//   Step 1 — Guarantee exactly ONE row per distinct category (the
+//            highest-ranked of each). Niche cuisines like Cafe with
+//            rank 4.46 join the cohort BEFORE the cap can touch them.
+//   Step 2 — Fill with the top MAX_PER_TABLE by rank for depth on
+//            the popular categories, deduped against the guaranteed
+//            set so we don't waste slots on the top-rated "other"
+//            rows that already entered via Step 1.
+//   Step 3 — Cap at MAX_PER_TABLE, prompt size budgeted at ~3.5k
+//            tokens with comfortable headroom in DeepSeek's window.
 const MAX_PER_TABLE = 40;
 const CANDIDATE_POOL = 200;
 
@@ -262,22 +270,34 @@ export async function loadSusenInventory(
     ): InventoryItem[] => {
       const pool = rows ?? [];
       if (pool.length === 0) return [];
-      const overall = pool.slice(0, TOP_OVERALL);
-      const perCategorySeen = new Map<string, number>();
-      const perCategory: Row[] = [];
+
+      // Step 1 — GUARANTEE one row per category. Walk the pool in
+      // rank-DESC order and grab the first row of each cuisine /
+      // stay-type / activity-type encountered. Map.set is a no-op
+      // when the key already exists, so the FIRST hit (highest rank)
+      // wins. This is the per-category guarantee; niche cuisines
+      // like Cafe always make the cohort even if their best row
+      // ranks #35 in the pool.
+      const guaranteed = new Map<string, Row>();
       for (const r of pool) {
         const cat = (category(r) || "other").toLowerCase();
-        const seen = perCategorySeen.get(cat) ?? 0;
-        if (seen < TOP_PER_CATEGORY) {
-          perCategory.push(r);
-          perCategorySeen.set(cat, seen + 1);
-        }
+        if (!guaranteed.has(cat)) guaranteed.set(cat, r);
       }
+
+      // Step 2 — FILL with top-overall by rank. Already in rank
+      // DESC order, so slice gets us the top performers regardless
+      // of category. These add depth on popular categories beyond
+      // the guaranteed first row.
+      const overall = pool.slice(0, MAX_PER_TABLE);
+
+      // Step 3 — Merge guaranteed FIRST (so the per-category
+      // guarantee survives the cap), dedupe by name (every row in
+      // the pool is unique on (name, region) by ingest constraint,
+      // so a name collision means the same physical row appears in
+      // both sets — count it once), cap at MAX_PER_TABLE.
       const seenNames = new Set<string>();
       const merged: InventoryItem[] = [];
-      // PRIMARY cohort first — see the JSDoc above for the bug this
-      // fixes (Cafe + Bar truncated by the cap before reaching merged).
-      for (const r of [...perCategory, ...overall]) {
+      for (const r of [...guaranteed.values(), ...overall]) {
         const item = project(r, category, rating, reviews, rank, name);
         if (seenNames.has(item.name)) continue;
         seenNames.add(item.name);
@@ -364,14 +384,26 @@ export function formatInventoryForPrompt(inv: SusenInventory): string {
 
   return `\n\nCURRENT INVENTORY (live data from the Wondavu database — refer to this when recommending; do NOT invent names or addresses)
 Region: ${inv.regionName ?? "unknown"}
-The lists below are sorted by a Bayesian rank score (rating weighted by review count). Items NOT in these lists do not exist in our data; if a user asks for something we don't have, say so honestly and offer the closest match from what we DO have.
+The lists below are sorted by a Bayesian rank score (rating weighted by review count).
 
-STAYS (top ${inv.stays.length}):
+HOW TO READ THIS INVENTORY (important):
+- Each item has a "category" field. That field IS the cuisine / stay-type / activity-type.
+- When the traveller asks for a specific kind of place (cafe, hostel, dive shop, bar, vegan, …),
+  YOU MUST scan every item's "category" field for matches. The section heading is a grouping
+  label, NOT a filter — e.g. cafes ARE inside PLACES TO EAT under category:"Cafe", and bars
+  are there too under category:"Bar".
+- If you said earlier in the conversation that a kind of place does NOT exist, but it appears
+  in this CURRENT INVENTORY now, the inventory is the source of truth — correct yourself
+  naturally and move on. Do NOT repeat the earlier claim.
+- If a kind of place is genuinely not in the inventory after you've checked the category fields,
+  say so honestly and offer the closest match from what we DO have. Never invent.
+
+PLACES TO STAY — ${inv.stays.length} items (hostels, hotels, resorts, B&Bs, etc.; check "category"):
 ${stringify(inv.stays)}
 
-RESTAURANTS (top ${inv.restaurants.length}, includes Cafe / Bar / cuisines):
+PLACES TO EAT — ${inv.restaurants.length} items (restaurants, cafes, bars, all cuisines; check "category"):
 ${stringify(inv.restaurants)}
 
-EXPERIENCES (top ${inv.experiences.length}):
+THINGS TO DO — ${inv.experiences.length} items (diving, hiking, tours, etc.; check "category"):
 ${stringify(inv.experiences)}`;
 }
