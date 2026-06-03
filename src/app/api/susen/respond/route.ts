@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { serverEnv } from "@/lib/env";
 import type { SusenTurn } from "@/lib/susen/engine";
 import {
+  detectRegionFromInput,
   formatInventoryForPrompt,
   loadSusenInventory,
 } from "@/lib/susen/inventory";
@@ -83,22 +84,55 @@ export async function POST(req: Request) {
     );
   }
 
-  // RAG: load the user's current-region inventory (top stays /
-  // restaurants / experiences by rank_score) and append it to the
-  // system prompt so the model can answer "is there a cafe in El
-  // Nido?" against real data instead of guessing. Inventory load
-  // fails gracefully — the model behaves like the original
-  // prompt-only setup if the lookup errors out.
-  const inventory = await loadSusenInventory(regionId);
+  // RAG: load real inventory so Susen can answer "is there a cafe in
+  // El Nido?" against the DB instead of guessing.
+  //
+  // Region resolution order — the FIRST hit wins:
+  //   1. Input mentions a region or city name ("in El Nido") →
+  //      override the cookie. Travelers routinely ask about places
+  //      they haven't selected yet; without this we'd query Cebu's
+  //      inventory and lie back at them.
+  //   2. Fall through to the cookie (`wv-region`).
+  //   3. Neither → empty inventory, and the system prompt tells the
+  //      model to ASK the user to pick a region instead of guessing.
+  const detectedRegionId = await detectRegionFromInput(input);
+  const effectiveRegionId = detectedRegionId ?? regionId;
+  const inventory = await loadSusenInventory(effectiveRegionId);
   const inventoryBlock = formatInventoryForPrompt(inventory);
+
+  // Single source of truth for the diagnostic log line. Goes to
+  // Vercel function logs — surfaces in `vercel logs` and the
+  // dashboard's Logs tab. If Susen ever lies again, the first
+  // question is "did the inventory load?", which this answers.
+  console.error(
+    "[susen] respond",
+    JSON.stringify({
+      cookieRegionId: regionId,
+      detectedRegionId,
+      effectiveRegionId,
+      regionName: inventory.regionName,
+      stays: inventory.stays.length,
+      restaurants: inventory.restaurants.length,
+      experiences: inventory.experiences.length,
+      inputPreview: input.slice(0, 80),
+    }),
+  );
 
   // Compose the message array. Region context (when present) rides on
   // the system prompt so the model has it without a hidden user turn.
   let systemContent = SUSEN_SYSTEM_PROMPT;
-  if (regionId) {
-    systemContent += `\n\nCURRENT REGION\nThe traveller has selected region id "${regionId}"${
+  if (effectiveRegionId) {
+    systemContent += `\n\nCURRENT REGION\nThe traveller's effective region is id "${effectiveRegionId}"${
       inventory.regionName ? ` (${inventory.regionName})` : ""
-    }. Tailor recommendations to that region when relevant.`;
+    }${
+      detectedRegionId && detectedRegionId !== regionId
+        ? " — detected from the user's message text, not their globe pin"
+        : ""
+    }. Tailor recommendations to that region. If they ask about somewhere else, ask them to use the globe to switch.`;
+  } else {
+    // No region anywhere — be honest, don't make up a list.
+    systemContent +=
+      "\n\nNO REGION SELECTED\nThe traveller has not selected a region yet and their message doesn't mention one I recognise. Ask them which destination they're asking about (or to use the globe button at the top of the screen to pick one). Do NOT invent venues you don't have data for.";
   }
   if (inventoryBlock) systemContent += inventoryBlock;
   const messages: ChatMessage[] = [

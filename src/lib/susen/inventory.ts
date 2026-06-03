@@ -2,6 +2,70 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
+/** Detect a region from free-form user text by substring-matching
+ *  against region display names AND child city names. Travelers often
+ *  ask "best cafe in El Nido" when their globe pin is still on Cebu —
+ *  without this we'd query Cebu's inventory and lie back at them.
+ *
+ *  Strategy:
+ *   1. Walk every active region's display_name (lowercased) and check
+ *      whether the input contains it as a substring.
+ *   2. If no region matches, walk every city; the first hit returns
+ *      its parent region_id.
+ *   3. Longer names match first so "El Nido, Palawan" wins over
+ *      "Palawan" when both are present in the same string.
+ *
+ *  Returns null when nothing matches — the caller then falls back to
+ *  the cookie or to the no-region prompt branch. */
+export async function detectRegionFromInput(
+  input: string,
+): Promise<string | null> {
+  const haystack = input.trim().toLowerCase();
+  if (!haystack) return null;
+  const supabase = createAdminClient();
+  const [regionsRes, citiesRes] = await Promise.all([
+    supabase
+      .from("regions")
+      .select("id, display_name, city, province, country")
+      .eq("active", true)
+      .returns<
+        {
+          id: string;
+          display_name: string;
+          city: string | null;
+          province: string | null;
+          country: string | null;
+        }[]
+      >(),
+    supabase
+      .from("cities")
+      .select("region_id, name")
+      .returns<{ region_id: string; name: string }[]>(),
+  ]);
+
+  type Candidate = { id: string; needle: string };
+  const candidates: Candidate[] = [];
+  for (const r of regionsRes.data ?? []) {
+    for (const v of [r.display_name, r.city, r.province]) {
+      if (v && v.trim().length >= 3) {
+        candidates.push({ id: r.id, needle: v.toLowerCase() });
+      }
+    }
+  }
+  for (const c of citiesRes.data ?? []) {
+    if (c.name && c.name.trim().length >= 3) {
+      candidates.push({ id: c.region_id, needle: c.name.toLowerCase() });
+    }
+  }
+  // Longest needles first so "el nido" wins over "el" on a name that
+  // happens to share a short prefix with something else.
+  candidates.sort((a, b) => b.needle.length - a.needle.length);
+  for (const c of candidates) {
+    if (haystack.includes(c.needle)) return c.id;
+  }
+  return null;
+}
+
 /**
  * Susen retrieval — gives the model real inventory to ground answers
  * on instead of hallucinating "I'm not seeing any cafes in the
