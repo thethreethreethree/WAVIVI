@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /** Detect a region from free-form user text by substring-matching
@@ -67,57 +69,36 @@ export async function detectRegionFromInput(
 }
 
 /**
- * Susen retrieval — gives the model real inventory to ground answers
- * on instead of hallucinating "I'm not seeing any cafes in the
- * current list" when the data is right there in the DB.
+ * Susen retrieval — gives the model real inventory to ground answers on
+ * instead of hallucinating "I'm not seeing any cafes" when the data is
+ * right there in the DB.
  *
- * Fetches the top-rated stays / restaurants / experiences for the
- * user's region using the existing `rank_score` covering index from
- * migration 0048. The result is a compact, prompt-sized JSON blob
- * that gets appended to SUSEN_SYSTEM_PROMPT in the route handler.
+ * Two small cohorts, so the prompt stays cheap AND she can still find
+ * niche things:
  *
- * Why admin client: this runs server-side inside the route handler,
- * the user has already been gated by the auth + region cookie, and
- * RLS would otherwise hide rows we'd want the model to know about
- * during a logged-out preview. The result is also never returned
- * to the client raw — only DeepSeek sees it, then its summary.
+ *   1. MATCHES — a TARGETED search of the DB for what the traveller just
+ *      asked ("burgers", "vegan", "dive shop"). It matches on BOTH the
+ *      name AND the cuisine/type, so "Paradise Bloom Burger" (cuisine
+ *      "Fast Food") and "Fuego El Nido. PROPER BURGERS" (cuisine
+ *      "Seafood") surface even though no row has cuisine "Burger". This
+ *      is what fixes the "no burger joint / no cafe in the list" misses:
+ *      the answer is pulled by query, not scanned out of a 120-row dump.
+ *   2. BASELINE — a small top-rated set per table for general questions
+ *      ("where's good tonight?") and gentle cross-sell.
+ *
+ * This replaces the previous design that shipped the entire ~120-item
+ * catalogue on every single turn — which both missed name-based matches
+ * AND ballooned token cost (~5-6k tokens of inventory per message). Now
+ * a turn carries the small baseline plus only the rows that match the
+ * ask, so retrieval is accurate and the prompt is ~3x smaller.
+ *
+ * Why admin client: this runs server-side inside the route handler, the
+ * user is already gated by auth + region cookie, and RLS would otherwise
+ * hide rows we want the model to know about during a logged-out preview.
+ * The result is never returned to the client raw — only DeepSeek sees it.
  */
-
-/** Composition of the inventory shipped per table. Top-rated rows
- *  alone aren't enough — for El Nido they're pizzerias and seafood
- *  spots, and a "cafe" question against a pure top-rated list gets
- *  the model lying about "no cafes" when several exist further down
- *  the rank. So we mix two cohorts and dedupe:
- *
- *  1. TOP_OVERALL rows by rank_score regardless of category.
- *  2. TOP_PER_CATEGORY rows per distinct category, so every cuisine
- *     / stay-type / activity-type present in the region surfaces at
- *     least one canonical example.
- *
- *  3. Combined list is capped at MAX_PER_TABLE to keep the prompt
- *     bounded — rarely binding because dedupe usually collapses
- *     overlap. CANDIDATE_POOL is the size of the rank-ordered fetch
- *     we slice both cohorts from; bigger means cohort top-2 still
- *     reaches niche categories. */
-// 2026-06-03 final iteration. Three earlier attempts (97b4754,
-// de3b3b6, 0272f8a) tried "TOP_PER_CATEGORY=2 + raise cap" and
-// each still missed Cafe in the production log. The Q10 lesson
-// finally landed — those were variations on "LIMIT per category",
-// when what we actually needed was "GUARANTEE per category". The
-// cap was always going to fire before niche cuisines reached
-// merged if they hadn't been pre-secured. Now we:
-//
-//   Step 1 — Guarantee exactly ONE row per distinct category (the
-//            highest-ranked of each). Niche cuisines like Cafe with
-//            rank 4.46 join the cohort BEFORE the cap can touch them.
-//   Step 2 — Fill with the top MAX_PER_TABLE by rank for depth on
-//            the popular categories, deduped against the guaranteed
-//            set so we don't waste slots on the top-rated "other"
-//            rows that already entered via Step 1.
-//   Step 3 — Cap at MAX_PER_TABLE, prompt size budgeted at ~3.5k
-//            tokens with comfortable headroom in DeepSeek's window.
-const MAX_PER_TABLE = 40;
-const CANDIDATE_POOL = 200;
+const BASELINE_PER_TABLE = 8;
+const SEARCH_LIMIT = 12;
 
 export interface InventoryItem {
   name: string;
@@ -131,11 +112,19 @@ export interface InventoryItem {
 
 export interface SusenInventory {
   regionName: string | null;
+  /** Small top-rated baseline per table (general questions / cross-sell). */
   stays: InventoryItem[];
   restaurants: InventoryItem[];
   experiences: InventoryItem[];
-  /** True active counts in the region (the lists above are a sample). Lets
-   *  Susen answer "how many restaurants?" accurately instead of guessing. */
+  /** Rows that directly match the traveller's current query (may be empty
+   *  when the message has no searchable keyword, e.g. "hey"). */
+  matches: {
+    stays: InventoryItem[];
+    restaurants: InventoryItem[];
+    experiences: InventoryItem[];
+  };
+  /** True active counts in the region. Lets Susen answer "how many
+   *  restaurants?" accurately instead of guessing from the sample. */
   totals: { stays: number; restaurants: number; experiences: number };
 }
 
@@ -144,301 +133,290 @@ interface CityLookup {
   name: string;
 }
 
-/** Build a `(id → name)` lookup so the per-item `city` field can be
- *  a human-readable city name instead of a raw UUID — the model can
- *  surface it directly. */
+const EMPTY_INVENTORY: SusenInventory = {
+  regionName: null,
+  stays: [],
+  restaurants: [],
+  experiences: [],
+  matches: { stays: [], restaurants: [], experiences: [] },
+  totals: { stays: 0, restaurants: 0, experiences: 0 },
+};
+
+/** Words that carry no retrieval signal — dropped before searching so a
+ *  query like "any good place to eat" doesn't ILIKE-match half the table
+ *  on "place"/"eat". Specific intent words (cafe, burger, vegan, bar,
+ *  dive, hostel…) are deliberately NOT here so they reach the search. */
+const STOPWORDS = new Set([
+  "the","a","an","and","or","of","to","for","in","on","at","is","are","am",
+  "be","was","were","there","any","some","good","best","nice","great","really",
+  "very","me","i","we","you","my","our","us","want","wanna","need","needs",
+  "looking","look","find","finding","show","got","get","go","going","like",
+  "would","can","could","should","shall","do","does","did","please","where",
+  "what","whats","which","who","when","how","why","this","that","these","those",
+  "with","without","about","here","have","has","had","near","nearby","around",
+  "somewhere","place","places","spot","spots","area","thing","things",
+  "something","anything","food","foods","eat","eating","eatery","dining","meal",
+  "meals","option","options","recommend","recommendation","recommendations",
+  "suggestion","suggestions","restaurant","restaurants","stuff","know","tell",
+  "give","grab","today","tonight","now","also","still","else","one","ones",
+]);
+
+/** Map a query word to extra cuisine/type terms so intent words bridge to
+ *  the way the data is actually labelled ("coffee" → cuisine "Cafe",
+ *  "drinks" → cuisine "Bar"). Names are searched directly regardless. */
+const SYNONYMS: Record<string, string[]> = {
+  coffee: ["cafe"], cafes: ["cafe"],
+  burgers: ["burger"],
+  drink: ["bar"], drinks: ["bar"], beer: ["bar"], beers: ["bar"],
+  cocktail: ["bar"], cocktails: ["bar"], nightlife: ["bar"], bars: ["bar"],
+  sushi: ["japanese"], ramen: ["japanese"], japan: ["japanese"],
+  veg: ["vegan"], vegetarian: ["vegan"], plant: ["vegan", "plant-based"],
+  pasta: ["italian"], pizzas: ["pizza"],
+  hostels: ["hostel"], hotels: ["hotel"], resorts: ["resort"],
+  diving: ["dive"], snorkeling: ["snorkel"], snorkelling: ["snorkel"],
+  hikes: ["hike"], hiking: ["hike"], tours: ["tour"], trekking: ["hike"],
+};
+
+/** Pull searchable keywords out of the traveller's message: lowercase,
+ *  strip punctuation, drop stopwords and sub-3-char tokens, expand a few
+ *  intent synonyms. Capped so a rambling message can't blow up the OR. */
+function extractKeywords(query: string): string[] {
+  const tokens = query
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 3 && !STOPWORDS.has(w));
+  const out = new Set<string>();
+  for (const w of tokens) {
+    out.add(w);
+    for (const syn of SYNONYMS[w] ?? []) out.add(syn);
+  }
+  return Array.from(out).slice(0, 8);
+}
+
+/** Build a PostgREST `or=` expression matching name OR the category
+ *  column against any keyword. Keywords are alphanumeric (punctuation was
+ *  stripped in extractKeywords), so they're safe to interpolate into the
+ *  ILIKE pattern. Returns null when there's nothing to search. */
+function buildSearchExpr(
+  keywords: string[],
+  categoryCol: string,
+): string | null {
+  if (keywords.length === 0) return null;
+  const parts: string[] = [];
+  for (const k of keywords) {
+    parts.push(`name.ilike.%${k}%`);
+    parts.push(`${categoryCol}.ilike.%${k}%`);
+  }
+  return parts.join(",");
+}
+
+/** Build a `(id → name)` lookup so the per-item `city` field can be a
+ *  human-readable city name instead of a raw UUID. */
 function indexCities(rows: CityLookup[] | null): Map<string, string> {
   const m = new Map<string, string>();
   for (const c of rows ?? []) m.set(c.id, c.name);
   return m;
 }
 
-/** Round to 2 decimals — keeps the prompt compact and aligns with
- *  what humans read on the cards. */
+/** Round to 2 decimals — keeps the prompt compact and aligns with what
+ *  humans read on the cards. */
 const round2 = (n: number | null): number =>
   n == null ? 0 : Math.round(n * 100) / 100;
 
-/** Pull the top inventory for the given region. Falls back to an
- *  empty payload when the region cookie isn't set or the lookups
- *  fail — the route handler will simply skip the CONTEXT block and
- *  the model behaves like the original prompt-only setup. */
+type RawRow = {
+  name: string;
+  rating: number | null;
+  review_count: number;
+  rank_score: number | null;
+  city_id: string | null;
+  address: string | null;
+} & Record<string, unknown>;
+
+/** Pull the inventory for the given region, targeted at `query`. Falls
+ *  back to an empty payload when the region isn't set or a lookup throws
+ *  — the route handler then skips the CONTEXT block and the model behaves
+ *  like the original prompt-only setup. */
 export async function loadSusenInventory(
   regionId: string | null,
+  query: string | null = null,
 ): Promise<SusenInventory> {
-  const empty: SusenInventory = {
-    regionName: null,
-    stays: [],
-    restaurants: [],
-    experiences: [],
-    totals: { stays: 0, restaurants: 0, experiences: 0 },
-  };
-  if (!regionId) return empty;
+  if (!regionId) return EMPTY_INVENTORY;
 
-  const supabase = createAdminClient();
+  // Untyped client: the table name is parameterised across the cohort
+  // helpers below (the typed client only accepts literal table names),
+  // and rows are projected through RawRow anyway, so we don't lose
+  // anything by reaching the tables generically.
+  const supabase = createAdminClient() as unknown as SupabaseClient;
+  const keywords = extractKeywords(query ?? "");
+
+  // Reusable builders for the two cohorts of one table.
+  const baseline = (table: string, cols: string) =>
+    supabase
+      .from(table)
+      .select(cols)
+      .eq("active", true)
+      .eq("region_id", regionId)
+      .order("rank_score", { ascending: false, nullsFirst: false })
+      .limit(BASELINE_PER_TABLE);
+
+  const search = (table: string, cols: string, categoryCol: string) => {
+    const expr = buildSearchExpr(keywords, categoryCol);
+    if (!expr) return Promise.resolve({ data: [] as RawRow[] });
+    return supabase
+      .from(table)
+      .select(cols)
+      .eq("active", true)
+      .eq("region_id", regionId)
+      .or(expr)
+      .order("rank_score", { ascending: false, nullsFirst: false })
+      .limit(SEARCH_LIMIT);
+  };
+
+  const count = (table: string) =>
+    supabase
+      .from(table)
+      .select("id", { count: "exact", head: true })
+      .eq("active", true)
+      .eq("region_id", regionId);
+
+  const STAY_COLS =
+    "name, stay_type, rating, review_count, rank_score, city_id, address";
+  const REST_COLS =
+    "name, cuisine, rating, review_count, rank_score, city_id, address";
+  const EXP_COLS =
+    "name, activity_type, rating, review_count, rank_score, city_id, address";
 
   try {
     const [
       regionRes,
-      staysRes,
-      restaurantsRes,
-      experiencesRes,
       citiesRes,
-      staysCountRes,
-      restaurantsCountRes,
-      experiencesCountRes,
+      staysBase,
+      restBase,
+      expBase,
+      staysMatch,
+      restMatch,
+      expMatch,
+      staysCount,
+      restCount,
+      expCount,
     ] = await Promise.all([
-        supabase
-          .from("regions")
-          .select("display_name")
-          .eq("id", regionId)
-          .maybeSingle<{ display_name: string }>(),
-        supabase
-          .from("stays")
-          .select(
-            "name, stay_type, rating, review_count, rank_score, city_id, address",
-          )
-          .eq("active", true)
-          .eq("region_id", regionId)
-          .order("rank_score", { ascending: false, nullsFirst: false })
-          .limit(CANDIDATE_POOL),
-        supabase
-          .from("restaurants")
-          .select(
-            "name, cuisine, rating, review_count, rank_score, city_id, address",
-          )
-          .eq("active", true)
-          .eq("region_id", regionId)
-          .order("rank_score", { ascending: false, nullsFirst: false })
-          .limit(CANDIDATE_POOL),
-        supabase
-          .from("experiences")
-          .select(
-            "name, activity_type, rating, review_count, rank_score, city_id, address",
-          )
-          .eq("active", true)
-          .eq("region_id", regionId)
-          .order("rank_score", { ascending: false, nullsFirst: false })
-          .limit(CANDIDATE_POOL),
-        supabase
-          .from("cities")
-          .select("id, name")
-          .eq("region_id", regionId)
-          .returns<CityLookup[]>(),
-        supabase
-          .from("stays")
-          .select("id", { count: "exact", head: true })
-          .eq("active", true)
-          .eq("region_id", regionId),
-        supabase
-          .from("restaurants")
-          .select("id", { count: "exact", head: true })
-          .eq("active", true)
-          .eq("region_id", regionId),
-        supabase
-          .from("experiences")
-          .select("id", { count: "exact", head: true })
-          .eq("active", true)
-          .eq("region_id", regionId),
-      ]);
+      supabase
+        .from("regions")
+        .select("display_name")
+        .eq("id", regionId)
+        .maybeSingle<{ display_name: string }>(),
+      supabase
+        .from("cities")
+        .select("id, name")
+        .eq("region_id", regionId)
+        .returns<CityLookup[]>(),
+      baseline("stays", STAY_COLS),
+      baseline("restaurants", REST_COLS),
+      baseline("experiences", EXP_COLS),
+      search("stays", STAY_COLS, "stay_type"),
+      search("restaurants", REST_COLS, "cuisine"),
+      search("experiences", EXP_COLS, "activity_type"),
+      count("stays"),
+      count("restaurants"),
+      count("experiences"),
+    ]);
 
     const cityName = indexCities(citiesRes.data);
 
-    /** Project a raw row into the prompt-friendly InventoryItem
-     *  shape. Pure — no DB access, no side effects. */
-    const project = <
-      Row extends { city_id: string | null; address: string | null },
-    >(
-      r: Row,
-      category: (r: Row) => string,
-      rating: (r: Row) => number | null,
-      reviews: (r: Row) => number,
-      rank: (r: Row) => number | null,
-      name: (r: Row) => string,
-    ): InventoryItem => ({
-      name: name(r),
-      category: category(r) || "other",
-      rating: rating(r),
-      reviews: reviews(r) ?? 0,
-      rank: round2(rank(r)),
+    const project = (r: RawRow, categoryCol: string): InventoryItem => ({
+      name: r.name,
+      category: (r[categoryCol] as string) || "other",
+      rating: r.rating,
+      reviews: r.review_count ?? 0,
+      rank: round2(r.rank_score),
       city: r.city_id ? cityName.get(r.city_id) ?? null : null,
       address: r.address ?? null,
     });
 
-    /** Build the combined cohort for one table from the rank-ordered
-     *  candidate pool. The pool comes in rank_score DESC already, so:
-     *    1. Walk the pool grouping by category; take the first
-     *       TOP_PER_CATEGORY per category. Because the pool is already
-     *       sorted, "first per category" IS "highest-ranked per
-     *       category" — no second sort needed. This is the PRIMARY
-     *       cohort — every cuisine / stay-type / activity-type present
-     *       in the region is GUARANTEED representation.
-     *    2. Take the first TOP_OVERALL as the SECONDARY cohort —
-     *       extras that surface genuine top performers above and
-     *       beyond the per-category baseline.
-     *    3. Merge primary FIRST then secondary (so the per-category
-     *       guarantee survives the MAX_PER_TABLE cap), dedupe by
-     *       name, cap at MAX_PER_TABLE.
-     *
-     *  Why this order: the first cut shipped overall FIRST, then per-
-     *  category, and the cap truncated the tail of per-category before
-     *  niche cuisines (Cafe, Bar) reached the merged list — confirmed
-     *  by the 2026-06-03 production log where 14 cuisines had 0–2
-     *  rows each but Cafe was at zero. Reversing the merge means even
-     *  late-iteration categories make the cut. */
-    const buildCohort = <
-      Row extends { city_id: string | null; address: string | null },
-    >(
-      rows: Row[] | null,
-      category: (r: Row) => string,
-      rating: (r: Row) => number | null,
-      reviews: (r: Row) => number,
-      rank: (r: Row) => number | null,
-      name: (r: Row) => string,
-    ): InventoryItem[] => {
-      const pool = rows ?? [];
-      if (pool.length === 0) return [];
+    const rows = (res: { data: unknown }): RawRow[] =>
+      (res.data as RawRow[] | null) ?? [];
 
-      // Step 1 — GUARANTEE one row per category. Walk the pool in
-      // rank-DESC order and grab the first row of each cuisine /
-      // stay-type / activity-type encountered. Map.set is a no-op
-      // when the key already exists, so the FIRST hit (highest rank)
-      // wins. This is the per-category guarantee; niche cuisines
-      // like Cafe always make the cohort even if their best row
-      // ranks #35 in the pool.
-      const guaranteed = new Map<string, Row>();
-      for (const r of pool) {
-        const cat = (category(r) || "other").toLowerCase();
-        if (!guaranteed.has(cat)) guaranteed.set(cat, r);
-      }
+    const projectAll = (res: { data: unknown }, categoryCol: string) =>
+      rows(res).map((r) => project(r, categoryCol));
 
-      // Step 2 — FILL with top-overall by rank. Already in rank
-      // DESC order, so slice gets us the top performers regardless
-      // of category. These add depth on popular categories beyond
-      // the guaranteed first row.
-      const overall = pool.slice(0, MAX_PER_TABLE);
+    const matchRest = projectAll(restMatch, "cuisine");
+    const matchStays = projectAll(staysMatch, "stay_type");
+    const matchExp = projectAll(expMatch, "activity_type");
 
-      // Step 3 — Merge guaranteed FIRST (so the per-category
-      // guarantee survives the cap), dedupe by name (every row in
-      // the pool is unique on (name, region) by ingest constraint,
-      // so a name collision means the same physical row appears in
-      // both sets — count it once), cap at MAX_PER_TABLE.
-      const seenNames = new Set<string>();
-      const merged: InventoryItem[] = [];
-      for (const r of [...guaranteed.values(), ...overall]) {
-        const item = project(r, category, rating, reviews, rank, name);
-        if (seenNames.has(item.name)) continue;
-        seenNames.add(item.name);
-        merged.push(item);
-        if (merged.length >= MAX_PER_TABLE) break;
-      }
-      return merged;
-    };
+    // Drop baseline rows already shown as a direct match, so we don't
+    // spend tokens listing the same venue twice.
+    const matchedNames = new Set(
+      [...matchRest, ...matchStays, ...matchExp].map((i) => i.name),
+    );
+    const dropDupes = (items: InventoryItem[]) =>
+      items.filter((i) => !matchedNames.has(i.name));
 
     return {
       regionName: regionRes.data?.display_name ?? null,
+      stays: dropDupes(projectAll(staysBase, "stay_type")),
+      restaurants: dropDupes(projectAll(restBase, "cuisine")),
+      experiences: dropDupes(projectAll(expBase, "activity_type")),
+      matches: { stays: matchStays, restaurants: matchRest, experiences: matchExp },
       totals: {
-        stays: staysCountRes.count ?? 0,
-        restaurants: restaurantsCountRes.count ?? 0,
-        experiences: experiencesCountRes.count ?? 0,
+        stays: staysCount.count ?? 0,
+        restaurants: restCount.count ?? 0,
+        experiences: expCount.count ?? 0,
       },
-      stays: buildCohort(
-        staysRes.data as
-          | {
-              name: string;
-              stay_type: string;
-              rating: number | null;
-              review_count: number;
-              rank_score: number | null;
-              city_id: string | null;
-              address: string | null;
-            }[]
-          | null,
-        (r) => r.stay_type,
-        (r) => r.rating,
-        (r) => r.review_count,
-        (r) => r.rank_score,
-        (r) => r.name,
-      ),
-      restaurants: buildCohort(
-        restaurantsRes.data as
-          | {
-              name: string;
-              cuisine: string;
-              rating: number | null;
-              review_count: number;
-              rank_score: number | null;
-              city_id: string | null;
-              address: string | null;
-            }[]
-          | null,
-        (r) => r.cuisine,
-        (r) => r.rating,
-        (r) => r.review_count,
-        (r) => r.rank_score,
-        (r) => r.name,
-      ),
-      experiences: buildCohort(
-        experiencesRes.data as
-          | {
-              name: string;
-              activity_type: string;
-              rating: number | null;
-              review_count: number;
-              rank_score: number | null;
-              city_id: string | null;
-              address: string | null;
-            }[]
-          | null,
-        (r) => r.activity_type,
-        (r) => r.rating,
-        (r) => r.review_count,
-        (r) => r.rank_score,
-        (r) => r.name,
-      ),
     };
   } catch (err) {
     console.warn("[susen] inventory load failed, sending prompt-only:", err);
-    return empty;
+    return EMPTY_INVENTORY;
   }
 }
 
 /** Format the inventory as a compact CONTEXT block to append to the
- *  system prompt. Keeps the model from inventing items it doesn't
- *  see while staying honest about what we DO have when asked. */
+ *  system prompt. Keeps the model from inventing items while staying
+ *  honest about what we DO have when asked. */
 export function formatInventoryForPrompt(inv: SusenInventory): string {
-  const total = inv.stays.length + inv.restaurants.length + inv.experiences.length;
-  if (total === 0) return "";
+  const matchTotal =
+    inv.matches.stays.length +
+    inv.matches.restaurants.length +
+    inv.matches.experiences.length;
+  const baseTotal =
+    inv.stays.length + inv.restaurants.length + inv.experiences.length;
+  if (matchTotal === 0 && baseTotal === 0) return "";
 
-  // Compact JSON — DeepSeek handles JSON in system prompts well and
-  // the tokens stay tight. Each item is a single object on a line.
+  // Compact JSON — DeepSeek handles JSON in system prompts well and the
+  // tokens stay tight. Each item is a single object on a line.
   const stringify = (items: InventoryItem[]) =>
     items.map((i) => JSON.stringify(i)).join("\n");
 
+  // Direct matches for the current ask — listed FIRST and flagged as the
+  // preferred answer so the model leads with them.
+  let matchBlock = "";
+  if (matchTotal > 0) {
+    const section = (label: string, items: InventoryItem[]) =>
+      items.length ? `\n${label}:\n${stringify(items)}` : "";
+    matchBlock = `\n\nBEST MATCHES FOR WHAT THEY JUST ASKED (pulled live from the database to match their message — lead with these; the "category" may differ from the word they used because the match can be on the venue NAME, e.g. a burger spot filed under "Fast Food"):${section(
+      "PLACES TO EAT",
+      inv.matches.restaurants,
+    )}${section("PLACES TO STAY", inv.matches.stays)}${section(
+      "THINGS TO DO",
+      inv.matches.experiences,
+    )}`;
+  }
+
   return `\n\nCURRENT INVENTORY (live data from the Wondavu database — refer to this when recommending; do NOT invent names or addresses)
 Region: ${inv.regionName ?? "unknown"}
-The lists below are sorted by a Bayesian rank score (rating weighted by review count).
+Lists are sorted by a Bayesian rank score (rating weighted by review count).
 
-HOW TO READ THIS INVENTORY (important):
-- Each item has a "category" field. That field IS the cuisine / stay-type / activity-type.
-- When the traveller asks for a specific kind of place (cafe, hostel, dive shop, bar, vegan, …),
-  YOU MUST scan every item's "category" field for matches. The section heading is a grouping
-  label, NOT a filter — e.g. cafes ARE inside PLACES TO EAT under category:"Cafe", and bars
-  are there too under category:"Bar".
-- If you said earlier in the conversation that a kind of place does NOT exist, but it appears
-  in this CURRENT INVENTORY now, the inventory is the source of truth — correct yourself
-  naturally and move on. Do NOT repeat the earlier claim.
-- If a kind of place is genuinely not in the inventory after you've checked the category fields,
-  say so honestly and offer the closest match from what we DO have. Never invent.
-- COUNTS: each section header reads "showing N of TOTAL". TOTAL is the true number of that kind
-  in the region — use it to answer "how many restaurants / stays / things to do?". The listed
-  items are only a ranked sample, so NEVER report the sample size (N) as the total.
+HOW TO READ THIS (important):
+- "BEST MATCHES" below were searched from the DB for THIS message — prefer them. If it's non-empty, the thing they asked for DOES exist; recommend from it, don't say we don't have it.
+- The "TOP PICKS" lists are just a small popular sample for general questions — NOT the full catalogue. Never say a kind of place doesn't exist just because it's absent from TOP PICKS; if BEST MATCHES is empty for a specific ask, say so honestly and offer the closest real alternative from what's here. Never invent.
+- COUNTS: each TOP PICKS header reads "showing N of TOTAL". TOTAL is the true number of that kind in the region — use it for "how many restaurants / stays / things to do?". Never report the sample size (N) as the total.${matchBlock}
 
-PLACES TO STAY — showing ${inv.stays.length} of ${inv.totals.stays} total (hostels, hotels, resorts, B&Bs, etc.; check "category"):
+TOP PICKS — PLACES TO STAY (showing ${inv.stays.length} of ${inv.totals.stays} total):
 ${stringify(inv.stays)}
 
-PLACES TO EAT — showing ${inv.restaurants.length} of ${inv.totals.restaurants} total (restaurants, cafes, bars, all cuisines; check "category"):
+TOP PICKS — PLACES TO EAT (showing ${inv.restaurants.length} of ${inv.totals.restaurants} total):
 ${stringify(inv.restaurants)}
 
-THINGS TO DO — showing ${inv.experiences.length} of ${inv.totals.experiences} total (diving, hiking, tours, etc.; check "category"):
+TOP PICKS — THINGS TO DO (showing ${inv.experiences.length} of ${inv.totals.experiences} total):
 ${stringify(inv.experiences)}`;
 }

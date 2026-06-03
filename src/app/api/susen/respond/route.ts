@@ -107,21 +107,18 @@ export async function POST(req: Request) {
   const detectedRegionId = await detectRegionFromInput(input);
   const effectiveRegionId = detectedRegionId ?? regionId;
   const [inventory, guidance] = await Promise.all([
-    loadSusenInventory(effectiveRegionId),
+    // Pass the user's message so retrieval can search the DB for what they
+    // actually asked (burgers, vegan, dive shop) instead of dumping the
+    // whole catalogue and hoping the model spots it.
+    loadSusenInventory(effectiveRegionId, input),
     loadActiveGuidance(), // live admin tuning — instructions that steer her replies
   ]);
   const inventoryBlock = formatInventoryForPrompt(inventory);
 
-  // Single source of truth for the diagnostic log line. Goes to
-  // Vercel function logs. Now includes a per-category breakdown
-  // for restaurants — the cohort fix from c395394 ships even niche
-  // cuisines (Cafe / Bar / Vegan) into the prompt; this lets us
-  // verify they show up in production without re-asking the model.
-  const tally = (items: { category: string }[]): Record<string, number> => {
-    const t: Record<string, number> = {};
-    for (const i of items) t[i.category] = (t[i.category] ?? 0) + 1;
-    return t;
-  };
+  // Single source of truth for the diagnostic log line. Goes to Vercel
+  // function logs. `matchNames` shows what the targeted DB search pulled
+  // for this message, so we can verify retrieval (e.g. burgers surfacing)
+  // straight from the logs without re-asking the model.
   console.error(
     "[susen] respond",
     JSON.stringify({
@@ -129,11 +126,16 @@ export async function POST(req: Request) {
       detectedRegionId,
       effectiveRegionId,
       regionName: inventory.regionName,
-      stays: inventory.stays.length,
-      restaurants: inventory.restaurants.length,
-      experiences: inventory.experiences.length,
-      restaurantCategories: tally(inventory.restaurants),
-      stayCategories: tally(inventory.stays),
+      baseStays: inventory.stays.length,
+      baseRestaurants: inventory.restaurants.length,
+      baseExperiences: inventory.experiences.length,
+      matchStays: inventory.matches.stays.length,
+      matchRestaurants: inventory.matches.restaurants.length,
+      matchExperiences: inventory.matches.experiences.length,
+      matchNames: inventory.matches.restaurants
+        .concat(inventory.matches.stays, inventory.matches.experiences)
+        .map((i) => i.name)
+        .slice(0, 8),
       inputPreview: input.slice(0, 80),
     }),
   );
