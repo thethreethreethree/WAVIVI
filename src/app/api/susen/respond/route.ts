@@ -64,6 +64,54 @@ function toChatMessage(turn: SusenTurn): ChatMessage | null {
   };
 }
 
+/** Patterns that mark one of Susen's own turns as an anti-existence
+ *  claim — "nothing cafe-wise in the current list", "I'm not seeing
+ *  any cafes", "no cafes yet", etc. These are the turns that anchor
+ *  the model into repeating "no cafes" in every subsequent reply
+ *  even after the CURRENT INVENTORY is updated to include them.
+ *
+ *  We strip ONLY Susen turns matching this — never user turns (the
+ *  user's "i need a cafe" question must stay in context). Stripping
+ *  is conservative: only her explicit "doesn't exist" / "not seeing"
+ *  phrasing, not normal recommendations or denials of unrelated
+ *  things. */
+const ANTI_EXISTENCE_PATTERNS: RegExp[] = [
+  /\bnothing\s+\w+-?wise\b/i,
+  /\bstill\s+nothing\b/i,
+  /\bnot\s+seeing\s+any\b/i,
+  /\bcan'?t\s+find\s+any\b/i,
+  /\bdon'?t\s+(?:see|have)\s+any\b/i,
+  /\bno\s+\w+s?\s+(?:in\s+(?:the\s+)?(?:current\s+)?(?:list|system|inventory|data)|yet\b)/i,
+  /\bnot\s+in\s+(?:the\s+)?(?:current\s+)?(?:list|system|inventory|data)\b/i,
+  /\bflag\s+(?:that|this)\s+as\s+a\s+gap\b/i,
+];
+
+/** True iff `text` looks like Susen claiming a category doesn't
+ *  exist. Used to scrub anchoring turns from the history we send
+ *  DeepSeek. */
+function isAntiExistenceClaim(text: string): boolean {
+  return ANTI_EXISTENCE_PATTERNS.some((re) => re.test(text));
+}
+
+/** Build the message array DeepSeek sees: strip Susen turns that
+ *  are anti-existence claims so the model can't read its own past
+ *  "no cafes" replies and continue them, and cap the conversation
+ *  history at the most recent N turns so old anchoring noise
+ *  outside that window can't drift back in. */
+function buildHistoryMessages(history: SusenTurn[]): ChatMessage[] {
+  const HISTORY_WINDOW = 20;
+  const recent = history.slice(-HISTORY_WINDOW);
+  const out: ChatMessage[] = [];
+  for (const turn of recent) {
+    if (turn.role === "susen" && isAntiExistenceClaim(turn.text ?? "")) {
+      continue; // drop the anchoring turn entirely
+    }
+    const msg = toChatMessage(turn);
+    if (msg) out.push(msg);
+  }
+  return out;
+}
+
 export async function POST(req: Request) {
   let body: SusenRequestBody;
   try {
@@ -162,13 +210,32 @@ export async function POST(req: Request) {
       "\n\nOPERATOR GUIDANCE (current instructions from the Wondavu team — follow these; they refine your default behaviour):\n" +
       guidance.map((g) => `- ${g}`).join("\n");
   }
+  // Filter Susen's anti-existence anchoring claims out of the
+  // history before composing the final messages array. The model
+  // cannot continue a "no cafes" narrative if it can't see its own
+  // prior "no cafes" reply.
+  const historyMessages = buildHistoryMessages(history);
   const messages: ChatMessage[] = [
     { role: "system", content: systemContent },
-    ...history
-      .map(toChatMessage)
-      .filter((m): m is ChatMessage => m !== null),
+    ...historyMessages,
     { role: "user", content: input },
   ];
+
+  // Diagnostic: how many turns were stripped vs kept. Goes alongside
+  // the existing [susen] respond log so a future "Susen is still
+  // anchoring" report has a one-read answer.
+  const strippedCount = Math.min(history.length, 20) - historyMessages.length;
+  if (strippedCount > 0) {
+    console.error(
+      "[susen] history scrub",
+      JSON.stringify({
+        historyTotal: history.length,
+        windowSize: Math.min(history.length, 20),
+        kept: historyMessages.length,
+        strippedAntiExistence: strippedCount,
+      }),
+    );
+  }
 
   let apiKey: string;
   try {

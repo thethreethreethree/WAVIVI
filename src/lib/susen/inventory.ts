@@ -418,5 +418,10 @@ TOP PICKS — PLACES TO EAT (showing ${inv.restaurants.length} of ${inv.totals.r
 ${stringify(inv.restaurants)}
 
 TOP PICKS — THINGS TO DO (showing ${inv.experiences.length} of ${inv.totals.experiences} total):
-${stringify(inv.experiences)}`;
+${stringify(inv.experiences)}
+
+BEFORE YOU REPLY — read these once:
+1. The kind of place the traveller asked about — is there at least one item ABOVE whose "category" field matches (e.g. "Cafe", "Bar", "Hostel")? If YES, you must name one of those items by its actual "name" from the data. Don't say "nothing cafe-wise in the list" when a Cafe row is in the BEST MATCHES or TOP PICKS lists above.
+2. If you said in an EARLIER turn that this kind of place doesn't exist here, that earlier statement was WRONG. Recheck the data above NOW. The inventory is the source of truth. Apologise briefly ("actually I was wrong — checking again") and then recommend a real item from the inventory.
+3. The ONLY honest "we don't have it" reply is when no item's "category" matches AND no item's "name" contains a synonym for the asked-for thing. In every other case, name a specific item from the data above.`;
 }
