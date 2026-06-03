@@ -6,7 +6,15 @@
  * changes, so they can never go stale. The cache is just an offline safety
  * net, never a source of stale code or images. */
 
-const CACHE = "wavivi-v5";
+// Bumped v5 → v6 on 2026-06-03 to force installed PWA users to pick up
+// the Susen cafe-cohort fix. Byte-different sw.js triggers the
+// browser's update flow → skipWaiting + clients.claim → the existing
+// controllerchange listener in service-worker-register.tsx reloads
+// every open client. Old `wavivi-v5` cache is then deleted by the
+// activate handler below. Bump this number every deploy that needs to
+// reach installed clients (UI / chat behaviour) rather than waiting
+// for them to manually refresh.
+const CACHE = "wavivi-v6";
 const OFFLINE_URL = "/offline";
 
 self.addEventListener("install", (event) => {
