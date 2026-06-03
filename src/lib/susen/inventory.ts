@@ -101,7 +101,14 @@ export async function detectRegionFromInput(
  *     reaches niche categories. */
 const TOP_OVERALL = 12;
 const TOP_PER_CATEGORY = 2;
-const MAX_PER_TABLE = 30;
+// Cap raised from 30 → 40 on 2026-06-03. El Nido has 14 cuisine
+// buckets active (Italian, Filipino, Cafe, Bar, Vegan, …); at K=2
+// per cuisine that's 28 perCategory slots before overall extras,
+// so 30 was too tight to fit both the per-category set AND any
+// genuine top-overall extras. 40 leaves ~12 extras after a
+// 14-bucket region and still ~3.5k tokens at the prompt — well
+// inside DeepSeek's window.
+const MAX_PER_TABLE = 40;
 const CANDIDATE_POOL = 200;
 
 export interface InventoryItem {
@@ -224,14 +231,25 @@ export async function loadSusenInventory(
 
     /** Build the combined cohort for one table from the rank-ordered
      *  candidate pool. The pool comes in rank_score DESC already, so:
-     *    1. Take the first TOP_OVERALL.
-     *    2. Walk the pool grouping by category; take the first
+     *    1. Walk the pool grouping by category; take the first
      *       TOP_PER_CATEGORY per category. Because the pool is already
      *       sorted, "first per category" IS "highest-ranked per
-     *       category" — no second sort needed.
-     *    3. Concatenate, dedupe by name (cheap stable identity
-     *       within a region — the unique constraints in the place
-     *       tables make collisions very rare), cap at MAX_PER_TABLE. */
+     *       category" — no second sort needed. This is the PRIMARY
+     *       cohort — every cuisine / stay-type / activity-type present
+     *       in the region is GUARANTEED representation.
+     *    2. Take the first TOP_OVERALL as the SECONDARY cohort —
+     *       extras that surface genuine top performers above and
+     *       beyond the per-category baseline.
+     *    3. Merge primary FIRST then secondary (so the per-category
+     *       guarantee survives the MAX_PER_TABLE cap), dedupe by
+     *       name, cap at MAX_PER_TABLE.
+     *
+     *  Why this order: the first cut shipped overall FIRST, then per-
+     *  category, and the cap truncated the tail of per-category before
+     *  niche cuisines (Cafe, Bar) reached the merged list — confirmed
+     *  by the 2026-06-03 production log where 14 cuisines had 0–2
+     *  rows each but Cafe was at zero. Reversing the merge means even
+     *  late-iteration categories make the cut. */
     const buildCohort = <
       Row extends { city_id: string | null; address: string | null },
     >(
@@ -257,7 +275,9 @@ export async function loadSusenInventory(
       }
       const seenNames = new Set<string>();
       const merged: InventoryItem[] = [];
-      for (const r of [...overall, ...perCategory]) {
+      // PRIMARY cohort first — see the JSDoc above for the bug this
+      // fixes (Cafe + Bar truncated by the cap before reaching merged).
+      for (const r of [...perCategory, ...overall]) {
         const item = project(r, category, rating, reviews, rank, name);
         if (seenNames.has(item.name)) continue;
         seenNames.add(item.name);
