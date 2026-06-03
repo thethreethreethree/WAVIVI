@@ -134,6 +134,9 @@ export interface SusenInventory {
   stays: InventoryItem[];
   restaurants: InventoryItem[];
   experiences: InventoryItem[];
+  /** True active counts in the region (the lists above are a sample). Lets
+   *  Susen answer "how many restaurants?" accurately instead of guessing. */
+  totals: { stays: number; restaurants: number; experiences: number };
 }
 
 interface CityLookup {
@@ -167,14 +170,23 @@ export async function loadSusenInventory(
     stays: [],
     restaurants: [],
     experiences: [],
+    totals: { stays: 0, restaurants: 0, experiences: 0 },
   };
   if (!regionId) return empty;
 
   const supabase = createAdminClient();
 
   try {
-    const [regionRes, staysRes, restaurantsRes, experiencesRes, citiesRes] =
-      await Promise.all([
+    const [
+      regionRes,
+      staysRes,
+      restaurantsRes,
+      experiencesRes,
+      citiesRes,
+      staysCountRes,
+      restaurantsCountRes,
+      experiencesCountRes,
+    ] = await Promise.all([
         supabase
           .from("regions")
           .select("display_name")
@@ -212,6 +224,21 @@ export async function loadSusenInventory(
           .select("id, name")
           .eq("region_id", regionId)
           .returns<CityLookup[]>(),
+        supabase
+          .from("stays")
+          .select("id", { count: "exact", head: true })
+          .eq("active", true)
+          .eq("region_id", regionId),
+        supabase
+          .from("restaurants")
+          .select("id", { count: "exact", head: true })
+          .eq("active", true)
+          .eq("region_id", regionId),
+        supabase
+          .from("experiences")
+          .select("id", { count: "exact", head: true })
+          .eq("active", true)
+          .eq("region_id", regionId),
       ]);
 
     const cityName = indexCities(citiesRes.data);
@@ -309,6 +336,11 @@ export async function loadSusenInventory(
 
     return {
       regionName: regionRes.data?.display_name ?? null,
+      totals: {
+        stays: staysCountRes.count ?? 0,
+        restaurants: restaurantsCountRes.count ?? 0,
+        experiences: experiencesCountRes.count ?? 0,
+      },
       stays: buildCohort(
         staysRes.data as
           | {
@@ -397,13 +429,16 @@ HOW TO READ THIS INVENTORY (important):
   naturally and move on. Do NOT repeat the earlier claim.
 - If a kind of place is genuinely not in the inventory after you've checked the category fields,
   say so honestly and offer the closest match from what we DO have. Never invent.
+- COUNTS: each section header reads "showing N of TOTAL". TOTAL is the true number of that kind
+  in the region — use it to answer "how many restaurants / stays / things to do?". The listed
+  items are only a ranked sample, so NEVER report the sample size (N) as the total.
 
-PLACES TO STAY — ${inv.stays.length} items (hostels, hotels, resorts, B&Bs, etc.; check "category"):
+PLACES TO STAY — showing ${inv.stays.length} of ${inv.totals.stays} total (hostels, hotels, resorts, B&Bs, etc.; check "category"):
 ${stringify(inv.stays)}
 
-PLACES TO EAT — ${inv.restaurants.length} items (restaurants, cafes, bars, all cuisines; check "category"):
+PLACES TO EAT — showing ${inv.restaurants.length} of ${inv.totals.restaurants} total (restaurants, cafes, bars, all cuisines; check "category"):
 ${stringify(inv.restaurants)}
 
-THINGS TO DO — ${inv.experiences.length} items (diving, hiking, tours, etc.; check "category"):
+THINGS TO DO — showing ${inv.experiences.length} of ${inv.totals.experiences} total (diving, hiking, tours, etc.; check "category"):
 ${stringify(inv.experiences)}`;
 }

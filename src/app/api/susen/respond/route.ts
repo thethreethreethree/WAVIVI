@@ -8,6 +8,11 @@ import {
   loadSusenInventory,
 } from "@/lib/susen/inventory";
 import { SUSEN_SYSTEM_PROMPT } from "@/lib/susen/persona";
+import {
+  captureAdminTurn,
+  isSusenAdmin,
+  loadActiveGuidance,
+} from "@/lib/susen/tuning";
 
 /**
  * Susen chat backend — proxies the conversation to DeepSeek's
@@ -37,6 +42,8 @@ interface SusenRequestBody {
   input?: unknown;
   history?: unknown;
   region_id?: unknown;
+  author?: unknown;
+  source?: unknown;
 }
 
 /** OpenAI-style chat message — DeepSeek consumes the same wire format. */
@@ -76,6 +83,8 @@ export async function POST(req: Request) {
     typeof body.region_id === "string" && body.region_id.length > 0
       ? body.region_id
       : null;
+  const author = typeof body.author === "string" ? body.author : null;
+  const source = typeof body.source === "string" ? body.source : null;
 
   if (!input) {
     return NextResponse.json(
@@ -97,7 +106,10 @@ export async function POST(req: Request) {
   //      model to ASK the user to pick a region instead of guessing.
   const detectedRegionId = await detectRegionFromInput(input);
   const effectiveRegionId = detectedRegionId ?? regionId;
-  const inventory = await loadSusenInventory(effectiveRegionId);
+  const [inventory, guidance] = await Promise.all([
+    loadSusenInventory(effectiveRegionId),
+    loadActiveGuidance(), // live admin tuning — instructions that steer her replies
+  ]);
   const inventoryBlock = formatInventoryForPrompt(inventory);
 
   // Single source of truth for the diagnostic log line. Goes to
@@ -143,6 +155,11 @@ export async function POST(req: Request) {
       "\n\nNO REGION SELECTED\nThe traveller has not selected a region yet and their message doesn't mention one I recognise. Ask them which destination they're asking about (or to use the globe button at the top of the screen to pick one). Do NOT invent venues you don't have data for.";
   }
   if (inventoryBlock) systemContent += inventoryBlock;
+  if (guidance.length) {
+    systemContent +=
+      "\n\nOPERATOR GUIDANCE (current instructions from the Wondavu team — follow these; they refine your default behaviour):\n" +
+      guidance.map((g) => `- ${g}`).join("\n");
+  }
   const messages: ChatMessage[] = [
     { role: "system", content: systemContent },
     ...history
@@ -230,6 +247,18 @@ export async function POST(req: Request) {
       { error: "DeepSeek returned an empty reply." },
       { status: 502 },
     );
+  }
+
+  // Tuning capture: log admin turns (and flag instructions) for development.
+  // Fire-and-forget so it never delays the reply.
+  if (author && isSusenAdmin(author)) {
+    void captureAdminTurn({
+      author,
+      source,
+      regionId: effectiveRegionId,
+      message: input,
+      reply: text,
+    });
   }
 
   return NextResponse.json({ text });
