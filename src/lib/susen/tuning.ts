@@ -36,11 +36,35 @@ export function isSusenAdmin(author?: string | null): boolean {
   return ADMINS.has(author.trim().toLowerCase());
 }
 
-const INSTRUCTION_RE =
-  /\b(always|never|from now on|no longer|stop (saying|doing|recommending)|do ?n'?t|make sure|be sure|ensure|remember to|you (should|must|need to|are)|we (want|need)|i (want|need)|should( be)?|needs? to|make (it|them|sure)|lacks?|prefer|avoid|only|instead|keep it|delete|remove|must|please (make|don'?t|be|review)|be more|be less|stay (focused|on)|that means)\b/i;
+// What counts as a LIVE tuning instruction (injected as operator guidance
+// for EVERY traveller) is deliberately narrow. The admin is also the primary
+// tester, so most admin turns are ordinary traveller queries ("cafe", "I want
+// chicken", "is there a hostel?"). The old detector scanned for ~30 loose
+// words (i want / only / should / prefer …) and mis-flagged that chatter as
+// instructions — "I want chicken" got injected as guidance and Susen steered
+// every vague query toward chicken for everyone. So an admin turn only
+// becomes guidance when it is UNAMBIGUOUSLY a directive:
+//
+//   1. It carries an explicit tuning prefix the admin types on purpose
+//      ("Susen, …", "rule: …", "tune: …", "directive: …"), OR
+//   2. It OPENS with a behaviour directive ("always …", "never …", "from now
+//      on …", "stop saying …", "don't ever …", "make sure you …").
+//
+// Anchoring the directive to the START is what keeps traveller phrasing out:
+// "I want chicken", "is there always a crowd?", "find me a cafe" never open
+// with a directive, so they're logged but never injected. Every turn is still
+// captured to susen_dev_notes for the development log — only the
+// is_instruction flag (which drives injection) is conservative.
+const EXPLICIT_TUNING_PREFIX =
+  /^\s*(susen\s*[,:]\s*|rule\s*:\s*|tune\s*:\s*|directive\s*:\s*|note to self\s*:\s*)/i;
+
+const DIRECTIVE_OPENER =
+  /^\s*(please\s+)?(always|never|from now on|going forward|no longer|stop (saying|doing|recommending|mentioning|suggesting|pushing)|do ?n'?t ever|do ?n'?t (say|mention|recommend|suggest|push)|make sure (you|to)|be sure to|as a rule|you (should|must) (always|never))\b/i;
 
 export function looksLikeInstruction(text: string): boolean {
-  return INSTRUCTION_RE.test(text);
+  const t = text.trim();
+  if (!t) return false;
+  return EXPLICIT_TUNING_PREFIX.test(t) || DIRECTIVE_OPENER.test(t);
 }
 
 /** Active admin instructions (newest first) to inject as live guidance. */
