@@ -1,30 +1,22 @@
 /**
  * Susen engine — the abstraction the UI talks to.
  *
- * Today this is a rule-based implementation so the app works with no API key.
- * When you're ready for the live model, implement `SusenEngine` with an
- * Anthropic API call and swap the `susen` export — no UI changes needed.
+ * Today's live engine is `apiSusen` (src/lib/susen/client.ts): the
+ * browser POSTs to the same-origin /api/susen/respond route handler,
+ * which proxies the conversation to DeepSeek's OpenAI-compatible Chat
+ * Completions API server-side. The DeepSeek key (DEEPSEEK_API_KEY)
+ * never leaves the server.
  *
- *   // lib/susen/claude.ts (future)
- *   import Anthropic from "@anthropic-ai/sdk";
- *   import { SUSEN_SYSTEM_PROMPT } from "./persona";
- *   export const claudeSusen: SusenEngine = {
- *     async respond(input, history) {
- *       const client = new Anthropic({ apiKey: serverEnv.anthropicKey });
- *       const msg = await client.messages.create({
- *         model: "claude-opus-4-7",
- *         system: SUSEN_SYSTEM_PROMPT,
- *         max_tokens: 300,
- *         messages: [...history, { role: "user", content: input }],
- *       });
- *       return { text: msg.content[0].text };
- *     },
- *   };
+ * To swap models / providers later, replace the upstream fetch in
+ * src/app/api/susen/respond/route.ts — the engine, client, and UI all
+ * stay unchanged.
  *
- * Then: `export const susen = claudeSusen;`
+ * Offline fallback: `ruleSusen` below. The api client degrades to it
+ * automatically after 3 failed attempts so the chat surface never
+ * hard-fails when the backend is briefly unreachable.
  */
 
-import { claudeSusen } from "./claude";
+import { apiSusen } from "./client";
 
 export interface SusenTurn {
   role: "user" | "susen";
@@ -97,11 +89,12 @@ export const ruleSusen: SusenEngine = {
 };
 
 /**
- * Active engine. Claude-backed via the local S.U.S.E.N server; automatically
- * falls back to `ruleSusen` if that server is offline.
+ * Active engine. DeepSeek-backed via the same-origin
+ * /api/susen/respond route handler; automatically falls back to
+ * `ruleSusen` if the backend is unreachable.
  * To revert to the offline rule engine, set this back to `ruleSusen`.
  */
-export const susen: SusenEngine = claudeSusen;
+export const susen: SusenEngine = apiSusen;
 
 /** Susen's opening line on the assistant screen. */
 export const SUSEN_WELCOME =

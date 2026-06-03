@@ -77,6 +77,19 @@ export const serverEnv = {
    *  /api/admin/stays/ingest (header: Authorization: Bearer <token>).
    *  Empty string disables ingestion. */
   ingestToken: process.env.INGEST_TOKEN ?? "",
+  /** DeepSeek API key for the Susen chat backend. The /api/susen/respond
+   *  route handler reads this and proxies to DeepSeek server-side so the
+   *  key never ships to the browser. Throws on access if missing — the
+   *  client's retry path then falls through to the offline rule engine
+   *  so the app never breaks. */
+  get deepseekApiKey() {
+    return required("DEEPSEEK_API_KEY", process.env.DEEPSEEK_API_KEY);
+  },
+  /** Override the DeepSeek model. Defaults to `deepseek-chat` — the
+   *  cheap/fast general-purpose chat model. Set to `deepseek-reasoner`
+   *  for the chain-of-thought-trained variant (slower, smarter, more
+   *  expensive). */
+  susenModel: process.env.SUSEN_MODEL ?? "deepseek-chat",
 };
 
 /**
