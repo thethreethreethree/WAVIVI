@@ -232,6 +232,19 @@ next time. Don't write a novel — short, structured, scannable.
 
 Entries are reverse-chronological. Each links to a full writeup.
 
+- **2026-06-03 — Susen claimed "no cafes" while five existed in the DB**
+  [`docs/postmortems/2026-06-03-susen-cafe-cohort.md`](docs/postmortems/2026-06-03-susen-cafe-cohort.md).
+  Symptom: Susen kept replying "no cafes in El Nido" when 5 cafes
+  existed with `cuisine='Cafe'`. Three patches in a row tried "LIMIT
+  per category" (raise the cap, reorder the merge, bump the per-
+  category quota) when the real fix was "GUARANTEE per category"
+  (Map-keyed first-write-wins). Found by the permanent `[susen]
+  respond {...}` log line + a DevTools Network probe. Lesson encoded:
+  the §2 "succeeding patch-loop" rule fires *exactly* when small
+  locally-correct fixes keep arriving on the same component; the
+  next move is "what single cause produces all of these?" not
+  "tighten the same dial again."
+
 - **2026-05-30 — Google OAuth infinite sign-in loop**
   [`docs/postmortems/2026-05-30-google-oauth-loop.md`](docs/postmortems/2026-05-30-google-oauth-loop.md).
   Symptom: every protected page bounced signed-in users back to /login.
