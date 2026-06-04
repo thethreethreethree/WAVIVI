@@ -141,9 +141,24 @@ export function parseFeedCsv(input: string): ParsedFeedCsv {
       continue;
     }
 
-    const videoUrl =
+    // Video URL handling has three buckets:
+    //   1. Empty cell        → null (still-only post)
+    //   2. Valid http(s):// → keep, mirror on insert
+    //   3. blob:… or data:… → silently null. These come from browser
+    //      tools (the IG-hashtag collector ext) that use
+    //      URL.createObjectURL(); they only exist in the tab that
+    //      created them and can't be fetched server-side. Rejecting
+    //      the row would block legitimate still-photo imports too.
+    //      Treating as null lets the post land as still-only — image
+    //      + @handle IG link still work — and the admin can paste a
+    //      real video URL via the per-post edit form when one's
+    //      available. Surfaced as a non-fatal warning so the operator
+    //      still sees what was dropped.
+    let videoUrl: string | null =
       VIDEO_I >= 0 ? ((raw[VIDEO_I] ?? "").trim() || null) : null;
-    if (videoUrl && !/^https?:\/\//i.test(videoUrl)) {
+    if (videoUrl && /^(blob|data):/i.test(videoUrl)) {
+      videoUrl = null;
+    } else if (videoUrl && !/^https?:\/\//i.test(videoUrl)) {
       out.push({
         ok: false,
         lineNumber,
