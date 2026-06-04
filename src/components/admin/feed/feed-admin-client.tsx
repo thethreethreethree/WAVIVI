@@ -1,13 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 
 import {
   createFeedPost,
   deleteFeedPost,
+  importFeedPostsCsv,
   setFeedPostDisplayOrder,
 } from "./actions";
+import { FEED_CSV_TEMPLATE } from "./csv";
 import type { FeedPostRow } from "@/types/supabase";
 
 /** Admin UI for ONE region's feed: paste-IG-URL form on top, then a
@@ -102,6 +104,60 @@ export function FeedAdminClient({
         return;
       }
       router.refresh();
+    });
+  }
+
+  // CSV bulk-import state ---------------------------------------------
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [csvText, setCsvText] = useState("");
+  const [csvResult, setCsvResult] = useState<
+    | null
+    | {
+        ok: boolean;
+        headerError: string | null;
+        inserted: number;
+        considered: number;
+        errors: { lineNumber: number; reason: string }[];
+      }
+  >(null);
+
+  async function onFilePicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    setCsvText(text);
+    setCsvResult(null);
+  }
+
+  function downloadTemplate() {
+    const blob = new Blob([FEED_CSV_TEMPLATE], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "wondavu-feed-template.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function onImportCsv() {
+    clearStatus();
+    setCsvResult(null);
+    if (!csvText.trim()) {
+      setError("Paste a CSV or pick a file first.");
+      return;
+    }
+    startTransition(async () => {
+      const res = await importFeedPostsCsv(regionId, csvText);
+      setCsvResult(res);
+      if (res.inserted > 0) {
+        // Clear the textarea + file picker on partial / full success so
+        // the admin doesn't accidentally re-import the same rows.
+        setCsvText("");
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        router.refresh();
+      }
     });
   }
 
@@ -206,6 +262,120 @@ export function FeedAdminClient({
             {pending ? "Posting…" : "Post to feed"}
           </button>
         </div>
+      </section>
+
+      {/* CSV bulk upload */}
+      <section className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-border">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-muted">
+            Bulk upload (CSV)
+          </h2>
+          <button
+            type="button"
+            onClick={downloadTemplate}
+            className="rounded-full bg-foreground/10 px-3 py-1 text-xs font-bold text-foreground hover:bg-foreground/15"
+          >
+            Download template
+          </button>
+        </div>
+        <p className="mt-1 text-xs text-muted">
+          One row = one post. Header columns: <code>handle, caption,
+          image_url</code> (required), <code>location_label, ig_post_url,
+          likes_label, verified</code> (optional). Every post lands in
+          this region — the CSV has no region column on purpose so an
+          upload here can&rsquo;t misroute. Images are mirrored to
+          Storage the same way as the manual form.
+        </p>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            onChange={onFilePicked}
+            className="block text-xs file:mr-2 file:rounded-full file:border-0 file:bg-foreground/10 file:px-3 file:py-1 file:text-xs file:font-bold file:text-foreground hover:file:bg-foreground/15"
+          />
+          {csvText && (
+            <span className="text-[11px] font-bold text-muted">
+              {csvText.split("\n").filter((l) => l.trim().length > 0).length}{" "}
+              line(s) loaded
+            </span>
+          )}
+        </div>
+
+        <textarea
+          value={csvText}
+          onChange={(e) => {
+            setCsvText(e.target.value);
+            setCsvResult(null);
+          }}
+          rows={6}
+          placeholder="Or paste CSV text here. First row must be the header."
+          className="admin-input mt-3 w-full font-mono text-xs"
+        />
+
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onImportCsv}
+            disabled={pending || !csvText.trim()}
+            className="rounded-full bg-sunset px-5 py-2 text-sm font-bold text-white shadow-card hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {pending ? "Importing…" : "Import CSV"}
+          </button>
+          {csvText && (
+            <button
+              type="button"
+              onClick={() => {
+                setCsvText("");
+                setCsvResult(null);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
+              className="rounded-full px-3 py-1 text-xs font-bold text-muted ring-1 ring-border hover:bg-foreground/5"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {csvResult && (
+          <div className="mt-3 flex flex-col gap-2">
+            {csvResult.headerError ? (
+              <p className="rounded-lg bg-heat/15 px-3 py-2 text-xs font-semibold text-heat">
+                {csvResult.headerError}
+              </p>
+            ) : (
+              <p
+                className={`rounded-lg px-3 py-2 text-xs font-semibold ${
+                  csvResult.ok
+                    ? "bg-cool/15 text-cool"
+                    : "bg-heat/15 text-heat"
+                }`}
+              >
+                {csvResult.inserted} of {csvResult.considered} row(s)
+                imported
+                {csvResult.errors.length > 0
+                  ? ` · ${csvResult.errors.length} failed`
+                  : ""}
+                .
+              </p>
+            )}
+            {csvResult.errors.length > 0 && (
+              <ul className="rounded-lg bg-foreground/5 px-3 py-2 text-[11px] text-foreground/80">
+                {csvResult.errors.slice(0, 20).map((e) => (
+                  <li key={e.lineNumber}>
+                    <strong>Row {e.lineNumber}:</strong> {e.reason}
+                  </li>
+                ))}
+                {csvResult.errors.length > 20 && (
+                  <li className="italic text-muted">
+                    …and {csvResult.errors.length - 20} more.
+                  </li>
+                )}
+              </ul>
+            )}
+          </div>
+        )}
       </section>
 
       {/* Existing posts list */}

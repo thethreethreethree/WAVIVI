@@ -6,6 +6,8 @@ import { mirrorFeedImage } from "@/lib/feed/mirror";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/toolbox/admin";
 
+import { parseFeedCsv } from "./csv";
+
 export interface CreateFeedPostInput {
   regionId: string | null;
   cityId?: string | null;
@@ -125,6 +127,103 @@ export async function deleteFeedPost(
   revalidatePath("/feed");
   if (row?.region_id) revalidatePath(`/admin/feed/${row.region_id}`);
   return { ok: true, error: null };
+}
+
+export interface CsvImportRowError {
+  lineNumber: number;
+  reason: string;
+}
+
+export interface CsvImportResult {
+  ok: boolean;
+  /** Set when the CSV itself is malformed (missing header column, unknown
+   *  column, file empty, etc.) and no row processing happens. */
+  headerError: string | null;
+  /** Per-row failures during PARSE (validation) or INSERT (DB / mirror). */
+  errors: CsvImportRowError[];
+  /** Rows where createFeedPost succeeded. */
+  inserted: number;
+  /** Total non-empty rows considered (excludes the header). */
+  considered: number;
+}
+
+/** Bulk-import feed posts from a CSV. Routes through createFeedPost
+ *  per row so dedup, validation, mirror, and revalidation behave
+ *  identically to the manual form. Failures are per-row, not
+ *  all-or-nothing — a bad image URL on row 4 doesn't stop rows 5-100
+ *  from landing. */
+export async function importFeedPostsCsv(
+  regionId: string,
+  csvText: string,
+): Promise<CsvImportResult> {
+  const auth = await assertAdmin();
+  if (auth) {
+    return {
+      ok: false,
+      headerError: auth.error,
+      errors: [],
+      inserted: 0,
+      considered: 0,
+    };
+  }
+
+  const parsed = parseFeedCsv(csvText);
+  if (parsed.headerError) {
+    return {
+      ok: false,
+      headerError: parsed.headerError,
+      errors: [],
+      inserted: 0,
+      considered: 0,
+    };
+  }
+
+  const considered = parsed.rows.length;
+  const errors: CsvImportRowError[] = [];
+  let inserted = 0;
+
+  // Sequential per-row — image-mirror calls Sharp + a remote fetch each,
+  // running these in parallel could fan out 50+ concurrent fetches
+  // against the same IG CDN and trip rate limits. The volume is small
+  // enough (admin-batched) that the wall-clock cost is acceptable.
+  for (const r of parsed.rows) {
+    if (!r.ok) {
+      errors.push({ lineNumber: r.lineNumber, reason: r.reason });
+      continue;
+    }
+    const res = await createFeedPost({
+      regionId,
+      handle: r.row.handle,
+      caption: r.row.caption,
+      imageUrl: r.row.imageUrl,
+      locationLabel: r.row.locationLabel,
+      igPostUrl: r.row.igPostUrl,
+      verified: r.row.verified,
+      likesLabel: r.row.likesLabel ?? undefined,
+    });
+    if (!res.ok) {
+      errors.push({
+        lineNumber: r.lineNumber,
+        reason: res.error ?? "Insert failed.",
+      });
+      continue;
+    }
+    inserted++;
+  }
+
+  // One layout-level revalidation at the end so we don't trigger N of
+  // them from createFeedPost. (It revalidates internally per row too,
+  // but at the route level so the cost is bounded.)
+  revalidatePath(`/admin/feed/${regionId}`);
+  revalidatePath("/feed");
+
+  return {
+    ok: errors.length === 0,
+    headerError: null,
+    errors,
+    inserted,
+    considered,
+  };
 }
 
 export async function setFeedPostDisplayOrder(
