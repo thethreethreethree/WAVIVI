@@ -136,22 +136,8 @@ export const verificationRequests: VerificationRequest[] = [
   { id: "v3", name: "Zara Bell", username: "zarab", submitted: "1 day ago" },
 ];
 
-// --- Susen monitoring -------------------------------------------------------
-export const susenStats = {
-  messagesHandled: 4821,
-  chatsRevived: 137,
-  meetupsCoordinated: 92,
-  vibeReports: 310,
-  status: "Online",
-  model: "Rule-based (live model not yet connected)",
-};
-
-export const susenActivity = [
-  { id: "s1", text: "Revived a quiet chat in Foodies in Bangkok", time: "4 min ago" },
-  { id: "s2", text: "Suggested a meetup spot in Canggu Beach Strip", time: "22 min ago" },
-  { id: "s3", text: "Posted a vibe report for Khao San Road", time: "1 hour ago" },
-  { id: "s4", text: "Welcomed 6 new travelers across 3 group chats", time: "2 hours ago" },
-];
+// Susen monitoring now reads live data — see /admin/susen
+// (src/app/(web)/admin/susen/page.tsx) and src/lib/susen/*.
 
 // --- Logs -------------------------------------------------------------------
 export interface AuditEntry {

@@ -108,3 +108,132 @@ export async function captureAdminTurn(args: {
     console.warn("[susen] capture failed:", err);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Admin console (/admin/susen) — review, retire, promote, and hand-write the
+// live tuning rules. A "live rule" is a row with is_instruction && active —
+// exactly what loadActiveGuidance() injects. Retiring one (active=false) stops
+// the injection on her very next reply, no deploy. These helpers gate nothing
+// themselves; the calling API route enforces requireAdmin().
+// ---------------------------------------------------------------------------
+
+/** One row of the development log / tuning store. */
+export interface SusenDevNote {
+  id: string;
+  created_at: string;
+  author: string | null;
+  source: string | null;
+  channel: string | null;
+  region_id: string | null;
+  message: string;
+  susen_reply: string | null;
+  is_instruction: boolean;
+  active: boolean;
+  applied: boolean;
+  tags: string[] | null;
+}
+
+const NOTE_COLS =
+  "id, created_at, author, source, channel, region_id, message, susen_reply, is_instruction, active, applied, tags";
+
+/** The rules currently steering her replies (is_instruction && active),
+ *  newest first. Fetched without a row cap so an older-but-active rule can't
+ *  be hidden below a recent-notes window. */
+export async function listLiveRules(): Promise<SusenDevNote[]> {
+  try {
+    const supabase = devNotesClient();
+    const { data } = await supabase
+      .from("susen_dev_notes")
+      .select(NOTE_COLS)
+      .eq("is_instruction", true)
+      .eq("active", true)
+      .order("created_at", { ascending: false })
+      .returns<SusenDevNote[]>();
+    return data ?? [];
+  } catch (err) {
+    console.warn("[susen] listLiveRules failed:", err);
+    return [];
+  }
+}
+
+/** Recent development-log entries (every captured turn), newest first. */
+export async function listDevNotes(limit = 60): Promise<SusenDevNote[]> {
+  try {
+    const supabase = devNotesClient();
+    const { data } = await supabase
+      .from("susen_dev_notes")
+      .select(NOTE_COLS)
+      .order("created_at", { ascending: false })
+      .limit(limit)
+      .returns<SusenDevNote[]>();
+    return data ?? [];
+  } catch (err) {
+    console.warn("[susen] listDevNotes failed:", err);
+    return [];
+  }
+}
+
+/** Toggle the steering flags on one note. `active` drives injection;
+ *  `applied` is a bookkeeping flag for "baked into the persona". */
+export async function setNoteFlags(
+  id: string,
+  flags: { active?: boolean; is_instruction?: boolean; applied?: boolean },
+): Promise<{ error: string | null }> {
+  const updates: Record<string, boolean> = {};
+  if (typeof flags.active === "boolean") updates.active = flags.active;
+  if (typeof flags.is_instruction === "boolean")
+    updates.is_instruction = flags.is_instruction;
+  if (typeof flags.applied === "boolean") updates.applied = flags.applied;
+  if (Object.keys(updates).length === 0) return { error: "Nothing to update." };
+  try {
+    const supabase = devNotesClient();
+    const { error } = await supabase
+      .from("susen_dev_notes")
+      .update(updates)
+      .eq("id", id);
+    return { error: error?.message ?? null };
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
+}
+
+/** Remove one dev note entirely. */
+export async function deleteDevNote(id: string): Promise<{ error: string | null }> {
+  try {
+    const supabase = devNotesClient();
+    const { error } = await supabase
+      .from("susen_dev_notes")
+      .delete()
+      .eq("id", id);
+    return { error: error?.message ?? null };
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
+}
+
+/** Hand-write a new live rule from the admin console (skips the chat
+ *  detector — an explicit admin action is always treated as a directive). */
+export async function addRule(args: {
+  author: string;
+  message: string;
+}): Promise<{ note: SusenDevNote | null; error: string | null }> {
+  try {
+    const supabase = devNotesClient();
+    const { data, error } = await supabase
+      .from("susen_dev_notes")
+      .insert({
+        author: args.author,
+        source: "admin",
+        channel: "admin",
+        message: args.message,
+        is_instruction: true,
+        active: true,
+      })
+      .select(NOTE_COLS)
+      .single()
+      .returns<SusenDevNote>();
+    return { note: data ?? null, error: error?.message ?? null };
+  } catch (err) {
+    return { note: null, error: (err as Error).message };
+  }
+}
