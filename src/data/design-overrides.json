@@ -51,7 +51,8 @@
     "color": "#8f5100",
     "font-family": "var(--font-permanent-marker), cursive",
     "font-size": "15px",
-    "line-height": "1.65"
+    "line-height": "1.65",
+    "textContent": ""
   },
   "div:1>div:0>div:1>div:0>section:0>div:1>div:0>div:5>span:0": {
     "font-size": "18px",
@@ -75,7 +76,7 @@
     "font-size": "18px"
   },
   "div:1>div:0>div:1>div:0>section:0>div:0>p:0": {
-    "font-size": "23px",
+    "font-size": "20px",
     "font-weight": "700",
     "color": "#433524",
     "font-family": "var(--font-marker), cursive",
@@ -93,10 +94,10 @@
     "font-family": "var(--font-permanent-marker), cursive"
   },
   "div:1>div:0>div:1>div:0>section:1>div:0>div:0>h2:0": {
-    "font-family": "var(--font-architects), cursive",
-    "font-size": "17px",
-    "font-weight": "600",
-    "color": "#393732"
+    "font-family": "var(--font-permanent-marker), cursive",
+    "font-size": "23px",
+    "font-weight": "300",
+    "color": "#593412"
   },
   "div:1>div:0>div:1>div:0>div:0>div:0>div:0>input:0": {
     "font-family": "var(--font-architects), cursive",
