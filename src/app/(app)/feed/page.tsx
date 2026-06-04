@@ -1,6 +1,5 @@
-import Image from "next/image";
-
 import { FeedList } from "@/components/ui/feed-list";
+import { FeedShareButton } from "@/components/ui/feed-share-button";
 import { loadFeedForCurrentRegion } from "@/lib/feed/server";
 
 /**
@@ -24,26 +23,10 @@ export default async function FeedPage() {
     <div className="relative flex flex-1 flex-col px-4 pb-8 pt-[max(3rem,calc(env(safe-area-inset-top)+1.25rem))]">
       <header className="mb-3 flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Feed</h1>
-        <button
-          type="button"
-          aria-label="Share"
-          className="wc-frame flex h-12 w-12 items-center justify-center rounded-full active:scale-95"
-        >
-          <span
-            className="inline-block"
-            style={{
-              animation: "balloonFloat 6s ease-in-out infinite",
-            }}
-          >
-            <Image
-              src="/decor/balloon-floater.png"
-              alt=""
-              width={40}
-              height={40}
-              className="h-8 w-8 object-contain"
-            />
-          </span>
-        </button>
+        {/* Share button is anonymous-aware: opens sign-up modal for
+            signed-out visitors, "compose coming soon" for signed-in
+            users (until Phase 2 / Login-with-Instagram lands). */}
+        <FeedShareButton />
       </header>
 
       <FeedList posts={posts} isMockFallback={isMockFallback} />

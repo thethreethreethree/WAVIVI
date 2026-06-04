@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { BackButton } from "@/components/ui/back-button";
+import { JoinGateButton } from "@/features/chat/components/join-gate-button";
 import { JoinGroupButton } from "@/features/chat/components/join-group-button";
 import {
   getChatGroup,
@@ -115,20 +116,7 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
             the primary action; getting directions to the meet-up is what you
             do AFTER you've joined. */}
         {!user ? (
-          <Link
-            href={`/login?next=${encodeURIComponent(`/meet/${id}`)}`}
-            className="wc-frame wc-frame-sunset mt-5 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-center font-bold text-white active:scale-[0.98]"
-          >
-            <Image
-              src="/icons/orange/plane.png"
-              alt=""
-              width={44}
-              height={44}
-              className="h-5 w-5"
-              aria-hidden
-            />
-            Sign in to join the chat
-          </Link>
+          <JoinGateButton groupId={id} />
         ) : joined ? (
           <Link
             href={`/meet/${id}/chat`}

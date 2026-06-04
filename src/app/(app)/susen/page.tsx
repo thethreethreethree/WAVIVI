@@ -17,8 +17,10 @@ import {
   type ReplyTarget,
   snippetFor,
 } from "@/components/ui/reply-bits";
+import { SignupPromptModal } from "@/components/ui/signup-prompt-modal";
 import { SusenAvatar } from "@/components/ui/susen-avatar";
 import { SusenText } from "@/components/ui/susen-text";
+import { createClient } from "@/lib/supabase/client";
 import { useLongPress } from "@/hooks/use-long-press";
 import {
   appendSusenLocationAction,
@@ -47,6 +49,14 @@ export default function SusenPage() {
    *  bottom. The messages container stays invisible until then so the
    *  user never sees the "first paint at the top, then snap down" flash. */
   const [hydrated, setHydrated] = useState(false);
+  /** Auth state: `null` while we're checking, `false` for anonymous
+   *  visitors, `true` for signed-in users. Drives the gate on send /
+   *  edit / quick-prompt actions — anonymous users see the sign-up
+   *  modal instead of the message silently disappearing (the
+   *  appendSusenTurn server action returns null without a session,
+   *  which used to feel broken from the UI side). */
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+  const [signupOpen, setSignupOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const turnRefs = useRef(new Map<string, HTMLDivElement>());
@@ -54,6 +64,26 @@ export default function SusenPage() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
   }, [turns, thinking]);
+
+  // Resolve the auth state once on mount. We use the client supabase
+  // session (already maintained via cookies + refreshed by middleware).
+  // If the network call fails we treat the user as anonymous — the
+  // server actions stay the security boundary, this just tunes UX.
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!cancelled) setIsAuthed(Boolean(data.session));
+      })
+      .catch(() => {
+        if (!cancelled) setIsAuthed(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Hydrate persisted history on mount. Admins get everything; everyone else
   // gets the last 24h. Signed-out users come back empty → keep the welcome.
@@ -84,6 +114,15 @@ export default function SusenPage() {
   async function send(text: string) {
     const input = text.trim();
     if (!input || thinking) return;
+    // Gate on auth: anonymous users see the sign-up modal instead of
+    // their message silently disappearing into appendSusenTurnAction's
+    // null-return. isAuthed === null means we're still resolving the
+    // session — treat that as "wait, don't gate yet" so a fast-typing
+    // signed-in user on a slow network doesn't get prompted.
+    if (isAuthed === false) {
+      setSignupOpen(true);
+      return;
+    }
     if (editing) {
       const editId = editing.id;
       setDraft("");
@@ -401,6 +440,13 @@ export default function SusenPage() {
           Send
         </button>
       </form>
+      <SignupPromptModal
+        open={signupOpen}
+        onClose={() => setSignupOpen(false)}
+        headline={`Sign up to chat with ${SUSEN.name}`}
+        subhead="Your social coordinator — personalised recommendations, plans, and meetups, free."
+        returnTo="/susen"
+      />
     </div>
   );
 }
