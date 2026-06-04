@@ -94,11 +94,27 @@ function isAntiExistenceClaim(text: string): boolean {
   return ANTI_EXISTENCE_PATTERNS.some((re) => re.test(text));
 }
 
+/** Strip `[text](/url)` markdown syntax from a string, leaving just
+ *  the link's display text behind. Used on Susen's prior turns before
+ *  shipping them back to DeepSeek — without this, the model sees its
+ *  own previously-linkified replies in history and starts mimicking
+ *  the syntax in NEW replies, which then leak the raw `(/eat/<uuid>)`
+ *  URLs through to the user when the renderer can't disambiguate
+ *  model-written markdown from our linkifier's. The linkifier on the
+ *  outbound side will add the proper links back. */
+function stripMarkdownLinks(text: string): string {
+  // Replace [display](/anything) with just `display`. Internal-URL
+  // only — same shape the renderer accepts, so external links (which
+  // we don't generate anyway) would pass through if they ever existed.
+  return text.replace(/\[([^\]]+)\]\(\/[^)\s]+\)/g, "$1");
+}
+
 /** Build the message array DeepSeek sees: strip Susen turns that
  *  are anti-existence claims so the model can't read its own past
- *  "no cafes" replies and continue them, and cap the conversation
- *  history at the most recent N turns so old anchoring noise
- *  outside that window can't drift back in. */
+ *  "no cafes" replies and continue them, strip markdown link syntax
+ *  from the surviving turns so the model doesn't mimic it, and cap
+ *  the conversation history at the most recent N turns so old
+ *  anchoring noise outside that window can't drift back in. */
 function buildHistoryMessages(history: SusenTurn[]): ChatMessage[] {
   const HISTORY_WINDOW = 20;
   const recent = history.slice(-HISTORY_WINDOW);
@@ -108,7 +124,11 @@ function buildHistoryMessages(history: SusenTurn[]): ChatMessage[] {
       continue; // drop the anchoring turn entirely
     }
     const msg = toChatMessage(turn);
-    if (msg) out.push(msg);
+    if (!msg) continue;
+    if (msg.role === "assistant") {
+      msg.content = stripMarkdownLinks(msg.content);
+    }
+    out.push(msg);
   }
   return out;
 }

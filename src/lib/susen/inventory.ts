@@ -500,6 +500,7 @@ READING RULES (apply to every reply):
 - Each TOP PICKS header shows "N of TOTAL"; TOTAL is the true region count, use it for "how many?" questions.
 - Filter by the "category" field on each item, NOT by section heading — cafes live inside PLACES TO EAT under category:"Cafe".
 - If an earlier turn claimed something doesn't exist but it appears now, the inventory wins — correct yourself naturally and recommend a real item.
+- WRITING VENUE NAMES: just name them plainly, e.g. "try Tutto Passa" or "**Tutto Passa**" for emphasis. NEVER write markdown link syntax — no "[Tutto Passa](/eat/...)", no "(/eat/...)", no URLs at all. The system adds the clickable link automatically using the venue name. Writing URLs yourself causes them to leak through to the user as raw text.
 
 TOP PICKS — PLACES TO STAY (showing ${inv.stays.length} of ${inv.totals.stays} total):
 ${stringifyTopPicks(inv.stays)}

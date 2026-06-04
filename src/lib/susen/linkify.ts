@@ -79,7 +79,21 @@ export function linkifyReply(
     // a name to appear inside `**bold**` from the model — only the
     // name string itself gets wrapped, the surrounding asterisks
     // stay where they were.
-    const re = new RegExp(`(?<!\\]\\()${escapeRegex(item.name)}`, "i");
+    //
+    // The TWO negative lookbehinds together make linkify idempotent:
+    //   (?<!\[)   — skip names that already follow `[`, meaning they're
+    //               inside the display part of a markdown link the
+    //               model already wrote (`[Tutto Passa]...`).
+    //   (?<!\]\() — skip names that follow `](`, which would be inside
+    //               a URL we already wrote (defence-in-depth in case a
+    //               venue name shows up twice in the same reply).
+    // Combined with the history-side markdown stripper, this means
+    // double-linkification can't produce malformed nested markdown
+    // even if the model slips up and writes link syntax of its own.
+    const re = new RegExp(
+      `(?<!\\[)(?<!\\]\\()${escapeRegex(item.name)}`,
+      "i",
+    );
     const match = re.exec(out);
     if (!match) continue;
     const matchedAs = match[0]; // preserve original casing
