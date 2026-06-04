@@ -63,6 +63,14 @@ export default async function Home() {
     const QUALITY_MIN_REVIEWS = 20;
     const PER_CAT_FETCH = 10;
     const PER_CAT_KEEP = 1;
+    // Admin-curated override: top_pick rows ALWAYS qualify (regardless
+    // of rating / review-count thresholds) AND sort first. This is the
+    // mechanism that lets ops hand-pin a specific venue per region —
+    // e.g. Frendz Hostel for El Nido's hostel slot. When no top_pick is
+    // flagged for a region, falls back to rank_score over the quality
+    // bar so the auto-curation still works for un-curated regions.
+    const QUALITY_OR_PICK =
+      `top_pick.eq.true,and(backpack_rating.gte.${QUALITY_MIN_RATING},review_count.gte.${QUALITY_MIN_REVIEWS})`;
     // Build the three place queries up front so we can conditionally
     // tack on the city filter — chainable Supabase builders don't
     // play with inline conditionals.
@@ -72,8 +80,8 @@ export default async function Home() {
       .eq("active", true)
       .eq("region_id", regionId)
       .eq("stay_type", "hostel")
-      .gte("backpack_rating", QUALITY_MIN_RATING)
-      .gte("review_count", QUALITY_MIN_REVIEWS)
+      .or(QUALITY_OR_PICK)
+      .order("top_pick", { ascending: false, nullsFirst: false })
       .order("rank_score", { ascending: false, nullsFirst: false })
       .limit(PER_CAT_FETCH);
     if (cityIds.length > 0) staysQ = staysQ.in("city_id", cityIds);
@@ -83,8 +91,8 @@ export default async function Home() {
       .select("id, name, photo_url, cuisine, latitude, longitude")
       .eq("active", true)
       .eq("region_id", regionId)
-      .gte("backpack_rating", QUALITY_MIN_RATING)
-      .gte("review_count", QUALITY_MIN_REVIEWS)
+      .or(QUALITY_OR_PICK)
+      .order("top_pick", { ascending: false, nullsFirst: false })
       .order("rank_score", { ascending: false, nullsFirst: false })
       .limit(PER_CAT_FETCH);
     if (cityIds.length > 0) eatsQ = eatsQ.in("city_id", cityIds);
@@ -94,8 +102,8 @@ export default async function Home() {
       .select("id, name, photo_url, category, latitude, longitude")
       .eq("active", true)
       .eq("region_id", regionId)
-      .gte("backpack_rating", QUALITY_MIN_RATING)
-      .gte("review_count", QUALITY_MIN_REVIEWS)
+      .or(QUALITY_OR_PICK)
+      .order("top_pick", { ascending: false, nullsFirst: false })
       .order("rank_score", { ascending: false, nullsFirst: false })
       .limit(PER_CAT_FETCH);
     if (cityIds.length > 0) expsQ = expsQ.in("city_id", cityIds);
