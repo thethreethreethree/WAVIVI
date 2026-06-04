@@ -265,6 +265,21 @@ export default function SusenPage() {
     }, 1400);
   }
 
+  // Anonymous-user gate. Before, the chat UI rendered for everyone and
+  // the gate only fired on the FIRST send action. That meant anonymous
+  // users could see the welcome line + quick prompts + composer and
+  // form an impression of a free product. Susen also costs real money
+  // per reply (DeepSeek), so the right boundary is "no chat surface
+  // visible until signed in." The isAuthed === null intermediate state
+  // renders nothing to avoid the gate flashing for signed-in users on
+  // a slow auth round-trip.
+  if (isAuthed === false) {
+    return <SusenSignupGate />;
+  }
+  if (isAuthed === null) {
+    return <div className="flex h-[calc(100dvh-6.75rem)] flex-col" />;
+  }
+
   return (
     <div className="flex h-[calc(100dvh-6.75rem)] flex-col">
       <header className="flex items-center gap-3 border-b border-border px-5 pb-3 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
@@ -558,6 +573,47 @@ function SusenBubble({
             edited
           </span>
         )}
+      </div>
+    </div>
+  );
+}
+
+/** Full-page anonymous gate for /susen. Replaces the chat UI for users
+ *  without a session — no welcome bubble, no quick prompts, no input,
+ *  no impression that the product is browseable for free. Two CTAs,
+ *  same returnTo as the inline modal so the user lands back on /susen
+ *  after auth. */
+function SusenSignupGate() {
+  const next = encodeURIComponent("/susen");
+  return (
+    <div className="flex h-[calc(100dvh-6.75rem)] flex-col items-center justify-center px-6 text-center">
+      <SusenAvatar className="h-20 w-20" />
+      <h1 className="mt-5 text-2xl font-bold tracking-tight">
+        Sign up to chat with {SUSEN.name}
+      </h1>
+      <p className="mt-2 max-w-xs text-sm text-muted">
+        Meet our {SUSEN.acronym} — {SUSEN.fullName}. Personalised
+        recommendations, plans, and meetups, free.
+      </p>
+      <div className="mt-7 flex w-full max-w-xs flex-col gap-2">
+        <Link
+          href={`/signup?next=${next}`}
+          className="rounded-full bg-glow px-4 py-3 text-center text-base font-bold text-white shadow-card hover:opacity-90"
+        >
+          Join Wondavu free
+        </Link>
+        <Link
+          href={`/login?next=${next}`}
+          className="rounded-full px-4 py-3 text-center text-base font-bold text-foreground ring-1 ring-border hover:bg-surface-elevated"
+        >
+          I already have an account
+        </Link>
+        <Link
+          href="/"
+          className="mt-1 text-center text-xs font-bold text-muted underline-offset-4 hover:text-foreground hover:underline"
+        >
+          Keep browsing
+        </Link>
       </div>
     </div>
   );

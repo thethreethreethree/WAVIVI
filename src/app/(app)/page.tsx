@@ -19,27 +19,51 @@ type ForYouCard = {
   href: string;
 };
 
+/** Region used when the traveler picks "Show everywhere" or hasn't
+ *  picked one yet. Before, this fell back to hand-curated mock cards
+ *  ("Sunset Hostel", "The Grand Boutique") — fine pre-launch, but
+ *  reads as "demo content" once there's real curated data. El Nido is
+ *  our flagship region; using it as the global default surfaces real
+ *  venues without sending the user through the region picker first. */
+const DEFAULT_FALLBACK_REGION_ID = "el_nido_palawan_philippines";
+
 export default async function Home() {
   const supabase = await createClient();
   const [region, currentCities] = await Promise.all([
     getCurrentRegion(),
     getCurrentCities(),
   ]);
-  const regionId = region?.id ?? null;
-  // City scope only sticks when cities belong to the active region —
-  // a stale cookie from a previous region is ignored.
-  const cityIds = regionId
+  // Effective region for the recs query: explicit picked region wins;
+  // otherwise fall back to El Nido. We keep the *user-facing* region
+  // (`region` from the cookie) for things like the top-bar label, but
+  // the recs use this.
+  const explicitRegionId = region?.id ?? null;
+  const effectiveRegionId = explicitRegionId ?? DEFAULT_FALLBACK_REGION_ID;
+  // If we're falling back, also need to look up the El Nido row so
+  // within-radius filtering uses its lat/lng/radius. Cheap single-row
+  // lookup; skipped when the user picked a region.
+  let effectiveRegion = region;
+  if (!explicitRegionId) {
+    const { data } = await supabase
+      .from("regions")
+      .select("id, display_name, city, country, latitude, longitude, radius_km")
+      .eq("id", DEFAULT_FALLBACK_REGION_ID)
+      .eq("active", true)
+      .maybeSingle();
+    effectiveRegion = data ?? null;
+  }
+  // City scope only applies when the user picked a region AND set
+  // cities on it. The fallback path ignores stale city cookies.
+  const cityIds = explicitRegionId
     ? currentCities
-        .filter((c) => c.region_id === regionId)
+        .filter((c) => c.region_id === explicitRegionId)
         .map((c) => c.id)
     : [];
 
-  // "For you" picks. When a region is selected, pull live top-rated
-  // stays / restaurants / experiences from that region (2 of each).
-  // When no region is selected, fall back to the legacy hand-picked
-  // mock set in places.ts so anonymous landings still feel alive.
-  // Static fallback used both when no region is picked and when the
-  // per-table region queries fail (so a flaky table can't crash home).
+  // Static fallback only fires when:
+  //   (a) the El Nido fallback row itself is missing/inactive, OR
+  //   (b) the per-table queries fail and return zero qualifying rows
+  // — so a flaky table can't crash home.
   const staticForYou: ForYouCard[] = places
     .filter((p) => p.recommended && p.kind !== "eat")
     .slice(0, 6)
@@ -52,7 +76,8 @@ export default async function Home() {
     }));
 
   let forYou: ForYouCard[] = staticForYou;
-  if (regionId) {
+  const regionId = effectiveRegionId;
+  if (regionId && effectiveRegion) {
     // Curated "for you" rail — strict quality filter: only high-rated,
     // well-reviewed venues qualify, and we surface ONE per category
     // (1 stay + 1 eat + 1 experience), plus ONE active chat group if the
@@ -137,15 +162,15 @@ export default async function Home() {
     // Apply the within-radius filter per category, then take the top N —
     // so a stay ranked #1 by rating but tagged with the wrong region
     // can't sneak past the dropdown into the home rail.
-    const stays = withinRegionRadius(staysRes.data ?? [], region).slice(
+    const stays = withinRegionRadius(staysRes.data ?? [], effectiveRegion).slice(
       0,
       PER_CAT_KEEP,
     );
-    const eats = withinRegionRadius(eatsRes.data ?? [], region).slice(
+    const eats = withinRegionRadius(eatsRes.data ?? [], effectiveRegion).slice(
       0,
       PER_CAT_KEEP,
     );
-    const exps = withinRegionRadius(expsRes.data ?? [], region).slice(
+    const exps = withinRegionRadius(expsRes.data ?? [], effectiveRegion).slice(
       0,
       PER_CAT_KEEP,
     );
