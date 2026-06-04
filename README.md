@@ -120,6 +120,25 @@ ls supabase/migrations/ | tail -5
 Compare against the highest-numbered migration you've actually run on
 the production database. Everything above that number is pending.
 
+### Rate limits
+
+Two layers in play:
+
+1. **Supabase project-level**: built-in caps on auth endpoints (sign-up,
+   sign-in, password reset). Configure under **Supabase → Auth →
+   Rate Limits**.
+2. **Application-level** (migration 0053 + `lib/rate-limit/check.ts`):
+   per-user sliding-window limits backed by `rate_limit_counters` +
+   the `rate_limit_consume()` RPC. Applied today to:
+   - `POST /api/susen/respond` — 20/min and 300/hour. Returns 429 with
+     a `retry-after` header when crossed.
+   - `chat.sendMessage`, `chat.sendChatImage`, `chat.sendChatLocation`
+     — shared 30/min limit so swapping to images doesn't dodge the meter.
+
+When adding a new high-cost endpoint, define a `RateLimitSpec` in
+[lib/rate-limit/check.ts](src/lib/rate-limit/check.ts) and call
+`checkRateLimit(userId, spec)` at the top of the handler.
+
 ### Analytics (Vercel)
 
 `@vercel/analytics` and `@vercel/speed-insights` are mounted in the root

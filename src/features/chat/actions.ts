@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { checkRateLimit, CHAT_SEND_LIMIT } from "@/lib/rate-limit/check";
 import { uploadChatPhoto } from "@/lib/storage/chat-photos";
 import { friendlySupabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
@@ -78,6 +79,17 @@ export async function sendMessage(
   } = await supabase.auth.getUser();
   if (!user) return { error: "You need to be signed in.", message: null };
 
+  // Per-user chat-send rate limit. 30/min sits well above typing speed
+  // for a real human but caps obvious bot floods. Shared with photo +
+  // location sends below by passing them through the same key.
+  const rl = await checkRateLimit(user.id, CHAT_SEND_LIMIT);
+  if (!rl.ok) {
+    return {
+      error: "Slow down a sec — you're sending messages quite fast.",
+      message: null,
+    };
+  }
+
   // Look up the sender's display name once so it's denormalised onto the
   // message row — realtime payloads can render without a join.
   const { data: profile } = await supabase
@@ -112,16 +124,25 @@ export async function sendMessage(
   return { error: null, message: data as ChatMessageRow };
 }
 
-/** Resolve the sender + their author name once, the same way sendMessage does. */
-async function resolveSender(): Promise<{
-  userId: string;
-  authorName: string;
-} | null> {
+/** Resolve the sender + their author name once, the same way sendMessage
+ *  does. Returns a discriminated result so the callers can distinguish
+ *  "no session" (401-equivalent) from "rate limited" (429-equivalent)
+ *  and surface different copy. */
+type ResolvedSender =
+  | { ok: true; userId: string; authorName: string }
+  | { ok: false; reason: "unauthenticated" | "rate-limited" };
+
+async function resolveSender(): Promise<ResolvedSender> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) return { ok: false, reason: "unauthenticated" };
+  // Same chat-send limit as the text path — photo / location sends
+  // count the same way so a bot can't dodge the meter by switching to
+  // image-only messages.
+  const rl = await checkRateLimit(user.id, CHAT_SEND_LIMIT);
+  if (!rl.ok) return { ok: false, reason: "rate-limited" };
   const { data: profile } = await supabase
     .from("profiles")
     .select("display_name, username")
@@ -129,7 +150,17 @@ async function resolveSender(): Promise<{
     .maybeSingle();
   const authorName =
     profile?.display_name?.trim() || profile?.username || "Traveler";
-  return { userId: user.id, authorName };
+  return { ok: true, userId: user.id, authorName };
+}
+
+function senderFailure(result: Extract<ResolvedSender, { ok: false }>): SendMessageResult {
+  if (result.reason === "rate-limited") {
+    return {
+      error: "Slow down a sec — you're sending messages quite fast.",
+      message: null,
+    };
+  }
+  return { error: "You need to be signed in.", message: null };
 }
 
 /** Upload an image then insert a chat_messages row pointing at it.
@@ -150,7 +181,7 @@ export async function sendChatImage(
   const caption = ((formData.get("caption") as string | null) ?? "").trim();
 
   const sender = await resolveSender();
-  if (!sender) return { error: "You need to be signed in.", message: null };
+  if (!sender.ok) return senderFailure(sender);
   const supabase = await createClient();
 
   // Reserve a row id up-front so the storage key references it (means the
@@ -209,7 +240,7 @@ export async function sendChatLocation(
     return { error: "Invalid location.", message: null };
   }
   const sender = await resolveSender();
-  if (!sender) return { error: "You need to be signed in.", message: null };
+  if (!sender.ok) return senderFailure(sender);
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("chat_messages")

@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { serverEnv } from "@/lib/env";
+import {
+  checkRateLimit,
+  SUSEN_HOUR_LIMIT,
+  SUSEN_MIN_LIMIT,
+} from "@/lib/rate-limit/check";
+import { createClient } from "@/lib/supabase/server";
 import type { SusenTurn } from "@/lib/susen/engine";
 import {
   detectRegionFromInput,
@@ -137,6 +143,54 @@ function buildHistoryMessages(history: SusenTurn[]): ChatMessage[] {
 }
 
 export async function POST(req: Request) {
+  // Auth boundary — the UI gates Susen behind sign-up via a modal, but
+  // the HTTP route was open. Without this, a bot could POST directly
+  // and burn the DeepSeek budget without ever touching the UI. The
+  // sign-up modal already prevents legitimate anonymous calls, so this
+  // server-side gate adds no UX friction.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json(
+      { error: "Sign in to chat with Susen." },
+      { status: 401 },
+    );
+  }
+
+  // Per-user sliding-window limits (table-backed, atomic). Two layers:
+  //   - 20/min stops rapid-fire bursts (a stuck client retrying).
+  //   - 300/hour stops a "leave Susen open all day" pattern from
+  //     burning $50 of model cost.
+  // Limits land BEFORE body parsing so a flood of malformed bodies
+  // can't dodge the meter either.
+  const minLimit = await checkRateLimit(user.id, SUSEN_MIN_LIMIT);
+  if (!minLimit.ok) {
+    return NextResponse.json(
+      {
+        error: "You're chatting with Susen quite fast — give it a moment.",
+      },
+      {
+        status: 429,
+        headers: { "retry-after": String(minLimit.retryAfterSec) },
+      },
+    );
+  }
+  const hourLimit = await checkRateLimit(user.id, SUSEN_HOUR_LIMIT);
+  if (!hourLimit.ok) {
+    return NextResponse.json(
+      {
+        error:
+          "You've hit your hourly Susen limit. Things will pick back up shortly.",
+      },
+      {
+        status: 429,
+        headers: { "retry-after": String(hourLimit.retryAfterSec) },
+      },
+    );
+  }
+
   let body: SusenRequestBody;
   try {
     body = (await req.json()) as SusenRequestBody;

@@ -1324,7 +1324,19 @@ export type Database = {
       pet_event: TableShape<PetEventRow, PetEventInsert, PetEventUpdate>;
     };
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Functions: {
+      /** Migration 0053 — atomic sliding-window rate-limit consume.
+       *  Increments the bucket count + returns the window total in one
+       *  statement so concurrent calls can't both observe (cap - 1). */
+      rate_limit_consume: {
+        Args: {
+          p_user_id: string;
+          p_key: string;
+          p_window_secs: number;
+        };
+        Returns: number;
+      };
+    };
     Enums: {
       traveler_status: TravelerStatus;
     };
