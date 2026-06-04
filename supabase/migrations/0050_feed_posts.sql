@@ -74,10 +74,16 @@ create trigger feed_posts_set_updated_at
 -- Only admins write / update / delete.
 alter table public.feed_posts enable row level security;
 
+-- `create policy` has no IF NOT EXISTS form in Postgres, so the
+-- idempotent pattern is drop-if-exists + create. Lets the migration
+-- be safely re-run after a partial apply (the original ship hit
+-- "policy ... already exists" when the SQL editor re-ran).
+drop policy if exists "Feed posts are public read" on public.feed_posts;
 create policy "Feed posts are public read"
   on public.feed_posts for select
   using (active = true);
 
+drop policy if exists "Admins manage feed posts" on public.feed_posts;
 create policy "Admins manage feed posts"
   on public.feed_posts for all
   using (public.is_admin())
