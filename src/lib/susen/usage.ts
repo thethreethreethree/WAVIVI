@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { serverEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   formatInventoryForPrompt,
@@ -132,7 +133,7 @@ export async function estimateResponseUsage(
     outputPricePerM: OUTPUT_PRICE_PER_M,
     costPerResponseUsd,
     costPer1kResponsesUsd: costPerResponseUsd * 1000,
-    model: process.env.SUSEN_MODEL ?? "deepseek-chat",
+    model: serverEnv.susenModel,
   };
 }
 

@@ -90,6 +90,18 @@ export const serverEnv = {
    *  for the chain-of-thought-trained variant (slower, smarter, more
    *  expensive). */
   susenModel: process.env.SUSEN_MODEL ?? "deepseek-chat",
+  /** CSV of identities (emails or short handles) whose Susen chats are
+   *  captured as tuning notes + flagged for live OPERATOR GUIDANCE
+   *  injection. See `isSusenAdmin()` in lib/susen/tuning.ts.
+   *
+   *  Defaults to the founder's identity so dev environments without
+   *  the env var still attribute tuning to a single person rather
+   *  than silently capturing nothing. Override in production via the
+   *  Vercel env var. */
+  susenAdmins: (process.env.SUSEN_ADMINS ?? "johnsyramos@gmail.com,@john,john")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean),
 };
 
 /**

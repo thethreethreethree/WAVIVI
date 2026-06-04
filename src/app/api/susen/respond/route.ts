@@ -149,10 +149,16 @@ export async function POST(req: Request) {
   const history = Array.isArray(body.history)
     ? (body.history as SusenTurn[])
     : [];
-  const regionId =
-    typeof body.region_id === "string" && body.region_id.length > 0
-      ? body.region_id
-      : null;
+  // Region ids in WAVIVI are slug-shaped (e.g. `el_nido_palawan_philippines`).
+  // Validating against a tight character class means a malicious client
+  // can't smuggle prompt-injection text via the `region_id` field —
+  // anything containing quotes, newlines, or other escape sequences
+  // gets rejected to null and the prompt path falls through to "no
+  // region selected" honestly.
+  const RAW_REGION_RE = /^[a-z0-9][a-z0-9_-]{1,199}$/i;
+  const rawRegionId =
+    typeof body.region_id === "string" ? body.region_id : "";
+  const regionId = RAW_REGION_RE.test(rawRegionId) ? rawRegionId : null;
   const author = typeof body.author === "string" ? body.author : null;
   const source = typeof body.source === "string" ? body.source : null;
 
@@ -160,6 +166,20 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: "input is required." },
       { status: 400 },
+    );
+  }
+  // Hard cap on input length to prevent token-cost bombs from a
+  // malicious client. 10 KB ≈ 2.5k tokens at the 3.8 chars/token rule
+  // — comfortably above any real traveller question, well below
+  // "post War and Peace into the chat" territory. 413 lets the
+  // client show a tight, recoverable error.
+  const INPUT_MAX_CHARS = 10_000;
+  if (input.length > INPUT_MAX_CHARS) {
+    return NextResponse.json(
+      {
+        error: `Message too long (${input.length} chars, max ${INPUT_MAX_CHARS}). Try a shorter question.`,
+      },
+      { status: 413 },
     );
   }
 
@@ -203,9 +223,17 @@ export async function POST(req: Request) {
   // History + user input ride as separate messages, not in system.
   let systemContent = SUSEN_SYSTEM_PROMPT;
   if (effectiveRegionId) {
-    systemContent += `\n\nCURRENT REGION\nThe traveller's effective region is id "${effectiveRegionId}"${
-      inventory.regionName ? ` (${inventory.regionName})` : ""
-    }${
+    // JSON.stringify escapes quotes / newlines / control chars inside the
+    // interpolated strings, so even if an admin types a region display
+    // name with embedded quotes or somebody slips a non-slug effectiveRegionId
+    // through (shouldn't happen — slug-validated above, DB-resolved
+    // here — but defence in depth), the model reads it as a literal
+    // string rather than as a continuation of its instructions.
+    const idLiteral = JSON.stringify(effectiveRegionId);
+    const nameLiteral = inventory.regionName
+      ? ` (${JSON.stringify(inventory.regionName)})`
+      : "";
+    systemContent += `\n\nCURRENT REGION\nThe traveller's effective region is id ${idLiteral}${nameLiteral}${
       detectedRegionId && detectedRegionId !== regionId
         ? " — detected from the user's message text, not their globe pin"
         : ""

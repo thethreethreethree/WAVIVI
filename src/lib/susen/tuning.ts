@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { serverEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // `susen_dev_notes` lives in the DB but isn't in the generated Database types,
@@ -23,13 +24,9 @@ function devNotesClient(): SupabaseClient {
  * instructions take effect the moment this ships.
  */
 
-/** Identities whose chats tune Susen. Override with SUSEN_ADMINS (csv). */
-const ADMINS = new Set(
-  (process.env.SUSEN_ADMINS ?? "johnsyramos@gmail.com,@john,john")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean),
-);
+/** Identities whose chats tune Susen. Sourced from serverEnv.susenAdmins
+ *  (CSV of emails/handles, parsed + lowercased once at module load). */
+const ADMINS = new Set(serverEnv.susenAdmins);
 
 export function isSusenAdmin(author?: string | null): boolean {
   if (!author) return false;
