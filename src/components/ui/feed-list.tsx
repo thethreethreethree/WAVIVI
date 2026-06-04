@@ -1,8 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Icon } from "@/components/ui/icon";
 import type { FeedDisplayPost } from "@/lib/feed/server";
@@ -59,52 +58,30 @@ function FeedItem({
         post.caption.slice(0, CAPTION_COLLAPSED_CHARS).replace(/\s+\S*$/, "") +
         "…";
 
-  // If the source carried an Instagram post URL, the photo behaves as a
-  // tap target that opens the original post in a new tab. This is the
-  // "fix" for the play-triangle baked into IG video thumbnails — the
-  // image LOOKS clickable, so clicking now does the most useful thing
-  // we can do without hosting video ourselves. Falls back to a static
-  // image when there's no source URL.
-  const igLink = post.igPostUrl;
-
-  const photoBody = (
-    <>
-      <Image
-        src={post.image}
-        alt={post.caption}
-        fill
-        sizes="448px"
-        className="object-cover"
-      />
-      <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
-    </>
-  );
+  // Per direction (2026-06-04 screenshot): @handle is the IG escape
+  // hatch, NOT the photo. Photo area is reserved for the inline video
+  // player so its play button does the right thing. The handle links
+  // straight to instagram.com/<handle>/ — the universal convention is
+  // "@username → user profile," and we already have the handle.
+  const igProfileUrl = `https://www.instagram.com/${encodeURIComponent(post.handle)}/`;
 
   return (
     <article className="wc-frame relative rounded-2xl p-2.5">
-      {/* Photo with caption overlay — worn paper look via wc-frame above */}
+      {/* Photo (or video, when set) with caption overlay. */}
       <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl">
-        {igLink ? (
-          <a
-            href={igLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`Open @${post.handle}'s original Instagram post`}
-            className="absolute inset-0 block"
-          >
-            {photoBody}
-          </a>
-        ) : (
-          photoBody
-        )}
+        <FeedMedia post={post} />
+        <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
 
         {/* Caption pinned to the bottom of the photo. pointer-events:none
             on the wrapper so the caption box doesn't intercept taps meant
-            for the IG link above — the inner Link / button re-enable
-            pointer events only where they're needed. */}
+            for the video's native controls underneath — the @handle link
+            and the "more" button re-enable pointer events on themselves. */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 px-3.5 pb-3 text-white">
-          <Link
-            href={`/u/${post.handle}`}
+          <a
+            href={igProfileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Open @${post.handle} on Instagram`}
             className="pointer-events-auto flex items-center gap-1.5 text-sm font-bold transition-opacity active:opacity-70"
           >
             @{post.handle}
@@ -113,7 +90,7 @@ function FeedItem({
                 ✓
               </span>
             )}
-          </Link>
+          </a>
           <p className="mt-1 text-sm leading-snug">
             {captionShown}
             {captionNeedsTruncate && (
@@ -174,5 +151,108 @@ function FeedItem({
         </span>
       </div>
     </article>
+  );
+}
+
+/**
+ * Photo or inline video for a feed card.
+ *
+ * Pre-tap state: the poster image (post.image) renders just like a
+ * still post would, plus a centered ▶ button overlaid in the middle.
+ * The button is the affordance — the user taps it to start playback.
+ * Native browser controls (play / pause / seek / fullscreen / volume)
+ * then take over for the duration of playback.
+ *
+ * Why poster-then-swap instead of always rendering <video>:
+ *   - <video preload="none"> still requests metadata on some Safari
+ *     versions, which means 50 cards in a feed = 50 metadata pings
+ *     before the user has touched anything. The poster image is
+ *     already loaded for layout; we don't mount <video> until the
+ *     user actually wants to play.
+ *   - The <Image> path also gets next/image optimization (responsive
+ *     sizes, lazy-load, format negotiation) which <video poster=>
+ *     does not.
+ *
+ * No autoplay — explicit user direction. Each video starts only when
+ * the user taps. If they scroll to a new card, the browser pauses the
+ * old <video> automatically when it leaves the viewport's audio focus
+ * (the inline player is its own element; nothing reaches across cards).
+ */
+function FeedMedia({ post }: { post: FeedDisplayPost }) {
+  const [playing, setPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Still-only posts (no video_url): pure image, no play affordance.
+  if (!post.videoUrl) {
+    return (
+      <Image
+        src={post.image}
+        alt={post.caption}
+        fill
+        sizes="448px"
+        className="object-cover"
+      />
+    );
+  }
+
+  if (!playing) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setPlaying(true);
+          // Defer to the next frame so the <video> mounts before we
+          // try to play() it. iOS Safari is picky about play() being
+          // called synchronously with user interaction; the ref will
+          // exist on the next paint.
+          requestAnimationFrame(() => {
+            videoRef.current?.play().catch(() => {
+              // Autoplay-with-sound restrictions vary; if play()
+              // throws we leave the controls visible so the user can
+              // hit play themselves.
+            });
+          });
+        }}
+        aria-label="Play video"
+        className="group absolute inset-0 block"
+      >
+        <Image
+          src={post.image}
+          alt={post.caption}
+          fill
+          sizes="448px"
+          className="object-cover"
+        />
+        {/* Center play button — sits above the gradient so it stays
+            visible even when the bottom caption overlay is dark. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white shadow-lg ring-2 ring-white/80 backdrop-blur-sm transition-transform group-active:scale-95 group-hover:scale-105"
+        >
+          {/* Off-center triangle so the visual play icon reads as
+              centered rather than left-leaning (the optical-center
+              correction every play button needs). */}
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="ml-1 h-6 w-6"
+          >
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    <video
+      ref={videoRef}
+      src={post.videoUrl}
+      poster={post.image}
+      controls
+      playsInline
+      preload="metadata"
+      className="absolute inset-0 h-full w-full object-cover"
+    />
   );
 }

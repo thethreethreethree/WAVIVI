@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { mirrorFeedImage } from "@/lib/feed/mirror";
+import { mirrorFeedImage, mirrorFeedVideo } from "@/lib/feed/mirror";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/toolbox/admin";
 
@@ -15,6 +15,11 @@ export interface CreateFeedPostInput {
   caption: string;
   locationLabel?: string | null;
   imageUrl: string;
+  /** Optional video URL. When set, the feed renders an inline
+   *  tap-to-play <video> with imageUrl as the poster. We mirror the
+   *  video to Storage on insert so the IG CDN's token rotation can't
+   *  break it. */
+  videoUrl?: string | null;
   igPostUrl?: string | null;
   verified?: boolean;
   likesLabel?: string;
@@ -57,12 +62,13 @@ export async function createFeedPost(
   const handle = normaliseHandle(input.handle);
   const caption = input.caption.trim();
   const imageUrl = input.imageUrl.trim();
+  const videoUrl = input.videoUrl?.trim() || null;
   if (!handle) return { ok: false, error: "Handle is required." };
   if (!imageUrl) return { ok: false, error: "Image URL is required." };
 
   const supabase = createAdminClient();
 
-  // Step 1 — insert with the source URL so we have an id.
+  // Step 1 — insert with the source URLs so we have an id.
   const { data: inserted, error: insertErr } = await supabase
     .from("feed_posts")
     .insert({
@@ -75,6 +81,7 @@ export async function createFeedPost(
       source: "admin_curated",
       ig_post_url: input.igPostUrl?.trim() || null,
       image_url: imageUrl,
+      video_url: videoUrl,
       likes_label: input.likesLabel?.trim() || "0",
     })
     .select("id")
@@ -83,18 +90,26 @@ export async function createFeedPost(
     return { ok: false, error: insertErr?.message ?? "Insert failed." };
   }
 
-  // Step 2 — mirror the photo to Storage using the new row id as the
-  // stable object key. Replace the row's image_url with the public
-  // Storage URL on success.
-  const mirroredUrl = await mirrorFeedImage(
-    supabase,
-    inserted.id as string,
-    imageUrl,
-  );
-  if (mirroredUrl !== imageUrl) {
+  // Step 2 — mirror the photo (poster) and optional video to Storage
+  // using the row id as the stable object key. Run in parallel since
+  // they don't depend on each other; either failure leaves that field
+  // pointing at the source URL so the post still works.
+  const [mirroredImage, mirroredVideo] = await Promise.all([
+    mirrorFeedImage(supabase, inserted.id as string, imageUrl),
+    videoUrl
+      ? mirrorFeedVideo(supabase, inserted.id as string, videoUrl)
+      : Promise.resolve<string | null>(null),
+  ]);
+
+  const updates: { image_url?: string; video_url?: string } = {};
+  if (mirroredImage !== imageUrl) updates.image_url = mirroredImage;
+  if (mirroredVideo && mirroredVideo !== videoUrl) {
+    updates.video_url = mirroredVideo;
+  }
+  if (Object.keys(updates).length > 0) {
     const { error: updateErr } = await supabase
       .from("feed_posts")
-      .update({ image_url: mirroredUrl })
+      .update(updates)
       .eq("id", inserted.id);
     if (updateErr) {
       console.warn("[feed] mirror update failed:", updateErr.message);
@@ -196,6 +211,7 @@ export async function importFeedPostsCsv(
       handle: r.row.handle,
       caption: r.row.caption,
       imageUrl: r.row.imageUrl,
+      videoUrl: r.row.videoUrl,
       locationLabel: r.row.locationLabel,
       igPostUrl: r.row.igPostUrl,
       verified: r.row.verified,

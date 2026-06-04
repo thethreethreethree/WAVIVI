@@ -39,11 +39,15 @@ export interface FeedDisplayPost {
   comments: number;
   shares: number;
   /** Source Instagram post URL when the post was admin-curated from IG.
-   *  When present the feed card uses the photo as a tap target that
-   *  opens the original post — useful for video thumbnails whose play
-   *  triangle is baked into the mirrored image and would otherwise be
-   *  dead pixels. Null when the post has no IG provenance. */
+   *  Kept on the row for reference / admin debugging; the feed UI no
+   *  longer uses it as a tap target (the @handle is the IG escape
+   *  hatch now — see feed-list.tsx). */
   igPostUrl: string | null;
+  /** Migration 0054 — when set, the feed card renders an inline
+   *  tap-to-play <video> with image as the poster. Null for still-only
+   *  posts. Mirrored to Supabase Storage on admin import so IG CDN
+   *  token rotation can't break playback. */
+  videoUrl: string | null;
 }
 
 /** Limit per fetch. 50 covers a meaningful scroll without paging
@@ -62,6 +66,7 @@ function rowToDisplay(row: FeedPostRow): FeedDisplayPost {
     comments: row.comments,
     shares: row.shares,
     igPostUrl: row.ig_post_url ?? null,
+    videoUrl: row.video_url ?? null,
   };
 }
 
@@ -112,6 +117,7 @@ export async function loadFeedForCurrentRegion(): Promise<{
       comments: p.comments,
       shares: p.shares,
       igPostUrl: null,
+      videoUrl: null,
     })),
     isMockFallback: true,
   };

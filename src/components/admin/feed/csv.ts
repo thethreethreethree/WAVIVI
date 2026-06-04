@@ -26,6 +26,7 @@ export interface FeedCsvRow {
   handle: string;
   caption: string;
   imageUrl: string;
+  videoUrl: string | null;
   locationLabel: string | null;
   igPostUrl: string | null;
   likesLabel: string | null;
@@ -42,7 +43,13 @@ export interface ParsedFeedCsv {
 }
 
 const REQUIRED = ["handle", "caption", "image_url"] as const;
-const OPTIONAL = ["location_label", "ig_post_url", "likes_label", "verified"] as const;
+const OPTIONAL = [
+  "video_url",
+  "location_label",
+  "ig_post_url",
+  "likes_label",
+  "verified",
+] as const;
 const KNOWN = new Set<string>([...REQUIRED, ...OPTIONAL]);
 
 function coerceBool(raw: string): boolean | null {
@@ -86,6 +93,7 @@ export function parseFeedCsv(input: string): ParsedFeedCsv {
   const HANDLE_I = idx("handle");
   const CAPTION_I = idx("caption");
   const IMAGE_I = idx("image_url");
+  const VIDEO_I = idx("video_url");
   const LOC_I = idx("location_label");
   const IG_I = idx("ig_post_url");
   const LIKES_I = idx("likes_label");
@@ -133,6 +141,18 @@ export function parseFeedCsv(input: string): ParsedFeedCsv {
       continue;
     }
 
+    const videoUrl =
+      VIDEO_I >= 0 ? ((raw[VIDEO_I] ?? "").trim() || null) : null;
+    if (videoUrl && !/^https?:\/\//i.test(videoUrl)) {
+      out.push({
+        ok: false,
+        lineNumber,
+        raw,
+        reason: `video_url must start with http:// or https:// when set.`,
+      });
+      continue;
+    }
+
     const verifiedRaw = VERIFIED_I >= 0 ? (raw[VERIFIED_I] ?? "") : "";
     const verified = coerceBool(verifiedRaw);
     if (verified === null) {
@@ -152,6 +172,7 @@ export function parseFeedCsv(input: string): ParsedFeedCsv {
         handle,
         caption,
         imageUrl,
+        videoUrl,
         locationLabel:
           LOC_I >= 0 ? ((raw[LOC_I] ?? "").trim() || null) : null,
         igPostUrl,
@@ -170,7 +191,7 @@ export function parseFeedCsv(input: string): ParsedFeedCsv {
  *  prefix the first cell so the validator rejects it loudly if the
  *  admin forgets to delete the example before uploading. */
 export const FEED_CSV_TEMPLATE = [
-  "handle,caption,image_url,location_label,ig_post_url,likes_label,verified",
-  '# remove this example row before uploading,"Lost in El Nido\'s hidden lagoons 🛶",https://example.com/photo.jpg,"El Nido, Palawan",https://www.instagram.com/p/EXAMPLE/,2.4K,true',
+  "handle,caption,image_url,video_url,location_label,ig_post_url,likes_label,verified",
+  '# remove this example row before uploading,"Lost in El Nido\'s hidden lagoons 🛶",https://example.com/photo.jpg,https://example.com/clip.mp4,"El Nido, Palawan",https://www.instagram.com/p/EXAMPLE/,2.4K,true',
   "",
 ].join("\n");

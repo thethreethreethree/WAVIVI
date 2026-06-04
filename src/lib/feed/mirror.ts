@@ -118,3 +118,106 @@ export async function mirrorFeedImage(
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
   return data.publicUrl ?? url;
 }
+
+/**
+ * Mirror one feed VIDEO to Storage.
+ *
+ * Pass-through: we don't transcode (Sharp is for images), just fetch
+ * the bytes and upload to the bucket with the original content-type.
+ * IG CDN serves MP4, sometimes WebM; both render in <video> natively.
+ *
+ * Why mirror at all instead of pointing <video src> at the IG CDN:
+ *   - IG signs every video URL with a short-lived token. Six hours
+ *     later the URL 403s and our feed silently breaks.
+ *   - Cache-Control headers on our bucket let us bill the bandwidth
+ *     once and have CloudFront / Vercel edge cache the rest.
+ *
+ * Hard cap at MAX_VIDEO_BYTES so a paste of a 500MB file can't fill
+ * the Storage tier on accident. Above the cap we return the source
+ * URL — the post still works (browser hits IG CDN until token rots),
+ * but ops know to re-upload from a smaller source.
+ */
+
+const VIDEO_PREFIX = "feed-videos";
+const VIDEO_FETCH_TIMEOUT_MS = 60_000;
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+
+function videoExtFor(contentType: string): string {
+  // IG ships mp4 99% of the time; cover the next-likely formats so a
+  // WebM source lands with the right extension and the browser still
+  // negotiates correctly on playback.
+  if (contentType.includes("webm")) return "webm";
+  if (contentType.includes("quicktime")) return "mov";
+  return "mp4";
+}
+
+export async function mirrorFeedVideo(
+  supabase: SupabaseClient<Database>,
+  postId: string,
+  url: string,
+): Promise<string> {
+  if (!url) return url;
+  if (isMirroredFeedUrl(url)) return url;
+  if (!/^https?:\/\//i.test(url)) return url;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), VIDEO_FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { "user-agent": "Mozilla/5.0 (compatible; Wondavu/1.0)" },
+    });
+    if (!res.ok) {
+      console.warn(
+        "[feed-mirror] video source non-ok",
+        res.status,
+        url.slice(0, 120),
+      );
+      return url;
+    }
+    const declared = Number(res.headers.get("content-length") ?? "0");
+    if (declared && declared > MAX_VIDEO_BYTES) {
+      console.warn(
+        "[feed-mirror] video exceeds size cap",
+        declared,
+        url.slice(0, 120),
+      );
+      return url;
+    }
+    const buf = await res.arrayBuffer();
+    if (buf.byteLength === 0) return url;
+    if (buf.byteLength > MAX_VIDEO_BYTES) {
+      console.warn(
+        "[feed-mirror] video exceeds size cap post-fetch",
+        buf.byteLength,
+      );
+      return url;
+    }
+
+    const contentType = res.headers.get("content-type") ?? "video/mp4";
+    const ext = videoExtFor(contentType.toLowerCase());
+    const path = `${VIDEO_PREFIX}/${postId}.${ext}`;
+    const { error } = await supabase.storage
+      .from(BUCKET)
+      .upload(path, Buffer.from(buf), {
+        contentType,
+        upsert: true,
+        cacheControl: "31536000",
+      });
+    if (error) {
+      console.error("[feed-mirror] video upload failed", error.message, path);
+      return url;
+    }
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+    return data.publicUrl ?? url;
+  } catch (err) {
+    console.warn(
+      "[feed-mirror] video fetch threw",
+      (err as Error).message,
+      url.slice(0, 120),
+    );
+    return url;
+  } finally {
+    clearTimeout(timer);
+  }
+}

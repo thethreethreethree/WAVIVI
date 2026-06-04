@@ -205,6 +205,10 @@ export type FeedPostRow = {
   source: FeedPostSource;
   ig_post_url: string | null;
   image_url: string;
+  /** Migration 0054 — when set, the feed card renders an inline
+   *  tap-to-play <video> with image_url as the poster. Null for
+   *  still-only posts. */
+  video_url: string | null;
   likes_label: string;
   comments: number;
   shares: number;
@@ -225,6 +229,7 @@ export type FeedPostInsert = {
   source?: FeedPostSource;
   ig_post_url?: string | null;
   image_url: string;
+  video_url?: string | null;
   likes_label?: string;
   comments?: number;
   shares?: number;

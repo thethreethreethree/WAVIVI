@@ -33,6 +33,7 @@ export function FeedAdminClient({
   const [handle, setHandle] = useState("");
   const [caption, setCaption] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
   const [igPostUrl, setIgPostUrl] = useState("");
   const [locationLabel, setLocationLabel] = useState("");
   const [verified, setVerified] = useState(false);
@@ -47,6 +48,7 @@ export function FeedAdminClient({
     setHandle("");
     setCaption("");
     setImageUrl("");
+    setVideoUrl("");
     setIgPostUrl("");
     setLocationLabel("");
     setVerified(false);
@@ -61,6 +63,7 @@ export function FeedAdminClient({
         handle,
         caption,
         imageUrl,
+        videoUrl: videoUrl || null,
         igPostUrl: igPostUrl || null,
         locationLabel: locationLabel || null,
         verified,
@@ -203,6 +206,15 @@ export function FeedAdminClient({
               className="admin-input"
             />
           </Field>
+          <Field label="Video URL (optional — IG MP4 / direct MP4)">
+            <input
+              type="url"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="https://… .mp4"
+              className="admin-input"
+            />
+          </Field>
           <Field label="Instagram post URL (optional)">
             <input
               type="url"
@@ -280,11 +292,12 @@ export function FeedAdminClient({
         </div>
         <p className="mt-1 text-xs text-muted">
           One row = one post. Header columns: <code>handle, caption,
-          image_url</code> (required), <code>location_label, ig_post_url,
-          likes_label, verified</code> (optional). Every post lands in
-          this region — the CSV has no region column on purpose so an
-          upload here can&rsquo;t misroute. Images are mirrored to
-          Storage the same way as the manual form.
+          image_url</code> (required), <code>video_url, location_label,
+          ig_post_url, likes_label, verified</code> (optional). Every
+          post lands in this region — the CSV has no region column on
+          purpose so an upload here can&rsquo;t misroute. Images +
+          videos are mirrored to Storage the same way as the manual
+          form (videos pass-through, no transcode, 50&nbsp;MB cap).
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
