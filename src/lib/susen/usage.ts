@@ -81,8 +81,14 @@ export async function estimateResponseUsage(
     : "";
   const regionTokens = estimateTokens(regionLine);
 
-  const inventoryBlock = formatInventoryForPrompt(inventory);
-  const inventoryTokens = estimateTokens(inventoryBlock);
+  // formatInventoryForPrompt now returns { stable, matches } so the
+  // route can ship the stable half ahead of dynamic stuff for DeepSeek
+  // prompt-caching. For usage accounting we just sum them — both end
+  // up in the request body either way.
+  const { stable: stableInv, matches: matchesInv } =
+    formatInventoryForPrompt(inventory);
+  const inventoryTokens =
+    estimateTokens(stableInv) + estimateTokens(matchesInv);
 
   const guidanceBlock = guidance.length
     ? "\n\nOPERATOR GUIDANCE (current instructions from the Wondavu team — follow these; they refine your default behaviour):\n" +

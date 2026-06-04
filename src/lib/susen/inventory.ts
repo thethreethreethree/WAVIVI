@@ -122,19 +122,51 @@ export interface InventoryItem {
   source: InventorySource;
 }
 
-/** Project an InventoryItem down to the lean shape we ship to DeepSeek.
- *  Drops `id` and `source` so the model isn't carrying UUIDs around.
- *  All prompt-building call sites go through this. */
-export function toModelItem(item: InventoryItem): Omit<
-  InventoryItem,
-  "id" | "source"
-> {
+/** Project an InventoryItem down to the lean shape we ship to DeepSeek
+ *  for a TOP PICKS row — the popular sample for general / cross-sell
+ *  questions. We drop:
+ *    - `id` / `source`: internal routing keys (used by linkify only).
+ *    - `rank`: derived from rating + reviews; the model can reason
+ *       about quality from those two alone, no need to ship the
+ *       precomputed Bayesian score.
+ *    - `address`: TOP PICKS are for "by the way, you might also like
+ *       …" suggestions, not specific routing answers. When the model
+ *       picks one, the linkifier turns it into /eat/<id> which already
+ *       carries the address. Saves ~50 tokens per item × ~24 items = ~1.2k.
+ */
+export function toTopPickItem(item: InventoryItem): {
+  name: string;
+  category: string;
+  rating: number | null;
+  reviews: number;
+  city: string | null;
+} {
   return {
     name: item.name,
     category: item.category,
     rating: item.rating,
     reviews: item.reviews,
-    rank: item.rank,
+    city: item.city,
+  };
+}
+
+/** Same idea but for a BEST MATCHES row — the query-targeted hits the
+ *  model is expected to recommend specifically. Keep `address` so she
+ *  can answer "where exactly?" without a tool call. Still drops
+ *  `rank` (same reasoning as toTopPickItem). */
+export function toMatchItem(item: InventoryItem): {
+  name: string;
+  category: string;
+  rating: number | null;
+  reviews: number;
+  city: string | null;
+  address: string | null;
+} {
+  return {
+    name: item.name,
+    category: item.category,
+    rating: item.rating,
+    reviews: item.reviews,
     city: item.city,
     address: item.address,
   };
@@ -412,33 +444,77 @@ export async function loadSusenInventory(
   }
 }
 
-/** Format the inventory as a compact CONTEXT block to append to the
- *  system prompt. Keeps the model from inventing items while staying
- *  honest about what we DO have when asked. */
-export function formatInventoryForPrompt(inv: SusenInventory): string {
+/** Format the inventory for the system prompt. Returns TWO halves so
+ *  the route handler can put the stable half (TOP PICKS + instructions)
+ *  ahead of dynamic stuff (OPERATOR GUIDANCE, BEST MATCHES, history,
+ *  user input) — DeepSeek auto-caches byte-identical prefixes at ~95%
+ *  off, so keeping the same TOP PICKS bytes across multiple turns in
+ *  one conversation slashes the per-call cost.
+ *
+ *  `stable`  — CURRENT INVENTORY intro + merged HOW TO READ /
+ *               BEFORE YOU REPLY block + TOP PICKS for all three
+ *               tables. Identical for every turn in the same region.
+ *
+ *  `matches` — BEST MATCHES section, query-targeted via the keyword
+ *               extractor. Dynamic per turn; lives at the END of the
+ *               system content so it never breaks the prefix cache.
+ *
+ *  If both halves are empty the inventory load probably failed; the
+ *  route handler skips both and the model behaves like the original
+ *  prompt-only setup. */
+export function formatInventoryForPrompt(inv: SusenInventory): {
+  stable: string;
+  matches: string;
+} {
   const matchTotal =
     inv.matches.stays.length +
     inv.matches.restaurants.length +
     inv.matches.experiences.length;
   const baseTotal =
     inv.stays.length + inv.restaurants.length + inv.experiences.length;
-  if (matchTotal === 0 && baseTotal === 0) return "";
+  if (matchTotal === 0 && baseTotal === 0) return { stable: "", matches: "" };
 
   // Compact JSON — DeepSeek handles JSON in system prompts well and the
-  // tokens stay tight. Each item is a single object on a line.
-  const stringify = (items: InventoryItem[]) =>
-    // toModelItem drops `id` + `source` — the model doesn't need
-    // UUIDs and they'd waste tokens. The route handler keeps the
-    // full InventoryItem objects around for linkify.
-    items.map((i) => JSON.stringify(toModelItem(i))).join("\n");
+  // tokens stay tight. Each item is a single object on a line. We use
+  // different projections per cohort: TOP PICKS rows drop `address`
+  // (the model rarely needs it for cross-sell suggestions; if it picks
+  // one the linkifier surfaces the address on the detail page). BEST
+  // MATCHES rows keep `address` because those ARE the venues she'll
+  // give specifics about.
+  const stringifyTopPicks = (items: InventoryItem[]) =>
+    items.map((i) => JSON.stringify(toTopPickItem(i))).join("\n");
+  const stringifyMatches = (items: InventoryItem[]) =>
+    items.map((i) => JSON.stringify(toMatchItem(i))).join("\n");
 
-  // Direct matches for the current ask — listed FIRST and flagged as the
-  // preferred answer so the model leads with them.
-  let matchBlock = "";
+  // Merged HOW TO READ + BEFORE YOU REPLY — tightened from the earlier
+  // two-block split. The rules below are the only ones that actually
+  // changed behaviour during the cafe-cohort loop; everything else was
+  // noise. Keep this paragraph stable so it caches.
+  const stable = `\n\nCURRENT INVENTORY (live Wondavu DB — refer to this; never invent names or addresses)
+Region: ${inv.regionName ?? "unknown"}
+Lists are sorted by a Bayesian rank score (rating weighted by review count).
+
+READING RULES (apply to every reply):
+- BEST MATCHES (at the bottom of this block) were searched for THIS turn's message — prefer them; the thing they asked for DOES exist when MATCHES is non-empty.
+- TOP PICKS are a small popular sample, NOT the full catalogue. Never claim something doesn't exist just because it's absent from TOP PICKS.
+- Each TOP PICKS header shows "N of TOTAL"; TOTAL is the true region count, use it for "how many?" questions.
+- Filter by the "category" field on each item, NOT by section heading — cafes live inside PLACES TO EAT under category:"Cafe".
+- If an earlier turn claimed something doesn't exist but it appears now, the inventory wins — correct yourself naturally and recommend a real item.
+
+TOP PICKS — PLACES TO STAY (showing ${inv.stays.length} of ${inv.totals.stays} total):
+${stringifyTopPicks(inv.stays)}
+
+TOP PICKS — PLACES TO EAT (showing ${inv.restaurants.length} of ${inv.totals.restaurants} total):
+${stringifyTopPicks(inv.restaurants)}
+
+TOP PICKS — THINGS TO DO (showing ${inv.experiences.length} of ${inv.totals.experiences} total):
+${stringifyTopPicks(inv.experiences)}`;
+
+  let matches = "";
   if (matchTotal > 0) {
     const section = (label: string, items: InventoryItem[]) =>
-      items.length ? `\n${label}:\n${stringify(items)}` : "";
-    matchBlock = `\n\nBEST MATCHES FOR WHAT THEY JUST ASKED (pulled live from the database to match their message — lead with these; the "category" may differ from the word they used because the match can be on the venue NAME, e.g. a burger spot filed under "Fast Food"):${section(
+      items.length ? `\n${label}:\n${stringifyMatches(items)}` : "";
+    matches = `\n\nBEST MATCHES FOR THIS MESSAGE (live DB search — lead with these; "category" may differ from the word they used because the match can be on the venue NAME, e.g. a burger spot under "Fast Food"):${section(
       "PLACES TO EAT",
       inv.matches.restaurants,
     )}${section("PLACES TO STAY", inv.matches.stays)}${section(
@@ -447,26 +523,5 @@ export function formatInventoryForPrompt(inv: SusenInventory): string {
     )}`;
   }
 
-  return `\n\nCURRENT INVENTORY (live data from the Wondavu database — refer to this when recommending; do NOT invent names or addresses)
-Region: ${inv.regionName ?? "unknown"}
-Lists are sorted by a Bayesian rank score (rating weighted by review count).
-
-HOW TO READ THIS (important):
-- "BEST MATCHES" below were searched from the DB for THIS message — prefer them. If it's non-empty, the thing they asked for DOES exist; recommend from it, don't say we don't have it.
-- The "TOP PICKS" lists are just a small popular sample for general questions — NOT the full catalogue. Never say a kind of place doesn't exist just because it's absent from TOP PICKS; if BEST MATCHES is empty for a specific ask, say so honestly and offer the closest real alternative from what's here. Never invent.
-- COUNTS: each TOP PICKS header reads "showing N of TOTAL". TOTAL is the true number of that kind in the region — use it for "how many restaurants / stays / things to do?". Never report the sample size (N) as the total.${matchBlock}
-
-TOP PICKS — PLACES TO STAY (showing ${inv.stays.length} of ${inv.totals.stays} total):
-${stringify(inv.stays)}
-
-TOP PICKS — PLACES TO EAT (showing ${inv.restaurants.length} of ${inv.totals.restaurants} total):
-${stringify(inv.restaurants)}
-
-TOP PICKS — THINGS TO DO (showing ${inv.experiences.length} of ${inv.totals.experiences} total):
-${stringify(inv.experiences)}
-
-BEFORE YOU REPLY — read these once:
-1. The kind of place the traveller asked about — is there at least one item ABOVE whose "category" field matches (e.g. "Cafe", "Bar", "Hostel")? If YES, you must name one of those items by its actual "name" from the data. Don't say "nothing cafe-wise in the list" when a Cafe row is in the BEST MATCHES or TOP PICKS lists above.
-2. If you said in an EARLIER turn that this kind of place doesn't exist here, that earlier statement was WRONG. Recheck the data above NOW. The inventory is the source of truth. Apologise briefly ("actually I was wrong — checking again") and then recommend a real item from the inventory.
-3. The ONLY honest "we don't have it" reply is when no item's "category" matches AND no item's "name" contains a synonym for the asked-for thing. In every other case, name a specific item from the data above.`;
+  return { stable, matches };
 }

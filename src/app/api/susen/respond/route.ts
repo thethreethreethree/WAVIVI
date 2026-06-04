@@ -162,7 +162,66 @@ export async function POST(req: Request) {
     loadSusenInventory(effectiveRegionId, input),
     loadActiveGuidance(), // live admin tuning — instructions that steer her replies
   ]);
-  const inventoryBlock = formatInventoryForPrompt(inventory);
+  // Split the inventory into a STABLE half (TOP PICKS + rules — same
+  // bytes every turn in this region) and a DYNAMIC half (BEST MATCHES,
+  // searched per turn). The split is the whole point of Stage 1:
+  // DeepSeek auto-caches byte-identical prompt prefixes at ~95% off,
+  // so anything in the stable half costs cents instead of dollars
+  // after the first call in a conversation.
+  const { stable: stableInventoryBlock, matches: matchesBlock } =
+    formatInventoryForPrompt(inventory);
+
+  // Build the system content with the stable prefix FIRST, dynamic
+  // suffix LAST. Order:
+  //   1. SUSEN_SYSTEM_PROMPT      (stable forever)
+  //   2. CURRENT REGION           (stable per region)
+  //   3. TOP PICKS + RULES        (stable per region — the big block)
+  //   4. OPERATOR GUIDANCE        (stable per session; rare changes)
+  //   5. BEST MATCHES             (dynamic per turn — only thing that
+  //                                breaks the cache, by design)
+  // History + user input ride as separate messages, not in system.
+  let systemContent = SUSEN_SYSTEM_PROMPT;
+  if (effectiveRegionId) {
+    systemContent += `\n\nCURRENT REGION\nThe traveller's effective region is id "${effectiveRegionId}"${
+      inventory.regionName ? ` (${inventory.regionName})` : ""
+    }${
+      detectedRegionId && detectedRegionId !== regionId
+        ? " — detected from the user's message text, not their globe pin"
+        : ""
+    }. Tailor recommendations to that region. If they ask about somewhere else, ask them to use the globe to switch.`;
+  } else {
+    // No region anywhere — be honest, don't make up a list.
+    systemContent +=
+      "\n\nNO REGION SELECTED\nThe traveller has not selected a region yet and their message doesn't mention one I recognise. Ask them which destination they're asking about (or to use the globe button at the top of the screen to pick one). Do NOT invent venues you don't have data for.";
+  }
+  if (stableInventoryBlock) systemContent += stableInventoryBlock;
+  if (guidance.length) {
+    systemContent +=
+      "\n\nOPERATOR GUIDANCE (current instructions from the Wondavu team — follow these; they refine your default behaviour):\n" +
+      guidance.map((g) => `- ${g}`).join("\n");
+  }
+  // STABLE PREFIX ends here. Mark its length now so the diagnostic
+  // log can report how many characters / tokens would cache vs not.
+  const stablePrefixChars = systemContent.length;
+  // DYNAMIC SUFFIX starts now — these bytes change per turn.
+  if (matchesBlock) systemContent += matchesBlock;
+
+  // Filter Susen's anti-existence anchoring claims out of the history
+  // before composing the final messages array (cafe-cohort lesson).
+  const historyMessages = buildHistoryMessages(history);
+
+  // Stage 0 instrumentation: char + token estimates so the next time
+  // someone asks "is Susen still expensive?" the log has the answer
+  // in one read. 4-char-per-token is the standard rule of thumb for
+  // English + JSON content; close enough for trend-tracking.
+  const historyChars = historyMessages.reduce(
+    (n, m) => n + m.content.length,
+    0,
+  );
+  const inputChars = input.length;
+  const dynamicSuffixChars =
+    systemContent.length - stablePrefixChars + historyChars + inputChars;
+  const tk = (chars: number) => Math.ceil(chars / 4);
 
   // Single source of truth for the diagnostic log line. Goes to Vercel
   // function logs. `matchNames` shows what the targeted DB search pulled
@@ -185,37 +244,19 @@ export async function POST(req: Request) {
         .concat(inventory.matches.stays, inventory.matches.experiences)
         .map((i) => i.name)
         .slice(0, 8),
+      promptChars: {
+        stablePrefix: stablePrefixChars,
+        dynamicSuffix: dynamicSuffixChars,
+      },
+      estInputTokens: {
+        stablePrefix: tk(stablePrefixChars),
+        dynamicSuffix: tk(dynamicSuffixChars),
+        total: tk(stablePrefixChars + dynamicSuffixChars),
+      },
       inputPreview: input.slice(0, 80),
     }),
   );
 
-  // Compose the message array. Region context (when present) rides on
-  // the system prompt so the model has it without a hidden user turn.
-  let systemContent = SUSEN_SYSTEM_PROMPT;
-  if (effectiveRegionId) {
-    systemContent += `\n\nCURRENT REGION\nThe traveller's effective region is id "${effectiveRegionId}"${
-      inventory.regionName ? ` (${inventory.regionName})` : ""
-    }${
-      detectedRegionId && detectedRegionId !== regionId
-        ? " — detected from the user's message text, not their globe pin"
-        : ""
-    }. Tailor recommendations to that region. If they ask about somewhere else, ask them to use the globe to switch.`;
-  } else {
-    // No region anywhere — be honest, don't make up a list.
-    systemContent +=
-      "\n\nNO REGION SELECTED\nThe traveller has not selected a region yet and their message doesn't mention one I recognise. Ask them which destination they're asking about (or to use the globe button at the top of the screen to pick one). Do NOT invent venues you don't have data for.";
-  }
-  if (inventoryBlock) systemContent += inventoryBlock;
-  if (guidance.length) {
-    systemContent +=
-      "\n\nOPERATOR GUIDANCE (current instructions from the Wondavu team — follow these; they refine your default behaviour):\n" +
-      guidance.map((g) => `- ${g}`).join("\n");
-  }
-  // Filter Susen's anti-existence anchoring claims out of the
-  // history before composing the final messages array. The model
-  // cannot continue a "no cafes" narrative if it can't see its own
-  // prior "no cafes" reply.
-  const historyMessages = buildHistoryMessages(history);
   const messages: ChatMessage[] = [
     { role: "system", content: systemContent },
     ...historyMessages,
@@ -326,6 +367,18 @@ export async function POST(req: Request) {
   // persisting and returning so old chat history stays clickable after
   // a refresh without re-resolving against a live inventory.
   const linkedText = linkifyReply(text, inventory);
+
+  // Stage 0 instrumentation: log the output side so input/output cost
+  // can be compared. Output is roughly 4× input cost on deepseek-chat,
+  // so even modest reductions on long replies move the bill.
+  console.error(
+    "[susen] reply",
+    JSON.stringify({
+      outputChars: linkedText.length,
+      estOutputTokens: Math.ceil(linkedText.length / 4),
+      inputPreview: input.slice(0, 80),
+    }),
+  );
 
   // Tuning capture: log admin turns (and flag instructions) for development.
   // Fire-and-forget so it never delays the reply.
