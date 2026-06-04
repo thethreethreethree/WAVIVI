@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { StatCard } from "@/components/admin/stat-card";
-import { loadDashboard } from "@/lib/admin/data";
+import { loadDashboard } from "@/lib/admin/dashboard";
 
 // Force a fresh fetch every render — the dashboard is the ops "is the
 // app up?" surface, so we never want to serve cached aggregates that
