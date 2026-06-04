@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# .env.example is a checked-in template — no secrets, used by README's
+# "Getting started" so first-time contributors know what to fill in.
+!.env.example
 
 # vercel
 .vercel

@@ -9,16 +9,21 @@ find events, and feel the vibe of every place. Installable PWA.
 - Tailwind CSS v4
 - Supabase (Postgres · Auth · Realtime · Storage)
 - Leaflet (keyless CARTO tiles) for the Vibe Map
+- DeepSeek (Susen, the in-app travel concierge)
 
 ## Getting started
 
 ```bash
 npm install
-cp .env.example .env.local   # then fill in Supabase keys
+cp .env.example .env.local   # then fill in Supabase + DeepSeek keys
 npm run dev
 ```
 
 Open http://localhost:3000.
+
+See [CLAUDE.md](CLAUDE.md) for project conventions, [AGENTS.md](AGENTS.md)
+for the Next.js 16 caveats, and [CLAUDE-problem-solving.md](CLAUDE-problem-solving.md)
+for the reasoning discipline this repo follows.
 
 ## Roadmap
 
@@ -37,4 +42,109 @@ Open http://localhost:3000.
 | 11    | Safety & Verification     |
 | 12    | Scaling & Optimization    |
 
-See `src/config/phases.ts` for live status and `CLAUDE.md` for architecture.
+See `src/config/phases.ts` for live status.
+
+---
+
+## Ops runbook
+
+Operational reference for the production deployment. Production lives at
+**wondavu.com** (custom domain on Vercel). The `main` branch auto-deploys.
+
+### Environment variables (Vercel → Settings → Environment Variables)
+
+Set every required variable on the **Production** environment. Preview
+and Development inherit from Production unless explicitly overridden.
+
+**Required**
+
+| Variable                       | Source                                | Purpose                                                                  |
+| ------------------------------ | ------------------------------------- | ------------------------------------------------------------------------ |
+| `NEXT_PUBLIC_SUPABASE_URL`     | Supabase → Project Settings → API     | Browser + server client                                                  |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`| Supabase → Project Settings → API     | Browser + server client                                                  |
+| `SUPABASE_SERVICE_ROLE_KEY`    | Supabase → Project Settings → API     | Admin dashboard aggregates, ingestion, mirroring. SERVER ONLY.           |
+| `DEEPSEEK_API_KEY`             | platform.deepseek.com                 | Powers `/api/susen/respond`. Without it Susen silently falls back to the offline engine. |
+
+**Optional**
+
+| Variable                       | Default                               | Purpose                                                                  |
+| ------------------------------ | ------------------------------------- | ------------------------------------------------------------------------ |
+| `SUSEN_MODEL`                  | `deepseek-chat`                       | Set to `deepseek-reasoner` for slower/smarter responses.                 |
+| `SUSEN_ADMINS`                 | `johnsyramos@gmail.com,@john,john`    | CSV of identities whose chats get tuning capture + live operator guidance. |
+| `CRON_SECRET`                  | (empty = disabled)                    | Bearer token for `/api/cron/scan`. Vercel Cron sets this automatically.  |
+| `INGEST_TOKEN`                 | (empty = endpoint off)                | Bearer for the Partner Collection extension hitting `/api/admin/stays/ingest`. |
+| `INSTAGRAM_PROXY_URL`          | (empty = direct fetch)                | Cloudflare Worker that proxies IG public-profile fetches.                |
+| `INSTAGRAM_PROXY_SECRET`       | (empty = no header)                   | Shared secret the Worker checks.                                         |
+| `NEXT_PUBLIC_PET_ENABLED`      | (off)                                 | Set to `1` to expose `/pet` and activate reward hooks. Leave OFF in prod. |
+| `NEXT_PUBLIC_SITE_URL`         | (auto-resolved to wondavu.com in prod)| Override only if running on a non-Vercel host.                           |
+
+After changing any env var: **Vercel → Deployments → Redeploy** the latest
+commit. Env updates do not retroactively apply to existing deploys.
+
+### Supabase project
+
+- **Project**: linked to wondavu.com production.
+- **Auth → URL Configuration**:
+  - Site URL: `https://wondavu.com`
+  - Redirect URLs (allowlist must include all four):
+    - `https://wondavu.com/auth/callback`
+    - `https://wondavu.com/auth/callback?**`
+    - `http://localhost:3000/auth/callback`
+    - `http://localhost:3000/auth/callback?**`
+
+  If a "Google OAuth loops back to /login" symptom recurs, see the
+  [2026-05-30 postmortem](docs/postmortems/2026-05-30-google-oauth-loop.md) —
+  the redirect allowlist is the first place to look, not the cookie code.
+
+- **Storage buckets** (created via Supabase dashboard or first-write):
+  - `stays-photos` — public read. Used by stays, restaurants, experiences,
+    AND the feed (under the `feed/` prefix; see `src/lib/feed/mirror.ts`).
+  - `chat-photos` — public read. Used by group chat image attachments.
+
+### Database migrations
+
+Migrations are SQL files in `supabase/migrations/`, numbered sequentially.
+They are NOT auto-applied by Vercel — run them by hand in the
+**Supabase SQL Editor** after merging the corresponding commit.
+
+Every migration is idempotent (`drop policy if exists` before `create
+policy`, `add column if not exists`, etc.) so re-running a migration is
+safe if you're unsure whether it ran.
+
+To find pending migrations after a `git pull`:
+
+```bash
+ls supabase/migrations/ | tail -5
+```
+
+Compare against the highest-numbered migration you've actually run on
+the production database. Everything above that number is pending.
+
+### Cron jobs (Vercel)
+
+The only configured cron is `/api/cron/scan` (region scan trigger). It
+relies on `CRON_SECRET`. Schedule + status:
+**Vercel → Project → Cron Jobs**.
+
+### Cache busting (PWA / service worker)
+
+The service worker caches the app shell. When shipping a fix that needs
+to land on already-installed PWAs immediately, bump the cache name in
+the service-worker file (e.g. `v5 → v6`). Precedent:
+[commit 30e6234](https://github.com/thethreethreethree/WAVIVI/commit/30e6234).
+Without the bump, users on installed PWAs serve the stale shell until
+their cache invalidates naturally.
+
+### When something breaks
+
+The Constitution lives in [CLAUDE-problem-solving.md](CLAUDE-problem-solving.md).
+Short version: **probe before patch.** If a bug is silent (loop, blank
+UI, no error toast) and attempt #1 doesn't move the symptom, do NOT
+ship attempt #2 against the same mental model. Build a probe first —
+a `/auth/debug` page took 5 minutes to write and revealed what 3 wrong
+OAuth patches couldn't. See [CLAUDE.md § Debugging](CLAUDE.md#debugging--probe-before-patch).
+
+When the same bug burns ≥3 patches, write a postmortem under
+`docs/postmortems/YYYY-MM-DD-slug.md` following
+[the template](docs/postmortems/_TEMPLATE.md). Index entries land in
+[CLAUDE.md § Postmortems log](CLAUDE.md#postmortems-log).
