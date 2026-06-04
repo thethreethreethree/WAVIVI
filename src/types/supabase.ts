@@ -44,6 +44,12 @@ export type ProfileRow = {
    *  which is the flag the auth callbacks key off to redirect them
    *  back into /welcome/[step] instead of the requested next path. */
   onboarded_at: string | null;
+  /** Migration 0052 — stamped when the user requests deletion. The
+   *  auth.users row is purged via service role once
+   *  (now() - deletion_requested_at) > 30 days. Until then, signing
+   *  back in surfaces a banner offering to cancel. */
+  deletion_requested_at: string | null;
+  deletion_reason: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -89,6 +95,9 @@ export type ProfileUpdate = {
   instagram_verify_expires_at?: string | null;
   /** Migration 0051 — stamped when the post-signup walkthrough completes. */
   onboarded_at?: string | null;
+  /** Migration 0052 — deletion request flow. */
+  deletion_requested_at?: string | null;
+  deletion_reason?: string | null;
 };
 
 /* ── Traveler Toolbox ─────────────────────────────────────────────────── */

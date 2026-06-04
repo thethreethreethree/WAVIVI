@@ -130,9 +130,17 @@ have free tiers that cover early-stage traffic.
 
 ### Cron jobs (Vercel)
 
-The only configured cron is `/api/cron/scan` (region scan trigger). It
-relies on `CRON_SECRET`. Schedule + status:
-**Vercel → Project → Cron Jobs**.
+Configured in [vercel.json](vercel.json). All routes are guarded by
+`CRON_SECRET` (Vercel Cron supplies the bearer header automatically).
+Schedule + status: **Vercel → Project → Cron Jobs**.
+
+- `/api/cron/scan?mode=full` — weekly Mon 03:00 UTC. Re-scans every active region.
+- `/api/cron/scan?mode=refresh` — daily 04:00 UTC. Refreshes regions not scanned in ~20h.
+- `/api/cron/purge-deletions` — daily 03:30 UTC. Hard-deletes auth users whose
+  `profiles.deletion_requested_at` is older than 30 days. The route response
+  is the run summary (`considered / purged / failed`) so the dashboard
+  surfaces the numbers without log-diving. Cascade FKs handle the
+  downstream rows.
 
 ### Cache busting (PWA / service worker)
 

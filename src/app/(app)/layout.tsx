@@ -2,6 +2,7 @@ import { DesignEditor } from "@/components/dev/design-editor";
 import { DesignOverridesRuntime } from "@/components/dev/design-overrides-runtime";
 import { AppPrewarm } from "@/components/ui/app-prewarm";
 import { BottomNav } from "@/components/ui/bottom-nav";
+import { DeletionPendingBanner } from "@/components/ui/deletion-pending-banner";
 import { PageTransition } from "@/components/ui/page-transition";
 import { ThemeProvider } from "@/components/ui/theme-context";
 import { ThemeImgSwap } from "@/components/ui/theme-img-swap";
@@ -28,6 +29,10 @@ export default async function AppLayout({
             aria-hidden
           />
           <div className="relative z-10 flex flex-1 flex-col">
+            {/* Banner appears whenever the signed-in user has a non-null
+                deletion_requested_at and the 30-day grace hasn't elapsed.
+                Renders nothing otherwise — see component for cost note. */}
+            <DeletionPendingBanner />
             <PageTransition>{children}</PageTransition>
           </div>
         </div>

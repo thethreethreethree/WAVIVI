@@ -151,6 +151,25 @@ export default async function SettingsPage() {
             Sign out
           </button>
         </form>
+
+        {/* Danger zone — kept at the very bottom, separately framed,
+            so accidental thumb-swipes near the sign-out button don't
+            send a user into a destructive flow. The actual destruction
+            still requires typing DELETE on the next page. */}
+        <section>
+          <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-heat">
+            Danger zone
+          </h2>
+          <Link
+            href="/profile/delete"
+            className="block w-full rounded-2xl border border-heat/40 bg-heat/5 px-4 py-3 text-left text-sm font-semibold text-heat transition-colors hover:bg-heat/10"
+          >
+            <span className="block">Delete account</span>
+            <span className="mt-0.5 block text-xs font-medium text-heat/80">
+              30-day grace window before permanent removal.
+            </span>
+          </Link>
+        </section>
       </div>
     </div>
   );

@@ -131,3 +131,69 @@ export async function saveProfile(
   revalidatePath("/profile/edit");
   redirect("/profile");
 }
+
+export type DeletionResult = { error: string | null };
+
+/**
+ * Request account deletion. Soft-marks the profile with
+ * deletion_requested_at + signs the user out + redirects to a
+ * confirmation page. The actual auth.users purge happens later via
+ * service-role utility (lib/auth/purge-deletions.ts) once 30 days
+ * have elapsed — this gives the user a grace window to undo via
+ * the deletion-pending banner on next sign-in.
+ *
+ * The "type DELETE to confirm" string check lives on the client form
+ * for UX; the server still requires it on the server side because
+ * client validation is not a security boundary.
+ */
+export async function requestAccountDeletion(
+  formData: FormData,
+): Promise<DeletionResult> {
+  const confirmation = readString(formData, "confirmation");
+  if (confirmation !== "DELETE") {
+    return { error: "Type DELETE in capital letters to confirm." };
+  }
+  const reason = readString(formData, "reason").slice(0, 500);
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign in to delete your account." };
+
+  const { error: updateErr } = await supabase
+    .from("profiles")
+    .update({
+      deletion_requested_at: new Date().toISOString(),
+      deletion_reason: reason || null,
+    })
+    .eq("id", user.id);
+  if (updateErr) return { error: updateErr.message };
+
+  // Sign out so the deletion-pending state is immediate and the
+  // banner-on-return-to-cancel flow kicks in on the next sign-in.
+  await supabase.auth.signOut();
+  revalidatePath("/", "layout");
+  redirect("/account/scheduled-for-deletion");
+}
+
+/** Reverse a pending deletion request. Called from the deletion-pending
+ *  banner that appears at the top of the app when a signed-in user has
+ *  a non-null deletion_requested_at and the 30-day grace hasn't elapsed.
+ *  Idempotent — clearing an already-null column is a no-op. */
+export async function cancelAccountDeletion(): Promise<DeletionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign in to cancel deletion." };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ deletion_requested_at: null, deletion_reason: null })
+    .eq("id", user.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/", "layout");
+  return { error: null };
+}
