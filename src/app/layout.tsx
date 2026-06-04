@@ -11,6 +11,7 @@ import {
 import { cookies } from "next/headers";
 import { Suspense } from "react";
 
+import { CookieNotice } from "@/components/ui/cookie-notice";
 import { NavigationProgress } from "@/components/ui/navigation-progress";
 import { OpeningSplash } from "@/components/ui/opening-splash";
 import { siteConfig } from "@/config/site";
@@ -254,6 +255,10 @@ export default async function RootLayout({
           </defs>
         </svg>
         {children}
+        {/* First-visit cookie/privacy disclosure. Server wrapper hides
+            it for users who already acked, so no flash on subsequent
+            navigations. See lib/cookies/notice.ts for the policy. */}
+        <CookieNotice />
         {/* Vercel Analytics — page views + custom events. No cookie
             written by default; consent-free for basic web analytics.
             Inert outside Vercel deploys (no-op on localhost). Toggle on
