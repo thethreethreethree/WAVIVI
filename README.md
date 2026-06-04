@@ -120,6 +120,14 @@ ls supabase/migrations/ | tail -5
 Compare against the highest-numbered migration you've actually run on
 the production database. Everything above that number is pending.
 
+### Analytics (Vercel)
+
+`@vercel/analytics` and `@vercel/speed-insights` are mounted in the root
+layout — they're inert outside Vercel and emit no cookies by default
+(consent-free for basic web analytics). To see the data: **Vercel →
+Project → Analytics → Enable** (and **Speed Insights → Enable**). Both
+have free tiers that cover early-stage traffic.
+
 ### Cron jobs (Vercel)
 
 The only configured cron is `/api/cron/scan` (region scan trigger). It

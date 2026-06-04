@@ -1,3 +1,5 @@
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata, Viewport } from "next";
 import {
   Architects_Daughter,
@@ -252,6 +254,15 @@ export default async function RootLayout({
           </defs>
         </svg>
         {children}
+        {/* Vercel Analytics — page views + custom events. No cookie
+            written by default; consent-free for basic web analytics.
+            Inert outside Vercel deploys (no-op on localhost). Toggle on
+            in Vercel dashboard → Project → Analytics. */}
+        <Analytics />
+        {/* Web Vitals (LCP, CLS, INP, FCP, TTFB) — same dashboard,
+            zero config. Catches perf regressions launch-week without
+            having to instrument by hand. */}
+        <SpeedInsights />
       </body>
     </html>
   );
