@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { SusenAvatar } from "@/components/ui/susen-avatar";
@@ -28,15 +29,23 @@ export const dynamic = "force-dynamic";
 // inventory, so it's a realistic upper-ish bound for prompt size.
 const SAMPLE_REGION = "el_nido_palawan_philippines";
 
-export default async function AdminSusenPage() {
+export default async function AdminSusenPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ window?: string }>;
+}) {
   const { isAdmin } = await requireAdmin();
   if (!isAdmin) redirect("/admin");
+
+  // Cost-basis window — admins toggle 7d / 30d to choose the smoothing window
+  // for the spend panel and the projection. Default 7d.
+  const costWindow = (await searchParams).window === "30" ? 30 : 7;
 
   const [liveRules, recent, usage, spend] = await Promise.all([
     listLiveRules(),
     listDevNotes(60),
     estimateResponseUsage(SAMPLE_REGION),
-    loadUsageSummary(7),
+    loadUsageSummary(costWindow),
   ]);
   const liveIds = new Set(liveRules.map((r) => r.id));
   const captures = recent.filter((n) => !liveIds.has(n.id));
@@ -78,9 +87,28 @@ export default async function AdminSusenPage() {
         </div>
       </div>
 
-      {/* Real spend (actual DeepSeek usage, last 7 days) */}
+      {/* Real spend (actual DeepSeek usage) — window toggle drives this panel
+          AND the projection below. */}
       <section className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-border">
-        <h2 className="text-sm font-bold">Real spend · last {spend.days} days</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-bold">Real spend · last {spend.days} days</h2>
+          <div className="flex items-center gap-0.5 rounded-full bg-background p-0.5 text-[11px] font-bold ring-1 ring-border">
+            {([7, 30] as const).map((w) => (
+              <Link
+                key={w}
+                href={`/admin/susen?window=${w}`}
+                scroll={false}
+                className={`rounded-full px-2.5 py-0.5 transition-colors ${
+                  costWindow === w
+                    ? "bg-sunset text-white"
+                    : "text-muted hover:text-foreground"
+                }`}
+              >
+                {w}d
+              </Link>
+            ))}
+          </div>
+        </div>
         {spend.available ? (
           <>
             <p className="mt-0.5 text-xs text-muted">
