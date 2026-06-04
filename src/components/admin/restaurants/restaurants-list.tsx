@@ -37,6 +37,7 @@ export function RestaurantsList({
   cities?: CityRow[];
 }) {
   const router = useRouter();
+  const [query, setQuery] = useState("");
   const [cuisineFilter, setCuisineFilter] = useState<string | "all">("all");
   const [cityFilter, setCityFilter] = useState<CityFilterValue>("all");
   const [minRating, setMinRating] = useState(0);
@@ -66,9 +67,19 @@ export function RestaurantsList({
   const toggleNeed = (key: ChannelKey) =>
     setNeeds((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]));
 
+  // Lowercased once per render so the filter loop doesn't re-allocate.
+  // Search matches name + address + description.
+  const q = query.trim().toLowerCase();
   const visible = useMemo(
     () =>
       restaurants.filter((r) => {
+        if (q) {
+          const hay = [r.name, r.address, r.description]
+            .filter((v): v is string => Boolean(v))
+            .join(" ")
+            .toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
         if (cuisineFilter !== "all" && (r.cuisine || "other") !== cuisineFilter)
           return false;
         if (cityFilter === "unset" && r.city_id !== null) return false;
@@ -82,7 +93,7 @@ export function RestaurantsList({
         if ((r.backpack_rating ?? 0) < minRating) return false;
         return needs.every((k) => hasChannel(r, k));
       }),
-    [restaurants, cuisineFilter, cityFilter, minRating, needs],
+    [restaurants, q, cuisineFilter, cityFilter, minRating, needs],
   );
 
   async function remove(id: string) {
@@ -190,6 +201,29 @@ export function RestaurantsList({
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Search bar — name / address / description match. First cut
+          before city / cuisine / rating chips narrow further. */}
+      <div className="relative">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by name, address, or description…"
+          className="admin-input w-full !pr-9"
+          aria-label="Search restaurants"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label="Clear search"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-2 py-0.5 text-xs font-bold text-muted hover:bg-foreground/10 hover:text-foreground"
+          >
+            ×
+          </button>
+        )}
+      </div>
+
       <CityFilter
         cities={cities}
         rows={restaurants}

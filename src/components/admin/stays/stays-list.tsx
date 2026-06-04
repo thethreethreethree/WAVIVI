@@ -48,6 +48,7 @@ export function StaysList({
   cities?: CityRow[];
 }) {
   const router = useRouter();
+  const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<StayType | "all">("all");
   const [cityFilter, setCityFilter] = useState<CityFilterValue>("all");
   const [minRating, setMinRating] = useState(0);
@@ -74,9 +75,20 @@ export function StaysList({
   const toggleNeed = (key: ChannelKey) =>
     setNeeds((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]));
 
+  // Lowercased once per render so the filter loop doesn't re-allocate.
+  // Search matches name + address + description — the fields an admin
+  // visually scans when looking for a specific stay.
+  const q = query.trim().toLowerCase();
   const visible = useMemo(
     () =>
       stays.filter((s) => {
+        if (q) {
+          const hay = [s.name, s.address, s.description]
+            .filter((v): v is string => Boolean(v))
+            .join(" ")
+            .toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
         if (typeFilter !== "all" && s.stay_type !== typeFilter) return false;
         if (cityFilter === "unset" && s.city_id !== null) return false;
         if (
@@ -89,7 +101,7 @@ export function StaysList({
         if ((s.backpack_rating ?? 0) < minRating) return false;
         return needs.every((k) => hasChannel(s, k));
       }),
-    [stays, typeFilter, cityFilter, minRating, needs],
+    [stays, q, typeFilter, cityFilter, minRating, needs],
   );
 
   async function remove(id: string) {
@@ -197,6 +209,29 @@ export function StaysList({
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Search bar — name / address / description match. First cut
+          before city / type / rating chips narrow further. */}
+      <div className="relative">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by name, address, or description…"
+          className="admin-input w-full !pr-9"
+          aria-label="Search stays"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label="Clear search"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-2 py-0.5 text-xs font-bold text-muted hover:bg-foreground/10 hover:text-foreground"
+          >
+            ×
+          </button>
+        )}
+      </div>
+
       {/* City filter chips */}
       <CityFilter
         cities={cities}

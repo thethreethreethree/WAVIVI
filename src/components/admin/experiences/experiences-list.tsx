@@ -39,6 +39,7 @@ export function ExperiencesList({
   cities?: CityRow[];
 }) {
   const router = useRouter();
+  const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string | "all">("all");
   const [cityFilter, setCityFilter] = useState<CityFilterValue>("all");
   const [minRating, setMinRating] = useState(0);
@@ -68,9 +69,21 @@ export function ExperiencesList({
   const toggleNeed = (key: ChannelKey) =>
     setNeeds((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]));
 
+  // Lowercased query stored once per render so the filter loop doesn't
+  // re-allocate `q.toLowerCase()` per row. Search matches name, address,
+  // and description — those are the fields an admin scans visually when
+  // looking for a known venue.
+  const q = query.trim().toLowerCase();
   const visible = useMemo(
     () =>
       experiences.filter((e) => {
+        if (q) {
+          const hay = [e.name, e.address, e.description]
+            .filter((v): v is string => Boolean(v))
+            .join(" ")
+            .toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
         if (categoryFilter !== "all" && categoryKey(e) !== categoryFilter)
           return false;
         if (cityFilter === "unset" && e.city_id !== null) return false;
@@ -84,7 +97,7 @@ export function ExperiencesList({
         if ((e.backpack_rating ?? 0) < minRating) return false;
         return needs.every((k) => hasChannel(e, k));
       }),
-    [experiences, categoryFilter, cityFilter, minRating, needs],
+    [experiences, q, categoryFilter, cityFilter, minRating, needs],
   );
 
   async function remove(id: string) {
@@ -192,6 +205,30 @@ export function ExperiencesList({
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Search bar — name / address / description match. Sits at the
+          very top of the filter stack so it acts as the first cut
+          before the city / category / rating chips narrow further. */}
+      <div className="relative">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by name, address, or description…"
+          className="admin-input w-full !pr-9"
+          aria-label="Search experiences"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label="Clear search"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-2 py-0.5 text-xs font-bold text-muted hover:bg-foreground/10 hover:text-foreground"
+          >
+            ×
+          </button>
+        )}
+      </div>
+
       <CityFilter
         cities={cities}
         rows={experiences}
