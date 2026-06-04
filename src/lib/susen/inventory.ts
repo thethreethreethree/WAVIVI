@@ -100,6 +100,12 @@ export async function detectRegionFromInput(
 const BASELINE_PER_TABLE = 8;
 const SEARCH_LIMIT = 12;
 
+/** Which place table a row came from — used server-side to build the
+ *  per-source detail page URL (/stay/{id}, /eat/{id}, /todo/{id}).
+ *  Excluded from the JSON we ship to the model (the model doesn't
+ *  need UUIDs, and they'd waste tokens). */
+export type InventorySource = "stay" | "eat" | "todo";
+
 export interface InventoryItem {
   name: string;
   category: string; // cuisine, stay_type, or activity_type
@@ -108,6 +114,30 @@ export interface InventoryItem {
   rank: number; // rounded so the prompt stays compact
   city: string | null;
   address: string | null;
+  /** Row id from stays / restaurants / experiences. Used to build the
+   *  internal place-page link when we linkify Susen's reply. NEVER
+   *  emitted to the model (see toModelItem below). */
+  id: string;
+  /** Place-page route prefix. See [[InventorySource]]. */
+  source: InventorySource;
+}
+
+/** Project an InventoryItem down to the lean shape we ship to DeepSeek.
+ *  Drops `id` and `source` so the model isn't carrying UUIDs around.
+ *  All prompt-building call sites go through this. */
+export function toModelItem(item: InventoryItem): Omit<
+  InventoryItem,
+  "id" | "source"
+> {
+  return {
+    name: item.name,
+    category: item.category,
+    rating: item.rating,
+    reviews: item.reviews,
+    rank: item.rank,
+    city: item.city,
+    address: item.address,
+  };
 }
 
 export interface SusenInventory {
@@ -225,6 +255,7 @@ const round2 = (n: number | null): number =>
   n == null ? 0 : Math.round(n * 100) / 100;
 
 type RawRow = {
+  id: string;
   name: string;
   rating: number | null;
   review_count: number;
@@ -281,11 +312,11 @@ export async function loadSusenInventory(
       .eq("region_id", regionId);
 
   const STAY_COLS =
-    "name, stay_type, rating, review_count, rank_score, city_id, address";
+    "id, name, stay_type, rating, review_count, rank_score, city_id, address";
   const REST_COLS =
-    "name, cuisine, rating, review_count, rank_score, city_id, address";
+    "id, name, cuisine, rating, review_count, rank_score, city_id, address";
   const EXP_COLS =
-    "name, activity_type, rating, review_count, rank_score, city_id, address";
+    "id, name, activity_type, rating, review_count, rank_score, city_id, address";
 
   try {
     const [
@@ -324,7 +355,18 @@ export async function loadSusenInventory(
 
     const cityName = indexCities(citiesRes.data);
 
+    // Map a category column name to the place-page route prefix —
+    // single source of truth so adding a new place table later only
+    // requires editing this map.
+    const SOURCE_BY_CATEGORY_COL: Record<string, InventorySource> = {
+      stay_type: "stay",
+      cuisine: "eat",
+      activity_type: "todo",
+    };
+
     const project = (r: RawRow, categoryCol: string): InventoryItem => ({
+      id: r.id,
+      source: SOURCE_BY_CATEGORY_COL[categoryCol] ?? "eat",
       name: r.name,
       category: (r[categoryCol] as string) || "other",
       rating: r.rating,
@@ -385,7 +427,10 @@ export function formatInventoryForPrompt(inv: SusenInventory): string {
   // Compact JSON — DeepSeek handles JSON in system prompts well and the
   // tokens stay tight. Each item is a single object on a line.
   const stringify = (items: InventoryItem[]) =>
-    items.map((i) => JSON.stringify(i)).join("\n");
+    // toModelItem drops `id` + `source` — the model doesn't need
+    // UUIDs and they'd waste tokens. The route handler keeps the
+    // full InventoryItem objects around for linkify.
+    items.map((i) => JSON.stringify(toModelItem(i))).join("\n");
 
   // Direct matches for the current ask — listed FIRST and flagged as the
   // preferred answer so the model leads with them.

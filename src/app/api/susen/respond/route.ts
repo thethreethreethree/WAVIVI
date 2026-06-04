@@ -7,6 +7,7 @@ import {
   formatInventoryForPrompt,
   loadSusenInventory,
 } from "@/lib/susen/inventory";
+import { linkifyReply } from "@/lib/susen/linkify";
 import { SUSEN_SYSTEM_PROMPT } from "@/lib/susen/persona";
 import {
   captureAdminTurn,
@@ -318,6 +319,14 @@ export async function POST(req: Request) {
     );
   }
 
+  // Rewrite every venue mention in the reply into a `[name](/<source>/<id>)`
+  // markdown link, using ids from the inventory we just retrieved. The
+  // chat renderer (src/components/ui/susen-text.tsx) turns those into
+  // Next <Link>s pointing at /stay, /eat, or /todo. We linkify BEFORE
+  // persisting and returning so old chat history stays clickable after
+  // a refresh without re-resolving against a live inventory.
+  const linkedText = linkifyReply(text, inventory);
+
   // Tuning capture: log admin turns (and flag instructions) for development.
   // Fire-and-forget so it never delays the reply.
   if (author && isSusenAdmin(author)) {
@@ -326,9 +335,9 @@ export async function POST(req: Request) {
       source,
       regionId: effectiveRegionId,
       message: input,
-      reply: text,
+      reply: linkedText,
     });
   }
 
-  return NextResponse.json({ text });
+  return NextResponse.json({ text: linkedText });
 }

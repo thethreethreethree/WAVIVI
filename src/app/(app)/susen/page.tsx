@@ -18,6 +18,7 @@ import {
   snippetFor,
 } from "@/components/ui/reply-bits";
 import { SusenAvatar } from "@/components/ui/susen-avatar";
+import { SusenText } from "@/components/ui/susen-text";
 import { useLongPress } from "@/hooks/use-long-press";
 import {
   appendSusenLocationAction,
@@ -480,7 +481,16 @@ function SusenBubble({
               />
             </div>
           )}
-          {turn.text}
+          {/* Susen's own turns render through SusenText so [name](/eat/...)
+              markdown links produced by lib/susen/linkify.ts render as
+              clickable internal place pages, and **bold** renders as
+              <strong> instead of leaking literal asterisks. User turns
+              stay plain — they never carry markdown produced by us. */}
+          {own ? (
+            turn.text
+          ) : (
+            <SusenText text={turn.text ?? ""} />
+          )}
         </div>
         {actionsOpen && (
           <div
