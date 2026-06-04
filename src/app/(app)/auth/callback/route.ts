@@ -29,7 +29,12 @@ import type { Database } from "@/types/supabase";
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/profile";
+  // Same-origin guard — without this, an attacker-controlled phishing
+  // page could land the user on `/auth/callback?code=valid&next=https://evil.com`
+  // and steal the post-auth redirect. Matches the confirm route's check.
+  const nextRaw = searchParams.get("next") ?? "/profile";
+  const next =
+    nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw : "/profile";
 
   if (!code) {
     return NextResponse.redirect(
