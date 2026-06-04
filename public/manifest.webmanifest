@@ -1,14 +1,18 @@
 {
+  "id": "/?source=pwa",
   "name": "Wondavu",
   "short_name": "Wondavu",
   "description": "A live social map for travelers — find your people, wherever you wonder.",
-  "start_url": "/",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "background_color": "#f4ecdd",
   "theme_color": "#f7941d",
   "categories": ["social", "travel", "lifestyle"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/wondavu-icon-192.png",
@@ -27,6 +31,35 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Vibe Map",
+      "short_name": "Map",
+      "description": "Open the live travelers map",
+      "url": "/tools/map?source=shortcut",
+      "icons": [
+        { "src": "/wondavu-icon-192.png", "sizes": "192x192" }
+      ]
+    },
+    {
+      "name": "Ask Susen",
+      "short_name": "Susen",
+      "description": "Chat with your travel concierge",
+      "url": "/susen?source=shortcut",
+      "icons": [
+        { "src": "/wondavu-icon-192.png", "sizes": "192x192" }
+      ]
+    },
+    {
+      "name": "Browse the feed",
+      "short_name": "Feed",
+      "description": "See what travelers are sharing",
+      "url": "/feed?source=shortcut",
+      "icons": [
+        { "src": "/wondavu-icon-192.png", "sizes": "192x192" }
+      ]
     }
   ]
 }

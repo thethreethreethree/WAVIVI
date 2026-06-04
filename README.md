@@ -161,6 +161,32 @@ Schedule + status: **Vercel → Project → Cron Jobs**.
   surfaces the numbers without log-diving. Cascade FKs handle the
   downstream rows.
 
+### PWA install readiness
+
+The web manifest at [public/manifest.webmanifest](public/manifest.webmanifest)
+covers the mandatory fields for installability: `id`, `start_url`,
+`scope`, `display: standalone`, `theme_color`, `background_color`, plus
+192/512 icons (including a maskable variant). It also declares three
+app-icon shortcuts — long-press the installed icon → Map / Susen / Feed
+quick-jump. Favicon comes from `src/app/icon.png` via Next 16's icon
+convention.
+
+**Two manual readiness items the audit cannot auto-fix:**
+
+1. **Screenshots for the Chrome install banner.** Chrome's richer
+   install prompt pulls `screenshots` from the manifest. Without them
+   the install banner is plain. Capture 3–5 PNGs of the app on a
+   phone-sized viewport (suggest 750×1334 or 1080×1920), drop in
+   `public/screenshots/`, then add a `screenshots` array to the
+   manifest pointing at them with `form_factor: "narrow"`.
+
+2. **Maskable icon safe-zone.** The 512px icon is shared between
+   `purpose: any` and `purpose: maskable`. Maskable icons need a ~10%
+   safe-zone (Android applies circular / squircle / teardrop masks).
+   Eyeball the icon — if the logo extends to the very edges, regenerate
+   the maskable variant with padding. [maskable.app/editor](https://maskable.app/editor)
+   is the no-tools-needed validator.
+
 ### Cache busting (PWA / service worker)
 
 The service worker caches the app shell. When shipping a fix that needs
