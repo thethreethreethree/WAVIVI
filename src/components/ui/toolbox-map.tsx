@@ -174,6 +174,11 @@ export function ToolboxMap({
   const [utilities, setUtilities] = useState<UtilityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [located, setLocated] = useState(false);
+  /** True while the geolocation promise is in flight. Visible on the
+   *  "What's near me" button so a slow / hanging permission prompt
+   *  doesn't read as "the button is broken." Cleared on success or
+   *  on any error path so a retry tap is always accepted. */
+  const [locating, setLocating] = useState(false);
   const [nearby, setNearby] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [selected, setSelected] = useState<UtilityRow | null>(null);
@@ -339,6 +344,9 @@ export function ToolboxMap({
       setNotice("Location isn't available on this device.");
       return;
     }
+    if (locating) return; // already in flight — guard double-taps during the
+    //                       8-second geolocation timeout
+    setLocating(true);
     setNotice("Finding your location…");
 
     navigator.geolocation.getCurrentPosition(
@@ -347,6 +355,7 @@ export function ToolboxMap({
         const lng = pos.coords.longitude;
         userPosRef.current = { lat, lng };
         setLocated(true);
+        setLocating(false);
         setNotice(null);
 
         userMarkerRef.current?.remove();
@@ -374,6 +383,7 @@ export function ToolboxMap({
       },
       (err) => {
         setNearby(null);
+        setLocating(false);
         setNotice(
           err.code === err.PERMISSION_DENIED
             ? "Location permission denied — enable it to see what's near you."
@@ -382,7 +392,7 @@ export function ToolboxMap({
       },
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
     );
-  }, []);
+  }, [locating]);
 
   const totalCount = utilities.length;
 
@@ -404,14 +414,20 @@ export function ToolboxMap({
             <button
               type="button"
               onClick={locate}
-              className="relative rounded-full px-3.5 py-2 text-xs font-extrabold text-white transition-transform active:scale-95"
+              disabled={locating}
+              className="relative rounded-full px-3.5 py-2 text-xs font-extrabold text-white transition-transform active:scale-95 disabled:opacity-60"
             >
               <span
                 className="wc-edge absolute inset-0 rounded-full border-2 border-white bg-glow"
                 aria-hidden
               />
               <span className="relative">
-                📍 {located ? "Re-center" : "What's near me"}
+                📍{" "}
+                {locating
+                  ? "Locating…"
+                  : located
+                    ? "Re-center"
+                    : "What's near me"}
               </span>
             </button>
             <button

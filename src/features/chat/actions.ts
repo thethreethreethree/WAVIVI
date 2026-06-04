@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { uploadChatPhoto } from "@/lib/storage/chat-photos";
+import { friendlySupabaseError } from "@/lib/supabase/errors";
 import { createClient } from "@/lib/supabase/server";
 import type { ChatMessageRow } from "@/types/supabase";
 
@@ -33,7 +34,13 @@ export async function joinGroup(groupId: string): Promise<ChatActionResult> {
 
   // 23505 = unique_violation; already a member is a no-op success.
   if (error && error.code !== "23505") {
-    return { error: error.message };
+    return {
+      error: friendlySupabaseError(error, {
+        context: "chat/joinGroup",
+        fallback:
+          "We couldn't add you to that group. It might be invite-only — message someone who's already in.",
+      }),
+    };
   }
 
   revalidatePath(`/meet/${groupId}`);
@@ -94,7 +101,14 @@ export async function sendMessage(
     })
     .select("*")
     .single();
-  if (error) return { error: error.message, message: null };
+  if (error)
+    return {
+      error: friendlySupabaseError(error, {
+        context: "chat/sendMessage",
+        fallback: "Couldn't send that message. Please try again.",
+      }),
+      message: null,
+    };
   return { error: null, message: data as ChatMessageRow };
 }
 
@@ -169,7 +183,14 @@ export async function sendChatImage(
     })
     .select("*")
     .single();
-  if (error) return { error: error.message, message: null };
+  if (error)
+    return {
+      error: friendlySupabaseError(error, {
+        context: "chat/sendPhoto",
+        fallback: "Couldn't send that photo. Please try again.",
+      }),
+      message: null,
+    };
   return { error: null, message: data as ChatMessageRow };
 }
 
@@ -207,7 +228,14 @@ export async function sendChatLocation(
     })
     .select("*")
     .single();
-  if (error) return { error: error.message, message: null };
+  if (error)
+    return {
+      error: friendlySupabaseError(error, {
+        context: "chat/sendLocation",
+        fallback: "Couldn't share your location. Please try again.",
+      }),
+      message: null,
+    };
   return { error: null, message: data as ChatMessageRow };
 }
 
@@ -260,7 +288,14 @@ export async function editChatMessage(
     .eq("id", messageId)
     .select("*")
     .single();
-  if (error) return { error: error.message, message: null };
+  if (error)
+    return {
+      error: friendlySupabaseError(error, {
+        context: "chat/editMessage",
+        fallback: "Couldn't save the edit. Please try again.",
+      }),
+      message: null,
+    };
   return { error: null, message: data as ChatMessageRow };
 }
 
@@ -276,7 +311,13 @@ export async function leaveGroup(groupId: string): Promise<ChatActionResult> {
     .delete()
     .eq("group_id", groupId)
     .eq("user_id", user.id);
-  if (error) return { error: error.message };
+  if (error)
+    return {
+      error: friendlySupabaseError(error, {
+        context: "chat/leaveGroup",
+        fallback: "Couldn't leave the group. Please try again.",
+      }),
+    };
   revalidatePath(`/meet/${groupId}`);
   return { error: null };
 }
