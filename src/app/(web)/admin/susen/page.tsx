@@ -2,7 +2,11 @@ import { redirect } from "next/navigation";
 
 import { SusenAvatar } from "@/components/ui/susen-avatar";
 import { listDevNotes, listLiveRules } from "@/lib/susen/tuning";
-import { estimateResponseUsage, loadUsageSummary } from "@/lib/susen/usage";
+import {
+  estimateResponseUsage,
+  loadUsageSummary,
+  projectMonthlyCost,
+} from "@/lib/susen/usage";
 import { requireAdmin } from "@/lib/toolbox/admin";
 
 import { SusenTuning } from "./SusenTuning";
@@ -38,6 +42,11 @@ export default async function AdminSusenPage() {
   const captures = recent.filter((n) => !liveIds.has(n.id));
 
   const fmt = (n: number) => n.toLocaleString();
+  const usd = (n: number) =>
+    n < 100
+      ? `$${n.toFixed(2)}`
+      : `$${Math.round(n).toLocaleString()}`;
+  const projection = projectMonthlyCost(spend);
   const total = usage.systemInputTokens || 1;
   const breakdown = [
     { label: "Persona", tokens: usage.personaTokens, hint: "fixed system prompt" },
@@ -114,6 +123,56 @@ export default async function AdminSusenPage() {
             automatically.
           </p>
         )}
+      </section>
+
+      {/* Monthly cost projection */}
+      <section className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-border">
+        <h2 className="text-sm font-bold">Monthly cost projection</h2>
+        <p className="mt-0.5 text-xs text-muted">
+          DeepSeek inference at scale, from{" "}
+          {projection.fromLiveData
+            ? `your live $${(projection.costPerMsgUsd * 1000).toFixed(2)} per 1,000 messages (${fmt(projection.sampleResponses)} replies, last ${spend.days}d)`
+            : `an estimated $${(projection.costPerMsgUsd * 1000).toFixed(2)} per 1,000 messages — no live data yet`}
+          . Rows are messages per active user per month.
+        </p>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="text-muted">
+                <th className="py-1 pr-3 font-medium">msgs/user/mo</th>
+                {projection.tiers.map((t) => (
+                  <th
+                    key={t.users}
+                    className="py-1 pr-3 text-right font-medium"
+                  >
+                    {fmt(t.users)} users
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {projection.engagementLevels.map((m, e) => (
+                <tr key={m} className="border-t border-border">
+                  <td className="py-1.5 pr-3 font-bold">{m}</td>
+                  {projection.tiers.map((t) => (
+                    <td
+                      key={t.users}
+                      className="py-1.5 pr-3 text-right tabular-nums"
+                    >
+                      {usd(t.monthlyUsd[e] ?? 0)}/mo
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-3 text-[10px] leading-relaxed text-muted">
+          DeepSeek inference only (excludes Vercel / Supabase / egress).
+          “Users” = monthly active senders. Engagement is the big swing factor;
+          the live cost/message already reflects the current cache-hit rate, so
+          this drops automatically as caching improves.
+        </p>
       </section>
 
       {/* Token + cost gauge */}

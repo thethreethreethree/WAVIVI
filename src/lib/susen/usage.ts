@@ -260,3 +260,48 @@ export async function loadUsageSummary(days = 7): Promise<SusenUsageSummary> {
     return EMPTY_SUMMARY(days);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Monthly cost projection (/admin/susen). Susen's bill scales with MESSAGES,
+// not users, so the only modelled assumption is engagement (messages per
+// active user per month). Cost-per-message is measured LIVE from susen_usage
+// — so as the cache-hit rate moves, the whole projection moves with it. We
+// deliberately don't store a per-user id (PII-light), which is why
+// messages/user stays an explicit assumption rather than a derived figure.
+// ---------------------------------------------------------------------------
+const PROJECTION_USER_TIERS = [1_000, 10_000, 100_000];
+const PROJECTION_ENGAGEMENT = [10, 30, 60]; // messages / active user / month
+const FALLBACK_COST_PER_MSG_USD = 0.00036; // grounded estimate until live data
+
+export interface CostProjection {
+  /** $/message the projection is built on. */
+  costPerMsgUsd: number;
+  /** True when derived from real susen_usage rows; false = fallback estimate. */
+  fromLiveData: boolean;
+  /** Responses backing the live cost/message (0 when fallback). */
+  sampleResponses: number;
+  /** Columns of the matrix: messages per active user per month. */
+  engagementLevels: number[];
+  /** Rows of the matrix: one user tier, one monthly $ per engagement level. */
+  tiers: { users: number; monthlyUsd: number[] }[];
+}
+
+/** Project the monthly DeepSeek bill at 1k / 10k / 100k users from the live
+ *  measured cost per message. */
+export function projectMonthlyCost(summary: SusenUsageSummary): CostProjection {
+  const fromLiveData = summary.available && summary.responses > 0;
+  const costPerMsgUsd = fromLiveData
+    ? summary.estCostUsd / summary.responses
+    : FALLBACK_COST_PER_MSG_USD;
+  const tiers = PROJECTION_USER_TIERS.map((users) => ({
+    users,
+    monthlyUsd: PROJECTION_ENGAGEMENT.map((m) => users * m * costPerMsgUsd),
+  }));
+  return {
+    costPerMsgUsd,
+    fromLiveData,
+    sampleResponses: summary.responses,
+    engagementLevels: PROJECTION_ENGAGEMENT,
+    tiers,
+  };
+}
