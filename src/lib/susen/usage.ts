@@ -26,13 +26,15 @@ import { loadActiveGuidance, type SusenTurnUsage } from "@/lib/susen/tuning";
 const OUTPUT_CAP_TOKENS = 400;
 const TYPICAL_OUTPUT_TOKENS = 160;
 
-// Approximate DeepSeek deepseek-chat list prices (USD per 1M tokens). These
-// drift — treat the dollar figures as a ballpark and verify current rates.
+// DeepSeek prices (USD per 1M tokens) taken from John's actual billing export
+// (2026-06), NOT the standard list — his effective rates are well below list.
+// DeepSeek also has peak/off-peak pricing, so these drift; treat dollar
+// figures as a close ballpark and re-check against billing periodically.
 // Cache HITS bill far cheaper than fresh (miss) input, which is why the
-// prompt-caching reorder matters; the real-spend panel prices them apart.
-const INPUT_PRICE_PER_M = 0.27; // cache-miss input
-const CACHE_HIT_PRICE_PER_M = 0.07; // cached input
-const OUTPUT_PRICE_PER_M = 1.1;
+// prompt-caching reorder matters; the panels price them apart.
+const INPUT_PRICE_PER_M = 0.14; // cache-miss input
+const CACHE_HIT_PRICE_PER_M = 0.0028; // cached input
+const OUTPUT_PRICE_PER_M = 0.28;
 
 /** Rough token count for a string. English prose tokenises at ~4 chars/token;
  *  the inventory block is compact JSON (denser, ~3). 3.8 is a blended middle
