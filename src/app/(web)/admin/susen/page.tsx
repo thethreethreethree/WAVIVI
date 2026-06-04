@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { SusenAvatar } from "@/components/ui/susen-avatar";
 import { listDevNotes, listLiveRules } from "@/lib/susen/tuning";
-import { estimateResponseUsage } from "@/lib/susen/usage";
+import { estimateResponseUsage, loadUsageSummary } from "@/lib/susen/usage";
 import { requireAdmin } from "@/lib/toolbox/admin";
 
 import { SusenTuning } from "./SusenTuning";
@@ -28,10 +28,11 @@ export default async function AdminSusenPage() {
   const { isAdmin } = await requireAdmin();
   if (!isAdmin) redirect("/admin");
 
-  const [liveRules, recent, usage] = await Promise.all([
+  const [liveRules, recent, usage, spend] = await Promise.all([
     listLiveRules(),
     listDevNotes(60),
     estimateResponseUsage(SAMPLE_REGION),
+    loadUsageSummary(7),
   ]);
   const liveIds = new Set(liveRules.map((r) => r.id));
   const captures = recent.filter((n) => !liveIds.has(n.id));
@@ -68,9 +69,56 @@ export default async function AdminSusenPage() {
         </div>
       </div>
 
+      {/* Real spend (actual DeepSeek usage, last 7 days) */}
+      <section className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-border">
+        <h2 className="text-sm font-bold">Real spend · last {spend.days} days</h2>
+        {spend.available ? (
+          <>
+            <p className="mt-0.5 text-xs text-muted">
+              Actual DeepSeek usage across every reply (cache-aware cost).
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              <div className="rounded-xl bg-background p-3 ring-1 ring-border">
+                <p className="text-xl font-bold tracking-tight">
+                  ${spend.estCostUsd.toFixed(2)}
+                </p>
+                <p className="text-[11px] text-muted">est. spend</p>
+              </div>
+              <div className="rounded-xl bg-background p-3 ring-1 ring-border">
+                <p className="text-xl font-bold tracking-tight">
+                  {fmt(spend.responses)}
+                </p>
+                <p className="text-[11px] text-muted">
+                  replies · {fmt(spend.avgTokensPerResponse)} avg tok
+                </p>
+              </div>
+              <div className="rounded-xl bg-background p-3 ring-1 ring-border">
+                <p className="text-xl font-bold tracking-tight">
+                  {fmt(spend.totalTokens)}
+                </p>
+                <p className="text-[11px] text-muted">total tokens</p>
+              </div>
+              <div className="rounded-xl bg-background p-3 ring-1 ring-border">
+                <p className="text-xl font-bold tracking-tight text-cool">
+                  {Math.round(spend.cacheHitRate * 100)}%
+                </p>
+                <p className="text-[11px] text-muted">input cache-hit</p>
+              </div>
+            </div>
+          </>
+        ) : (
+          <p className="mt-2 rounded-xl bg-glow/5 px-3 py-2 text-xs text-muted ring-1 ring-glow/30">
+            No usage recorded yet. Apply migration{" "}
+            <span className="font-mono">0049_susen_usage</span> to start
+            collecting real per-reply spend — new replies populate this panel
+            automatically.
+          </p>
+        )}
+      </section>
+
       {/* Token + cost gauge */}
       <section className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-border">
-        <h2 className="text-sm font-bold">Cost per response</h2>
+        <h2 className="text-sm font-bold">Cost per response (estimate)</h2>
         <p className="mt-0.5 text-xs text-muted">
           Estimated from the live prompt for a{" "}
           <span className="italic">“{usage.sampleQuery}”</span> query in{" "}

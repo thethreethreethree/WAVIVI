@@ -14,6 +14,7 @@ import {
   isSusenAdmin,
   loadActiveGuidance,
 } from "@/lib/susen/tuning";
+import { recordSusenUsage } from "@/lib/susen/usage";
 
 /**
  * Susen chat backend — proxies the conversation to DeepSeek's
@@ -421,6 +422,18 @@ export async function POST(req: Request) {
       usage: data.usage ?? null,
     });
   }
+
+  // Cost telemetry: record real token usage for EVERY reply (all travellers,
+  // not just admins) into susen_usage. Fire-and-forget after the reply is
+  // finalized — it never feeds the prompt, never blocks, and no-ops cleanly
+  // until migration 0049 creates the table.
+  void recordSusenUsage({
+    regionId: effectiveRegionId,
+    source,
+    isAdmin: isSusenAdmin(author),
+    model,
+    usage: data.usage ?? null,
+  });
 
   return NextResponse.json({ text: linkedText });
 }

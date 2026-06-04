@@ -1,11 +1,14 @@
 import "server-only";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   formatInventoryForPrompt,
   loadSusenInventory,
 } from "@/lib/susen/inventory";
 import { SUSEN_SYSTEM_PROMPT } from "@/lib/susen/persona";
-import { loadActiveGuidance } from "@/lib/susen/tuning";
+import { loadActiveGuidance, type SusenTurnUsage } from "@/lib/susen/tuning";
 
 /**
  * Per-response token estimate for the /admin/susen console.
@@ -25,7 +28,10 @@ const TYPICAL_OUTPUT_TOKENS = 160;
 
 // Approximate DeepSeek deepseek-chat list prices (USD per 1M tokens). These
 // drift — treat the dollar figures as a ballpark and verify current rates.
-const INPUT_PRICE_PER_M = 0.27;
+// Cache HITS bill far cheaper than fresh (miss) input, which is why the
+// prompt-caching reorder matters; the real-spend panel prices them apart.
+const INPUT_PRICE_PER_M = 0.27; // cache-miss input
+const CACHE_HIT_PRICE_PER_M = 0.07; // cached input
 const OUTPUT_PRICE_PER_M = 1.1;
 
 /** Rough token count for a string. English prose tokenises at ~4 chars/token;
@@ -126,4 +132,131 @@ export async function estimateResponseUsage(
     costPer1kResponsesUsd: costPerResponseUsd * 1000,
     model: process.env.SUSEN_MODEL ?? "deepseek-chat",
   };
+}
+
+// ---------------------------------------------------------------------------
+// Real per-response telemetry (susen_usage table, migration 0049).
+//
+// Written server-side from the respond route as a fire-and-forget side effect
+// AFTER the reply is finalized — it never touches the prompt, the reply, or
+// latency. Read back by the /admin/susen "real spend" panel. Both paths
+// degrade gracefully when the table doesn't exist yet (pre-migration): the
+// write swallows the error, the read reports `available: false`.
+// ---------------------------------------------------------------------------
+
+// `susen_usage` isn't in the generated Database types — reach it untyped, the
+// same pattern as the dev-notes client. (Regenerate types to make it typed.)
+function usageClient(): SupabaseClient {
+  return createAdminClient() as unknown as SupabaseClient;
+}
+
+/** Persist one response's real token usage. No-op when usage is absent. */
+export async function recordSusenUsage(row: {
+  regionId?: string | null;
+  source?: string | null;
+  isAdmin?: boolean;
+  model?: string | null;
+  usage?: SusenTurnUsage | null;
+}): Promise<void> {
+  if (!row.usage) return;
+  try {
+    const supabase = usageClient();
+    await supabase.from("susen_usage").insert({
+      region_id: row.regionId ?? null,
+      source: row.source ?? null,
+      is_admin: row.isAdmin ?? false,
+      model: row.model ?? null,
+      prompt_tokens: row.usage.prompt_tokens ?? null,
+      completion_tokens: row.usage.completion_tokens ?? null,
+      total_tokens: row.usage.total_tokens ?? null,
+      cache_hit_tokens: row.usage.prompt_cache_hit_tokens ?? null,
+    });
+  } catch (err) {
+    // Pre-migration the table won't exist — that's fine, telemetry is optional.
+    console.warn("[susen] usage record failed:", err);
+  }
+}
+
+export interface SusenUsageSummary {
+  /** False when the table/view isn't there yet or there's no data. */
+  available: boolean;
+  days: number;
+  responses: number;
+  totalTokens: number;
+  promptTokens: number;
+  completionTokens: number;
+  cacheHitTokens: number;
+  avgTokensPerResponse: number;
+  /** Cached share of input tokens (0..1). */
+  cacheHitRate: number;
+  /** Cache-aware dollar estimate over the window. */
+  estCostUsd: number;
+}
+
+const EMPTY_SUMMARY = (days: number): SusenUsageSummary => ({
+  available: false,
+  days,
+  responses: 0,
+  totalTokens: 0,
+  promptTokens: 0,
+  completionTokens: 0,
+  cacheHitTokens: 0,
+  avgTokensPerResponse: 0,
+  cacheHitRate: 0,
+  estCostUsd: 0,
+});
+
+/** Roll up real spend over the last `days` from the pre-aggregated daily view.
+ *  Cache-aware: cached input bills at the cheaper rate. */
+export async function loadUsageSummary(days = 7): Promise<SusenUsageSummary> {
+  type DailyRow = {
+    responses: number;
+    total_tokens: number | null;
+    prompt_tokens: number | null;
+    completion_tokens: number | null;
+    cache_hit_tokens: number | null;
+  };
+  const cutoff = new Date(Date.now() - days * 86_400_000).toISOString();
+  try {
+    const supabase = usageClient();
+    const { data, error } = await supabase
+      .from("susen_usage_daily")
+      .select(
+        "responses, total_tokens, prompt_tokens, completion_tokens, cache_hit_tokens",
+      )
+      .gte("day", cutoff)
+      .returns<DailyRow[]>();
+    if (error || !data) return EMPTY_SUMMARY(days);
+
+    const sum = (pick: (r: DailyRow) => number | null) =>
+      data.reduce((acc, r) => acc + (pick(r) ?? 0), 0);
+
+    const responses = sum((r) => r.responses);
+    const promptTokens = sum((r) => r.prompt_tokens);
+    const completionTokens = sum((r) => r.completion_tokens);
+    const cacheHitTokens = sum((r) => r.cache_hit_tokens);
+    const totalTokens = sum((r) => r.total_tokens);
+    const cacheMiss = Math.max(promptTokens - cacheHitTokens, 0);
+    const estCostUsd =
+      (cacheMiss * INPUT_PRICE_PER_M +
+        cacheHitTokens * CACHE_HIT_PRICE_PER_M +
+        completionTokens * OUTPUT_PRICE_PER_M) /
+      1_000_000;
+
+    return {
+      available: responses > 0,
+      days,
+      responses,
+      totalTokens,
+      promptTokens,
+      completionTokens,
+      cacheHitTokens,
+      avgTokensPerResponse: responses ? Math.round(totalTokens / responses) : 0,
+      cacheHitRate: promptTokens ? cacheHitTokens / promptTokens : 0,
+      estCostUsd,
+    };
+  } catch {
+    // View/table absent (pre-migration) → report unavailable, never throw.
+    return EMPTY_SUMMARY(days);
+  }
 }
