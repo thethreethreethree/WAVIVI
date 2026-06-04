@@ -38,6 +38,12 @@ export interface FeedDisplayPost {
   likes: string;
   comments: number;
   shares: number;
+  /** Source Instagram post URL when the post was admin-curated from IG.
+   *  When present the feed card uses the photo as a tap target that
+   *  opens the original post — useful for video thumbnails whose play
+   *  triangle is baked into the mirrored image and would otherwise be
+   *  dead pixels. Null when the post has no IG provenance. */
+  igPostUrl: string | null;
 }
 
 /** Limit per fetch. 50 covers a meaningful scroll without paging
@@ -55,6 +61,7 @@ function rowToDisplay(row: FeedPostRow): FeedDisplayPost {
     likes: row.likes_label,
     comments: row.comments,
     shares: row.shares,
+    igPostUrl: row.ig_post_url ?? null,
   };
 }
 
@@ -104,6 +111,7 @@ export async function loadFeedForCurrentRegion(): Promise<{
       likes: p.likes,
       comments: p.comments,
       shares: p.shares,
+      igPostUrl: null,
     })),
     isMockFallback: true,
   };
