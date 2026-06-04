@@ -11,8 +11,10 @@ import { linkifyReply } from "@/lib/susen/linkify";
 import { SUSEN_SYSTEM_PROMPT } from "@/lib/susen/persona";
 import {
   captureAdminTurn,
+  detectReviewCommand,
   isSusenAdmin,
   loadActiveGuidance,
+  markPreviousTurn,
 } from "@/lib/susen/tuning";
 import { recordSusenUsage } from "@/lib/susen/usage";
 
@@ -181,6 +183,26 @@ export async function POST(req: Request) {
       },
       { status: 413 },
     );
+  }
+
+  // Admin review commands ("flag" / "fire response susen") mark the previous
+  // turn for review and acknowledge — no DeepSeek call, no inventory, no
+  // capture. Admin-only AND command-only, so travellers and ordinary admin
+  // chat are completely unaffected. See lib/susen/tuning.ts.
+  if (author && isSusenAdmin(author)) {
+    const marker = detectReviewCommand(input);
+    if (marker) {
+      const ok = await markPreviousTurn(author, marker);
+      const text =
+        marker === "flag"
+          ? ok
+            ? "🚩 Flagged the last message for review."
+            : "Nothing to flag yet — say “flag” right after a response."
+          : ok
+            ? "🔥 Marked the last response as a great one."
+            : "Nothing to mark yet — say it right after a response.";
+      return NextResponse.json({ text });
+    }
   }
 
   // RAG: load real inventory so Susen can answer "is there a cafe in

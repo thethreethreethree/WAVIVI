@@ -1,12 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { deleteDevNote, setNoteFlags } from "@/lib/susen/tuning";
+import {
+  clearNoteMarker,
+  deleteDevNote,
+  setNoteFlags,
+} from "@/lib/susen/tuning";
 import { requireAdmin } from "@/lib/toolbox/admin";
 
 /**
  * PATCH  /api/admin/susen/notes/[id] — toggle steering flags on one note:
  *   { active?, is_instruction?, applied? }. Retire a live rule with
  *   active:false; promote a captured turn with is_instruction:true+active:true.
+ *   Or clear a review marker with { clearMarker: "flag" | "fire" }.
  * DELETE /api/admin/susen/notes/[id] — remove a note from the log entirely.
  * Admin-only.
  */
@@ -28,6 +33,16 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   > | null;
   if (!body) {
     return NextResponse.json({ error: "Invalid body." }, { status: 400 });
+  }
+
+  // Clear a review marker (🚩/🔥) — its own branch so it can't be mixed
+  // with a flag toggle in one request.
+  if (body.clearMarker === "flag" || body.clearMarker === "fire") {
+    const { error } = await clearNoteMarker(id, body.clearMarker);
+    if (error) {
+      return NextResponse.json({ error }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true });
   }
 
   const flags: { active?: boolean; is_instruction?: boolean; applied?: boolean } =

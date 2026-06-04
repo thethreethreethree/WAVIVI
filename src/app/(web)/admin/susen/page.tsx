@@ -2,7 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { SusenAvatar } from "@/components/ui/susen-avatar";
-import { listDevNotes, listLiveRules } from "@/lib/susen/tuning";
+import {
+  listDevNotes,
+  listLiveRules,
+  listNotesByMarker,
+  type ReviewMarker,
+} from "@/lib/susen/tuning";
 import {
   estimateResponseUsage,
   loadUsageSummary,
@@ -32,18 +37,22 @@ const SAMPLE_REGION = "el_nido_palawan_philippines";
 export default async function AdminSusenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ window?: string }>;
+  searchParams: Promise<{ window?: string; filter?: string }>;
 }) {
   const { isAdmin } = await requireAdmin();
   if (!isAdmin) redirect("/admin");
 
+  const sp = await searchParams;
   // Cost-basis window — admins toggle 7d / 30d to choose the smoothing window
   // for the spend panel and the projection. Default 7d.
-  const costWindow = (await searchParams).window === "30" ? 30 : 7;
+  const costWindow = sp.window === "30" ? 30 : 7;
+  // Review filter — "flag" / "fire" narrows Recent chats to marked turns.
+  const activeFilter: ReviewMarker | null =
+    sp.filter === "flag" || sp.filter === "fire" ? sp.filter : null;
 
   const [liveRules, recent, usage, spend] = await Promise.all([
     listLiveRules(),
-    listDevNotes(60),
+    activeFilter ? listNotesByMarker(activeFilter) : listDevNotes(60),
     estimateResponseUsage(SAMPLE_REGION),
     loadUsageSummary(costWindow),
   ]);
@@ -269,7 +278,11 @@ export default async function AdminSusenPage({
       </section>
 
       {/* Tuning console */}
-      <SusenTuning liveRules={liveRules} captures={captures} />
+      <SusenTuning
+        liveRules={liveRules}
+        captures={captures}
+        activeFilter={activeFilter}
+      />
     </div>
   );
 }

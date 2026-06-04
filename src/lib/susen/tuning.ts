@@ -261,3 +261,98 @@ export async function addRule(args: {
     return { note: null, error: (err as Error).message };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Review markers — let an admin tag a turn from chat while testing Susen:
+//   • "flag" (alone)        → mark the previous turn for later review (🚩)
+//   • "fire response susen" → mark the previous response as great quality (🔥)
+// Stored as plain tags ("flag" / "fire") alongside the token tags, so no
+// schema change. The /admin/susen filter buttons read them back. Only an
+// admin triggers these (the respond route gates on isSusenAdmin), and they
+// short-circuit before DeepSeek — travellers and normal admin chat are
+// untouched.
+// ---------------------------------------------------------------------------
+export type ReviewMarker = "flag" | "fire";
+
+/** Detect a deliberate review command. Tight on purpose so ordinary content
+ *  like "Flag Frendz hostel has a pool" or "fire up the grill" never trips it
+ *  — only the bare command phrases do. */
+export function detectReviewCommand(text: string): ReviewMarker | null {
+  const t = text.trim().toLowerCase().replace(/[.!?]+$/, "");
+  if (/^fire(\s+this)?\s+response(\s+susen)?$/.test(t)) return "fire";
+  if (/^flag(\s+(this|that|it|this one|that one|response|reply|message|msg))?$/.test(t))
+    return "flag";
+  return null;
+}
+
+/** Add a review marker to the admin's most recent prior captured turn — the
+ *  message/response they're reacting to. Returns false when there's no turn
+ *  to mark yet (e.g. the command was the first thing said). */
+export async function markPreviousTurn(
+  author: string,
+  marker: ReviewMarker,
+): Promise<boolean> {
+  try {
+    const supabase = devNotesClient();
+    const { data } = await supabase
+      .from("susen_dev_notes")
+      .select("id, tags")
+      .eq("author", author)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .returns<{ id: string; tags: string[] | null }[]>();
+    const row = data?.[0];
+    if (!row) return false;
+    const tags = Array.from(new Set([...(row.tags ?? []), marker]));
+    await supabase.from("susen_dev_notes").update({ tags }).eq("id", row.id);
+    return true;
+  } catch (err) {
+    console.warn("[susen] markPreviousTurn failed:", err);
+    return false;
+  }
+}
+
+/** Notes carrying a given review marker (🚩 flagged / 🔥 fire), newest first. */
+export async function listNotesByMarker(
+  marker: ReviewMarker,
+  limit = 100,
+): Promise<SusenDevNote[]> {
+  try {
+    const supabase = devNotesClient();
+    const { data } = await supabase
+      .from("susen_dev_notes")
+      .select(NOTE_COLS)
+      .contains("tags", [marker])
+      .order("created_at", { ascending: false })
+      .limit(limit)
+      .returns<SusenDevNote[]>();
+    return data ?? [];
+  } catch (err) {
+    console.warn("[susen] listNotesByMarker failed:", err);
+    return [];
+  }
+}
+
+/** Clear a review marker from one note (e.g. after the admin has reviewed it),
+ *  preserving any other tags (including the token counts). */
+export async function clearNoteMarker(
+  id: string,
+  marker: ReviewMarker,
+): Promise<{ error: string | null }> {
+  try {
+    const supabase = devNotesClient();
+    const { data } = await supabase
+      .from("susen_dev_notes")
+      .select("tags")
+      .eq("id", id)
+      .maybeSingle<{ tags: string[] | null }>();
+    const tags = (data?.tags ?? []).filter((t) => t !== marker);
+    const { error } = await supabase
+      .from("susen_dev_notes")
+      .update({ tags })
+      .eq("id", id);
+    return { error: error?.message ?? null };
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
+}

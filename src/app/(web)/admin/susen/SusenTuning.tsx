@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import type { SusenDevNote } from "@/lib/susen/tuning";
+import type { ReviewMarker, SusenDevNote } from "@/lib/susen/tuning";
 
 /** Pull DeepSeek's real token counts out of the namespaced tags written by
  *  captureAdminTurn (tok / in / out / cache). Returns null for older rows
@@ -50,12 +51,39 @@ function TokenBadge({ tags }: { tags: string[] | null }) {
   );
 }
 
+/** 🚩/🔥 review-marker pills (set from chat: "flag" / "fire response susen"). */
+function MarkerBadges({ tags }: { tags: string[] | null }) {
+  const t = tags ?? [];
+  return (
+    <>
+      {t.includes("flag") ? (
+        <span className="shrink-0 rounded-full bg-heat/15 px-2 py-0.5 text-[10px] font-bold text-heat">
+          🚩 flagged
+        </span>
+      ) : null}
+      {t.includes("fire") ? (
+        <span className="shrink-0 rounded-full bg-sunset/15 px-2 py-0.5 text-[10px] font-bold text-sunset">
+          🔥 fire
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+const FILTERS: { key: ReviewMarker | null; label: string; href: string }[] = [
+  { key: null, label: "All", href: "/admin/susen" },
+  { key: "flag", label: "🚩 Flagged", href: "/admin/susen?filter=flag" },
+  { key: "fire", label: "🔥 Fire", href: "/admin/susen?filter=fire" },
+];
+
 /**
  * Tuning console for /admin/susen.
  *
  * - Add rule: hand-write a live instruction (steers every reply immediately).
  * - Live rules: what's injected right now — retire (stop injecting) or delete.
  * - Recent chats: the capture log — promote a turn to a live rule, or delete.
+ *   Filterable to 🚩 flagged / 🔥 fire turns (markers set from chat); clear a
+ *   marker once reviewed.
  *
  * Every action hits /api/admin/susen/notes and router.refresh()es so the
  * lists stay in sync. Server enforces admin; this is just the surface.
@@ -63,9 +91,11 @@ function TokenBadge({ tags }: { tags: string[] | null }) {
 export function SusenTuning({
   liveRules,
   captures,
+  activeFilter,
 }: {
   liveRules: SusenDevNote[];
   captures: SusenDevNote[];
+  activeFilter: ReviewMarker | null;
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState("");
@@ -101,6 +131,24 @@ export function SusenTuning({
     try {
       const res = await fetch(`/api/admin/susen/notes/${id}`, {
         method: "DELETE",
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? res.statusText);
+      router.refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const clearMarker = async (id: string, marker: ReviewMarker) => {
+    setBusyId(id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/susen/notes/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ clearMarker: marker }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? res.statusText);
       router.refresh();
@@ -225,17 +273,46 @@ export function SusenTuning({
         )}
       </section>
 
-      {/* Recent captures (the log) */}
+      {/* Recent captures (the log) — filterable to flagged / fire turns */}
       <section>
-        <h2 className="mb-2 text-sm font-bold">
-          Recent chats{" "}
-          <span className="font-normal text-muted">
-            — captured for the log; promote any to a live rule
-          </span>
-        </h2>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-bold">
+            {activeFilter === "flag"
+              ? "🚩 Flagged messages"
+              : activeFilter === "fire"
+                ? "🔥 Fire responses"
+                : "Recent chats"}
+            {activeFilter ? null : (
+              <span className="font-normal text-muted">
+                {" "}
+                — captured for the log; promote any to a live rule
+              </span>
+            )}
+          </h2>
+          <div className="flex items-center gap-0.5 rounded-full bg-background p-0.5 text-[11px] font-bold ring-1 ring-border">
+            {FILTERS.map((f) => (
+              <Link
+                key={f.label}
+                href={f.href}
+                scroll={false}
+                className={`rounded-full px-2.5 py-0.5 transition-colors ${
+                  activeFilter === f.key
+                    ? "bg-sunset text-white"
+                    : "text-muted hover:text-foreground"
+                }`}
+              >
+                {f.label}
+              </Link>
+            ))}
+          </div>
+        </div>
         {captures.length === 0 ? (
           <p className="rounded-2xl bg-surface px-4 py-6 text-center text-xs text-muted shadow-card ring-1 ring-border">
-            No captured chats yet.
+            {activeFilter === "flag"
+              ? "No flagged messages. In chat, type “flag” right after a response to mark it for review."
+              : activeFilter === "fire"
+                ? "No fire responses yet. In chat, type “fire response susen” after a great reply."
+                : "No captured chats yet."}
           </p>
         ) : (
           <ul className="overflow-hidden rounded-2xl bg-surface shadow-card ring-1 ring-border">
@@ -253,15 +330,26 @@ export function SusenTuning({
                       ↳ {n.susen_reply}
                     </p>
                   ) : null}
-                  <div className="mt-1 flex items-center gap-2">
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
                     <span className="text-[11px] text-muted">
                       {n.author ?? "unknown"} · {n.created_at.slice(0, 10)}
                       {n.source ? ` · ${n.source}` : ""}
                     </span>
                     <TokenBadge tags={n.tags} />
+                    <MarkerBadges tags={n.tags} />
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
+                  {activeFilter ? (
+                    <button
+                      type="button"
+                      onClick={() => clearMarker(n.id, activeFilter)}
+                      disabled={busyId === n.id}
+                      className="rounded-full bg-foreground/10 px-3 py-1 text-[11px] font-bold text-foreground hover:bg-foreground/15 disabled:opacity-50"
+                    >
+                      {busyId === n.id ? "…" : "✓ Reviewed"}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() =>
