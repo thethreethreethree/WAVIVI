@@ -169,6 +169,55 @@ export type CityInsert = {
 
 export type CityUpdate = Partial<Omit<CityInsert, "region_id">>;
 
+/* ── Feed posts (migration 0050) ────────────────────────────────────────
+ * Powers the Travelers Feed at /feed. Each row is one IG-style post,
+ * tagged to a region (and optionally to a city). Image is mirrored to
+ * Supabase Storage on insert so IG CDN token rotation doesn't break it. */
+export type FeedPostSource =
+  | "admin_curated"
+  | "instagram_oauth"
+  | "user_paste";
+
+export type FeedPostRow = {
+  id: string;
+  region_id: string | null;
+  city_id: string | null;
+  handle: string;
+  verified: boolean;
+  caption: string;
+  location_label: string | null;
+  source: FeedPostSource;
+  ig_post_url: string | null;
+  image_url: string;
+  likes_label: string;
+  comments: number;
+  shares: number;
+  active: boolean;
+  display_order: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FeedPostInsert = {
+  id?: string;
+  region_id?: string | null;
+  city_id?: string | null;
+  handle: string;
+  verified?: boolean;
+  caption?: string;
+  location_label?: string | null;
+  source?: FeedPostSource;
+  ig_post_url?: string | null;
+  image_url: string;
+  likes_label?: string;
+  comments?: number;
+  shares?: number;
+  active?: boolean;
+  display_order?: number | null;
+};
+
+export type FeedPostUpdate = Partial<Omit<FeedPostInsert, "id">>;
+
 export type UtilityRow = {
   id: string;
   region_id: string | null;
@@ -1181,6 +1230,7 @@ export type Database = {
       profiles: TableShape<ProfileRow, ProfileInsert, ProfileUpdate>;
       regions: TableShape<RegionRow, RegionInsert, RegionUpdate>;
       cities: TableShape<CityRow, CityInsert, CityUpdate>;
+      feed_posts: TableShape<FeedPostRow, FeedPostInsert, FeedPostUpdate>;
       traveler_utilities: TableShape<UtilityRow, UtilityInsert, UtilityUpdate>;
       traveler_reports: TableShape<ReportRow, ReportInsert, ReportUpdate>;
       utility_votes: TableShape<
