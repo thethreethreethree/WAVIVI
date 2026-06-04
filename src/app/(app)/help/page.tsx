@@ -119,6 +119,17 @@ export default function HelpPage() {
                 What we collect, how we use it, your rights.
               </p>
             </li>
+            <li className="border-t border-border p-4">
+              <Link
+                href="/terms"
+                className="text-base font-bold text-glow underline"
+              >
+                Terms of service
+              </Link>
+              <p className="mt-1 text-sm text-muted">
+                The rules and responsibilities of using Wondavu.
+              </p>
+            </li>
           </ul>
         </section>
       </div>

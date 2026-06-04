@@ -31,6 +31,10 @@ export default function AuthLayout({
         </div>
         <p className="mt-4 text-center text-sm text-muted">
           By continuing, you agree to our{" "}
+          <Link href="/terms" className="text-glow underline">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
           <Link href="/privacy" className="text-glow underline">
             Privacy Policy
           </Link>
