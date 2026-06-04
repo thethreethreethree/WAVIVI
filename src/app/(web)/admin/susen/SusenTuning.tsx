@@ -5,6 +5,51 @@ import { useState } from "react";
 
 import type { SusenDevNote } from "@/lib/susen/tuning";
 
+/** Pull DeepSeek's real token counts out of the namespaced tags written by
+ *  captureAdminTurn (tok / in / out / cache). Returns null for older rows
+ *  captured before token instrumentation shipped. */
+function tokensFromTags(tags: string[] | null): {
+  total: number | null;
+  input: number | null;
+  output: number | null;
+  cacheHit: number | null;
+} | null {
+  if (!tags || tags.length === 0) return null;
+  const get = (p: string): number | null => {
+    const hit = tags.find((x) => x.startsWith(`${p}:`));
+    if (!hit) return null;
+    const n = Number(hit.slice(p.length + 1));
+    return Number.isFinite(n) ? n : null;
+  };
+  const total = get("tok");
+  const input = get("in");
+  const output = get("out");
+  if (total == null && input == null && output == null) return null;
+  return { total, input, output, cacheHit: get("cache") };
+}
+
+/** Small "1,643 tok" pill for one captured turn; hover shows in/out/cached. */
+function TokenBadge({ tags }: { tags: string[] | null }) {
+  const u = tokensFromTags(tags);
+  if (!u) return null;
+  const total = u.total ?? (u.input ?? 0) + (u.output ?? 0);
+  const detail = [
+    u.input != null ? `${u.input.toLocaleString()} in` : null,
+    u.output != null ? `${u.output.toLocaleString()} out` : null,
+    u.cacheHit != null ? `${u.cacheHit.toLocaleString()} cached` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return (
+    <span
+      title={detail || undefined}
+      className="shrink-0 rounded-full bg-cool/15 px-2 py-0.5 text-[10px] font-bold text-cool"
+    >
+      {total.toLocaleString()} tok
+    </span>
+  );
+}
+
 /**
  * Tuning console for /admin/susen.
  *
@@ -147,9 +192,12 @@ export function SusenTuning({
               >
                 <p className="text-sm font-medium">{r.message}</p>
                 <div className="mt-2 flex items-center justify-between gap-3">
-                  <span className="truncate text-[11px] text-muted">
-                    {r.author ?? "unknown"} · {r.created_at.slice(0, 10)}
-                    {r.source ? ` · ${r.source}` : ""}
+                  <span className="flex min-w-0 items-center gap-2 text-[11px] text-muted">
+                    <span className="truncate">
+                      {r.author ?? "unknown"} · {r.created_at.slice(0, 10)}
+                      {r.source ? ` · ${r.source}` : ""}
+                    </span>
+                    <TokenBadge tags={r.tags} />
                   </span>
                   <div className="flex shrink-0 gap-2">
                     <button
@@ -205,10 +253,13 @@ export function SusenTuning({
                       ↳ {n.susen_reply}
                     </p>
                   ) : null}
-                  <span className="mt-1 block text-[11px] text-muted">
-                    {n.author ?? "unknown"} · {n.created_at.slice(0, 10)}
-                    {n.source ? ` · ${n.source}` : ""}
-                  </span>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="text-[11px] text-muted">
+                      {n.author ?? "unknown"} · {n.created_at.slice(0, 10)}
+                      {n.source ? ` · ${n.source}` : ""}
+                    </span>
+                    <TokenBadge tags={n.tags} />
+                  </div>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <button

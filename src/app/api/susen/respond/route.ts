@@ -359,6 +359,15 @@ export async function POST(req: Request) {
     choices?: {
       message?: { content?: string };
     }[];
+    // DeepSeek reports real token counts per response. We persist these on
+    // the admin capture so /admin/susen shows actual tokens per message;
+    // prompt_cache_hit_tokens also shows the prompt-caching reorder paying off.
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      total_tokens?: number;
+      prompt_cache_hit_tokens?: number;
+    };
   };
   let data: DeepSeekResponse;
   try {
@@ -409,6 +418,7 @@ export async function POST(req: Request) {
       regionId: effectiveRegionId,
       message: input,
       reply: linkedText,
+      usage: data.usage ?? null,
     });
   }
 

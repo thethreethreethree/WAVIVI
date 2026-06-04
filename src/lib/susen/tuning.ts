@@ -86,13 +86,39 @@ export async function loadActiveGuidance(limit = 25): Promise<string[]> {
   }
 }
 
-/** Persist one admin turn so instructions are captured for development. */
+/** DeepSeek's per-response token counts (the fields we persist). */
+export interface SusenTurnUsage {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+  prompt_cache_hit_tokens?: number;
+}
+
+// Encode real token counts as namespaced tags on the dev-note row so we get
+// per-message usage without a schema migration. The admin console parses
+// these back (see tokensFromTags in SusenTuning):
+//   tok:<total>  in:<prompt>  out:<completion>  cache:<prompt_cache_hit>
+function usageToTags(usage?: SusenTurnUsage | null): string[] {
+  if (!usage) return [];
+  const tags: string[] = [];
+  if (typeof usage.total_tokens === "number") tags.push(`tok:${usage.total_tokens}`);
+  if (typeof usage.prompt_tokens === "number") tags.push(`in:${usage.prompt_tokens}`);
+  if (typeof usage.completion_tokens === "number")
+    tags.push(`out:${usage.completion_tokens}`);
+  if (typeof usage.prompt_cache_hit_tokens === "number")
+    tags.push(`cache:${usage.prompt_cache_hit_tokens}`);
+  return tags;
+}
+
+/** Persist one admin turn so instructions are captured for development.
+ *  Stores DeepSeek's real token usage in `tags` for the admin log. */
 export async function captureAdminTurn(args: {
   author: string;
   source?: string | null;
   regionId?: string | null;
   message: string;
   reply: string;
+  usage?: SusenTurnUsage | null;
 }): Promise<void> {
   try {
     const supabase = devNotesClient();
@@ -103,6 +129,7 @@ export async function captureAdminTurn(args: {
       message: args.message,
       susen_reply: args.reply,
       is_instruction: looksLikeInstruction(args.message),
+      tags: usageToTags(args.usage),
     });
   } catch (err) {
     console.warn("[susen] capture failed:", err);
