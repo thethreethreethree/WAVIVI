@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { isFirstTimer, postAuthRedirect } from "@/lib/auth/onboarding";
 import { publicEnv } from "@/lib/env";
 import type { Database } from "@/types/supabase";
 
@@ -36,6 +37,10 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Build the response with a placeholder redirect target; the real
+  // destination is decided after exchangeCodeForSession resolves (so
+  // we can check profiles.onboarded_at first). We mutate response.url
+  // before returning.
   const response = NextResponse.redirect(new URL(next, request.url));
   const supabase = createServerClient<Database>(
     publicEnv.supabaseUrl,
@@ -60,6 +65,23 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(
       new URL(`/login?error=${encodeURIComponent(error.message)}`, request.url),
     );
+  }
+
+  // First-timer check — same rule as the email-confirm route. If the
+  // freshly-authenticated user has never finished /welcome, override
+  // the redirect to step 1 instead of honoring `next`.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const firstTimer = user ? await isFirstTimer(supabase, user.id) : false;
+  const finalNext = postAuthRedirect(next, firstTimer);
+  if (finalNext !== next) {
+    // Rebuild response so cookies set above transfer to the new URL.
+    const rewrite = NextResponse.redirect(new URL(finalNext, request.url));
+    response.cookies.getAll().forEach((c) => {
+      rewrite.cookies.set(c.name, c.value, c);
+    });
+    return rewrite;
   }
 
   return response;

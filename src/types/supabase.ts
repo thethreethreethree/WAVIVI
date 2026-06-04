@@ -39,6 +39,11 @@ export type ProfileRow = {
    *  WhatsApp search filter so phone formatting doesn't matter.
    *  (Migration 0031) */
   whatsapp_digits: string;
+  /** Migration 0051 — stamped when the 3-step welcome flow completes.
+   *  Null means the user signed up but never finished the walkthrough,
+   *  which is the flag the auth callbacks key off to redirect them
+   *  back into /welcome/[step] instead of the requested next path. */
+  onboarded_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -82,6 +87,8 @@ export type ProfileUpdate = {
   instagram_verify_token?: string | null;
   instagram_verify_handle?: string | null;
   instagram_verify_expires_at?: string | null;
+  /** Migration 0051 — stamped when the post-signup walkthrough completes. */
+  onboarded_at?: string | null;
 };
 
 /* ── Traveler Toolbox ─────────────────────────────────────────────────── */

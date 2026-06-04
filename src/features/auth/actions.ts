@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { siteConfig } from "@/config/site";
+import { isFirstTimer, postAuthRedirect } from "@/lib/auth/onboarding";
 import { createClient } from "@/lib/supabase/server";
 import {
   type AuthState,
@@ -51,8 +52,18 @@ export async function signIn(
     return { error: error.message, message: null, values };
   }
 
+  // Detect users who signed up but bailed before finishing /welcome —
+  // they get routed back in instead of the requested next. Returning
+  // users who already finished onboarding go where they asked. Default
+  // landing is /profile (preserves the existing behavior).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const firstTimer = user ? await isFirstTimer(supabase, user.id) : false;
+  const target = postAuthRedirect(safeRedirect(next, "/profile"), firstTimer);
+
   revalidatePath("/", "layout");
-  redirect(safeRedirect(next, "/profile"));
+  redirect(target);
 }
 
 export async function signUp(

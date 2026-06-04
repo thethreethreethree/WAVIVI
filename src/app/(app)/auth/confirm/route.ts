@@ -2,11 +2,16 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import type { EmailOtpType } from "@supabase/supabase-js";
 
+import { isFirstTimer, postAuthRedirect } from "@/lib/auth/onboarding";
 import { createClient } from "@/lib/supabase/server";
 
 /**
  * Handles the email-confirmation link from Supabase sign-up / magic links.
  * Verifies the OTP token and redirects on success.
+ *
+ * First-time accounts (profiles.onboarded_at is null) get rewritten to
+ * the post-signup walkthrough at /welcome/region; returning users honor
+ * the caller-supplied `next`. See lib/auth/onboarding.ts for the rule.
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -24,7 +29,13 @@ export async function GET(request: NextRequest) {
       token_hash: tokenHash,
     });
     if (!error) {
-      return NextResponse.redirect(new URL(next, request.url));
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const firstTimer = user ? await isFirstTimer(supabase, user.id) : false;
+      return NextResponse.redirect(
+        new URL(postAuthRedirect(next, firstTimer), request.url),
+      );
     }
   }
 
