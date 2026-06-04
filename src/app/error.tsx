@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 
+import { reportError } from "@/lib/observability/log";
+
 /** Global error boundary for the App Router. */
 export default function Error({
   error,
@@ -11,8 +13,10 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Hook a real error reporter in here (Sentry, etc.) at production time.
-    console.error(error);
+    // reportError() writes a structured [wv-error] line to console.error
+    // — searchable in Vercel logs. When a real error tracker lands, the
+    // vendor capture lives in lib/observability/log.ts, not here.
+    reportError("app/error-boundary", error, { digest: error.digest });
   }, [error]);
 
   return (

@@ -144,6 +144,15 @@ ship attempt #2 against the same mental model. Build a probe first —
 a `/auth/debug` page took 5 minutes to write and revealed what 3 wrong
 OAuth patches couldn't. See [CLAUDE.md § Debugging](CLAUDE.md#debugging--probe-before-patch).
 
+### Error logging
+
+All errors flow through `reportError()` in
+[src/lib/observability/log.ts](src/lib/observability/log.ts), which emits
+structured JSON lines prefixed `[wv-error]`. Search Vercel logs with that
+prefix to filter. The same file holds the vendor-SDK hook spot — when a
+real error tracker (Sentry, Highlight, PostHog) is added, the integration
+lives there and lights up every existing call site automatically.
+
 When the same bug burns ≥3 patches, write a postmortem under
 `docs/postmortems/YYYY-MM-DD-slug.md` following
 [the template](docs/postmortems/_TEMPLATE.md). Index entries land in
