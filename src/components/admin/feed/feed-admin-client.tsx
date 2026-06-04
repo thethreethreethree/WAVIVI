@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 
 import {
+  bulkDeleteFeedPosts,
   createFeedPost,
   deleteFeedPost,
   importFeedPostsCsv,
@@ -28,6 +29,63 @@ export function FeedAdminClient({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // Bulk-selection state — matches the pattern used by the stays /
+  // restaurants / experiences admin lists so the muscle memory carries
+  // across surfaces.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  const allSelected = posts.length > 0 && posts.every((p) => selected.has(p.id));
+
+  function toggleOne(id: string): void {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll(): void {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allSelected) {
+        for (const p of posts) next.delete(p.id);
+      } else {
+        for (const p of posts) next.add(p.id);
+      }
+      return next;
+    });
+  }
+
+  async function deleteSelected(): Promise<void> {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    if (
+      !window.confirm(
+        `Delete ${ids.length} feed post${ids.length === 1 ? "" : "s"}? This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+    clearStatus();
+    setBulkBusy(true);
+    try {
+      const res = await bulkDeleteFeedPosts(ids);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      setNotice(
+        `Deleted ${res.deleted} post${res.deleted === 1 ? "" : "s"}.`,
+      );
+      setSelected(new Set());
+      router.refresh();
+    } finally {
+      setBulkBusy(false);
+    }
+  }
 
   // Compose form state ------------------------------------------------
   const [handle, setHandle] = useState("");
@@ -402,14 +460,53 @@ export function FeedAdminClient({
             shows the hand-picked launch seed cards as a placeholder.
           </p>
         ) : (
-          <ul className="overflow-hidden rounded-2xl bg-surface shadow-card ring-1 ring-border">
+          <>
+            {/* Select-all + bulk-delete bar. Matches the convention used
+                by the stays / restaurants / experiences admin lists so
+                the same muscle memory works across surfaces. */}
+            <div className="mb-2 flex flex-wrap items-center gap-3 px-1">
+              <label className="flex items-center gap-2 text-xs font-bold text-muted">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleSelectAll}
+                  className="h-4 w-4 accent-[var(--color-glow,#f7941d)]"
+                />
+                Select all
+              </label>
+              <span className="text-xs font-semibold text-muted">
+                {selected.size > 0
+                  ? `${selected.size} selected`
+                  : `${posts.length} post${posts.length === 1 ? "" : "s"}`}
+              </span>
+              {selected.size > 0 && (
+                <button
+                  type="button"
+                  onClick={deleteSelected}
+                  disabled={bulkBusy || pending}
+                  className="ml-auto rounded-full bg-heat px-3.5 py-1.5 text-xs font-bold text-white disabled:opacity-60"
+                >
+                  {bulkBusy
+                    ? "Deleting…"
+                    : `Delete ${selected.size} selected`}
+                </button>
+              )}
+            </div>
+            <ul className="overflow-hidden rounded-2xl bg-surface shadow-card ring-1 ring-border">
             {posts.map((p, i) => (
               <li
                 key={p.id}
                 className={`flex items-center gap-3 px-4 py-3 ${
                   i > 0 ? "border-t border-border" : ""
-                }`}
+                } ${selected.has(p.id) ? "bg-glow/5" : ""}`}
               >
+                <input
+                  type="checkbox"
+                  checked={selected.has(p.id)}
+                  onChange={() => toggleOne(p.id)}
+                  aria-label={`Select post by @${p.handle}`}
+                  className="h-4 w-4 shrink-0 accent-[var(--color-glow,#f7941d)]"
+                />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={p.image_url}
@@ -463,7 +560,8 @@ export function FeedAdminClient({
                 </button>
               </li>
             ))}
-          </ul>
+            </ul>
+          </>
         )}
       </section>
     </div>

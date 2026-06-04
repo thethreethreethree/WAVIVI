@@ -144,6 +144,52 @@ export async function deleteFeedPost(
   return { ok: true, error: null };
 }
 
+export interface BulkDeleteResult extends FeedActionResult {
+  /** How many rows actually got removed by the DELETE. May be < ids.length
+   *  if some ids were already gone (concurrent delete) or didn't exist. */
+  deleted: number;
+}
+
+/** Delete many feed posts in one DB round-trip. Returns the actual count
+ *  of rows removed plus the same ok/error shape as the single-delete
+ *  path so the UI can render a uniform result line. */
+export async function bulkDeleteFeedPosts(
+  postIds: string[],
+): Promise<BulkDeleteResult> {
+  const auth = await assertAdmin();
+  if (auth) return { ...auth, deleted: 0 };
+  if (postIds.length === 0) {
+    return { ok: true, error: null, deleted: 0 };
+  }
+
+  const supabase = createAdminClient();
+  // Snag region ids first so we know which admin pages to revalidate.
+  // One round-trip read; the delete is one round-trip write — cheaper
+  // than a per-row revalidate loop.
+  const { data: rows } = await supabase
+    .from("feed_posts")
+    .select("region_id")
+    .in("id", postIds);
+  const regionIds = new Set<string>();
+  for (const r of (rows ?? []) as { region_id: string | null }[]) {
+    if (r.region_id) regionIds.add(r.region_id);
+  }
+
+  const { error, count } = await supabase
+    .from("feed_posts")
+    .delete({ count: "exact" })
+    .in("id", postIds);
+  if (error) {
+    return { ok: false, error: error.message, deleted: 0 };
+  }
+
+  revalidatePath("/feed");
+  for (const regionId of regionIds) {
+    revalidatePath(`/admin/feed/${regionId}`);
+  }
+  return { ok: true, error: null, deleted: count ?? 0 };
+}
+
 export interface CsvImportRowError {
   lineNumber: number;
   reason: string;
