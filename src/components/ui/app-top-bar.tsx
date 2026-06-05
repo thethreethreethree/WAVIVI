@@ -21,16 +21,22 @@ export async function AppTopBar({
 }: {
   showInstallPill?: boolean;
 }) {
-  // Region picker — server fetches the list + current id once per render so
-  // the client component receives a fully-rendered, server-data sheet.
+  // Region picker — server fetches the active-regions list + the
+  // CURRENT region's cities (only). Other regions' cities are
+  // lazy-loaded by the picker on expand via /api/cities so we don't
+  // round-trip the whole catalog on every page paint. Cookies (current
+  // region + pinned city ids) load in parallel.
   const [regions, currentId, currentCityIds] = await Promise.all([
     listActiveRegions(),
     getCurrentRegionId(),
     getCurrentCityIds(),
   ]);
-  // City list is fetched in one shot for every active region so the
-  // picker can render expandable groups without a second round-trip.
-  const cities = await listCitiesForRegions(regions.map((r) => r.id));
+  // Only the current region's cities ship in the first paint. The
+  // picker's label needs them to render "Cebu City, Cebu" etc., and
+  // any cookied city ids must be among these or they get filtered out.
+  // The other regions' city counts come down to zero in initial props;
+  // the picker fetches each lazily when its row is expanded.
+  const cities = currentId ? await listCitiesForRegions([currentId]) : [];
   const current = currentId
     ? regions.find((r) => r.id === currentId) ?? null
     : null;

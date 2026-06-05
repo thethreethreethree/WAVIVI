@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 
 import { setRegionAndCities } from "@/lib/cities/actions";
 import type { CurrentCity } from "@/lib/cities/current";
@@ -46,9 +46,69 @@ export function RegionPicker({
   const [pendingCityIds, setPendingCityIds] = useState<Set<string>>(
     () => new Set(currentCityIds),
   );
+  // Lazy-load cache for cities per region. Seeded with whatever the
+  // server shipped on first paint (currently only the active region's
+  // cities). Additional regions populate when the user expands them.
+  // Empty-array sentinel means "we tried, no cities exist for this
+  // region" so a re-expand doesn't refetch.
+  const [lazyCitiesByRegion, setLazyCitiesByRegion] = useState<
+    Record<string, CurrentCity[]>
+  >(() => {
+    const seed: Record<string, CurrentCity[]> = {};
+    for (const c of cities) {
+      (seed[c.region_id] ?? (seed[c.region_id] = [])).push(c);
+    }
+    return seed;
+  });
+  // Which region rows are currently fetching their cities. Drives the
+  // skeleton inside the expanded panel so the user sees motion
+  // instead of an empty shell.
+  const [loadingRegionIds, setLoadingRegionIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+
+  async function ensureCitiesFor(regionId: string): Promise<CurrentCity[]> {
+    // Cached? Use it. (Includes the empty-array "we tried" sentinel.)
+    const cached = lazyCitiesByRegion[regionId];
+    if (cached) return cached;
+    // Fetch via the route handler. Bypasses Server Actions because
+    // this is a pure read and the route handler can be edge-cached.
+    setLoadingRegionIds((prev) => {
+      const next = new Set(prev);
+      next.add(regionId);
+      return next;
+    });
+    try {
+      const res = await fetch(
+        `/api/cities?regionId=${encodeURIComponent(regionId)}`,
+      );
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      const body = (await res.json()) as { cities?: CurrentCity[] };
+      const fetched = body.cities ?? [];
+      setLazyCitiesByRegion((prev) => ({ ...prev, [regionId]: fetched }));
+      return fetched;
+    } catch (err) {
+      console.warn("[region-picker] cities lazy-load failed:", err);
+      // Cache the empty result so a re-expand doesn't hammer the API
+      // for a known-broken region. Stays cached until the user reloads.
+      setLazyCitiesByRegion((prev) => ({ ...prev, [regionId]: [] }));
+      return [];
+    } finally {
+      setLoadingRegionIds((prev) => {
+        const next = new Set(prev);
+        next.delete(regionId);
+        return next;
+      });
+    }
+  }
 
   function openRegion(regionId: string, regionCities: CurrentCity[]): void {
     setExpandedRegionId(regionId);
+    // Fire the lazy-load BEFORE we know if cities exist — the call is
+    // a no-op when cached. void because we don't want to block the
+    // UI on the fetch; the loading-skeleton inside the panel handles
+    // the in-flight state.
+    void ensureCitiesFor(regionId);
     // If we're re-opening the user's current region, pre-fill toggles
     // with the saved set. For any other region the panel starts blank
     // (= "All cities") so a first tap reads as "show everything here".
@@ -68,6 +128,19 @@ export function RegionPicker({
       }
     }
   }
+
+  // Auto-prefetch the current region's cities when the sheet opens —
+  // matches the prior "auto-expand the user's region" behaviour. The
+  // initial seed already includes the current region's cities on
+  // first paint, so this is a no-op on the first sheet open after
+  // a fresh server render; covers the case where the user switched
+  // regions via the picker, came back, and now the seed doesn't
+  // include the new current region's cities yet.
+  useEffect(() => {
+    if (!open) return;
+    if (currentId) void ensureCitiesFor(currentId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ensureCitiesFor closes over state setters that don't need to retrigger.
+  }, [open, currentId]);
   function collapse(): void {
     setExpandedRegionId(null);
   }
@@ -90,18 +163,24 @@ export function RegionPicker({
   }
 
   // City rows indexed by their region for O(1) sub-row rendering.
+  // Reads the lazy cache so the picker stays consistent whether the
+  // data was seeded server-side (current region only) or fetched
+  // on-expand.
   const citiesByRegion = useMemo(() => {
     const m = new Map<string, CurrentCity[]>();
-    for (const c of cities) {
-      const arr = m.get(c.region_id) ?? [];
-      arr.push(c);
-      m.set(c.region_id, arr);
+    for (const [regionId, list] of Object.entries(lazyCitiesByRegion)) {
+      m.set(regionId, list);
     }
     return m;
-  }, [cities]);
+  }, [lazyCitiesByRegion]);
 
-  // Filter by user query against display name, city, country, AND any
-  // child city name — so typing "moalboal" surfaces the Cebu region.
+  // Filter by user query against display name, city, country. The
+  // child-city search used to match "moalboal" → Cebu by reading
+  // every region's cities up-front; with lazy-load we only know
+  // about cached regions. Search across un-cached regions falls back
+  // to display_name / city / country, which still covers the
+  // dominant "I know the place name" case. Once the user expands a
+  // region the next search will include its cities too.
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return regions;
@@ -260,8 +339,14 @@ export function RegionPicker({
                   <ul>
                     {rows.map((r) => {
                       const regionChosen = r.id === currentId;
-                      const regionCities = citiesByRegion.get(r.id) ?? [];
-                      const hasCities = regionCities.length > 0;
+                      // Cities are cached the moment ensureCitiesFor()
+                      // returns; before that the cached value is undefined
+                      // (still loading) or empty array (loaded, region
+                      // has no sub-cities).
+                      const cached = lazyCitiesByRegion[r.id];
+                      const regionCities = cached ?? [];
+                      const citiesKnown = cached !== undefined;
+                      const isLoadingCities = loadingRegionIds.has(r.id);
                       const isExpanded = expandedRegionId === r.id;
                       // Active ribbon on the collapsed row: lit when this
                       // region is the user's current scope. Pinned-city
@@ -276,7 +361,10 @@ export function RegionPicker({
                             type="button"
                             disabled={pending}
                             onClick={() => {
-                              if (!hasCities) {
+                              // Fast path: cached AND empty → no sub-cities
+                              // to pick, just commit the whole region with
+                              // one tap.
+                              if (citiesKnown && regionCities.length === 0) {
                                 chooseWholeRegion(r.id);
                                 return;
                               }
@@ -299,7 +387,11 @@ export function RegionPicker({
                               )}
                             </span>
                             <span className="flex items-center gap-2 text-muted">
-                              {hasCities && (
+                              {/* Always show the chevron when cities are
+                                  unknown — we'll fetch on expand. Once we
+                                  know there are no sub-cities, hide it
+                                  (the fast-path tap commits whole region). */}
+                              {(!citiesKnown || regionCities.length > 0) && (
                                 <span
                                   aria-hidden
                                   className={`text-base transition-transform ${
@@ -311,16 +403,18 @@ export function RegionPicker({
                               )}
                             </span>
                           </button>
-                          {isExpanded && hasCities && (
+                          {isExpanded && (
                             <ExpandedCityPanel
                               regionName={r.display_name}
                               cities={regionCities}
+                              loading={isLoadingCities && !citiesKnown}
                               pending={pendingCityIds}
                               onToggle={togglePendingCity}
                               onSelectAll={() =>
                                 selectAllCities(regionCities)
                               }
                               onApply={() => applyExpanded(r.id)}
+                              onApplyWholeRegion={() => chooseWholeRegion(r.id)}
                               disabled={pending}
                             />
                           )}
@@ -353,19 +447,70 @@ function ExpandedCityPanel({
   regionName,
   cities,
   pending,
+  loading,
   onToggle,
   onSelectAll,
   onApply,
+  onApplyWholeRegion,
   disabled,
 }: {
   regionName: string;
   cities: CurrentCity[];
+  /** True while the lazy-load fetch is in flight and we haven't
+   *  decided whether this region has sub-cities yet. */
+  loading: boolean;
   pending: Set<string>;
   onToggle: (cityId: string) => void;
   onSelectAll: () => void;
   onApply: () => void;
+  /** Fast-commit the whole region when sub-cities don't exist. Wired
+   *  to the "Apply" button in the empty state. */
+  onApplyWholeRegion: () => void;
   disabled: boolean;
 }) {
+  if (loading) {
+    return (
+      <div
+        aria-hidden
+        className="ml-4 mt-1 mb-2 rounded-xl bg-surface-elevated/60 p-3 ring-1 ring-border"
+      >
+        <div className="mb-2 flex items-center justify-between">
+          <span className="h-3 w-32 animate-pulse rounded bg-foreground/15" />
+          <span className="h-6 w-20 animate-pulse rounded-full bg-foreground/15" />
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {[0, 1, 2, 3].map((i) => (
+            <span
+              key={i}
+              className="h-7 w-16 animate-pulse rounded-full bg-foreground/15"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (cities.length === 0) {
+    return (
+      <div className="ml-4 mt-1 mb-2 rounded-xl bg-surface-elevated/60 p-3 text-sm ring-1 ring-border">
+        <p className="text-muted">
+          No sub-cities to pin in {regionName}. Apply will use the whole
+          region.
+        </p>
+        <div className="mt-3 flex justify-end">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onApplyWholeRegion}
+            className="rounded-full bg-sunset px-4 py-1.5 text-xs font-bold text-white disabled:opacity-60"
+          >
+            {disabled ? "Applying…" : "Apply"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // "Select all" semantics in this picker: when nothing is pinned the
   // app already shows the whole region, so the master toggle reads as
   // ON. Tapping it clears any partial selection back to ON.
