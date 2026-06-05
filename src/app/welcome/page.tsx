@@ -39,7 +39,8 @@ const PINS = [
  *  subtitle span only when there's text to show. */
 const FEATURES: { icon: string; title: string; body?: string }[] = [
   {
-    icon: "/icons/orange/hub_meet.png",
+    // Source: ASSETS SOURCE/ART GRAPHIC ASSETS/REFIND ASSET V1/hub_meet.png
+    icon: "/welcome-meet-travelers.webp",
     title: "Meet travelers",
     // Subtitle was its own standalone paragraph above the pill row
     // ("Find your people, wherever you wonder.") — rolled into this
@@ -48,13 +49,15 @@ const FEATURES: { icon: string; title: string; body?: string }[] = [
     body: "Find your people, wherever you wonder — see who's around and say hi before you even land.",
   },
   {
-    icon: "/icons/orange/heat_zone.png",
+    // Source: ASSETS SOURCE/ART GRAPHIC ASSETS/REFIND ASSET V1/empty_no_saved_places.png
+    // (folded watercolor world map + pin — was originally meant for an
+    // empty-state surface but reads perfectly for this pill).
+    icon: "/welcome-plan-trip.webp",
     title: "Plan your trip, or explore with ease",
   },
   {
-    // Susen-themed icon (watercolor head profile + AI badge + compass) —
-    // sourced from ASSETS SOURCE/ART GRAPHIC ASSETS/SUSEN_ENTRY_ICON.png,
-    // converted to WebP by scripts/convert-install-assets.mjs.
+    // Source: ASSETS SOURCE/susen_icons/SUSEN_ENTRY_ICON.png
+    // (watercolor head profile + brain-circuit lines + AI badge + compass).
     icon: "/susen-entry-icon.webp",
     title:
       "Be guided by Susen, our Smart Universal Social Experience Navigator",
