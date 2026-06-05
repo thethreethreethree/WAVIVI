@@ -16,10 +16,13 @@ const MAX_DURATION_MS = 7000;
  * (sessionStorage flag), and the CSS rule in globals.css hides this
  * overlay accordingly *before* paint.
  *
- * The splash is intentionally **not dismissible** — no click-to-skip — so
- * every first-time visitor sees the brand intro in full. The only exits
- * are the video's natural `onEnded`, an `onError` (broken file), or the
- * 7s safety timer (slow connection).
+ * **Tap to skip.** Users on slow connections or who've seen enough can
+ * tap anywhere on the splash to dismiss it. The "no click-to-skip" rule
+ * was a brand-experience preference that lost to a "page loads
+ * incredibly slow" report — letting users out of the 6-second video
+ * dominates the brand win when the cold-load impression is the
+ * primary criticism. Natural `onEnded` still fires for users who let
+ * it play through. 7s safety timer still kicks in on broken video.
  *
  * The video is **muted** because browser autoplay policies block sound
  * without a prior user gesture — trying to play unmuted first and falling
@@ -59,8 +62,10 @@ export function OpeningSplash() {
   if (unmounted) return null;
 
   return (
-    <div
-      role="presentation"
+    <button
+      type="button"
+      onClick={close}
+      aria-label="Skip intro"
       className={`opening-splash fixed inset-0 z-[100] flex items-center justify-center bg-background transition-opacity duration-300 ${
         closing ? "opacity-0" : "opacity-100"
       }`}
@@ -81,9 +86,25 @@ export function OpeningSplash() {
          * white band wherever it doesn't reach the viewport edge.
          * Absolute + inset-0 forces the element box to fill the
          * splash; object-fit:cover handles the aspect mismatch by
-         * cropping the content, not the box. */
-        className="absolute inset-0 h-full w-full object-cover"
+         * cropping the content, not the box.
+         *
+         * pointer-events:none so the tap-to-skip button below the
+         * video element catches the click — without this the <video>
+         * eats the tap and `close` never fires. */
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
       />
-    </div>
+      {/* Small "tap to skip" hint at the bottom — visible from the
+          first frame so users who showed up impatient can act, but
+          quiet enough (60% opacity, 11px) that brand-conscious
+          first-timers can ignore it and let the video play through.
+          pointer-events:none so clicks pass through to the parent
+          <button>'s onClick handler. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute bottom-[max(2rem,calc(env(safe-area-inset-bottom)+1.5rem))] left-1/2 -translate-x-1/2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/60 drop-shadow"
+      >
+        Tap to skip
+      </span>
+    </button>
   );
 }

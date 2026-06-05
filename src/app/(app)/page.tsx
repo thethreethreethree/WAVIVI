@@ -222,12 +222,15 @@ export default async function Home() {
     .select("id", { count: "exact", head: true });
   const hasPlans = (count ?? 0) > 0;
 
-  // First-time / anonymous visitors get the "install Wondavu" nudge next
-  // to the logo. Signed-in travelers never see it.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const showInstallPill = !user;
+  // Install pill is visible to everyone (anonymous AND signed-in
+  // travelers) until they either install the PWA or dismiss it. The
+  // InstallPill component itself hides when display-mode is standalone
+  // (already installed), so signed-in travelers who installed earlier
+  // never see it. Prior behaviour gated by !user meant signed-in
+  // travelers who were still on the web tab couldn't see the install
+  // affordance at all — that conflicts with the launch goal of getting
+  // PWA installs from every channel.
+  const showInstallPill = true;
 
   return (
     <>

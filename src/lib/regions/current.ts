@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { cache } from "react";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -37,8 +38,13 @@ export async function getCurrentRegion(): Promise<RegionRow | null> {
   return data ?? null;
 }
 
-/** Fetch every active region — used by the region picker sheet. */
-export async function listActiveRegions(): Promise<RegionRow[]> {
+/** Fetch every active region — used by the region picker sheet.
+ *  Wrapped in React.cache so multiple components on the same render
+ *  (the top bar region picker + any other consumer added later) share
+ *  one query instead of duplicating it. Real-time changes to the
+ *  regions table land on the next request, since each request gets
+ *  a fresh cache scope — this isn't ISR, it's per-request dedup. */
+export const listActiveRegions = cache(async (): Promise<RegionRow[]> => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("regions")
@@ -47,4 +53,4 @@ export async function listActiveRegions(): Promise<RegionRow[]> {
     .order("display_name", { ascending: true })
     .returns<RegionRow[]>();
   return data ?? [];
-}
+});
