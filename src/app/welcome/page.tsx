@@ -52,7 +52,10 @@ const FEATURES: { icon: string; title: string; body?: string }[] = [
     title: "Plan your trip, or explore with ease",
   },
   {
-    icon: "/icons/orange/group_join.png",
+    // Susen-themed icon (watercolor head profile + AI badge + compass) —
+    // sourced from ASSETS SOURCE/ART GRAPHIC ASSETS/SUSEN_ENTRY_ICON.png,
+    // converted to WebP by scripts/convert-install-assets.mjs.
+    icon: "/susen-entry-icon.webp",
     title:
       "Be guided by Susen, our Smart Universal Social Experience Navigator",
   },

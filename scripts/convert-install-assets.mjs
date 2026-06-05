@@ -21,6 +21,11 @@ const jobs = [
     dst: "public/install-pill.webp",
     quality: 86,
   },
+  {
+    src: "ASSETS SOURCE/ART GRAPHIC ASSETS/SUSEN_ENTRY_ICON.png",
+    dst: "public/susen-entry-icon.webp",
+    quality: 88,
+  },
 ];
 
 for (const { src, dst, quality } of jobs) {
