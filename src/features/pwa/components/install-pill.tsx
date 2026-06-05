@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 import { IosInstallOverlay } from "./ios-install-overlay";
@@ -91,24 +92,40 @@ export function InstallPill() {
   };
 
   return (
-    <div className="relative inline-flex">
+    <div className="relative inline-block w-52 max-w-full sm:w-60">
+      {/* Whole-pill button — clicking anywhere on the image opens the
+          install flow. The "×" in the top-right corner of the image is
+          PAINTED PIXELS, not an HTML button — its dismiss behaviour is
+          wired by the invisible overlay button below positioned over
+          that exact corner. */}
       <button
         type="button"
         onClick={onClick}
-        className="wc-edge-soft flex items-center gap-1.5 rounded-full bg-[#fdf4e2] px-3 py-1.5 text-[11px] font-bold text-[#3d1f06] ring-[1.5px] ring-[#3d1f06]/55 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.22)] active:scale-95"
-        aria-label="Start wondering — download Wondavu to your phone"
+        aria-label="Get the Wondavu app on your phone"
+        className="block w-full transition-transform active:scale-95"
       >
-        <span aria-hidden>📲</span>
-        <span>Start wondering — get the app on your phone</span>
+        <Image
+          src="/install-pill.webp"
+          alt="Wondering where's next? Get the app on your phone."
+          width={414}
+          height={156}
+          priority
+          sizes="(max-width: 640px) 208px, 240px"
+          className="h-auto w-full"
+        />
       </button>
+
+      {/* Invisible hit target sitting over the painted × in the artwork.
+          Coordinates derived from the source (414×156 PNG; × occupies
+          roughly the top-right 12% of width × 30% of height). Using
+          percentages so the hit area scales with the rendered image. */}
       <button
         type="button"
         onClick={dismiss}
-        aria-label="Dismiss"
-        className="ml-1 self-center text-[#3d1f06]/55 hover:text-[#3d1f06]"
-      >
-        ×
-      </button>
+        aria-label="Dismiss install nudge"
+        className="absolute right-[3%] top-[10%] h-[28%] w-[12%] rounded-full"
+      />
+
       <IosInstallOverlay
         open={showIosOverlay}
         onClose={() => setShowIosOverlay(false)}
