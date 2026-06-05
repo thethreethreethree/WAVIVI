@@ -96,11 +96,44 @@ const ANTI_EXISTENCE_PATTERNS: RegExp[] = [
   /\bflag\s+(?:that|this)\s+as\s+a\s+gap\b/i,
 ];
 
-/** True iff `text` looks like Susen claiming a category doesn't
- *  exist. Used to scrub anchoring turns from the history we send
- *  DeepSeek. */
-function isAntiExistenceClaim(text: string): boolean {
-  return ANTI_EXISTENCE_PATTERNS.some((re) => re.test(text));
+/** Patterns marking turns where Susen disclaimed her ability to access
+ *  live data ("I don't have live search access", "Once it's enabled,
+ *  I'll get you the exact rate"). Identified the same way the cafe-
+ *  cohort postmortem identified anti-existence claims: when these phrases
+ *  land in conversation history, DeepSeek treats them as the established
+ *  pattern and produces another disclaimer-sandwich reply on the next
+ *  turn — even on questions the model can answer perfectly well from its
+ *  training knowledge (yesterday's clean responses prove the model is
+ *  capable; today's polluted-history responses prove the model anchors).
+ *
+ *  Stripping conservatively: each regex targets a multi-word phrase
+ *  specific to data-access disclaimers, so legitimate language ("I
+ *  don't have a clue", "the music is live tonight", "I'll be back in
+ *  five") doesn't get filtered. */
+const DATA_DISCLAIMER_PATTERNS: RegExp[] = [
+  // "I don't have live search access" / "don't have live pricing" /
+  // "don't have real-time data" / "do not have current access"
+  /\b(?:don'?t|do\s+not)\s+have\s+(?:live|real[- ]?time|current)\s+(?:search|pricing|data|access|info)/i,
+  // "Once the search is live" / "Once the search ability is enabled" /
+  // "As soon as the live search is available"
+  /\b(?:once|when|as\s+soon\s+as)\s+(?:the\s+)?(?:live\s+)?search\s+(?:ability\s+)?(?:is\s+)?(?:live|enabled|available)/i,
+  // "Let me know when the search is live" / "let me know once it's enabled"
+  /\blet\s+me\s+know\s+when\s+(?:the\s+|it'?s\s+)?(?:search|access|live\s+search)?\s*(?:is\s+)?(?:live|enabled|available)/i,
+  // "I'll get you the exact rate on the spot" / "the exact number right away"
+  /\bget\s+you\s+the\s+exact\s+(?:rate|number|price|fare|info)\b/i,
+  // "I can't give you the exact current fare" / "can't pull the exact price"
+  /\bcan'?t\s+(?:give|pull|find)\s+you\s+the\s+exact\s+(?:current\s+)?(?:fare|price|rate|number|info)/i,
+];
+
+/** True iff `text` looks like an anchoring turn we should strip from
+ *  history before re-feeding to DeepSeek. Covers both anti-existence
+ *  claims about venues AND data-access disclaimers — both produce the
+ *  same failure mode (model echoes the pattern on the next turn). */
+function isAnchoringTurn(text: string): boolean {
+  return (
+    ANTI_EXISTENCE_PATTERNS.some((re) => re.test(text)) ||
+    DATA_DISCLAIMER_PATTERNS.some((re) => re.test(text))
+  );
 }
 
 /** Strip `[text](/url)` markdown syntax from a string, leaving just
@@ -129,7 +162,7 @@ function buildHistoryMessages(history: SusenTurn[]): ChatMessage[] {
   const recent = history.slice(-HISTORY_WINDOW);
   const out: ChatMessage[] = [];
   for (const turn of recent) {
-    if (turn.role === "susen" && isAntiExistenceClaim(turn.text ?? "")) {
+    if (turn.role === "susen" && isAnchoringTurn(turn.text ?? "")) {
       continue; // drop the anchoring turn entirely
     }
     const msg = toChatMessage(turn);
