@@ -33,21 +33,28 @@ const PINS = [
   { top: "70%", left: "88%" },
 ];
 
-const FEATURES = [
+/** Value props rendered as illustrated pills on the welcome landing.
+ *  Pills 2 & 3 ship without a body — title alone is the whole message —
+ *  so `body` is optional and the JSX below conditionally renders the
+ *  subtitle span only when there's text to show. */
+const FEATURES: { icon: string; title: string; body?: string }[] = [
   {
     icon: "/icons/orange/hub_meet.png",
     title: "Meet travelers",
-    body: "See who's around and say hi before you even land.",
+    // Subtitle was its own standalone paragraph above the pill row
+    // ("Find your people, wherever you wonder.") — rolled into this
+    // pill body to remove the duplicate brand-promise line and tighten
+    // the hero stack.
+    body: "Find your people, wherever you wonder — see who's around and say hi before you even land.",
   },
   {
     icon: "/icons/orange/heat_zone.png",
-    title: "Feel the vibe",
-    body: "A live map of where the energy is — right now.",
+    title: "Plan your trip, or explore with ease",
   },
   {
     icon: "/icons/orange/group_join.png",
-    title: "Join the group",
-    body: "Hop into local chats, events, and spontaneous plans.",
+    title:
+      "Be guided by Susen, our Smart Universal Social Experience Navigator",
   },
 ];
 
@@ -95,11 +102,12 @@ export default function WelcomePage() {
             Meet. Vibe. Move.
           </p>
 
-          <p className="mt-6 max-w-xs text-base leading-relaxed text-muted">
-            {siteConfig.tagline}
-          </p>
-
-          {/* Value props */}
+          {/* Value props — the standalone "Find your people, wherever
+              you wonder." tagline used to live here as its own <p>.
+              Rolled into the first pill's body so the hero stack reads
+              tighter and the brand promise lands inside the most
+              prominent illustrated element instead of as a separate
+              line that competed with the motto above it. */}
           <ul className="mt-9 flex w-full flex-col gap-3 text-left">
             {FEATURES.map((f) => (
               <li
@@ -125,9 +133,11 @@ export default function WelcomePage() {
                   <span className="block text-base font-bold text-foreground">
                     {f.title}
                   </span>
-                  <span className="block text-sm leading-snug text-muted">
-                    {f.body}
-                  </span>
+                  {f.body && (
+                    <span className="mt-0.5 block text-sm leading-snug text-muted">
+                      {f.body}
+                    </span>
+                  )}
                 </span>
               </li>
             ))}
