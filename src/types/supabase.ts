@@ -239,6 +239,49 @@ export type FeedPostInsert = {
 
 export type FeedPostUpdate = Partial<Omit<FeedPostInsert, "id">>;
 
+/* ── Notifications (migration 0055) ──────────────────────────────────── */
+
+/** Stable label distinguishing notification kinds. The UI switches on
+ *  this to choose icon + render shape for the payload. Adding a new
+ *  type means: pick a new string here, update the renderer in
+ *  /notifications, set up the trigger that inserts rows. */
+export type NotificationType =
+  | "chat_message"
+  | "chat_mention"
+  | "event_invite"
+  | "traveler_note"
+  | "nearby_alert"
+  | "susen_recommendation";
+
+/** Flexible payload bag — UI reads only the fields it knows belong to
+ *  the row's type. Unknown keys are ignored, so older clients see
+ *  forward-compatible payloads from a newer server without crashing. */
+export type NotificationPayload = Record<string, unknown>;
+
+export type NotificationRow = {
+  id: string;
+  user_id: string;
+  type: NotificationType;
+  actor_id: string | null;
+  payload: NotificationPayload;
+  read_at: string | null;
+  created_at: string;
+};
+
+export type NotificationInsert = {
+  id?: string;
+  user_id: string;
+  type: NotificationType;
+  actor_id?: string | null;
+  payload?: NotificationPayload;
+  read_at?: string | null;
+  created_at?: string;
+};
+
+export type NotificationUpdate = {
+  read_at?: string | null;
+};
+
 export type UtilityRow = {
   id: string;
   region_id: string | null;
@@ -1252,6 +1295,11 @@ export type Database = {
       regions: TableShape<RegionRow, RegionInsert, RegionUpdate>;
       cities: TableShape<CityRow, CityInsert, CityUpdate>;
       feed_posts: TableShape<FeedPostRow, FeedPostInsert, FeedPostUpdate>;
+      notifications: TableShape<
+        NotificationRow,
+        NotificationInsert,
+        NotificationUpdate
+      >;
       traveler_utilities: TableShape<UtilityRow, UtilityInsert, UtilityUpdate>;
       traveler_reports: TableShape<ReportRow, ReportInsert, ReportUpdate>;
       utility_votes: TableShape<

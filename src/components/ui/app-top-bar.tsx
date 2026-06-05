@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { NotificationBell } from "@/components/ui/notification-bell";
 import { RegionPicker } from "@/components/ui/region-picker";
 import { ThemedIcon } from "@/components/ui/themed-icon";
 import { WondavuLogoToggle } from "@/components/ui/wondavu-logo-toggle";
@@ -8,10 +9,12 @@ import {
   getCurrentCityIds,
   listCitiesForRegions,
 } from "@/lib/cities/current";
+import { countUnread } from "@/lib/notifications/server";
 import {
   getCurrentRegionId,
   listActiveRegions,
 } from "@/lib/regions/current";
+import { createClient } from "@/lib/supabase/server";
 
 /** Home-screen top bar — Wondavu logo plus notification and group-chat shortcuts.
  *  `showInstallPill` is set to true for unauthenticated visitors so they get
@@ -31,6 +34,16 @@ export async function AppTopBar({
     getCurrentRegionId(),
     getCurrentCityIds(),
   ]);
+  // Server-fetched unread-notification count + signed-in user id so
+  // the bell badge paints correctly on first render and the realtime
+  // subscription has a user_id to filter on. Both fast: getUser is
+  // cookie-only, countUnread hits a partial index.
+  const supabase = await createClient();
+  const [{ data: userData }, initialUnread] = await Promise.all([
+    supabase.auth.getUser(),
+    countUnread(),
+  ]);
+  const currentUserId = userData?.user?.id ?? null;
   // Only the current region's cities ship in the first paint. The
   // picker's label needs them to render "Cebu City, Cebu" etc., and
   // any cookied city ids must be among these or they get filtered out.
@@ -82,25 +95,13 @@ export async function AppTopBar({
         {/* tb-trio-button = hook used by the Journal-scoped overrides in
             globals.css (removes the ring, scales the icon, enlarges the
             footprint). Rustic + Sketch see the original h-11 + ring +
-            native-size icon. */}
-        <Link
-          href="/notifications"
-          aria-label="Notifications"
-          className="tb-trio-button relative flex h-11 w-11 items-center justify-center active:scale-95"
-        >
-          <span
-            aria-hidden
-            className="wc-edge-soft absolute inset-0 rounded-full bg-[#fdf4e2] ring-[1.5px] ring-[#3d1f06]/55 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.22)]"
-          />
-          <ThemedIcon
-            src="/icons/orange/bell.png"
-            alt=""
-            aria-hidden
-            loading="eager"
-            decoding="async"
-            className="relative h-full w-full object-contain"
-          />
-        </Link>
+            native-size icon. NotificationBell replaces the prior plain
+            <Link> so the bell shows a live unread badge — see
+            components/ui/notification-bell.tsx for realtime details. */}
+        <NotificationBell
+          initialUnread={initialUnread}
+          userId={currentUserId}
+        />
         <Link
           href="/my-groups"
           aria-label="My groups"

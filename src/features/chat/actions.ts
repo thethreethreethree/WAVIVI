@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { notifyChatRecipients } from "@/lib/notifications/triggers/chat";
 import { checkRateLimit, CHAT_SEND_LIMIT } from "@/lib/rate-limit/check";
 import { uploadChatPhoto } from "@/lib/storage/chat-photos";
 import { friendlySupabaseError } from "@/lib/supabase/errors";
@@ -121,6 +122,17 @@ export async function sendMessage(
       }),
       message: null,
     };
+  // Fire-and-forget notification fanout — one row per OTHER group
+  // member. Failures here MUST NOT bubble up to the caller; the
+  // message itself succeeded, and a missed notification is a soft
+  // degrade (next message in the same group still fires).
+  void notifyChatRecipients({
+    groupId,
+    senderUserId: user.id,
+    senderName: authorName,
+    snippet: trimmed,
+    messageId: (data as ChatMessageRow).id,
+  });
   return { error: null, message: data as ChatMessageRow };
 }
 
@@ -222,6 +234,15 @@ export async function sendChatImage(
       }),
       message: null,
     };
+  // Notification fanout — caption used as snippet when present,
+  // otherwise the renderer falls back to "sent a message" copy.
+  void notifyChatRecipients({
+    groupId,
+    senderUserId: sender.userId,
+    senderName: sender.authorName,
+    snippet: caption || null,
+    messageId,
+  });
   return { error: null, message: data as ChatMessageRow };
 }
 
@@ -267,6 +288,16 @@ export async function sendChatLocation(
       }),
       message: null,
     };
+  // Notification fanout — location pins don't carry a snippet, so the
+  // renderer falls back to "sent a message in <group>" copy. The
+  // location pin itself shows when the recipient taps through.
+  void notifyChatRecipients({
+    groupId,
+    senderUserId: sender.userId,
+    senderName: sender.authorName,
+    snippet: null,
+    messageId: (data as ChatMessageRow).id,
+  });
   return { error: null, message: data as ChatMessageRow };
 }
 
