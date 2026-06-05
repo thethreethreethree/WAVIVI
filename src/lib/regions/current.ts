@@ -24,19 +24,23 @@ export async function getCurrentRegionId(): Promise<string | null> {
 }
 
 /** Fetch the full row for the current region, or `null` if unset / unknown.
- *  Used by the top bar to display the region name next to the globe. */
-export async function getCurrentRegion(): Promise<RegionRow | null> {
-  const id = await getCurrentRegionId();
-  if (!id) return null;
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("regions")
-    .select("id, display_name, city, country, latitude, longitude, radius_km")
-    .eq("id", id)
-    .eq("active", true)
-    .maybeSingle<RegionRow>();
-  return data ?? null;
-}
+ *  Used by the top bar to display the region name next to the globe.
+ *  React.cache-wrapped so the top bar AND streaming recs rail both
+ *  hit one query per request instead of duplicating. */
+export const getCurrentRegion = cache(
+  async (): Promise<RegionRow | null> => {
+    const id = await getCurrentRegionId();
+    if (!id) return null;
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("regions")
+      .select("id, display_name, city, country, latitude, longitude, radius_km")
+      .eq("id", id)
+      .eq("active", true)
+      .maybeSingle<RegionRow>();
+    return data ?? null;
+  },
+);
 
 /** Fetch every active region — used by the region picker sheet.
  *  Wrapped in React.cache so multiple components on the same render

@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { cache } from "react";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -45,8 +46,10 @@ export async function getCurrentCityId(): Promise<string | null> {
 
 /** Fetch the full city rows for the current selection. Used by the
  *  top bar to render the picker label and by list pages to show
- *  "Cebu City, Moalboal · clear" UI when admins narrow the scope. */
-export async function getCurrentCities(): Promise<CurrentCity[]> {
+ *  "Cebu City, Moalboal · clear" UI when admins narrow the scope.
+ *  React.cache-wrapped so the top bar AND the streaming recs rail
+ *  share one query per request instead of hitting the DB twice. */
+export const getCurrentCities = cache(async (): Promise<CurrentCity[]> => {
   const ids = await getCurrentCityIds();
   if (ids.length === 0) return [];
   const supabase = await createClient();
@@ -56,7 +59,7 @@ export async function getCurrentCities(): Promise<CurrentCity[]> {
     .in("id", ids)
     .returns<CurrentCity[]>();
   return data ?? [];
-}
+});
 
 /** Back-compat shim — single-city version. Returns the first matching
  *  row or null. */
