@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { siteConfig } from "@/config/site";
+import { InstallPill } from "@/features/pwa";
 
 export const metadata: Metadata = {
   title: "Welcome",
@@ -133,8 +134,20 @@ export default function WelcomePage() {
           </ul>
         </section>
 
+        {/* Install pill — sits above the CTAs as a third path. The pill
+            component self-hides when the PWA is already installed (so
+            return-visitor PWA users don't see it) or when the user has
+            previously dismissed it. Adding it here matters because
+            fresh / incognito visitors get redirected to /welcome by
+            the middleware before they ever reach the home route where
+            the pill was originally mounted — so without this, the pill
+            was invisible to the exact audience it's meant to convert. */}
+        <section className="relative mt-9 flex justify-center">
+          <InstallPill />
+        </section>
+
         {/* Calls to action */}
-        <section className="relative mt-9 flex flex-col items-center gap-3">
+        <section className="relative mt-4 flex flex-col items-center gap-3">
           <Link
             href="/signup"
             className="wc-frame wc-frame-sunset block w-full rounded-2xl py-3.5 text-center text-lg font-bold text-white active:scale-[0.98]"
