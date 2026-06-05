@@ -47,6 +47,14 @@ export const publicEnv = {
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
   siteUrl: resolveSiteUrl(),
+  /** VAPID public key — needed by the browser to subscribe to web push.
+   *  Half of a key pair; the matching private key lives server-only in
+   *  `serverEnv.vapidPrivateKey`. Generate a pair via:
+   *    npx web-push generate-vapid-keys
+   *  Leave empty to disable push entirely (Layer 2 self-disables: the
+   *  client opt-in surface hides, the createNotification push fanout
+   *  becomes a no-op). */
+  vapidPublicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "",
   /** Wondavu Pet system is still in development. Set
    *  `NEXT_PUBLIC_PET_ENABLED=1` in dev to expose `/pet` and activate
    *  reward hooks. Unset / anything else → /pet returns 404 and reward
@@ -102,6 +110,17 @@ export const serverEnv = {
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean),
+  /** VAPID private key — the server-side half of the push key pair.
+   *  Together with the public key (`publicEnv.vapidPublicKey`) it signs
+   *  every push payload so the browser will accept the delivery.
+   *  Empty disables push (Layer 2 self-disables — see publicEnv).
+   *  Generate via `npx web-push generate-vapid-keys`. */
+  vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? "",
+  /** mailto: contact address VAPID requires so push relays can reach
+   *  out about delivery problems. Defaults to support@ to keep delivery
+   *  unblocked while the team chooses a long-term address. */
+  vapidSubject:
+    process.env.VAPID_SUBJECT ?? "mailto:support@wondavu.com",
 };
 
 /**

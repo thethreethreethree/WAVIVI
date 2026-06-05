@@ -71,6 +71,9 @@ and Development inherit from Production unless explicitly overridden.
 | ------------------------------ | ------------------------------------- | ------------------------------------------------------------------------ |
 | `SUSEN_MODEL`                  | `deepseek-chat`                       | Set to `deepseek-reasoner` for slower/smarter responses.                 |
 | `SUSEN_ADMINS`                 | `johnsyramos@gmail.com,@john,john`    | CSV of identities whose chats get tuning capture + live operator guidance. |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | (empty = push disabled)               | Public half of the VAPID key pair for web push (Layer 2 of notifications). Browser needs it to subscribe. Generate via `npx web-push generate-vapid-keys`. |
+| `VAPID_PRIVATE_KEY`            | (empty = push disabled)               | Server-side half of the same VAPID pair. Both required for push delivery — when either is empty, push self-disables and the in-app feed (Layer 1) still works. |
+| `VAPID_SUBJECT`                | `mailto:support@wondavu.com`          | mailto: contact VAPID requires for delivery-problem outreach. |
 | `CRON_SECRET`                  | (empty = disabled)                    | Bearer token for `/api/cron/scan`. Vercel Cron sets this automatically.  |
 | `INGEST_TOKEN`                 | (empty = endpoint off)                | Bearer for the Partner Collection extension hitting `/api/admin/stays/ingest`. |
 | `INSTAGRAM_PROXY_URL`          | (empty = direct fetch)                | Cloudflare Worker that proxies IG public-profile fetches.                |

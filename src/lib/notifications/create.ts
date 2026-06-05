@@ -1,6 +1,7 @@
 import "server-only";
 
 import { reportWarning } from "@/lib/observability/log";
+import { deliverPushFor, payloadFromNotification } from "@/lib/push/send";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
   NotificationPayload,
@@ -57,6 +58,17 @@ export async function createNotification(
         type: input.type,
         userId: input.userId,
       });
+      return;
+    }
+    // Layer 2 — fan out web push to the recipient's active subscriptions.
+    // No-op when VAPID isn't configured. Fire-and-forget: a push delivery
+    // failure NEVER undoes the in-app notification that already landed.
+    const pushPayload = payloadFromNotification({
+      type: input.type,
+      payload: input.payload ?? {},
+    });
+    if (pushPayload) {
+      void deliverPushFor(input.userId, pushPayload);
     }
   } catch (err) {
     reportWarning(
@@ -89,6 +101,18 @@ export async function createNotificationsForUsers(
         type: input.type,
         count: userIds.length,
       });
+      return;
+    }
+    // Layer 2 — fan web push deliveries in parallel, one per recipient.
+    // Same fire-and-forget posture as createNotification above.
+    const pushPayload = payloadFromNotification({
+      type: input.type,
+      payload: input.payload ?? {},
+    });
+    if (pushPayload) {
+      for (const uid of userIds) {
+        void deliverPushFor(uid, pushPayload);
+      }
     }
   } catch (err) {
     reportWarning(

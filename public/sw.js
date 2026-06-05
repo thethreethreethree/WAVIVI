@@ -6,15 +6,14 @@
  * changes, so they can never go stale. The cache is just an offline safety
  * net, never a source of stale code or images. */
 
-// Bumped v5 → v6 on 2026-06-03 to force installed PWA users to pick up
-// the Susen cafe-cohort fix. Byte-different sw.js triggers the
-// browser's update flow → skipWaiting + clients.claim → the existing
-// controllerchange listener in service-worker-register.tsx reloads
-// every open client. Old `wavivi-v5` cache is then deleted by the
-// activate handler below. Bump this number every deploy that needs to
-// reach installed clients (UI / chat behaviour) rather than waiting
-// for them to manually refresh.
-const CACHE = "wavivi-v6";
+// Bumped v6 → v7 on 2026-06-06 to roll out web-push handlers (Layer 2
+// of the notifications system). Existing v6 service workers don't have
+// the `push` / `notificationclick` listeners below; installed-PWA users
+// need this update to receive notifications when the app is closed.
+// Bump this number every deploy that needs to reach installed clients
+// (UI / chat / SW behaviour) rather than waiting for them to manually
+// refresh.
+const CACHE = "wavivi-v7";
 const OFFLINE_URL = "/offline";
 
 self.addEventListener("install", (event) => {
@@ -117,5 +116,78 @@ self.addEventListener("fetch", (event) => {
         if (cached) return cached;
         return new Response("", { status: 504 });
       }),
+  );
+});
+
+/* -- Web push (Layer 2 of the notifications system) -------------------
+ *
+ * The server's lib/push/send.ts ships JSON payloads of shape:
+ *   { type, title, body, url, data? }
+ *
+ * `push` fires when a payload arrives. We surface a native OS-level
+ * notification with the title/body, tagged by `type` so a newer push
+ * of the same kind replaces a stale one in the OS tray (no spam if a
+ * busy group fires five messages back-to-back). The `data.url` carries
+ * the route the notificationclick handler navigates to.
+ *
+ * `notificationclick` runs when the user taps an OS notification. We
+ * close the notification, then either focus an already-open Wondavu
+ * tab and navigate it to the right URL, or open a fresh window if no
+ * client is open.
+ *
+ * Failures here are silent — the OS already silently drops malformed
+ * pushes, and there's no user to surface a JS error to.
+ */
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+  let payload;
+  try {
+    payload = event.data.json();
+  } catch {
+    return;
+  }
+  const title = String(payload.title ?? "Wondavu");
+  const body = String(payload.body ?? "");
+  const url = String(payload.url ?? "/notifications");
+  // Tag: collapsing key. Multiple pushes with the same tag replace
+  // each other in the OS tray instead of stacking. Per-type tagging
+  // means a chat-message burst collapses to one notification per
+  // group, not one per message.
+  const tag = String(payload.type ?? "wondavu");
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon: "/wondavu-icon-192.png",
+      badge: "/wondavu-icon-192.png",
+      tag,
+      renotify: false,
+      data: { url },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) ||
+    "/notifications";
+  event.waitUntil(
+    (async () => {
+      const all = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      // Same-origin client open? Focus + navigate it.
+      for (const client of all) {
+        if (client.url.startsWith(self.location.origin)) {
+          await client.focus();
+          if ("navigate" in client) {
+            await client.navigate(target).catch(() => {});
+          }
+          return;
+        }
+      }
+      // No open window — fresh tab/window pointing at the target route.
+      await self.clients.openWindow(target);
+    })(),
   );
 });

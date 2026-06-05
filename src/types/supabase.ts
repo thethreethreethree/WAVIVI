@@ -282,6 +282,35 @@ export type NotificationUpdate = {
   read_at?: string | null;
 };
 
+/* ── Push subscriptions (migration 0056) ─────────────────────────────── */
+
+export type PushSubscriptionRow = {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth_key: string;
+  user_agent: string | null;
+  created_at: string;
+  last_used_at: string | null;
+};
+
+export type PushSubscriptionInsert = {
+  id?: string;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth_key: string;
+  user_agent?: string | null;
+  created_at?: string;
+  last_used_at?: string | null;
+};
+
+export type PushSubscriptionUpdate = {
+  user_agent?: string | null;
+  last_used_at?: string | null;
+};
+
 export type UtilityRow = {
   id: string;
   region_id: string | null;
@@ -1299,6 +1328,11 @@ export type Database = {
         NotificationRow,
         NotificationInsert,
         NotificationUpdate
+      >;
+      push_subscriptions: TableShape<
+        PushSubscriptionRow,
+        PushSubscriptionInsert,
+        PushSubscriptionUpdate
       >;
       traveler_utilities: TableShape<UtilityRow, UtilityInsert, UtilityUpdate>;
       traveler_reports: TableShape<ReportRow, ReportInsert, ReportUpdate>;
