@@ -107,13 +107,14 @@ export const metadata: Metadata = {
   description: siteConfig.description,
   applicationName: siteConfig.name,
   manifest: "/manifest.webmanifest",
-  icons: {
-    // public/apple-icon.png is the iOS home-screen icon. Without an
-    // explicit <link rel="apple-touch-icon">, iOS Safari falls back to
-    // a screenshot of the page instead of the branded icon when a user
-    // saves the PWA to their home screen.
-    apple: "/apple-icon.png",
-  },
+  // apple-touch-icon comes from src/app/apple-icon.png via Next 16's
+  // file convention. The convention auto-generates a content-hashed
+  // URL and the right <link rel="apple-touch-icon"> tag — more
+  // reliable than the metadata.icons.apple config (which doesn't
+  // cache-bust and can be silently overridden by a stale Safari
+  // touch-icon cache from a previous deploy that 404'd).
+  // The favicon for browser tabs comes from src/app/icon.png the
+  // same way.
   keywords: [
     "travel",
     "social map",

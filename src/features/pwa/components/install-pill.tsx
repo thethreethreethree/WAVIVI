@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { IosInstallOverlay } from "./ios-install-overlay";
+
 /** Minimal shape of the non-standard `beforeinstallprompt` event. */
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -28,7 +30,11 @@ export function InstallPill() {
   );
   const [iosHint, setIosHint] = useState(false);
   const [dismissed, setDismissed] = useState(true); // start hidden; flip on mount
-  const [showIosTip, setShowIosTip] = useState(false);
+  // iOS Safari has no JS API to trigger Add to Home Screen, so we
+  // show a guided fullscreen overlay (IosInstallOverlay) when the pill
+  // is tapped on iOS. Replaces the prior tiny tooltip which read as
+  // "small hint to a feature you can't find" instead of a guide.
+  const [showIosOverlay, setShowIosOverlay] = useState(false);
 
   useEffect(() => {
     // Already installed → never show.
@@ -70,14 +76,18 @@ export function InstallPill() {
 
   const onClick = async () => {
     if (deferred) {
+      // Android Chrome / Edge / Brave / desktop Chrome path — native
+      // one-tap install via the deferred beforeinstallprompt event.
       await deferred.prompt();
       const choice = await deferred.userChoice;
       if (choice.outcome === "accepted") dismiss();
       setDeferred(null);
       return;
     }
-    // iOS: no native prompt — show the share-menu hint.
-    setShowIosTip((v) => !v);
+    // iOS Safari path — no native prompt API exists. Open the guided
+    // overlay so the user sees exactly which Share button to tap and
+    // which row to pick on the share sheet.
+    setShowIosOverlay(true);
   };
 
   return (
@@ -99,12 +109,10 @@ export function InstallPill() {
       >
         ×
       </button>
-      {showIosTip && (
-        <span className="wc-edge-soft absolute left-0 top-full mt-2 w-64 rounded-xl bg-[#fdf4e2] px-3 py-2 text-[11px] font-medium leading-snug text-[#3d1f06] ring-[1.5px] ring-[#3d1f06]/55 shadow-[0_4px_12px_-4px_rgba(120,70,30,0.28)]">
-          Tap the <strong>Share</strong> button in Safari, then choose{" "}
-          <strong>Add to Home Screen</strong>.
-        </span>
-      )}
+      <IosInstallOverlay
+        open={showIosOverlay}
+        onClose={() => setShowIosOverlay(false)}
+      />
     </div>
   );
 }
