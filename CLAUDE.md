@@ -232,6 +232,22 @@ next time. Don't write a novel — short, structured, scannable.
 
 Entries are reverse-chronological. Each links to a full writeup.
 
+- **2026-06-05 — Feed videos "won't play" — phantom play button**
+  [`docs/postmortems/2026-06-05-feed-video-blob-phantom.md`](docs/postmortems/2026-06-05-feed-video-blob-phantom.md).
+  Symptom: tapping the play triangle on `/feed` cards did nothing.
+  3 Wondavu-side patches in a row chased "fix the player" / "fix the
+  redirect" / "fix the import parser" before a `?debug=1` JSON dump
+  revealed `videoUrl: null` on every post. The "play button" was the
+  IG video thumbnail's baked-in painted triangle, not anything my
+  code rendered. Root cause was upstream entirely: the user's
+  scraper produces `blob:` URLs (browser-local Object URLs) instead
+  of real IG CDN MP4 URLs. Lesson encoded: when a visible UI artifact
+  looks interactive but isn't, the phantom-button anti-pattern means
+  the user's "X doesn't work" naturally attaches to the artifact
+  instead of asking "is this even an X?" Probe (JSON dump of the
+  assumed object) discriminates between "broken object" and "no
+  object" in one read — must ship at attempt 2, not attempt 4.
+
 - **2026-06-03 — Susen claimed "no cafes" while five existed in the DB**
   [`docs/postmortems/2026-06-03-susen-cafe-cohort.md`](docs/postmortems/2026-06-03-susen-cafe-cohort.md).
   Symptom: Susen kept replying "no cafes in El Nido" when 5 cafes
