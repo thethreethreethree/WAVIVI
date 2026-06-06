@@ -1,10 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-
-import { BackButton } from "@/components/ui/back-button";
 import {
   type NavMode,
   type NavRoute,
@@ -49,6 +47,7 @@ export default function NavPage() {
 type Pos = { lat: number; lng: number };
 
 function NavView() {
+  const router = useRouter();
   const params = useSearchParams();
   const lat = Number(params.get("lat"));
   const lng = Number(params.get("lng"));
@@ -313,10 +312,45 @@ function NavView() {
     // Explicit height (viewport minus bottom-nav reservation) so flex-1
     // children — notably the Leaflet map — get a real, measurable canvas.
     <div className="relative flex h-[calc(100dvh-6.75rem)] flex-col overflow-hidden">
-      {/* Header — back button + place name + mode chips */}
+      {/* Header — back-to-Wondavu pill + place name + mode chips.
+          The back affordance is intentionally branded (pen-style arrow in a
+          cream circle + Permanent Marker wordmark) so it's unmistakably
+          visible against the map and mirrors the iOS smart-banner "◀ Wondavu"
+          pattern users see when they hand off to Google Maps. */}
       <header className="relative z-10 flex flex-col gap-2 px-4 pb-2 pt-[max(2.75rem,calc(env(safe-area-inset-top)+1.5rem))]">
         <div className="flex items-center gap-3">
-          <BackButton fallback="/" className="shrink-0" />
+          <button
+            type="button"
+            aria-label="Back to Wondavu"
+            onClick={() => {
+              if (typeof window !== "undefined" && window.history.length > 1) {
+                router.back();
+              } else {
+                router.push("/");
+              }
+            }}
+            className="flex h-12 shrink-0 items-center gap-2 rounded-full bg-[#fdf4e2]/95 py-1 pl-1.5 pr-4 ring-2 ring-white/85 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.25)] active:scale-95"
+          >
+            {/* Pen-style back arrow ships with its own painted circle frame;
+                the cream pill behind matches its frame size so the painted
+                stroke reads cleanly against the map. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/decor/back_to_wondavu.png"
+              alt=""
+              aria-hidden
+              className="h-10 w-10 shrink-0 object-contain"
+            />
+            <span
+              style={{
+                fontFamily:
+                  "var(--font-permanent-marker), var(--font-body), sans-serif",
+              }}
+              className="text-base leading-none text-foreground"
+            >
+              Wondavu
+            </span>
+          </button>
           <div className="wc-frame min-w-0 flex-1 rounded-2xl bg-surface/95 px-3 py-2 shadow-card backdrop-blur">
             <p className="text-[10px] font-bold uppercase tracking-wide text-muted">
               Navigate to
