@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import { useState } from "react";
@@ -27,7 +27,7 @@ export function JoinGateButton({ groupId }: { groupId: string }) {
         className="wc-frame wc-frame-sunset mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-center font-bold text-white active:scale-[0.98]"
       >
         <Image
-          src="/icons/orange/plane.png"
+          src="/icons/rustic/plane.png"
           alt=""
           width={44}
           height={44}

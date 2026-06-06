@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * Minimalist line-icon set. Stroke-based, 24×24, inherits `currentColor`.
@@ -124,8 +124,8 @@ const PATHS: Record<string, React.ReactNode> = {
     </>
   ),
   // 3×3 dot grid — universal "more" / "apps" affordance. Themes that have
-  // a painted PNG (Pen-style watercolor in /icons/orange/more_tools.png)
-  // hide this SVG via the standard tj-icon-svg/has-orange CSS pairing.
+  // a painted PNG (warm watercolor in /icons/rustic/more_tools.png)
+  // hide this SVG via the standard tj-icon-svg/has-rustic CSS pairing.
   moreTools: (
     <>
       <circle cx="5.5" cy="5.5" r="1.5" />
@@ -164,17 +164,17 @@ const PATHS: Record<string, React.ReactNode> = {
 export type IconName = keyof typeof PATHS;
 
 import { useThemeContext } from "@/components/ui/theme-context";
-import { CUTE_ICONS } from "@/lib/cute-icons";
-import { ORANGE_ICONS } from "@/lib/orange-icons";
+import { RUSTIC_ICONS } from "@/lib/rustic-icons";
 import { themedIconPath } from "@/lib/theme/cookie";
 
 /**
  * Renders a minimalist line icon.
  *
- * In the Cute and Orange themes the crisp SVG is hidden via CSS and a
- * hand-painted watercolor PNG is shown instead — when one exists for this
- * icon. All elements are always rendered so this stays a plain, SSR-safe
- * component (no hooks).
+ * When a painted Rustic PNG exists for this icon, the crisp SVG is hidden
+ * via CSS and the watercolor PNG is shown instead — resolved against the
+ * active theme so SSR ships the right folder (Light Rustic / Sketch /
+ * Journal) on the first paint. All elements are always rendered so this
+ * stays a plain, SSR-safe component (no hooks beyond the theme context).
  */
 export function Icon({
   name,
@@ -186,17 +186,12 @@ export function Icon({
   className?: string;
   strokeWidth?: number;
   /** Render only the crisp SVG — for callers that supply their own
-      Cute-Mode watercolor image (e.g. the radial hub). */
+      watercolor image (e.g. the radial hub). */
   svgOnly?: boolean;
 }) {
   const theme = useThemeContext();
-  const cuteSrc = svgOnly ? undefined : CUTE_ICONS[name];
-  // Orange theme: use the Orange art, falling back to Cute V2 when an
-  // icon hasn't been drawn for Orange yet. Then resolve against the
-  // active theme so SSR ships the right folder on the first paint
-  // (no ThemeImgSwap waltz, no flash).
-  const orangeRaw = svgOnly ? undefined : ORANGE_ICONS[name] ?? cuteSrc;
-  const orangeSrc = orangeRaw ? themedIconPath(orangeRaw, theme) : undefined;
+  const rusticRaw = svgOnly ? undefined : RUSTIC_ICONS[name];
+  const rusticSrc = rusticRaw ? themedIconPath(rusticRaw, theme) : undefined;
   // The watercolor PNGs are already painted — strip any edge/paint effect
   // classes so no filter is layered on the icon asset.
   const baseImg = `object-contain ${className}`
@@ -204,12 +199,11 @@ export function Icon({
     .replace(/\bwc-edge\b/g, "")
     .replace(/\s+/g, " ")
     .trim();
-  // Tell the SVG which themes have a painted alternative, so CSS only hides
-  // it for those themes (icons with no PNG still show the SVG everywhere).
+  // Tag the SVG so CSS hides it only when a painted Rustic alternative
+  // exists (icons with no PNG keep showing the SVG in every theme).
   const svgClass = [
     "tj-icon-svg wc-edge-soft",
-    cuteSrc ? "has-cute" : "",
-    orangeSrc ? "has-orange" : "",
+    rusticSrc ? "has-rustic" : "",
     className,
   ]
     .filter(Boolean)
@@ -228,18 +222,14 @@ export function Icon({
       >
         {PATHS[name]}
       </svg>
-      {cuteSrc ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={cuteSrc} alt="" aria-hidden className={`tj-icon-img ${baseImg}`} />
-      ) : null}
-      {orangeSrc ? (
+      {rusticSrc ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={orangeSrc}
+          src={rusticSrc}
           data-theme-ready="1"
           alt=""
           aria-hidden
-          className={`tj-icon-img-orange ${baseImg}`}
+          className={`tj-icon-img-rustic ${baseImg}`}
         />
       ) : null}
     </>

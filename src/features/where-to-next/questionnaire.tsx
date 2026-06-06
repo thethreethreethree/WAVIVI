@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -285,7 +285,7 @@ export function Questionnaire({
               <span className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#fdf4e2]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/icons/orange/globe.png"
+                  src="/icons/rustic/globe.png"
                   alt=""
                   aria-hidden
                   width={64}

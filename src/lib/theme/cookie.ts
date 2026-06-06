@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Shared theme-cookie helpers. Theme persistence has two layers:
  *  - cookie (`wavivi-theme`): read on the server so SSR can render the
  *    correct `<html class>` and the right colour palette / icon paths
@@ -27,13 +27,13 @@ export function themeClass(theme: PersistedTheme): "" | "sketch" | "journal" {
 }
 
 /**
- * Resolve an /icons/orange/... path to the active theme's folder.
+ * Resolve an /icons/rustic/... path to the active theme's folder.
  * Pure function — pass a theme value, get the themed path. Used by
  * both server components (resolving on SSR for zero-flash icons) and
  * client components (taking the theme as a prop from the server).
  */
-export function themedIconPath(orangePath: string, theme: PersistedTheme): string {
-  if (theme === "light") return orangePath;
-  if (theme === "sketch") return orangePath.replace("/icons/orange/", "/icons/sketch/");
-  return orangePath.replace("/icons/orange/", "/icons/journal/");
+export function themedIconPath(rusticPath: string, theme: PersistedTheme): string {
+  if (theme === "light") return rusticPath;
+  if (theme === "sketch") return rusticPath.replace("/icons/rustic/", "/icons/sketch/");
+  return rusticPath.replace("/icons/rustic/", "/icons/journal/");
 }

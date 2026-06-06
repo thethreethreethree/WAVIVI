@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -66,10 +66,10 @@ const KIND_OPTIONS: {
   label: string;
   icon: string;
 }[] = [
-  { id: "stay", slug: "stay", label: "Stay", icon: "/icons/orange/hub_stay.png" },
-  { id: "eat", slug: "eat", label: "Eat", icon: "/icons/orange/hub_eat.png" },
-  { id: "todo", slug: "do", label: "To do", icon: "/icons/orange/hub_todo.png" },
-  { id: "events", slug: "events", label: "Events", icon: "/icons/orange/hub_events.png" },
+  { id: "stay", slug: "stay", label: "Stay", icon: "/icons/rustic/hub_stay.png" },
+  { id: "eat", slug: "eat", label: "Eat", icon: "/icons/rustic/hub_eat.png" },
+  { id: "todo", slug: "do", label: "To do", icon: "/icons/rustic/hub_todo.png" },
+  { id: "events", slug: "events", label: "Events", icon: "/icons/rustic/hub_events.png" },
 ];
 
 function fmtDayHeader(startDate: string, dayIndex: number): string {
@@ -134,7 +134,7 @@ export function TripPlanner({ planId, startDate, durationDays, items }: Props) {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/icons/orange/calendar.png"
+            src="/icons/rustic/calendar.png"
             alt=""
             aria-hidden
             loading="eager"

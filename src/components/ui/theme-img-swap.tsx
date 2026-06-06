@@ -1,22 +1,22 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from "react";
 
 /**
- * Retargets painted `/icons/orange/*` images to the active theme's
+ * Retargets painted `/icons/rustic/*` images to the active theme's
  * icon folder (`/icons/sketch/*` or `/icons/journal/*`) and restores
- * the orange original when no theme class is active.
+ * the rustic original when no theme class is active.
  *
  * Each pass is a clean "restore → swap" round-trip so flipping
  * between themes doesn't double-encode or lose the original.
  *
  * Handles three URL shapes:
- *  - raw `/icons/orange/foo.png` (plain <img>)
- *  - Next/Image proxy `/_next/image?url=%2Ficons%2Forange%2Ffoo.png&...`
+ *  - raw `/icons/rustic/foo.png` (plain <img>)
+ *  - Next/Image proxy `/_next/image?url=%2Ficons%2Frustic%2Ffoo.png&...`
  *  - the `srcset` attribute (Next/Image emits multiple sizes)
  *
  * Graceful fallback: when a swapped image fails to load (the themed
- * folder is missing that filename), we restore the orange source via
+ * folder is missing that filename), we restore the rustic source via
  * onError exactly once. Beats a broken-image placeholder.
  *
  * Why not refactor every component to use a themed helper? The icon
@@ -24,14 +24,14 @@ import { useEffect } from "react";
  * back button, welcome page, detail pages…). A single mutation
  * observer is less invasive than touching every call site.
  */
-const ORANGE = "/icons/orange/";
+const RUSTIC = "/icons/rustic/";
 const SKETCH = "/icons/sketch/";
 const JOURNAL = "/icons/journal/";
-const ENC_ORANGE = encodeURIComponent(ORANGE);
+const ENC_RUSTIC = encodeURIComponent(RUSTIC);
 const ENC_SKETCH = encodeURIComponent(SKETCH);
 const ENC_JOURNAL = encodeURIComponent(JOURNAL);
 
-/** Which folder the active theme class on <html> wants. null → orange default. */
+/** Which folder the active theme class on <html> wants. null → Light Rustic default. */
 function targetFolder(): string | null {
   const c = document.documentElement.classList;
   if (c.contains("sketch")) return SKETCH;
@@ -42,15 +42,15 @@ function targetFolder(): string | null {
 function rewriteToTarget(value: string, dst: string): string {
   const encDst = encodeURIComponent(dst);
   return value
-    .split(ORANGE)
+    .split(RUSTIC)
     .join(dst)
-    .split(ENC_ORANGE)
+    .split(ENC_RUSTIC)
     .join(encDst);
 }
 
-/** True if the value still contains the orange path (raw or encoded). */
-function isOrangeRef(value: string): boolean {
-  return value.includes(ORANGE) || value.includes(ENC_ORANGE);
+/** True if the value still contains the rustic path (raw or encoded). */
+function isRusticRef(value: string): boolean {
+  return value.includes(RUSTIC) || value.includes(ENC_RUSTIC);
 }
 
 /** True if the value contains any themed path (raw or encoded) so we
@@ -65,15 +65,15 @@ function isThemedRef(value: string): boolean {
 }
 
 function restoreFromDataset(img: HTMLImageElement): void {
-  const srcOrig = img.dataset.origOrangeSrc;
+  const srcOrig = img.dataset.origRusticSrc;
   if (srcOrig) {
     img.setAttribute("src", srcOrig);
-    delete img.dataset.origOrangeSrc;
+    delete img.dataset.origRusticSrc;
   }
-  const srcsetOrig = img.dataset.origOrangeSrcset;
+  const srcsetOrig = img.dataset.origRusticSrcset;
   if (srcsetOrig) {
     img.setAttribute("srcset", srcsetOrig);
-    delete img.dataset.origOrangeSrcset;
+    delete img.dataset.origRusticSrcset;
   }
   delete img.dataset.themedSwapApplied;
   img.onerror = null;
@@ -85,7 +85,7 @@ export function ThemeImgSwap() {
       const target = targetFolder();
       const imgs = document.querySelectorAll<HTMLImageElement>("img");
       imgs.forEach((img) => {
-        // Always normalise back to the orange original first. That way the
+        // Always normalise back to the rustic original first. That way the
         // swap-to-target step works the same whether we're coming from
         // default, sketch, or journal.
         restoreFromDataset(img);
@@ -103,50 +103,50 @@ export function ThemeImgSwap() {
         const src = img.getAttribute("src") || "";
         const srcset = img.getAttribute("srcset") || "";
         const isThemable =
-          isOrangeRef(src) ||
-          isOrangeRef(srcset) ||
+          isRusticRef(src) ||
+          isRusticRef(srcset) ||
           isThemedRef(src) ||
           isThemedRef(srcset);
         if (!isThemable) return;
 
         if (!target) {
-          // Default theme — leave orange in place. Mark ready so the
+          // Default theme — leave rustic in place. Mark ready so the
           // anti-flash CSS rule doesn't hide it during intermediate
           // theme-switching states.
           img.dataset.themeReady = "1";
           return;
         }
 
-        if (isOrangeRef(src) || isOrangeRef(srcset)) {
-          if (isOrangeRef(src)) {
-            img.dataset.origOrangeSrc = src;
+        if (isRusticRef(src) || isRusticRef(srcset)) {
+          if (isRusticRef(src)) {
+            img.dataset.origRusticSrc = src;
             img.setAttribute("src", rewriteToTarget(src, target));
           }
-          if (srcset && isOrangeRef(srcset)) {
-            img.dataset.origOrangeSrcset = srcset;
+          if (srcset && isRusticRef(srcset)) {
+            img.dataset.origRusticSrcset = srcset;
             img.setAttribute("srcset", rewriteToTarget(srcset, target));
           }
           img.dataset.themedSwapApplied = "1";
           img.dataset.themeReady = "1";
 
-          // If the themed icon doesn't exist, fall back to the orange
+          // If the themed icon doesn't exist, fall back to the rustic
           // original. Set onerror once; clear it inside the handler so
           // the restore can't re-trigger the same handler on the
-          // (presumably reliable) orange src.
+          // (presumably reliable) rustic src.
           img.onerror = () => {
             img.onerror = null;
-            const origSrc = img.dataset.origOrangeSrc;
-            const origSrcset = img.dataset.origOrangeSrcset;
+            const origSrc = img.dataset.origRusticSrc;
+            const origSrcset = img.dataset.origRusticSrcset;
             if (origSrc) {
               img.setAttribute("src", origSrc);
-              delete img.dataset.origOrangeSrc;
+              delete img.dataset.origRusticSrc;
             }
             if (origSrcset) {
               img.setAttribute("srcset", origSrcset);
-              delete img.dataset.origOrangeSrcset;
+              delete img.dataset.origRusticSrcset;
             }
             delete img.dataset.themedSwapApplied;
-            // Keep themeReady — the orange fallback is the displayable
+            // Keep themeReady — the rustic fallback is the displayable
             // result, so we don't want CSS to hide it.
             img.dataset.themeReady = "1";
           };
@@ -154,7 +154,7 @@ export function ThemeImgSwap() {
           img.dataset.themeReady = "1";
           // Already swapped by an earlier pass under the same theme;
           // nothing to do. (Won't happen often — most images come from
-          // Next/Image and the src is always orange in the DOM until we
+          // Next/Image and the src is always rustic in the DOM until we
           // swap it.)
         }
       });

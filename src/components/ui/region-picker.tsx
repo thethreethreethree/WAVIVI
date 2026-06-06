@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 
@@ -30,7 +30,7 @@ export function RegionPicker({
   currentLabel: string;
 }) {
   const theme = useThemeContext();
-  const globeSrc = themedIconPath("/icons/orange/globe.png", theme);
+  const globeSrc = themedIconPath("/icons/rustic/globe.png", theme);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [pending, startTransition] = useTransition();

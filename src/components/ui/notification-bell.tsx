@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -77,7 +77,7 @@ export function NotificationBell({
         className="wc-edge-soft absolute inset-0 rounded-full bg-[#fdf4e2] ring-[1.5px] ring-[#3d1f06]/55 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.22)]"
       />
       <ThemedIcon
-        src="/icons/orange/bell.png"
+        src="/icons/rustic/bell.png"
         alt=""
         aria-hidden
         loading="eager"

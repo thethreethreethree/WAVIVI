@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -158,7 +158,7 @@ function GroupCard({ group }: { group: PublicChatGroup }) {
         {group.featured && (
           <span className="absolute left-3 bottom-14 inline-flex items-center gap-1 rounded-full bg-glow px-2 py-0.5 text-[10px] font-bold text-white shadow-card">
             <Image
-              src="/icons/orange/star.png"
+              src="/icons/rustic/star.png"
               alt=""
               width={28}
               height={28}

@@ -1,15 +1,15 @@
-import type { IconName } from "@/components/ui/icon";
+﻿import type { IconName } from "@/components/ui/icon";
 
 /**
- * Maps each line `IconName` to its vivid glowing-orange watercolor PNG
- * (public/icons/orange). Used in the Orange theme.
+ * Maps each line `IconName` to its warm hand-painted watercolor PNG
+ * (public/icons/rustic). Used as the Light Rustic theme default and as the source-of-truth path that ThemeImgSwap rewrites for Sketch + Journal.
  *
- * Icons not yet drawn in the Orange set fall back to the Cute V2 art
- * (see the Icon component) so the theme is never missing a glyph.
+ * Icons not yet drawn in the Rustic set are simply omitted; the Icon
+ * component will fall through to its inline-SVG default for those names.
  */
-const O = "/icons/orange";
+const O = "/icons/rustic";
 
-export const ORANGE_ICONS: Partial<Record<IconName, string>> = {
+export const RUSTIC_ICONS: Partial<Record<IconName, string>> = {
   // --- Traveler's Tool ---
   atm: `${O}/atm.png`,
   bank: `${O}/bank.png`,

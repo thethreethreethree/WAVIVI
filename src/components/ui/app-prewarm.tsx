@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -49,8 +49,7 @@ const PREWARM_ROUTES = [
 const PREWARM_IMAGES = [
   "/icons/icon.svg",
   "/wondavu-logo-v2.png",
-  "/backgrounds/cute/bg-01.png",
-  "/backgrounds/orange/bg.png",
+  "/backgrounds/rustic/bg.png",
 ];
 
 let warmed = false;

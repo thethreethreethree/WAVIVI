@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 
 import { applyTheme } from "@/lib/theme/client";
 
-/** App themes. Light Rustic + Sketch + Journal are user-selectable;
- *  `cute` and `orange` stay in the type so stored preferences from
- *  earlier builds don't crash but are no longer surfaced. Dark mode was
- *  removed — a separate dedicated dark theme will be built later. Older
- *  localStorage values of "dark" are coerced back to "light" on mount. */
-export type Theme = "light" | "cute" | "orange" | "sketch" | "journal";
+/** App themes. Light Rustic + Sketch + Journal are the only user-selectable
+ *  themes. Older "cute", "orange", or "dark" preferences from previous
+ *  builds are coerced back to "light" on mount so existing localStorage
+ *  values never crash the app. Dark mode was removed — a separate
+ *  dedicated dark theme will be built later. */
+export type Theme = "light" | "sketch" | "journal";
 
 /** Theme-toggle chip art. Lives in /public/icons/theme-toggle/ — a
  *  neutral subfolder ThemeImgSwap deliberately does NOT touch, so each
@@ -27,8 +27,6 @@ function currentTheme(): Theme {
   const c = document.documentElement.classList;
   if (c.contains("sketch")) return "sketch";
   if (c.contains("journal")) return "journal";
-  if (c.contains("cute")) return "cute";
-  if (c.contains("orange")) return "orange";
   return "light";
 }
 
@@ -40,13 +38,16 @@ export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
-    // Migrate any pre-existing "dark" preference back to light so users
-    // who picked Dark Rustic before the removal don't end up themeless.
+    // Migrate any pre-existing dead theme preference ("dark", "cute",
+    // "orange") back to Light Rustic so users who picked a now-removed
+    // theme don't end up themeless. The matching <html> classes are also
+    // stripped in case the inline themeScript already painted them.
     try {
-      if (localStorage.getItem("wavivi-theme") === "dark") {
+      const dead = new Set(["dark", "cute", "orange"]);
+      if (dead.has(localStorage.getItem("wavivi-theme") || "")) {
         localStorage.setItem("wavivi-theme", "light");
-        document.documentElement.classList.remove("dark");
       }
+      document.documentElement.classList.remove("dark", "cute", "orange");
     } catch {
       /* ignore */
     }
@@ -56,9 +57,7 @@ export function ThemeToggle() {
 
   function choose(next: Theme) {
     setTheme(next);
-    if (next === "light" || next === "sketch" || next === "journal") {
-      applyTheme(next);
-    }
+    applyTheme(next);
   }
 
   return (

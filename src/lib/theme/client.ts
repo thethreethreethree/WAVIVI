@@ -14,6 +14,8 @@ export function applyTheme(next: PersistedTheme): void {
   if (typeof document === "undefined") return;
 
   const c = document.documentElement.classList;
+  // Strip every known theme class (including deprecated "cute" and
+  // "orange") so a stale class can't leak in next to the new one.
   c.remove("cute", "orange", "sketch", "journal");
   if (next !== "light") c.add(next);
 

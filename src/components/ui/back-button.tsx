@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
 import { useSyncExternalStore } from "react";
@@ -59,7 +59,7 @@ export function BackButton({
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/icons/orange/back_arrow.png"
+            src="/icons/rustic/back_arrow.png"
             alt=""
             aria-hidden
             className="back-wiggle h-7 w-7 object-contain"

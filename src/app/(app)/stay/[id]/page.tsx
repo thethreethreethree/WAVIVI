@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -194,7 +194,7 @@ export default async function StayDetailPage({ params }: { params: Params }) {
           <span className="absolute left-4 top-4 z-20 inline-flex items-center gap-1 rounded-full bg-glow px-2.5 py-1 text-[11px] font-bold text-white shadow-card">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/icons/orange/thumbs_up_orange.png"
+              src="/icons/rustic/thumbs_up_orange.png"
               alt=""
               aria-hidden
               className="h-3.5 w-3.5 object-contain"

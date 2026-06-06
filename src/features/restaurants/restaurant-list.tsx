@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -194,7 +194,7 @@ export function RestaurantList({
             } disabled:opacity-60`}
           >
             <Image
-              src="/icons/orange/map_pin.png"
+              src="/icons/rustic/map_pin.png"
               alt=""
               width={36}
               height={36}
@@ -328,7 +328,7 @@ export function RestaurantList({
                     {topPick && (
                       <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-glow px-2.5 py-1 text-[11px] font-bold text-white shadow-card">
                         <Image
-                          src="/icons/orange/top_pick_badge.png"
+                          src="/icons/rustic/top_pick_badge.png"
                           alt=""
                           width={36}
                           height={36}

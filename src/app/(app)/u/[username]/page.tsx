@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -164,7 +164,7 @@ export default async function UserProfilePage({
           className="flex h-9 w-9 items-center justify-center rounded-full transition-transform active:scale-95 hover:bg-foreground/5"
         >
           <Image
-            src="/icons/orange/menu_kebab.png"
+            src="/icons/rustic/menu_kebab.png"
             alt=""
             width={24}
             height={24}

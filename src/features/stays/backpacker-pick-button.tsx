@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -63,7 +63,7 @@ export function BackpackerPickButton({
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/icons/orange/thumbs_up_orange.png"
+          src="/icons/rustic/thumbs_up_orange.png"
           alt=""
           aria-hidden
           className="h-5 w-5 object-contain"

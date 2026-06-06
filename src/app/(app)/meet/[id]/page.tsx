@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -123,7 +123,7 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
             className="wc-frame wc-frame-sunset mt-5 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-center font-bold text-white active:scale-[0.98]"
           >
             <Image
-              src="/icons/orange/plane.png"
+              src="/icons/rustic/plane.png"
               alt=""
               width={44}
               height={44}
@@ -138,7 +138,7 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
             className="wc-frame wc-frame-sunset mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-center font-bold text-white active:scale-[0.98]"
           >
             <Image
-              src="/icons/orange/plane.png"
+              src="/icons/rustic/plane.png"
               alt=""
               width={44}
               height={44}
@@ -166,7 +166,7 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
                 aria-label={`Get directions to ${dbGroup.place_name}`}
               >
                 <Image
-                  src="/icons/orange/map_pin.png"
+                  src="/icons/rustic/map_pin.png"
                   alt=""
                   width={52}
                   height={52}
@@ -184,7 +184,7 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
                   )}
                   <p className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold text-glow">
                     <Image
-                      src="/icons/orange/direction_arrow.png"
+                      src="/icons/rustic/direction_arrow.png"
                       alt=""
                       width={36}
                       height={36}
@@ -204,7 +204,7 @@ export default async function GroupVibesPage({ params }: { params: Params }) {
             ) : (
               <div className="flex items-start gap-3 rounded-2xl bg-surface/70 px-4 py-3 ring-1 ring-border">
                 <Image
-                  src="/icons/orange/map_pin.png"
+                  src="/icons/rustic/map_pin.png"
                   alt=""
                   width={52}
                   height={52}

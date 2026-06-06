@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,17 +10,17 @@ import { themedIconPath } from "@/lib/theme/cookie";
 interface HubLink {
   href: string;
   label: string;
-  /** Refined watercolor icon (public/icons/orange — REFIND ASSET V1). */
+  /** Refined watercolor icon (public/icons/rustic — REFIND ASSET V1). */
   image: string;
 }
 
 /** The five Wondavu radial destinations, ordered clockwise from the top. */
 const HUB_LINKS: HubLink[] = [
-  { href: "/meet",   label: "Meet up!",       image: "/icons/orange/hub_meet.png" },
-  { href: "/events", label: "Events nearby",  image: "/icons/orange/hub_events.png" },
-  { href: "/todo",   label: "What to do",     image: "/icons/orange/hub_todo.png" },
-  { href: "/eat",    label: "What to eat",    image: "/icons/orange/hub_eat.png" },
-  { href: "/stay",   label: "Where to stay",  image: "/icons/orange/hub_stay.png" },
+  { href: "/meet",   label: "Meet up!",       image: "/icons/rustic/hub_meet.png" },
+  { href: "/events", label: "Events nearby",  image: "/icons/rustic/hub_events.png" },
+  { href: "/todo",   label: "What to do",     image: "/icons/rustic/hub_todo.png" },
+  { href: "/eat",    label: "What to eat",    image: "/icons/rustic/hub_eat.png" },
+  { href: "/stay",   label: "Where to stay",  image: "/icons/rustic/hub_stay.png" },
 ];
 
 /** Radius of the satellite ring, as a percentage of the container. */

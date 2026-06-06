@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { type ImgHTMLAttributes } from "react";
 
@@ -6,7 +6,7 @@ import { useThemeContext } from "@/components/ui/theme-context";
 import { themedIconPath } from "@/lib/theme/cookie";
 
 /**
- * Tiny `<img>` wrapper that resolves an `/icons/orange/…` path against
+ * Tiny `<img>` wrapper that resolves an `/icons/rustic/…` path against
  * the live ThemeContext.
  *
  * Use this wherever a server component needs to render a themed icon

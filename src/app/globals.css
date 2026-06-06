@@ -1,10 +1,10 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
    WAVIVI / Travejor design system
-   Theme classes (.cute, .sketch, .orange) are applied to <html> to re-theme
-   the whole app via token-backed CSS variables. Default (no class) is
-   Light Rustic. A dedicated dark mode will be rebuilt separately.
+   Theme classes (.sketch, .journal) are applied to <html> to re-theme the
+   whole app via token-backed CSS variables. Default (no class) is Light
+   Rustic. A dedicated dark mode will be rebuilt separately.
 --------------------------------------------------------------------------- */
 :root {
   /* Light Rustic — warm hand-painted watercolor palette, tuned to the REFIND
@@ -23,26 +23,6 @@
   --gradient-sunset: linear-gradient(135deg, #c46d2e 0%, #db8a48 48%, #e8a965 100%);
   --shadow-card: 0 10px 26px -12px rgba(168, 69, 26, 0.36);
   --hub-core: #2a1304;
-}
-
-/* Cute mode — a brighter, softer, playful watercolor theme. Pairs with the
-   hand-painted icon set. Toggled via the `.cute` class on <html>. */
-.cute {
-  /* Warm honey/peach watercolor washes on soft cream paper. */
-  --background: #fbe7c6;
-  --surface: #fff3df;
-  --surface-elevated: #fffaf0;
-  --foreground: #4a3018;
-  --muted: #a88b6a;
-  --border: #ecc998;
-
-  --accent-heat: #d76838;
-  --accent-cool: #2bb89a;
-  --accent-glow: #d9923f;
-
-  --gradient-sunset: linear-gradient(135deg, #ce8033 0%, #e09a4d 48%, #f0bc7a 100%);
-  --shadow-card: 0 8px 24px -12px rgba(168, 108, 36, 0.34);
-  --hub-core: #2a1c0e;
 }
 
 /* Sketch — ink on paper. Cool clean white background, dark ink foreground,
@@ -86,26 +66,6 @@
   --gradient-sunset: linear-gradient(135deg, #4a1c14 0%, #6e2a20 48%, #8e3a2c 100%);
   --shadow-card: 0 6px 18px -10px rgba(30, 24, 18, 0.4);
   --hub-core: #14202e;
-}
-
-/* Orange mode — warm hand-painted watercolor sunset. Tuned to match the
-   REFIND ASSET V1 icon set: terracotta primaries, honey mids, peach paper.
-   The previous neon orange is gone in favor of a softer, painterly palette. */
-.orange {
-  --background: #fbe2bd;
-  --surface: #fdefd1;
-  --surface-elevated: #fff7e0;
-  --foreground: #3d1f06;
-  --muted: #a47844;
-  --border: #ecbf7f;
-
-  --accent-heat: #b54d20;
-  --accent-cool: #1aa3c4;
-  --accent-glow: #cf7339;
-
-  --gradient-sunset: linear-gradient(135deg, #c46d2e 0%, #db8a48 48%, #e8a965 100%);
-  --shadow-card: 0 10px 26px -12px rgba(168, 69, 26, 0.36);
-  --hub-core: #2a1304;
 }
 
 @theme inline {
@@ -210,19 +170,17 @@ h3 {
 .text-button    { font-family: var(--font-body), sans-serif; font-size: 1.125rem; line-height: 1.2;  font-weight: 600; letter-spacing: 0.01em; }
 
 /* Ask Susen banner frame on /tools — Light Rustic (default, no theme
-   class on <html>) shows the warm Rustic painted stroke; every other
-   theme (.sketch, .cute, .orange) falls back to charcoal frame3.
-   The component renders BOTH images and CSS picks the one to show.
+   class on <html>) shows the warm Rustic painted stroke; Sketch and
+   Journal fall back to the charcoal frame3 default. The component
+   renders BOTH images and CSS picks the one to show.
    NOTE: plain compound selectors (no :where) so the theme class adds
    its own specificity, beating Tailwind's .hidden utility on the
    frame3 <img>. With :where the rules tied with .hidden and lost on
    source order. */
 .sketch .susen-frame-rustic,
-.cute .susen-frame-rustic,
-.orange .susen-frame-rustic { display: none; }
+.journal .susen-frame-rustic { display: none; }
 .sketch .susen-frame-default,
-.cute .susen-frame-default,
-.orange .susen-frame-default { display: block; }
+.journal .susen-frame-default { display: block; }
 
 /* Toolbox Map top bar — Sketch theme swaps the bg-sunset gradient for
    the painted CHARCOAL nav_background1 driftwood. Light Rustic and
@@ -973,30 +931,16 @@ h3 {
 }
 
 /* ===========================================================================
-   Cute Mode — watercolor icon swap + parchment background.
+   Rustic icon swap — universal default across Light Rustic, Sketch, Journal.
+   ThemeImgSwap retargets the underlying `/icons/rustic/*` PNG to the active
+   theme folder at runtime; this CSS just hides the inline line SVG whenever
+   a painted Rustic alternative exists.
 =========================================================================== */
-
-/* Icon swap: refined Rustic PNGs are the universal default. The line SVG
-   only renders when no painted alternative exists. The `.cute` <img> stays
-   defined so future themes can opt back in, but is hidden by default. */
-.tj-icon-img {
-  display: none;
-  filter: none !important;
-}
-.tj-icon-img-orange {
+.tj-icon-img-rustic {
   display: inline-block;
   filter: none !important;
 }
-.tj-icon-svg.has-orange {
-  display: none;
-}
-.cute .tj-icon-svg.has-cute {
-  display: none;
-}
-.cute .tj-icon-img {
-  display: inline-block;
-}
-.cute .tj-icon-img-orange {
+.tj-icon-svg.has-rustic {
   display: none;
 }
 
@@ -1102,35 +1046,15 @@ h3 {
   animation: nav-label-rise 2s ease forwards;
 }
 
-/* Toolbox map markers keep their crisp SVG glyph in the painted themes —
-   the marker circle carries a wc-edge filter that would distort a PNG. */
-.cute .vm-marker .tj-icon-img,
-.orange .vm-marker .tj-icon-img-orange {
+/* Toolbox map markers keep their crisp SVG glyph in every theme — the
+   marker circle carries a wc-edge filter that would distort the painted
+   PNG. Hide the painted Rustic <img> inside the marker and force the
+   line SVG back on. */
+.vm-marker .tj-icon-img-rustic {
   display: none;
 }
-.cute .vm-marker .tj-icon-svg.has-cute,
-.orange .vm-marker .tj-icon-svg.has-orange {
+.vm-marker .tj-icon-svg.has-rustic {
   display: inline-block;
-}
-
-/* Cute parchment — a fixed, full-viewport hand-painted background so it
-   always covers the whole screen. Scoped to the app-shell background layer
-   only (`.app-paper-bg`) — never other `paper-grain-coarse` textures. */
-.cute .app-paper-bg {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100dvh;
-  background-image: url("/backgrounds/cute/bg-01.png");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  /* Enlarge 10% so the parchment's transparent edge-margins bleed
-     off-screen and the artwork fully covers the viewport. */
-  transform: scale(1.1);
-  transform-origin: center;
-  opacity: 1;
-  mix-blend-mode: normal;
 }
 
 /* Rustic parchment — universal default. Light mode shows the warm paper
@@ -1141,7 +1065,7 @@ h3 {
   inset: 0;
   width: 100vw;
   height: 100dvh;
-  background-image: url("/backgrounds/orange/bg.jpeg");
+  background-image: url("/backgrounds/rustic/bg.jpeg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -1221,11 +1145,11 @@ h3 {
 }
 /* Sketch theme — icon source swap. Because <img src> can't be rewritten
    via CSS, we run a tiny client effect (see ThemeImgSwap component) that
-   retargets every /icons/orange/* to /icons/sketch/* whenever the .sketch
+   retargets every /icons/rustic/* to /icons/sketch/* whenever the .sketch
    class is on <html>. */
 
 /* Anti-flash for icons during navigation in non-Light themes.
-   Each page render briefly has <img src="/icons/orange/X.png"> in the DOM
+   Each page render briefly has <img src="/icons/rustic/X.png"> in the DOM
    before ThemeImgSwap rewrites it — that's the orange-paint-then-swap
    flash. We hide those imgs until ThemeImgSwap has examined them
    (it sets data-theme-ready="1" after processing each one, whether the
@@ -1236,16 +1160,13 @@ h3 {
    waiting on the globals.css <link> means the orange paint still wins
    the first frame before the rule applies. The same rules are duplicated
    in layout.tsx as critical inline CSS for that reason. */
-html.sketch img[src*="/icons/orange/"]:not([data-theme-ready]),
-html.journal img[src*="/icons/orange/"]:not([data-theme-ready]) {
+html.sketch img[src*="/icons/rustic/"]:not([data-theme-ready]),
+html.journal img[src*="/icons/rustic/"]:not([data-theme-ready]) {
   opacity: 0;
 }
 img[data-theme-ready] {
   transition: opacity 120ms ease-out;
 }
-/* The Cute parchment is still applied when the .cute theme class is set —
-   it overrides the rustic image above with the original cute backdrop. */
-
 /* Watercolor wash — soft pigment blob with an organic, bleeding edge. */
 .watercolor-wash {
   mix-blend-mode: multiply;

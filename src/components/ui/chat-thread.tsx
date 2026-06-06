@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -435,7 +435,7 @@ export function ChatThread({
             className="flex h-full w-full items-center justify-center rounded-full transition-transform focus:outline-none focus-visible:outline-none active:scale-95 hover:bg-foreground/5"
           >
             <Image
-              src="/icons/orange/menu_kebab.png"
+              src="/icons/rustic/menu_kebab.png"
               alt=""
               width={36}
               height={36}

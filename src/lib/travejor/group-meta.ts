@@ -1,7 +1,7 @@
-/** Per-category flavour for travel groups — custom watercolour icon +
+﻿/** Per-category flavour for travel groups — custom watercolour icon +
  *  legacy emoji + gradient tint.
  *
- *  The `icon` path points into `/icons/orange/`; the `ThemeImgSwap`
+ *  The `icon` path points into `/icons/rustic/`; the `ThemeImgSwap`
  *  layer rewrites the URL to `/icons/sketch/` when the Sketch theme is
  *  active, so callers can use a single path without per-theme logic.
  *
@@ -20,27 +20,27 @@ export const CATEGORY_META: Record<
 > = {
   Food: {
     emoji: "🍜",
-    icon: "/icons/orange/street_food.png",
+    icon: "/icons/rustic/street_food.png",
     tint: "from-black/60",
   },
   Nightlife: {
     emoji: "🌃",
-    icon: "/icons/orange/club.png",
+    icon: "/icons/rustic/club.png",
     tint: "from-black/60",
   },
   Culture: {
     emoji: "🎭",
-    icon: "/icons/orange/music.png",
+    icon: "/icons/rustic/music.png",
     tint: "from-black/60",
   },
   Nature: {
     emoji: "🥾",
-    icon: "/icons/orange/mountain.png",
+    icon: "/icons/rustic/mountain.png",
     tint: "from-black/60",
   },
   Beach: {
     emoji: "🏖️",
-    icon: "/icons/orange/beach.png",
+    icon: "/icons/rustic/beach.png",
     tint: "from-black/60",
   },
 };
@@ -49,7 +49,7 @@ export function categoryMeta(category: string) {
   return (
     CATEGORY_META[category] ?? {
       emoji: "✨",
-      icon: "/icons/orange/compass_ring.png",
+      icon: "/icons/rustic/compass_ring.png",
       tint: "from-black/60",
     }
   );

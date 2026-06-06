@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -22,13 +22,13 @@ const TABS: Tab[] = [
     href: "/?app=1",
     label: "Home",
     icon: <path d="M3 11l9-8 9 8M5 10v10h14V10M9 20v-6h6v6" />,
-    image: "/icons/orange/nav_home.png",
+    image: "/icons/rustic/nav_home.png",
   },
   {
     href: "/tools",
     label: "Tools",
     icon: <path d="M4 7h16v13H4zM9 7V4h6v3M4 12h16" />,
-    image: "/icons/orange/nav_tools.png",
+    image: "/icons/rustic/nav_tools.png",
   },
   {
     href: "/feed",
@@ -39,7 +39,7 @@ const TABS: Tab[] = [
         <circle cx="12" cy="12" r="3.5" />
       </>
     ),
-    image: "/icons/orange/nav_feed.png",
+    image: "/icons/rustic/nav_feed.png",
   },
   {
     href: "/profile",
@@ -50,7 +50,7 @@ const TABS: Tab[] = [
         <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
       </>
     ),
-    image: "/icons/orange/nav_profile.png",
+    image: "/icons/rustic/nav_profile.png",
   },
 ];
 
