@@ -34,19 +34,19 @@ const PINS = [
 ];
 
 /** Value props rendered as illustrated pills on the welcome landing.
- *  Pills 2 & 3 ship without a body — title alone is the whole message —
- *  so `body` is optional and the JSX below conditionally renders the
- *  subtitle span only when there's text to show. */
+ *  All three pills are title-only — title alone is the whole message —
+ *  so `body` is optional (left in the type since older designs used it
+ *  and a future pill might want one). The JSX below conditionally
+ *  renders the subtitle span only when body text is present. */
 const FEATURES: { icon: string; title: string; body?: string }[] = [
   {
     // Source: ASSETS SOURCE/ART GRAPHIC ASSETS/REFIND ASSET V1/hub_meet.png
     icon: "/welcome-meet-travelers.webp",
-    title: "Meet travelers",
-    // Subtitle was its own standalone paragraph above the pill row
-    // ("Find your people, wherever you wonder.") — rolled into this
-    // pill body to remove the duplicate brand-promise line and tighten
-    // the hero stack.
-    body: "Find your people, wherever you wonder — see who's around and say hi before you even land.",
+    // Pill 1 used to carry a separate muted-gray body that broke the
+    // visual rhythm of pills 2 + 3 (single bold-dark lines). Collapsed
+    // to a single title that matches their style + carries the new
+    // brand-shorthand copy.
+    title: "Meet new friends before you even arrive!",
   },
   {
     // Source: ASSETS SOURCE/ART GRAPHIC ASSETS/REFIND ASSET V1/empty_no_saved_places.png
