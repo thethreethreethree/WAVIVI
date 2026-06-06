@@ -366,14 +366,15 @@ function NavView() {
           standing still. Browsers without the permission gate (Android,
           desktop) don't show this. Auto-hides once a heading is known. */}
       {needsCompassGrant && heading == null && (
-        <div className="mx-4 mt-1 flex items-center justify-between gap-2 rounded-2xl bg-surface/95 px-3 py-2 text-[11px] font-semibold shadow-card ring-1 ring-border">
-          <span className="text-foreground">
-            🧭 Enable the compass so the arrow knows which way you&apos;re facing.
+        <div className="mx-4 mt-2 flex items-center justify-between gap-3 rounded-2xl bg-surface/95 px-4 py-3 text-sm font-semibold shadow-card ring-1 ring-border">
+          <span className="flex items-center gap-2 text-foreground">
+            <span aria-hidden className="text-xl leading-none">🧭</span>
+            <span>Enable the compass so the arrow knows which way you&apos;re facing.</span>
           </span>
           <button
             type="button"
             onClick={enableCompass}
-            className="shrink-0 rounded-full bg-sunset px-2.5 py-1 text-[11px] font-bold text-white active:scale-95"
+            className="shrink-0 rounded-full bg-sunset px-4 py-2 text-sm font-bold text-white shadow-card active:scale-95"
           >
             Enable
           </button>
@@ -493,9 +494,10 @@ function NavView() {
             href={gmapsHandoff}
             target="_blank"
             rel="noreferrer"
-            className="block text-center text-xs font-bold text-glow underline-offset-4 hover:underline"
+            className="mx-auto flex w-fit items-center gap-2 rounded-full bg-sunset px-5 py-2.5 text-sm font-bold text-white shadow-card active:scale-95"
           >
-            ▶ Start voice navigation in Google Maps
+            <span aria-hidden className="text-base leading-none">▶</span>
+            <span>Start voice navigation in Google Maps</span>
           </a>
         )}
       </div>
