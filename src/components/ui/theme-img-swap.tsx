@@ -90,16 +90,32 @@ export function ThemeImgSwap() {
         // default, sketch, or journal.
         restoreFromDataset(img);
 
+        // Skip non-themable images entirely. The earlier version unconditionally
+        // set data-theme-ready="1" on EVERY image when in default theme; that
+        // was harmless on initial render but raced with Suspense-streamed
+        // hydration (e.g. the RecsRail chunk on /). Streaming images arrived
+        // in the DOM, the MutationObserver below caught them and tagged them
+        // before React finished hydrating that chunk, producing a hydration
+        // mismatch ("server rendered <img> WITHOUT data-theme-ready, client
+        // has it"). Only icon paths are theme-able; everything else
+        // (CardImage's Supabase/Google URLs, install-pill artwork, feed-post
+        // photos, etc.) should be left untouched.
+        const src = img.getAttribute("src") || "";
+        const srcset = img.getAttribute("srcset") || "";
+        const isThemable =
+          isOrangeRef(src) ||
+          isOrangeRef(srcset) ||
+          isThemedRef(src) ||
+          isThemedRef(srcset);
+        if (!isThemable) return;
+
         if (!target) {
-          // Default theme — leave orange in place. Still mark ready so
-          // the anti-flash CSS doesn't hide it (it shouldn't anyway in
-          // Light, but be defensive against intermediate states).
+          // Default theme — leave orange in place. Mark ready so the
+          // anti-flash CSS rule doesn't hide it during intermediate
+          // theme-switching states.
           img.dataset.themeReady = "1";
           return;
         }
-
-        const src = img.getAttribute("src") || "";
-        const srcset = img.getAttribute("srcset") || "";
 
         if (isOrangeRef(src) || isOrangeRef(srcset)) {
           if (isOrangeRef(src)) {
