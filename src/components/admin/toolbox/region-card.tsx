@@ -28,6 +28,28 @@ export function RegionCard({ region, utilityCount }: RegionCardProps) {
   const [radius, setRadius] = useState(region.radius_km);
   const [scanEnabled, setScanEnabled] = useState(region.scan_enabled);
 
+  // Delete-confirmation modal state. Kept here (not promoted to its own
+  // component) because the FK cascade behaviour is region-specific and
+  // the modal is only rendered when an admin opens it; no benefit to
+  // splitting the file. impact starts null and is fetched on open.
+  const [deleting, setDeleting] = useState(false);
+  const [confirmName, setConfirmName] = useState("");
+  const [impact, setImpact] = useState<{
+    cascade: {
+      cities: number;
+      feed_posts: number;
+      traveler_utilities: number;
+      scan_jobs: number;
+    };
+    orphan: {
+      stays: number;
+      restaurants: number;
+      experiences: number;
+      events: number;
+    };
+  } | null>(null);
+  const [impactErr, setImpactErr] = useState<string | null>(null);
+
   async function patch(body: Record<string, unknown>) {
     setBusy(true);
     setError(null);
@@ -66,6 +88,48 @@ export function RegionCard({ region, utilityCount }: RegionCardProps) {
       scan_enabled: scanEnabled,
     });
     if (ok) setEditing(false);
+  }
+
+  async function openDeleteModal() {
+    setDeleting(true);
+    setConfirmName("");
+    setImpact(null);
+    setImpactErr(null);
+    try {
+      const res = await fetch(`/api/admin/regions/${region.id}/impact`);
+      if (!res.ok) {
+        const b = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(b?.error ?? `Impact preview failed (${res.status})`);
+      }
+      const body = (await res.json()) as typeof impact;
+      setImpact(body);
+    } catch (err) {
+      setImpactErr(err instanceof Error ? err.message : "Impact preview failed.");
+    }
+  }
+
+  async function confirmDelete() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/regions/${region.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const b = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(b?.error ?? `Delete failed (${res.status})`);
+      }
+      // Modal closes by virtue of the region disappearing from the parent
+      // list after router.refresh().
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed.");
+      setBusy(false);
+    }
   }
 
   return (
@@ -194,6 +258,14 @@ export function RegionCard({ region, utilityCount }: RegionCardProps) {
             >
               {region.active ? "Disable" : "Enable"}
             </button>
+            <button
+              type="button"
+              onClick={openDeleteModal}
+              disabled={busy}
+              className="rounded-full px-3 py-1.5 text-xs font-bold text-heat ring-1 ring-border hover:bg-heat/10 disabled:opacity-60"
+            >
+              Delete
+            </button>
             {error && (
               <span className="text-[11px] font-semibold text-heat">
                 {error}
@@ -218,6 +290,146 @@ export function RegionCard({ region, utilityCount }: RegionCardProps) {
           </div>
         </>
       )}
+
+      {deleting && (
+        <div
+          role="dialog"
+          aria-modal
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => !busy && setDeleting(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-surface p-5 shadow-card ring-1 ring-border"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-bold text-foreground">
+              Delete {region.display_name}?
+            </h3>
+            <p className="mt-1 text-xs text-muted">
+              This cannot be undone. Cascaded rows are deleted immediately;
+              orphaned rows stay in the database with{" "}
+              <code className="font-mono">region_id = NULL</code> and become
+              invisible on the public listings.
+            </p>
+
+            {impactErr ? (
+              <p className="mt-3 rounded-lg bg-heat/15 px-3 py-2 text-xs font-semibold text-heat">
+                {impactErr}
+              </p>
+            ) : !impact ? (
+              <p className="mt-3 text-xs text-muted">Loading impact preview…</p>
+            ) : (
+              <div className="mt-3 flex flex-col gap-2">
+                <ImpactBlock
+                  tone="heat"
+                  label="Cascade delete (gone for good)"
+                  rows={[
+                    ["Cities", impact.cascade.cities],
+                    ["Feed posts", impact.cascade.feed_posts],
+                    ["Toolbox utilities", impact.cascade.traveler_utilities],
+                    ["Scan jobs", impact.cascade.scan_jobs],
+                  ]}
+                />
+                <ImpactBlock
+                  tone="muted"
+                  label="Orphan (kept in DB, region_id set to NULL)"
+                  rows={[
+                    ["Stays", impact.orphan.stays],
+                    ["Restaurants", impact.orphan.restaurants],
+                    ["Experiences", impact.orphan.experiences],
+                    ["Events", impact.orphan.events],
+                  ]}
+                />
+                {(impact.orphan.stays +
+                  impact.orphan.restaurants +
+                  impact.orphan.experiences +
+                  impact.orphan.events >
+                  0) && (
+                  <p className="text-[11px] text-heat">
+                    Tip: move places to another region from /admin/stays,
+                    /admin/eat, etc. before deleting, or accept that they
+                    become unlisted.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <label className="mt-4 block text-xs font-bold text-muted">
+              Type{" "}
+              <code className="font-mono text-foreground">
+                {region.display_name}
+              </code>{" "}
+              to confirm
+            </label>
+            <input
+              type="text"
+              value={confirmName}
+              onChange={(e) => setConfirmName(e.target.value)}
+              placeholder={region.display_name}
+              className="admin-input mt-1 w-full"
+              autoFocus
+            />
+
+            {error && (
+              <p className="mt-3 rounded-lg bg-heat/15 px-3 py-2 text-xs font-semibold text-heat">
+                {error}
+              </p>
+            )}
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleting(false)}
+                disabled={busy}
+                className="rounded-full px-4 py-1.5 text-xs font-bold text-muted ring-1 ring-border hover:text-foreground disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={
+                  busy ||
+                  !impact ||
+                  confirmName.trim() !== region.display_name.trim()
+                }
+                className="rounded-full bg-heat px-4 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+              >
+                {busy ? "Deleting…" : "Delete region"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ImpactBlock({
+  tone,
+  label,
+  rows,
+}: {
+  tone: "heat" | "muted";
+  label: string;
+  rows: [string, number][];
+}) {
+  const total = rows.reduce((acc, [, n]) => acc + n, 0);
+  const accent =
+    tone === "heat" ? "ring-heat/40 bg-heat/5" : "ring-border bg-foreground/5";
+  return (
+    <div className={`rounded-lg px-3 py-2 ring-1 ${accent}`}>
+      <p className="text-[11px] font-bold uppercase tracking-wider text-muted">
+        {label} · {total}
+      </p>
+      <ul className="mt-1 grid grid-cols-2 gap-x-3 text-xs">
+        {rows.map(([k, n]) => (
+          <li key={k} className="flex justify-between">
+            <span className="text-muted">{k}</span>
+            <span className="font-bold text-foreground">{n}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
