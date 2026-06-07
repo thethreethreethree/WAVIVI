@@ -105,6 +105,40 @@ export async function ensureCitiesForRegion(
     }
 
     const supabase = createAdminClient();
+
+    // 0) Verify the region still exists. A picker that's gone stale (e.g.
+    //    the region was deleted in another tab using /admin/regions) would
+    //    otherwise crash the insert below with a misleading
+    //    "cities_region_id_fkey violation" message — admins read the FK
+    //    error as a CSV/format problem when it's really a missing-region
+    //    problem. Catch it here with a clear message instead.
+    {
+      const { data: regionRow, error: regionErr } = await supabase
+        .from("regions")
+        .select("id, display_name")
+        .eq("id", regionId)
+        .maybeSingle();
+      if (regionErr) {
+        return {
+          ok: false,
+          error: `Region lookup failed: ${regionErr.message}`,
+          cityIdMap: {},
+          created: 0,
+          matched: 0,
+        };
+      }
+      if (!regionRow) {
+        return {
+          ok: false,
+          error:
+            `Region "${regionId}" no longer exists. Refresh this page and pick a valid region, or recreate the region from /admin/regions first.`,
+          cityIdMap: {},
+          created: 0,
+          matched: 0,
+        };
+      }
+    }
+
     const slugs = Array.from(bySlug.keys());
 
     // 1) Look up rows already in this region by slug.
