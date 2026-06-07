@@ -4,7 +4,7 @@ import { EventsList } from "@/features/events/events-list";
 import { getCurrentRegion } from "@/lib/regions/current";
 import { withinRegionRadius } from "@/lib/regions/within-radius";
 import { createClient } from "@/lib/supabase/server";
-import type { EventRow } from "@/types/supabase";
+import type { CityRow, EventRow } from "@/types/supabase";
 
 export const metadata: Metadata = {
   title: "Events Nearby",
@@ -21,8 +21,17 @@ export default async function EventsPage() {
     .eq("active", true)
     .order("rank_score", { ascending: false, nullsFirst: false });
   if (region) query = query.eq("region_id", region.id);
+  const regionCitiesRes = region
+    ? await supabase.from("cities").select("*").eq("region_id", region.id)
+    : null;
+  const regionCities = (regionCitiesRes?.data ?? []) as CityRow[];
   const { data } = await query;
-  // Drop venues outside the region's centre+radius (see /stay for the why).
-  const events = withinRegionRadius((data ?? []) as EventRow[], region);
+  // Drop venues outside the relevant city or region centre+radius
+  // (see /stay for the why).
+  const events = withinRegionRadius(
+    (data ?? []) as EventRow[],
+    region,
+    regionCities,
+  );
   return <EventsList events={events} />;
 }

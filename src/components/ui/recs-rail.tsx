@@ -6,6 +6,7 @@ import { getCurrentRegion } from "@/lib/regions/current";
 import { withinRegionRadius } from "@/lib/regions/within-radius";
 import { createClient } from "@/lib/supabase/server";
 import { places } from "@/lib/travejor/places";
+import type { CityRow } from "@/types/supabase";
 
 /**
  * Home page's "Recommended for you" rail.
@@ -87,7 +88,7 @@ export async function RecsRail() {
 
     let staysQ = supabase
       .from("stays")
-      .select("id, name, photo_url, stay_type, latitude, longitude")
+      .select("id, name, photo_url, stay_type, latitude, longitude, city_id")
       .eq("active", true)
       .eq("region_id", regionId)
       .eq("stay_type", "hostel")
@@ -99,7 +100,7 @@ export async function RecsRail() {
 
     let eatsQ = supabase
       .from("restaurants")
-      .select("id, name, photo_url, cuisine, latitude, longitude")
+      .select("id, name, photo_url, cuisine, latitude, longitude, city_id")
       .eq("active", true)
       .eq("region_id", regionId)
       .or(QUALITY_OR_PICK)
@@ -110,7 +111,7 @@ export async function RecsRail() {
 
     let expsQ = supabase
       .from("experiences")
-      .select("id, name, photo_url, category, latitude, longitude")
+      .select("id, name, photo_url, category, latitude, longitude, city_id")
       .eq("active", true)
       .eq("region_id", regionId)
       .or(QUALITY_OR_PICK)
@@ -119,30 +120,38 @@ export async function RecsRail() {
       .limit(PER_CAT_FETCH);
     if (cityIds.length > 0) expsQ = expsQ.in("city_id", cityIds);
 
-    const [staysRes, eatsRes, expsRes, groupRes] = await Promise.all([
-      staysQ,
-      eatsQ,
-      expsQ,
-      supabase
-        .from("chat_groups")
-        .select("id, name, cover_image, category")
-        .eq("archived", false)
-        .order("featured", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(1),
-    ]);
-    const stays = withinRegionRadius(staysRes.data ?? [], effectiveRegion).slice(
-      0,
-      PER_CAT_KEEP,
-    );
-    const eats = withinRegionRadius(eatsRes.data ?? [], effectiveRegion).slice(
-      0,
-      PER_CAT_KEEP,
-    );
-    const exps = withinRegionRadius(expsRes.data ?? [], effectiveRegion).slice(
-      0,
-      PER_CAT_KEEP,
-    );
+    const [staysRes, eatsRes, expsRes, groupRes, regionCitiesRes] =
+      await Promise.all([
+        staysQ,
+        eatsQ,
+        expsQ,
+        supabase
+          .from("chat_groups")
+          .select("id, name, cover_image, category")
+          .eq("archived", false)
+          .order("featured", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(1),
+        // City geo for the region — feeds withinRegionRadius so per-city
+        // centres + radii override the region circle when set.
+        supabase.from("cities").select("*").eq("region_id", regionId),
+      ]);
+    const regionCities = (regionCitiesRes.data ?? []) as CityRow[];
+    const stays = withinRegionRadius(
+      staysRes.data ?? [],
+      effectiveRegion,
+      regionCities,
+    ).slice(0, PER_CAT_KEEP);
+    const eats = withinRegionRadius(
+      eatsRes.data ?? [],
+      effectiveRegion,
+      regionCities,
+    ).slice(0, PER_CAT_KEEP);
+    const exps = withinRegionRadius(
+      expsRes.data ?? [],
+      effectiveRegion,
+      regionCities,
+    ).slice(0, PER_CAT_KEEP);
     const group = (groupRes.data ?? [])[0];
     const live: ForYouCard[] = [
       ...stays.map((s) => ({

@@ -8,6 +8,8 @@ import {
   deleteCity,
   mergeCities,
   renameCity,
+  suggestCityCentroid,
+  updateCityGeo,
 } from "./actions";
 import type { CityRow } from "@/types/supabase";
 
@@ -38,6 +40,10 @@ export function CitiesList({
   const [mergingFromId, setMergingFromId] = useState<string | null>(null);
   const [mergeTargetId, setMergeTargetId] = useState<string>("");
   const [newCityName, setNewCityName] = useState("");
+  const [geoEditingId, setGeoEditingId] = useState<string | null>(null);
+  const [geoLat, setGeoLat] = useState("");
+  const [geoLng, setGeoLng] = useState("");
+  const [geoRadius, setGeoRadius] = useState("");
 
   function clearStatus(): void {
     setError(null);
@@ -106,6 +112,70 @@ export function CitiesList({
         return;
       }
       setNotice("City deleted.");
+      router.refresh();
+    });
+  }
+
+  function beginGeoEdit(c: CityWithCounts): void {
+    clearStatus();
+    setGeoEditingId(c.id);
+    setGeoLat(c.latitude != null ? String(c.latitude) : "");
+    setGeoLng(c.longitude != null ? String(c.longitude) : "");
+    setGeoRadius(c.radius_km != null ? String(c.radius_km) : "");
+  }
+
+  function autoCentre(): void {
+    if (!geoEditingId) return;
+    const id = geoEditingId;
+    startTransition(async () => {
+      const res = await suggestCityCentroid(id);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      if (res.latitude == null || res.longitude == null) {
+        setError(
+          "No placed venues in this city yet — type the centre by hand.",
+        );
+        return;
+      }
+      setGeoLat(String(res.latitude));
+      setGeoLng(String(res.longitude));
+      setNotice(`Centred on the centroid of ${res.sampleCount} place(s).`);
+    });
+  }
+
+  function commitGeo(): void {
+    if (!geoEditingId) return;
+    const id = geoEditingId;
+    const allBlank = !geoLat.trim() && !geoLng.trim() && !geoRadius.trim();
+    const lat = allBlank ? null : Number(geoLat);
+    const lng = allBlank ? null : Number(geoLng);
+    const radius = allBlank ? null : Number(geoRadius);
+    if (
+      !allBlank &&
+      (Number.isNaN(lat as number) ||
+        Number.isNaN(lng as number) ||
+        Number.isNaN(radius as number))
+    ) {
+      setError("Lat, lng, and radius must all be numbers.");
+      return;
+    }
+    startTransition(async () => {
+      const res = await updateCityGeo(id, {
+        latitude: lat,
+        longitude: lng,
+        radius_km: radius,
+      });
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      setNotice(allBlank ? "City geo cleared." : "City geo saved.");
+      setGeoEditingId(null);
+      setGeoLat("");
+      setGeoLng("");
+      setGeoRadius("");
       router.refresh();
     });
   }
@@ -210,6 +280,20 @@ export function CitiesList({
                     place{total === 1 ? "" : "s"} ({c.stays} stays ·{" "}
                     {c.restaurants} eats · {c.experiences} experiences)
                   </span>
+                  <span className="block truncate text-[11px] text-muted">
+                    {c.latitude != null &&
+                    c.longitude != null &&
+                    c.radius_km != null ? (
+                      <>
+                        geo: {c.latitude.toFixed(4)}, {c.longitude.toFixed(4)} ·{" "}
+                        radius {c.radius_km} km
+                      </>
+                    ) : (
+                      <span className="text-heat/80">
+                        geo: not set — falls back to region radius
+                      </span>
+                    )}
+                  </span>
                 </span>
                 <span className="flex shrink-0 items-center gap-1.5">
                   {isEditing ? (
@@ -241,6 +325,13 @@ export function CitiesList({
                       </button>
                       <button
                         type="button"
+                        onClick={() => beginGeoEdit(c)}
+                        className="rounded-full px-3 py-1 text-xs font-bold text-muted ring-1 ring-border hover:text-foreground"
+                      >
+                        {c.latitude != null ? "Edit geo" : "Set geo"}
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => beginMerge(c)}
                         disabled={cities.length < 2}
                         className="rounded-full px-3 py-1 text-xs font-bold text-muted ring-1 ring-border hover:text-foreground disabled:opacity-40"
@@ -268,6 +359,99 @@ export function CitiesList({
           })}
         </ul>
       )}
+
+      {geoEditingId &&
+        (() => {
+          const c = cities.find((x) => x.id === geoEditingId);
+          if (!c) return null;
+          return (
+            <div
+              role="dialog"
+              aria-modal
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+              onClick={() => setGeoEditingId(null)}
+            >
+              <div
+                className="w-full max-w-md rounded-2xl bg-surface p-5 shadow-card ring-1 ring-border"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="text-base font-bold">
+                  {c.latitude != null ? "Edit" : "Set"} geo for {c.name}
+                </h3>
+                <p className="mt-1 text-xs text-muted">
+                  Centre + radius for the public listing filter. When set,
+                  venues with this city_id are kept only if they sit inside
+                  the circle — overrides the region&apos;s default radius.
+                  Leave all three blank to clear and fall back to the
+                  region radius. Radius range: 1&ndash;200 km.
+                </p>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <label className="block">
+                    <span className="text-[11px] font-bold text-muted">
+                      Latitude
+                    </span>
+                    <input
+                      type="text"
+                      value={geoLat}
+                      onChange={(e) => setGeoLat(e.target.value)}
+                      placeholder="11.18"
+                      className="admin-input mt-1 w-full"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-[11px] font-bold text-muted">
+                      Longitude
+                    </span>
+                    <input
+                      type="text"
+                      value={geoLng}
+                      onChange={(e) => setGeoLng(e.target.value)}
+                      placeholder="119.39"
+                      className="admin-input mt-1 w-full"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-[11px] font-bold text-muted">
+                      Radius km
+                    </span>
+                    <input
+                      type="text"
+                      value={geoRadius}
+                      onChange={(e) => setGeoRadius(e.target.value)}
+                      placeholder="25"
+                      className="admin-input mt-1 w-full"
+                    />
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  onClick={autoCentre}
+                  disabled={pending}
+                  className="mt-3 rounded-full px-3 py-1 text-xs font-bold text-muted ring-1 ring-border hover:text-foreground disabled:opacity-50"
+                >
+                  Auto-centre from placed venues
+                </button>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setGeoEditingId(null)}
+                    className="rounded-full px-4 py-1.5 text-xs font-bold text-muted ring-1 ring-border hover:text-foreground"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={commitGeo}
+                    disabled={pending}
+                    className="rounded-full bg-sunset px-4 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+                  >
+                    {pending ? "Saving…" : "Save"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
       {mergingFrom && (
         <div

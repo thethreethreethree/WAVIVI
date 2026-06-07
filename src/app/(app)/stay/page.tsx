@@ -5,7 +5,7 @@ import { getCurrentCities } from "@/lib/cities/current";
 import { getCurrentRegion } from "@/lib/regions/current";
 import { withinRegionRadius } from "@/lib/regions/within-radius";
 import { createClient } from "@/lib/supabase/server";
-import type { StayRow } from "@/types/supabase";
+import type { CityRow, StayRow } from "@/types/supabase";
 
 export const metadata: Metadata = { title: "Where to Stay" };
 export const dynamic = "force-dynamic";
@@ -30,11 +30,22 @@ export default async function StayPage() {
     ? cities.filter((c) => c.region_id === region.id).map((c) => c.id)
     : [];
   if (validCityIds.length > 0) query = query.in("city_id", validCityIds);
+  // Per-city geo for the radius filter — covers the case where the region
+  // spans hundreds of km (Palawan) so a single region radius can't reach
+  // both ends. When a city has its own centre+radius, the filter uses it;
+  // otherwise it falls back to the region's circle.
+  const regionCitiesRes = region
+    ? await supabase.from("cities").select("*").eq("region_id", region.id)
+    : null;
+  const regionCities = (regionCitiesRes?.data ?? []) as CityRow[];
   const { data } = await query;
   // Drop venues the ingest tagged with this region but that sit outside
-  // the region's centre+radius — usually venues in a neighbouring region
-  // that the larger scan circle swept in.
-  const stays = withinRegionRadius((data ?? []) as StayRow[], region);
+  // the relevant city or region centre+radius.
+  const stays = withinRegionRadius(
+    (data ?? []) as StayRow[],
+    region,
+    regionCities,
+  );
 
   // Latest pickers per stay → small avatar stack on each list card.
   const pickersByStay: Record<string, StayPicker[]> = {};

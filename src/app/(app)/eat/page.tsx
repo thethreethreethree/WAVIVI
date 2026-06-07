@@ -5,7 +5,7 @@ import { getCurrentCities } from "@/lib/cities/current";
 import { getCurrentRegion } from "@/lib/regions/current";
 import { withinRegionRadius } from "@/lib/regions/within-radius";
 import { createClient } from "@/lib/supabase/server";
-import type { RestaurantRow } from "@/types/supabase";
+import type { CityRow, RestaurantRow } from "@/types/supabase";
 
 export const metadata: Metadata = { title: "Where to Eat" };
 export const dynamic = "force-dynamic";
@@ -26,11 +26,17 @@ export default async function EatPage() {
     ? cities.filter((c) => c.region_id === region.id).map((c) => c.id)
     : [];
   if (validCityIds.length > 0) query = query.in("city_id", validCityIds);
+  const regionCitiesRes = region
+    ? await supabase.from("cities").select("*").eq("region_id", region.id)
+    : null;
+  const regionCities = (regionCitiesRes?.data ?? []) as CityRow[];
   const { data } = await query;
-  // Drop venues outside the region's centre+radius (see /stay for the why).
+  // Drop venues outside the relevant city or region centre+radius
+  // (see /stay for the why).
   const restaurants = withinRegionRadius(
     (data ?? []) as RestaurantRow[],
     region,
+    regionCities,
   );
   return <RestaurantList restaurants={restaurants} />;
 }

@@ -204,6 +204,122 @@ export async function deleteCity(
   return { ok: true, error: null };
 }
 
+/** Set (or clear) a city's centre + radius. The public listings use this
+ *  to decide whether a venue inside the region passes the radius filter:
+ *  when a city has its own geo, rows pointing at that city are checked
+ *  against the city circle; rows without a city_id fall back to the
+ *  region circle. Pass `null` for all three to clear the city's geo and
+ *  revert to the region-only fallback. */
+export async function updateCityGeo(
+  cityId: string,
+  geo: {
+    latitude: number | null;
+    longitude: number | null;
+    radius_km: number | null;
+  },
+): Promise<CityActionResult> {
+  const auth = await assertAdmin();
+  if (auth) return auth;
+
+  const { latitude, longitude, radius_km } = geo;
+
+  // All-or-nothing: a centre without a radius (or vice-versa) is
+  // useless to the filter and would silently keep firing the region
+  // fallback. Make the admin commit to a complete set or fully clear.
+  const allSet =
+    latitude != null && longitude != null && radius_km != null;
+  const allCleared =
+    latitude == null && longitude == null && radius_km == null;
+  if (!allSet && !allCleared) {
+    return {
+      ok: false,
+      error: "Set all three (lat, lng, radius) or clear all three.",
+    };
+  }
+  if (allSet) {
+    if (Math.abs(latitude) > 90) {
+      return { ok: false, error: "Latitude must be between -90 and 90." };
+    }
+    if (Math.abs(longitude) > 180) {
+      return { ok: false, error: "Longitude must be between -180 and 180." };
+    }
+    if (radius_km <= 0 || radius_km > 200) {
+      return { ok: false, error: "Radius must be between 1 and 200 km." };
+    }
+  }
+
+  const supabase = createAdminClient();
+  const { data: current, error: getErr } = await supabase
+    .from("cities")
+    .select("id, region_id")
+    .eq("id", cityId)
+    .single();
+  if (getErr || !current) {
+    return { ok: false, error: getErr?.message ?? "City not found." };
+  }
+
+  const { error } = await supabase
+    .from("cities")
+    .update({ latitude, longitude, radius_km })
+    .eq("id", cityId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidateRegion(current.region_id);
+  return { ok: true, error: null };
+}
+
+/** Compute a centre from the centroid of a city's existing places. Lets
+ *  admins click "Auto-centre" instead of typing coordinates. Returns null
+ *  when the city has no placed venues yet (no centroid to derive). */
+export async function suggestCityCentroid(
+  cityId: string,
+): Promise<{
+  ok: boolean;
+  error: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  sampleCount: number;
+}> {
+  const auth = await assertAdmin();
+  if (auth) {
+    return { ok: false, error: auth.error, latitude: null, longitude: null, sampleCount: 0 };
+  }
+
+  const supabase = createAdminClient();
+  let totalLat = 0;
+  let totalLng = 0;
+  let count = 0;
+  for (const table of ["stays", "restaurants", "experiences"] as const) {
+    const { data } = await supabase
+      .from(table)
+      .select("latitude, longitude")
+      .eq("city_id", cityId)
+      .not("latitude", "is", null)
+      .not("longitude", "is", null);
+    for (const row of data ?? []) {
+      totalLat += row.latitude as number;
+      totalLng += row.longitude as number;
+      count++;
+    }
+  }
+  if (count === 0) {
+    return {
+      ok: true,
+      error: null,
+      latitude: null,
+      longitude: null,
+      sampleCount: 0,
+    };
+  }
+  return {
+    ok: true,
+    error: null,
+    latitude: Number((totalLat / count).toFixed(6)),
+    longitude: Number((totalLng / count).toFixed(6)),
+    sampleCount: count,
+  };
+}
+
 /** Create a city by hand — useful when admins want a town that the CSV
  *  scraper hasn't covered yet, so they can hand-assign places to it. */
 export async function createCity(

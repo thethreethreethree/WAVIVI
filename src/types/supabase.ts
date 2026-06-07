@@ -174,6 +174,13 @@ export type CityRow = {
   slug: string;
   name: string;
   created_at: string;
+  /** Migration 0057 — city geo for the display-time radius filter.
+   *  Nullable so cities seeded before this migration keep working; the
+   *  public listings fall back to the region's centre+radius when the
+   *  city has no geo of its own. */
+  latitude: number | null;
+  longitude: number | null;
+  radius_km: number | null;
 };
 
 export type CityInsert = {
@@ -181,6 +188,9 @@ export type CityInsert = {
   region_id: string;
   slug: string;
   name: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  radius_km?: number | null;
 };
 
 export type CityUpdate = Partial<Omit<CityInsert, "region_id">>;
