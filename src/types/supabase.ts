@@ -391,6 +391,10 @@ export type PushSubscriptionUpdate = {
 export type UtilityRow = {
   id: string;
   region_id: string | null;
+  /** Migration 0058 — optional FK to cities. Set on CSV import via the
+   *  batch utility importer (City column → city_id resolver). Null for
+   *  OSM-scan-discovered rows that aren't bucketed to a city yet. */
+  city_id: string | null;
   category: UtilityCategory;
   name: string;
   latitude: number;
@@ -429,6 +433,8 @@ export type UtilityRow = {
 export type UtilityInsert = {
   id?: string;
   region_id?: string | null;
+  /** Migration 0058 — optional FK to cities. See UtilityRow.city_id. */
+  city_id?: string | null;
   category: UtilityCategory;
   name: string;
   latitude: number;

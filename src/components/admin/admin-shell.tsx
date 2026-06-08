@@ -19,6 +19,7 @@ const SECTIONS = [
   { href: "/admin/bulk-import", label: "Bulk import" },
   { href: "/admin/partner-import", label: "Partner import" },
   { href: "/admin/batch-city-import", label: "Batch city import" },
+  { href: "/admin/batch-utility-import", label: "Batch utility import" },
   { href: "/admin/photo-mirror", label: "Photo mirror" },
 ];
 
