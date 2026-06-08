@@ -123,6 +123,75 @@ const PATHS: Record<string, React.ReactNode> = {
       <path d="M7 6.5h.01M10 6.5h.01" />
     </>
   ),
+  // --- 2026-06-08 expansion: 9 new tool tiles -----------------------------
+  // SVG fallbacks are intentionally light — every entry below ships a
+  // painted rustic PNG (see RUSTIC_ICONS) which is what users actually
+  // see. The SVG is the safety net for callers that pass svgOnly or for
+  // themes that haven't been painted yet.
+  pharmacy: (
+    <>
+      <rect x="4" y="3.5" width="16" height="17" rx="3" />
+      <path d="M12 8v8M8 12h8" />
+      <circle cx="12" cy="12" r="6.5" />
+    </>
+  ),
+  spa: (
+    <>
+      <path d="M12 6c-2 3-2 5 0 8 2-3 2-5 0-8z" />
+      <path d="M7 13c1 4 4 6 5 6 1 0 4-2 5-6-3 1-7 1-10 0z" />
+    </>
+  ),
+  gym: (
+    <>
+      <rect x="2" y="9" width="3" height="6" rx="1" />
+      <rect x="19" y="9" width="3" height="6" rx="1" />
+      <rect x="5" y="10.5" width="2" height="3" />
+      <rect x="17" y="10.5" width="2" height="3" />
+      <path d="M7 12h10" />
+    </>
+  ),
+  coworking: (
+    <>
+      <rect x="3.5" y="4" width="17" height="11" rx="2" />
+      <path d="M2 18h20M9 15v3M15 15v3" />
+    </>
+  ),
+  luggage: (
+    <>
+      <rect x="5" y="7" width="14" height="13" rx="2" />
+      <path d="M9 7V4h6v3" />
+      <path d="M9 11v6M15 11v6" />
+      <path d="M8 20v1M16 20v1" />
+    </>
+  ),
+  petrol: (
+    <>
+      <rect x="4" y="3.5" width="9" height="17" rx="1.5" />
+      <path d="M4 9h9" />
+      <path d="M13 8l3 2v8a2 2 0 0 1-2 2" />
+      <path d="M16 13v-2l-2-1" />
+    </>
+  ),
+  tourist: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v6" />
+      <circle cx="12" cy="7.5" r="1" fill="currentColor" />
+    </>
+  ),
+  scooter: (
+    <>
+      <circle cx="6" cy="17" r="3" />
+      <circle cx="18" cy="17" r="3" />
+      <path d="M9 17h6l-2-7h4M13 10l-2-4H8" />
+    </>
+  ),
+  convenience: (
+    <>
+      <path d="M4 8h16l-1.5 11H5.5z" />
+      <path d="M8 8V6a4 4 0 0 1 8 0v2" />
+    </>
+  ),
   // 3×3 dot grid — universal "more" / "apps" affordance. Themes that have
   // a painted PNG (warm watercolor in /icons/rustic/more_tools.png)
   // hide this SVG via the standard tj-icon-svg/has-rustic CSS pairing.

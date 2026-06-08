@@ -26,6 +26,18 @@ const TILE_TO_CATEGORY: Record<string, CategoryId> = {
   police: "police",
   embassy: "embassy",
   laundry: "laundry",
+  // 2026-06-08 expansion — also reachable from the global search bar
+  // here (so a typed match jumps straight to the map even though the
+  // tile itself only renders on /tools/more).
+  pharmacy: "pharmacy",
+  spa: "massage_spa",
+  gym: "gym_fitness",
+  convenience: "convenience_store",
+  luggage: "luggage_storage",
+  scooter: "motorbike_rental",
+  petrol: "petrol_station",
+  tourist: "tourist_info",
+  coworking: "coworking_space",
 };
 
 export default function ToolsPage() {

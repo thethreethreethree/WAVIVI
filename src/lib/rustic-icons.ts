@@ -24,6 +24,20 @@ export const RUSTIC_ICONS: Partial<Record<IconName, string>> = {
   embassy: `${O}/embassy.png`,
   laundry: `${O}/laundry.png`,
   moreTools: `${O}/more_tools.png`,
+  // --- 2026-06-08 expansion -------------------------------------------
+  // Filenames match the CategoryId so the rustic-folder lists in the
+  // codebase stay greppable by category. Sketch + Journal copies land
+  // in their own folders later — when missing, ThemeImgSwap falls back
+  // to the rustic original via its onError handler.
+  pharmacy:    `${O}/pharmacy.png`,
+  spa:         `${O}/massage_spa.png`,
+  gym:         `${O}/gym_fitness.png`,
+  coworking:   `${O}/coworking_space.png`,
+  luggage:     `${O}/luggage_storage.png`,
+  petrol:      `${O}/petrol_station.png`,
+  tourist:     `${O}/tourist_info.png`,
+  scooter:     `${O}/motorbike_rental.png`,
+  convenience: `${O}/convenience_store.png`,
   // --- Radial hub ---
   meet: `${O}/16_follow_users.png`,
   calendar: `${O}/calendar.png`,

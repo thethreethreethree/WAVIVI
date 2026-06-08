@@ -82,14 +82,80 @@ export const travelerServices: TravelerService[] = [
     groupedUnder: "more",
   },
   { id: "laundry", label: "Laundry", icon: "laundry", blurb: "Laundromats and services" },
+  // --- 2026-06-08 expansion: nine new categories added behind /tools/more
+  // so the top-level dashboard stays uncluttered. Search still finds
+  // them by label.
+  {
+    id: "pharmacy",
+    label: "Pharmacy",
+    icon: "pharmacy",
+    blurb: "Pharmacies and drugstores",
+    groupedUnder: "more",
+  },
+  {
+    id: "spa",
+    label: "Massage / Spa",
+    icon: "spa",
+    blurb: "Massage and spa services",
+    groupedUnder: "more",
+  },
+  {
+    id: "gym",
+    label: "Gym / Fitness",
+    icon: "gym",
+    blurb: "Gyms and fitness studios",
+    groupedUnder: "more",
+  },
+  {
+    id: "convenience",
+    label: "Convenience",
+    icon: "convenience",
+    blurb: "Small shops and sundries",
+    groupedUnder: "more",
+  },
+  {
+    id: "luggage",
+    label: "Luggage Storage",
+    icon: "luggage",
+    blurb: "Bag drop and lockers",
+    groupedUnder: "more",
+  },
+  {
+    id: "scooter",
+    label: "Scooter Rental",
+    icon: "scooter",
+    blurb: "Two-wheeler rentals",
+    groupedUnder: "more",
+  },
+  {
+    id: "petrol",
+    label: "Petrol Station",
+    icon: "petrol",
+    blurb: "Gas stations and fuel",
+    groupedUnder: "more",
+  },
+  {
+    id: "tourist",
+    label: "Tourist Info",
+    icon: "tourist",
+    blurb: "Maps, advice, bookings",
+    groupedUnder: "more",
+  },
+  {
+    id: "coworking",
+    label: "Coworking",
+    icon: "coworking",
+    blurb: "Desks and remote-work spots",
+    groupedUnder: "more",
+  },
   // The "More tools" entry tile itself. Tapping it navigates to
-  // /tools/more, where the four grouped services live as their own
-  // tiles. Search results include this tile too (so typing "more"
-  // finds the group affordance).
+  // /tools/more, where the grouped services live as their own tiles.
+  // Search results include this tile too (so typing "more" finds the
+  // group affordance).
   {
     id: MORE_TOOLS_TILE_ID,
     label: "More tools",
     icon: "moreTools",
-    blurb: "Bank, SIM, Police, Embassy",
+    blurb: "Bank, SIM, Pharmacy, Gym, and more",
   },
 ];

@@ -14,6 +14,16 @@ const TILE_TO_CATEGORY: Record<string, CategoryId> = {
   sim: "sim_card",
   police: "police",
   embassy: "embassy",
+  // 2026-06-08 expansion — short tile id ↔ canonical CategoryId.
+  pharmacy: "pharmacy",
+  spa: "massage_spa",
+  gym: "gym_fitness",
+  convenience: "convenience_store",
+  luggage: "luggage_storage",
+  scooter: "motorbike_rental",
+  petrol: "petrol_station",
+  tourist: "tourist_info",
+  coworking: "coworking_space",
 };
 
 export default function MoreToolsPage() {
@@ -36,8 +46,8 @@ export default function MoreToolsPage() {
         <h1 className="text-2xl font-bold tracking-tight">More tools</h1>
       </div>
       <p className="mt-2 text-sm text-muted">
-        Less-common but still useful: bank branches, SIM card vendors,
-        police stations, embassies.
+        Bank, SIM, pharmacy, gym, spa, luggage storage, scooter rental,
+        petrol, tourist info, coworking, police, embassy.
       </p>
 
       {/* Mirrors the main /tools grid styling exactly — 3-up, 104px
