@@ -80,88 +80,21 @@ export async function scanRegionCategory(
   const jobId = job.id;
 
   try {
-    // Per-city scan when cities have their own geo. The region.radius_km
-    // is capped at 200 km in migration 0003, and a single circle from the
-    // region centre can't cover a long region like Palawan (~400 km
-    // N–S). Iterating each city's centre+radius means the union covers
-    // the whole region accurately. Cities without geo set are ignored;
-    // if NO city has geo we fall back to the original region-centre
-    // scan so legacy regions still work.
-    const { data: cityRows } = await supabase
-      .from("cities")
-      .select("id, name, latitude, longitude, radius_km")
-      .eq("region_id", regionId)
-      .not("latitude", "is", null)
-      .not("longitude", "is", null)
-      .not("radius_km", "is", null);
-    const scanCircles =
-      (cityRows ?? [])
-        .filter(
-          (c) => c.latitude != null && c.longitude != null && c.radius_km != null,
-        )
-        .map((c) => ({
-          name: c.name,
-          latitude: c.latitude as number,
-          longitude: c.longitude as number,
-          radiusKm: c.radius_km as number,
-        }));
-
-    const placesPool: Awaited<ReturnType<typeof provider.fetchPlaces>> = [];
-
-    // Per-city circles first (when cities have geo). Tight, accurate
-    // coverage around populated towns.
-    for (let i = 0; i < scanCircles.length; i++) {
-      const c = scanCircles[i];
-      const places = await provider.fetchPlaces({
-        category,
-        latitude: c.latitude,
-        longitude: c.longitude,
-        radiusKm: c.radiusKm,
-      });
-      placesPool.push(...places);
-      await logLine(
-        supabase,
-        jobId,
-        "info",
-        `Fetched ${places.length} ${category} place(s) around ${c.name} (${c.radiusKm} km) via ${provider.name}`,
-      );
-      // Same throttle between every OSM call, mirrors the inter-category
-      // delay in scanRegion. Always runs (the region pass below is also
-      // an OSM call so we throttle into it too).
-      await new Promise((r) => setTimeout(r, SCAN_THROTTLE_MS));
-    }
-
-    // Region-centre pass — captures the in-between-towns and outside-
-    // city utilities the per-city circles miss. Palawan is the canonical
-    // case: 7 cities × 25 km circles can't cover the 350 km of coastline
-    // between them; one 100 km circle from the region centre does. Always
-    // runs (even when scanCircles is empty — that's the legacy path),
-    // and dedupeUtilities collapses overlap against the per-city pool by
-    // (source, source_ref).
-    const regionPlaces = await provider.fetchPlaces({
+    const places = await provider.fetchPlaces({
       category,
       latitude: region.latitude,
       longitude: region.longitude,
       radiusKm: region.radius_km,
     });
-    placesPool.push(...regionPlaces);
     await logLine(
       supabase,
       jobId,
       "info",
-      `Fetched ${regionPlaces.length} ${category} place(s) around region centre (${region.radius_km} km) via ${provider.name}`,
+      `Fetched ${places.length} ${category} place(s) via ${provider.name}`,
     );
-    if (scanCircles.length > 0) {
-      await logLine(
-        supabase,
-        jobId,
-        "info",
-        `Pooled ${placesPool.length} ${category} place(s) across ${scanCircles.length} city circle(s) + region centre — deduping next.`,
-      );
-    }
 
     const normalized = dedupeUtilities(
-      placesPool.map((p) => normalizePlace(p, category)),
+      places.map((p) => normalizePlace(p, category)),
     );
 
     const rows: UtilityInsert[] = normalized.map((n) => {
@@ -205,7 +138,7 @@ export async function scanRegionCategory(
       .update({
         status: "completed",
         completed_at: new Date().toISOString(),
-        total_found: placesPool.length,
+        total_found: places.length,
         total_saved: saved,
       })
       .eq("id", jobId);
@@ -216,7 +149,7 @@ export async function scanRegionCategory(
       `Saved ${saved} ${category} utility record(s)`,
     );
 
-    return { category, found: placesPool.length, saved };
+    return { category, found: places.length, saved };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await supabase

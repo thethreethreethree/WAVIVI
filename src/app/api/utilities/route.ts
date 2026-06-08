@@ -10,9 +10,6 @@ import { createClient } from "@/lib/supabase/server";
  * Query params (all optional):
  *   category  one of the 12 category ids, or "all"
  *   region    a region id
- *   city      a city id; may repeat. Accepted but currently a no-op —
- *             see the comment below for why utilities aren't clamped
- *             by city.radius_km the way /stay /eat /todo are.
  *   bbox      "minLng,minLat,maxLng,maxLat" viewport filter
  *   limit     max rows (default 2000, capped at 5000)
  */
@@ -58,16 +55,6 @@ export async function GET(req: NextRequest) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  // NOTE: the `city` query param is accepted but intentionally not used
-  // as a filter. An earlier version clamped utilities to inside
-  // city.radius_km (mirroring /stay /eat /todo). That regressed the
-  // toolbox map — utilities are scanned from OSM at the region's scan
-  // radius and have no city_id, so a 25 km clamp around the city centre
-  // dropped legitimate utilities that travellers would still drive to.
-  // Proper city-scoping needs a city_id column on traveler_utilities
-  // (Plan B in the previous turn): scan engine assigns it, admin can
-  // re-bucket. Tracked as a follow-up.
 
   return NextResponse.json(
     { utilities: data ?? [], count: data?.length ?? 0 },
