@@ -211,13 +211,15 @@ export function BatchUtilityImportClient({
 
   const decisionsSummary = useMemo(() => {
     if (!preview) return null;
+    // Count categories from `rows` (the full importable set), not from
+    // `decisions` (which is capped at 500 for memory). Decisions still
+    // drives the row-by-row preview when we surface one; the category
+    // chips just need the totals across the whole CSV.
     const byCat: Record<string, number> = {};
-    let unrouted = 0;
-    for (const d of preview.decisions) {
-      if (d.routed === "unrouted") unrouted++;
-      else byCat[d.routed] = (byCat[d.routed] ?? 0) + 1;
+    for (const r of preview.rows) {
+      byCat[r.category] = (byCat[r.category] ?? 0) + 1;
     }
-    return { byCat, unrouted };
+    return { byCat, unrouted: preview.unroutedCount };
   }, [preview]);
 
   return (

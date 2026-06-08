@@ -57,13 +57,20 @@ export interface BatchUtilityParseResult {
   /** All distinct, non-empty City cells in first-seen order. Fed to
    *  ensureCitiesForRegion so cities are auto-created before insert. */
   cityNames: string[];
-  /** Per-row routing diagnostic for the preview pane. */
+  /** Per-row routing diagnostic for the preview pane. Capped at 500
+   *  entries to keep the parse result light when the CSV is large —
+   *  the canonical per-category and unrouted counts are on
+   *  `unroutedCount` + on `rows` (already category-tagged), so the
+   *  cap doesn't lose any totals. */
   decisions: {
     lineNumber: number;
     title: string;
     routed: CategoryId | "unrouted";
     reason: string;
   }[];
+  /** Full count of rows the parser couldn't route to a category.
+   *  Computed from the full CSV, not capped by the decisions slice. */
+  unroutedCount: number;
   /** Header-level / file-level errors that stopped parsing. */
   headerError: string | null;
   /** Per-row errors (skipped rows). */
@@ -234,6 +241,7 @@ export function parseBatchUtilityCsv(text: string): BatchUtilityParseResult {
   const rowErrors: string[] = [];
   const cityNameSet = new Set<string>();
   const cityNames: string[] = [];
+  let unroutedCount = 0;
 
   for (let r = 1; r < grid.length; r++) {
     const lineNumber = r + 1; // 1-indexed including header
@@ -273,6 +281,7 @@ export function parseBatchUtilityCsv(text: string): BatchUtilityParseResult {
       sourceQueryIdx >= 0 ? (cells[sourceQueryIdx] ?? "").trim() : "";
     const category = routeUtilityRow(industry, sourceQuery);
     if (!category) {
+      unroutedCount++;
       rowErrors.push(
         `Row ${lineNumber}: couldn't route "${industry || sourceQuery}" to a known category — skipped.`,
       );
@@ -367,6 +376,7 @@ export function parseBatchUtilityCsv(text: string): BatchUtilityParseResult {
     rows,
     cityNames,
     decisions: decisions.slice(0, 500),
+    unroutedCount,
     headerError: null,
     rowErrors,
   };
@@ -377,6 +387,7 @@ function emptyResult(headerError: string): BatchUtilityParseResult {
     rows: [],
     cityNames: [],
     decisions: [],
+    unroutedCount: 0,
     headerError,
     rowErrors: [],
   };
