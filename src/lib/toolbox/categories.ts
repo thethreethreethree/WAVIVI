@@ -3,25 +3,46 @@ import type { IconName } from "@/components/ui/icon";
 /**
  * Traveler Toolbox category catalogue.
  *
- * The 12 supported utility categories, each mapped to its app icon and the
+ * The 21 supported utility categories, each mapped to its app icon and the
  * OpenStreetMap tag filters used to discover it via the Overpass API.
- * This is the single source of truth — the scan engine, API, admin, and
- * frontend all read from here.
+ *
+ * This file is the runtime source of truth for the scan engine (which
+ * iterates `TOOLBOX_CATEGORIES` to build Overpass queries) and for the
+ * frontend (icon, label, blurb). It mirrors the `utility_categories`
+ * table seeded by migration 0059 — the DB row is what admins edit on
+ * /admin/toolbox/categories; this file is what the runtime reads. They
+ * stay in sync because every category id below also exists in the DB
+ * row, and any admin-added DB row will lack OSM filters here and so
+ * won't be scanned (CSV-import / manual entry only) until a developer
+ * mirrors it into this list.
  */
 
 export type CategoryId =
   | "atm"
-  | "market"
   | "bank"
-  | "sim_card"
-  | "public_wifi"
   | "currency_exchange"
-  | "bathroom"
-  | "transportation"
   | "medical_clinic"
+  | "pharmacy"
+  | "massage_spa"
+  | "gym_fitness"
+  | "public_wifi"
+  | "sim_card"
+  | "convenience_store"
+  | "laundry"
+  | "bathroom"
+  | "luggage_storage"
+  | "transportation"
+  | "motorbike_rental"
   | "police"
   | "embassy"
-  | "laundry";
+  | "petrol_station"
+  | "post_office"
+  | "tourist_info"
+  | "coworking_space"
+  // Legacy — kept so existing traveler_utilities rows tagged `market`
+  // still pass the FK. Admins won't see it in pickers (active=false on
+  // the DB row), and new imports should use `convenience_store`.
+  | "market";
 
 /** An OpenStreetMap tag filter, e.g. `amenity=atm`. */
 export interface OsmFilter {
@@ -48,17 +69,6 @@ export const TOOLBOX_CATEGORIES: ToolboxCategory[] = [
     osmFilters: [{ key: "amenity", value: "atm" }],
   },
   {
-    id: "market",
-    label: "Market",
-    icon: "store",
-    blurb: "Local shops and markets",
-    osmFilters: [
-      { key: "shop", value: "supermarket" },
-      { key: "shop", value: "convenience" },
-      { key: "amenity", value: "marketplace" },
-    ],
-  },
-  {
     id: "bank",
     label: "Bank",
     icon: "bank",
@@ -66,13 +76,48 @@ export const TOOLBOX_CATEGORIES: ToolboxCategory[] = [
     osmFilters: [{ key: "amenity", value: "bank" }],
   },
   {
-    id: "sim_card",
-    label: "SIM Card",
-    icon: "sim",
-    blurb: "Mobile data and SIMs",
+    id: "currency_exchange",
+    label: "Currency Exchange",
+    icon: "currency",
+    blurb: "Exchange money at fair rates",
+    osmFilters: [{ key: "amenity", value: "bureau_de_change" }],
+  },
+  {
+    id: "medical_clinic",
+    label: "Medical Clinic",
+    icon: "clinic",
+    blurb: "Clinics, hospitals, doctors",
     osmFilters: [
-      { key: "shop", value: "mobile_phone" },
-      { key: "shop", value: "telecommunication" },
+      { key: "amenity", value: "clinic" },
+      { key: "amenity", value: "hospital" },
+      { key: "amenity", value: "doctors" },
+    ],
+  },
+  {
+    id: "pharmacy",
+    label: "Pharmacy",
+    icon: "clinic",
+    blurb: "Pharmacies and drugstores",
+    osmFilters: [{ key: "amenity", value: "pharmacy" }],
+  },
+  {
+    id: "massage_spa",
+    label: "Massage / Spa",
+    icon: "moreTools",
+    blurb: "Massage and spa services",
+    osmFilters: [
+      { key: "shop", value: "massage" },
+      { key: "leisure", value: "spa" },
+    ],
+  },
+  {
+    id: "gym_fitness",
+    label: "Gym / Fitness",
+    icon: "moreTools",
+    blurb: "Gyms and fitness studios",
+    osmFilters: [
+      { key: "leisure", value: "fitness_centre" },
+      { key: "leisure", value: "fitness_station" },
     ],
   },
   {
@@ -86,11 +131,34 @@ export const TOOLBOX_CATEGORIES: ToolboxCategory[] = [
     ],
   },
   {
-    id: "currency_exchange",
-    label: "Currency Exchange",
-    icon: "currency",
-    blurb: "Exchange money at fair rates",
-    osmFilters: [{ key: "amenity", value: "bureau_de_change" }],
+    id: "sim_card",
+    label: "SIM Card",
+    icon: "sim",
+    blurb: "Mobile data and SIMs",
+    osmFilters: [
+      { key: "shop", value: "mobile_phone" },
+      { key: "shop", value: "telecommunication" },
+    ],
+  },
+  {
+    id: "convenience_store",
+    label: "Convenience Store",
+    icon: "store",
+    blurb: "Small shops, sundries, snacks",
+    osmFilters: [
+      { key: "shop", value: "convenience" },
+      { key: "shop", value: "supermarket" },
+    ],
+  },
+  {
+    id: "laundry",
+    label: "Laundry",
+    icon: "laundry",
+    blurb: "Laundromats and dry cleaners",
+    osmFilters: [
+      { key: "shop", value: "laundry" },
+      { key: "shop", value: "dry_cleaning" },
+    ],
   },
   {
     id: "bathroom",
@@ -98,6 +166,16 @@ export const TOOLBOX_CATEGORIES: ToolboxCategory[] = [
     icon: "bathroom",
     blurb: "Public restrooms nearby",
     osmFilters: [{ key: "amenity", value: "toilets" }],
+  },
+  {
+    id: "luggage_storage",
+    label: "Luggage Storage",
+    icon: "moreTools",
+    blurb: "Bag drop and storage lockers",
+    osmFilters: [
+      { key: "amenity", value: "luggage_locker" },
+      { key: "shop", value: "luggage_locker" },
+    ],
   },
   {
     id: "transportation",
@@ -112,15 +190,13 @@ export const TOOLBOX_CATEGORIES: ToolboxCategory[] = [
     ],
   },
   {
-    id: "medical_clinic",
-    label: "Medical Clinic",
-    icon: "clinic",
-    blurb: "Clinics and pharmacies",
+    id: "motorbike_rental",
+    label: "Motorbike / Scooter Rental",
+    icon: "transport",
+    blurb: "Two-wheeler rentals",
     osmFilters: [
-      { key: "amenity", value: "clinic" },
-      { key: "amenity", value: "hospital" },
-      { key: "amenity", value: "doctors" },
-      { key: "amenity", value: "pharmacy" },
+      { key: "amenity", value: "motorcycle_rental" },
+      { key: "shop", value: "motorcycle" },
     ],
   },
   {
@@ -141,13 +217,37 @@ export const TOOLBOX_CATEGORIES: ToolboxCategory[] = [
     ],
   },
   {
-    id: "laundry",
-    label: "Laundry",
-    icon: "laundry",
-    blurb: "Laundromats and services",
+    id: "petrol_station",
+    label: "Petrol Station",
+    icon: "transport",
+    blurb: "Gas stations and fuel stops",
+    osmFilters: [{ key: "amenity", value: "fuel" }],
+  },
+  {
+    id: "post_office",
+    label: "Post Office",
+    icon: "moreTools",
+    blurb: "Mail and shipping",
     osmFilters: [
-      { key: "shop", value: "laundry" },
-      { key: "shop", value: "dry_cleaning" },
+      { key: "amenity", value: "post_office" },
+      { key: "amenity", value: "post_box" },
+    ],
+  },
+  {
+    id: "tourist_info",
+    label: "Tourist Information",
+    icon: "compass",
+    blurb: "Maps, advice, and bookings",
+    osmFilters: [{ key: "tourism", value: "information" }],
+  },
+  {
+    id: "coworking_space",
+    label: "Coworking Space",
+    icon: "moreTools",
+    blurb: "Desks and remote-work spots",
+    osmFilters: [
+      { key: "amenity", value: "coworking_space" },
+      { key: "office", value: "coworking" },
     ],
   },
 ];

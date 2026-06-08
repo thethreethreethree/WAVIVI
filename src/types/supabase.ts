@@ -102,19 +102,86 @@ export type ProfileUpdate = {
 
 /* ── Traveler Toolbox ─────────────────────────────────────────────────── */
 
+/**
+ * Utility categories (migration 0059).
+ *
+ * Was: a hardcoded string union mirroring a CHECK constraint on
+ * traveler_utilities.category. Migration 0059 dropped the CHECK and
+ * FK'd category to a new utility_categories table, so the column is
+ * now extensible — admins can add categories from /admin/toolbox/
+ * categories without a code change.
+ *
+ * Type: still a literal union for the 21 categories the runtime
+ * (src/lib/toolbox/categories.ts) knows about + the legacy `market`
+ * value (kept inactive in DB so existing rows survive the FK). New
+ * admin-added DB rows that aren't in this union won't be scannable
+ * (no OSM filters in code) and won't satisfy isCategoryId until a
+ * developer mirrors them here — same gating shape as before.
+ */
 export type UtilityCategory =
   | "atm"
-  | "market"
   | "bank"
-  | "sim_card"
-  | "public_wifi"
   | "currency_exchange"
-  | "bathroom"
-  | "transportation"
   | "medical_clinic"
+  | "pharmacy"
+  | "massage_spa"
+  | "gym_fitness"
+  | "public_wifi"
+  | "sim_card"
+  | "convenience_store"
+  | "laundry"
+  | "bathroom"
+  | "luggage_storage"
+  | "transportation"
+  | "motorbike_rental"
   | "police"
   | "embassy"
-  | "laundry";
+  | "petrol_station"
+  | "post_office"
+  | "tourist_info"
+  | "coworking_space"
+  // Legacy — kept so existing traveler_utilities rows tagged `market`
+  // still type-check. Inactive in DB, not surfaced in admin pickers.
+  | "market";
+
+/**
+ * Utility category row — admin-editable replacement for the hardcoded
+ * CHECK constraint on traveler_utilities.category (migration 0059).
+ *
+ * - `id` matches `traveler_utilities.category` via FK (ON DELETE RESTRICT).
+ * - `osm_filters` is the JSON array the scan engine looks up to populate
+ *   the category. Shape: `[{ key: "amenity", value: "atm" }, ...]`.
+ * - `icon` is an IconName string; the admin picker validates against the
+ *   icon set rather than the DB.
+ * - `active=false` hides the row from public surfaces but doesn't break
+ *   existing utilities tagged with it (use the soft-delete pattern
+ *   instead of the FK-blocked hard delete).
+ */
+export type UtilityOsmFilter = { key: string; value: string };
+
+export type UtilityCategoryRow = {
+  id: string;
+  label: string;
+  blurb: string;
+  icon: string;
+  osm_filters: UtilityOsmFilter[];
+  sort_order: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type UtilityCategoryInsert = {
+  id: string;
+  label: string;
+  blurb?: string;
+  icon?: string;
+  osm_filters?: UtilityOsmFilter[];
+  sort_order?: number;
+  active?: boolean;
+};
+
+export type UtilityCategoryUpdate = Partial<Omit<UtilityCategoryInsert, "id">>;
 
 export type CrowdLevel = "low" | "medium" | "high";
 export type ScanStatus = "pending" | "running" | "completed" | "failed";
@@ -1345,6 +1412,11 @@ export type Database = {
         PushSubscriptionUpdate
       >;
       traveler_utilities: TableShape<UtilityRow, UtilityInsert, UtilityUpdate>;
+      utility_categories: TableShape<
+        UtilityCategoryRow,
+        UtilityCategoryInsert,
+        UtilityCategoryUpdate
+      >;
       traveler_reports: TableShape<ReportRow, ReportInsert, ReportUpdate>;
       utility_votes: TableShape<
         UtilityVoteRow,

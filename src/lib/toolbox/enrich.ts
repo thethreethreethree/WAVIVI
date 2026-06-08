@@ -18,8 +18,9 @@ export interface Enrichment {
   traveler_notes: string[];
 }
 
-/** Baseline foot traffic per category. */
-const CROWD_BY_CATEGORY: Record<CategoryId, CrowdLevel> = {
+/** Baseline foot traffic per category. Newly-added categories without
+ *  an explicit entry fall back to `medium` via the lookup helper below. */
+const CROWD_BY_CATEGORY: Partial<Record<CategoryId, CrowdLevel>> = {
   atm: "medium",
   market: "high",
   bank: "medium",
@@ -29,13 +30,23 @@ const CROWD_BY_CATEGORY: Record<CategoryId, CrowdLevel> = {
   bathroom: "high",
   transportation: "high",
   medical_clinic: "medium",
+  pharmacy: "medium",
+  massage_spa: "low",
+  gym_fitness: "medium",
+  convenience_store: "high",
+  luggage_storage: "low",
+  motorbike_rental: "medium",
   police: "low",
   embassy: "low",
+  petrol_station: "medium",
+  post_office: "low",
+  tourist_info: "medium",
+  coworking_space: "medium",
   laundry: "low",
 };
 
 /** A category-specific traveler note used as a sensible fallback. */
-const CATEGORY_NOTE: Record<CategoryId, string> = {
+const CATEGORY_NOTE: Partial<Record<CategoryId, string>> = {
   atm: "Handy for card withdrawals",
   market: "Good for snacks and travel essentials",
   bank: "Full banking and exchange services",
@@ -45,13 +56,23 @@ const CATEGORY_NOTE: Record<CategoryId, string> = {
   bathroom: "Public restroom for travelers",
   transportation: "Useful for onward travel",
   medical_clinic: "Care for check-ups and minor issues",
+  pharmacy: "Pick up prescriptions and over-the-counter meds",
+  massage_spa: "Recover with a massage or spa treatment",
+  gym_fitness: "Keep up your training on the road",
+  convenience_store: "Snacks, water, and travel essentials",
+  luggage_storage: "Drop your bags before check-in or after check-out",
+  motorbike_rental: "Two-wheelers for exploring on your own",
   police: "Help point for safety and emergencies",
   embassy: "Passport and consular assistance",
+  petrol_station: "Fuel up before the next leg",
+  post_office: "Send mail and parcels home",
+  tourist_info: "Maps, advice, and booking help",
+  coworking_space: "Desks, fast Wi-Fi, and other remote workers",
   laundry: "Wash and dry your travel clothes",
 };
 
 /** One-sentence helpful blurb, built per category. */
-const CATEGORY_DESCRIPTION: Record<CategoryId, string> = {
+const CATEGORY_DESCRIPTION: Partial<Record<CategoryId, string>> = {
   atm: "Cash machine for card withdrawals",
   market: "Shop for groceries, snacks and travel essentials",
   bank: "Bank branch for withdrawals, exchange and account services",
@@ -62,10 +83,25 @@ const CATEGORY_DESCRIPTION: Record<CategoryId, string> = {
   transportation: "Transport point for getting around and onward travel",
   medical_clinic:
     "Medical facility for check-ups, pharmacy needs and minor emergencies",
+  pharmacy: "Pharmacy for prescriptions and over-the-counter remedies",
+  massage_spa: "Massage and spa services for travelers winding down",
+  gym_fitness: "Gym or fitness studio for keeping up your routine on the road",
+  convenience_store: "Small shop for snacks, drinks and quick travel needs",
+  luggage_storage: "Bag drop and storage lockers between bookings",
+  motorbike_rental: "Two-wheeler rental for independent exploring",
   police: "Police station — a help point for safety and emergencies",
   embassy: "Diplomatic office for passport, visa and consular assistance",
+  petrol_station: "Fuel stop for cars, vans and scooters",
+  post_office: "Post office for mail, parcels and shipping home",
+  tourist_info: "Tourist information centre for maps, advice and bookings",
+  coworking_space: "Coworking spot for remote-work sessions on the road",
   laundry: "Laundry service for washing and drying travel clothes",
 };
+
+/** Default fallback values for categories without an explicit entry. */
+const DEFAULT_CROWD: CrowdLevel = "medium";
+const DEFAULT_NOTE = "Worth a quick stop on your travels";
+const DEFAULT_DESCRIPTION = "A handy local stop for travelers";
 
 function tagsOf(u: NormalizedUtility): Record<string, string> {
   return (u.metadata_json.osm_tags as Record<string, string>) ?? {};
@@ -74,7 +110,7 @@ function tagsOf(u: NormalizedUtility): Record<string, string> {
 /** Build the one-line traveler description for a utility. */
 export function describeUtility(u: NormalizedUtility): string {
   const brand = (u.metadata_json.brand as string | null) ?? null;
-  let text = CATEGORY_DESCRIPTION[u.category];
+  let text = CATEGORY_DESCRIPTION[u.category] ?? DEFAULT_DESCRIPTION;
   if (brand) text += ` — operated by ${brand}`;
   if (u.open_24_hours) text += ", open 24/7";
   else if (tagsOf(u).opening_hours) text += ", posted opening hours";
@@ -104,11 +140,12 @@ export function enrichUtility(u: NormalizedUtility): Enrichment {
     notes.push("Wi-Fi available on site");
   }
   if (t.fee === "no") notes.push("Free to use");
-  if (notes.length < 3) notes.push(CATEGORY_NOTE[u.category]);
+  if (notes.length < 3)
+    notes.push(CATEGORY_NOTE[u.category] ?? DEFAULT_NOTE);
 
   return {
     reliability_score: score,
-    crowd_level: CROWD_BY_CATEGORY[u.category],
+    crowd_level: CROWD_BY_CATEGORY[u.category] ?? DEFAULT_CROWD,
     description: describeUtility(u),
     traveler_notes: notes.slice(0, 3),
   };

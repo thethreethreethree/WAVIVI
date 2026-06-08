@@ -101,8 +101,14 @@ function BackpackGlyph({ className }: { className?: string }) {
 /** Watercolor icon markup for each category marker (used in divIcon).
    Single source of truth — /icons/map/ — that renders identically across
    every theme (light, cute, sketch, orange). Inline width/height
-   guarantee sizing even if cached CSS is stale. */
-const MAP_ICON_BY_CATEGORY: Record<CategoryId, string> = {
+   guarantee sizing even if cached CSS is stale.
+
+   Categories added after the 2026-06-08 expansion (pharmacy, massage_spa,
+   gym_fitness, …) don't have dedicated PNG art yet — they fall back to
+   `/icons/map/map_default.png` if present, or the SVG line icon from the
+   <Icon> component. Drop hand-painted PNGs into /icons/map/ as you have
+   them and they'll start rendering automatically. */
+const MAP_ICON_BY_CATEGORY: Partial<Record<CategoryId, string>> = {
   atm: "/icons/map/map_atm.png",
   market: "/icons/map/map_market.png",
   bank: "/icons/map/map_bank.png",
@@ -116,9 +122,10 @@ const MAP_ICON_BY_CATEGORY: Record<CategoryId, string> = {
   embassy: "/icons/map/map_embassy.png",
   laundry: "/icons/map/map_laundry.png",
 };
+const FALLBACK_MAP_ICON = "/icons/map/map_default.png";
 const CATEGORY_GLYPH: Record<CategoryId, string> = Object.fromEntries(
   TOOLBOX_CATEGORIES.map((c) => {
-    const src = MAP_ICON_BY_CATEGORY[c.id];
+    const src = MAP_ICON_BY_CATEGORY[c.id] ?? FALLBACK_MAP_ICON;
     const base = `width:56px;height:56px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.4))`;
     return [c.id, `<img class="tb-pin-img" src="${src}" alt="" style="${base}" />`];
   }),
