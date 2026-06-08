@@ -48,6 +48,36 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
   }
 
+  // Auto-derive display_name when city/province change. Same formula as the
+  // POST handler ([city, province].filter(Boolean).join(", ")) so the heading
+  // stays in sync with the city/province inputs. Skip when the caller passed
+  // display_name explicitly — that's the override path for custom names
+  // ("Northern Cebu" rather than "Bantayan Island, Cebu").
+  //
+  // Without this, the edit form's PATCH only ships city + province + radius
+  // and the heading on /admin/regions sticks on whatever was composed at
+  // creation, looking like the save didn't take.
+  if (
+    ("city" in body || "province" in body) &&
+    !("display_name" in body)
+  ) {
+    const { data: current } = await supabase
+      .from("regions")
+      .select("city, province")
+      .eq("id", id)
+      .single();
+    const nextCity =
+      typeof updates.city === "string" ? updates.city : current?.city ?? "";
+    const nextProvince =
+      "province" in updates
+        ? (updates.province as string | null | undefined) ?? ""
+        : current?.province ?? "";
+    updates.display_name = [nextCity, nextProvince]
+      .map((v) => (v ?? "").trim())
+      .filter(Boolean)
+      .join(", ");
+  }
+
   const { data, error } = await supabase
     .from("regions")
     .update(updates)

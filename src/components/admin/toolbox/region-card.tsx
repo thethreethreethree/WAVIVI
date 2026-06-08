@@ -80,14 +80,38 @@ export function RegionCard({ region, utilityCount }: RegionCardProps) {
   }
 
   async function saveEdits() {
+    if (!country.trim() || !city.trim()) {
+      setError("Country and city are required.");
+      return;
+    }
     const ok = await patch({
       country: country.trim(),
       province: province.trim() || null,
       city: city.trim(),
       radius_km: radius,
       scan_enabled: scanEnabled,
+      // display_name is auto-recomposed server-side from the new city +
+      // province (see PATCH route). We don't send it from the form so the
+      // server stays the source of truth — overrides go through a future
+      // dedicated "custom display name" field, not this default flow.
     });
     if (ok) setEditing(false);
+  }
+
+  /** Re-seed every form field from the current region prop. Called whenever
+   *  the inline editor is opened so a save in another tab (or a server-side
+   *  rename like the auto-derived display_name) flows in cleanly instead of
+   *  the editor opening with the values from when the component first
+   *  mounted. The useState initialisers above only run once per mount, and
+   *  this card stays mounted for the life of the page. */
+  function openEditor(): void {
+    setCountry(region.country);
+    setProvince(region.province ?? "");
+    setCity(region.city);
+    setRadius(region.radius_km);
+    setScanEnabled(region.scan_enabled);
+    setError(null);
+    setEditing(true);
   }
 
   async function openDeleteModal() {
@@ -245,7 +269,7 @@ export function RegionCard({ region, utilityCount }: RegionCardProps) {
             <ScanButton regionId={region.id} />
             <button
               type="button"
-              onClick={() => setEditing(true)}
+              onClick={openEditor}
               className="rounded-full px-3 py-1.5 text-xs font-bold text-muted ring-1 ring-border hover:text-foreground"
             >
               Edit
