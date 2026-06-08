@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { ToolboxMap } from "@/components/ui/toolbox-map";
+import { getCurrentCityIds } from "@/lib/cities/current";
 import { type CategoryId, isCategoryId } from "@/lib/toolbox/categories";
 import { getCurrentRegion } from "@/lib/regions/current";
 
@@ -24,13 +25,17 @@ export default async function ToolboxMapPage({
   const { category } = await searchParams;
   const initialCategory: CategoryId | undefined =
     category && isCategoryId(category) ? category : undefined;
-  const region = await getCurrentRegion();
+  const [region, cityIds] = await Promise.all([
+    getCurrentRegion(),
+    getCurrentCityIds(),
+  ]);
 
   return (
     <ToolboxMap
       initialCategory={initialCategory}
       initialRegion={region?.id ?? undefined}
       initialRegionLabel={region?.display_name ?? null}
+      initialCityIds={cityIds}
     />
   );
 }

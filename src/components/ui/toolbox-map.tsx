@@ -161,6 +161,7 @@ export function ToolboxMap({
   initialCategory,
   initialRegion,
   initialRegionLabel,
+  initialCityIds,
 }: {
   initialCategory?: CategoryId;
   initialRegion?: string;
@@ -168,6 +169,10 @@ export function ToolboxMap({
    *  the read-only label can render without a second fetch. `null` =
    *  no region picked yet ("Everywhere"). */
   initialRegionLabel?: string | null;
+  /** Cities the user has pinned via the region picker. When non-empty
+   *  the map runs city-priority scoping (utilities are clamped to each
+   *  city's circle on the server). Empty / undefined = whole region. */
+  initialCityIds?: string[];
 }) {
   const router = useRouter();
   const [active, setActive] = useState<CategoryId | "all">(
@@ -178,6 +183,13 @@ export function ToolboxMap({
   // wrapper — no per-map selector. The state still mirrors the prop
   // so existing fetch/center effects keep working unchanged.
   const region = initialRegion ?? "";
+  // Same flow for cities — the server page reads wv-cities and passes
+  // the ids in. When the user picks a different city the page
+  // re-renders (revalidatePath fires from the picker), this prop
+  // changes, and the fetch effect below re-runs with the new scope.
+  // Joined into a stable cache key so the effect's dep array reacts
+  // to set-equality, not array-identity.
+  const cityIdsKey = (initialCityIds ?? []).slice().sort().join(",");
   const [utilities, setUtilities] = useState<UtilityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [located, setLocated] = useState(false);
@@ -266,7 +278,7 @@ export function ToolboxMap({
     };
   }, []);
 
-  // --- Fetch utilities whenever region / category changes -------------------
+  // --- Fetch utilities whenever region / city / category changes -----------
   useEffect(() => {
     if (!region) return;
     let cancelled = false;
@@ -276,6 +288,13 @@ export function ToolboxMap({
       try {
         const params = new URLSearchParams({ region });
         if (active !== "all") params.set("category", active);
+        // Append each pinned city as a repeated ?city= so the server
+        // can match the FK OR haversine-clamp against that city's
+        // circle (city beats region per CLAUDE-problem-solving §0:
+        // pin first, region falls back).
+        for (const cid of cityIdsKey ? cityIdsKey.split(",") : []) {
+          if (cid) params.append("city", cid);
+        }
         const res = await fetch(`/api/utilities?${params.toString()}`);
         const json = await res.json();
         if (cancelled) return;
@@ -292,7 +311,7 @@ export function ToolboxMap({
     return () => {
       cancelled = true;
     };
-  }, [region, active]);
+  }, [region, active, cityIdsKey]);
 
   // --- Render markers whenever utilities change -----------------------------
   useEffect(() => {
@@ -445,7 +464,7 @@ export function ToolboxMap({
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/icons/orange/back_arrow.png"
+                src="/icons/rustic/back_arrow.png"
                 alt=""
                 aria-hidden
                 className="back-wiggle h-7 w-7 object-contain"
