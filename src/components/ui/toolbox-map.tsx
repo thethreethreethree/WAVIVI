@@ -154,7 +154,6 @@ export function ToolboxMap({
   initialCategory,
   initialRegion,
   initialRegionLabel,
-  initialCityIds,
 }: {
   initialCategory?: CategoryId;
   initialRegion?: string;
@@ -162,11 +161,6 @@ export function ToolboxMap({
    *  the read-only label can render without a second fetch. `null` =
    *  no region picked yet ("Everywhere"). */
   initialRegionLabel?: string | null;
-  /** Currently pinned city ids from the global region picker (wv-cities
-   *  cookie). When non-empty, utilities are filtered to those cities'
-   *  centre+radius circles — see /api/utilities for the union logic.
-   *  Empty / undefined falls back to region-wide. */
-  initialCityIds?: string[];
 }) {
   const router = useRouter();
   const [active, setActive] = useState<CategoryId | "all">(
@@ -265,11 +259,7 @@ export function ToolboxMap({
     };
   }, []);
 
-  // --- Fetch utilities whenever region / cities / category changes ----------
-  // City pins are stable per-request (driven by the wv-cities cookie read on
-  // the server). Joining them into the effect key with `.join(",")` keeps
-  // the dependency comparison happy without needing useMemo.
-  const cityIdsKey = (initialCityIds ?? []).join(",");
+  // --- Fetch utilities whenever region / category changes -------------------
   useEffect(() => {
     if (!region) return;
     let cancelled = false;
@@ -279,9 +269,6 @@ export function ToolboxMap({
       try {
         const params = new URLSearchParams({ region });
         if (active !== "all") params.set("category", active);
-        for (const cityId of initialCityIds ?? []) {
-          params.append("city", cityId);
-        }
         const res = await fetch(`/api/utilities?${params.toString()}`);
         const json = await res.json();
         if (cancelled) return;
@@ -298,9 +285,7 @@ export function ToolboxMap({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- initialCityIds is
-    // tracked by its joined-string key (cityIdsKey) for stable dep comparison.
-  }, [region, active, cityIdsKey]);
+  }, [region, active]);
 
   // --- Render markers whenever utilities change -----------------------------
   useEffect(() => {
