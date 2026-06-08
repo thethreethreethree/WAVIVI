@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { BatchImportPanel } from "@/components/admin/toolbox/batch-import-panel";
 import { CsvImport } from "@/components/admin/toolbox/csv-import";
 import { ScanButton } from "@/components/admin/toolbox/scan-button";
 import { humanizeTime } from "@/components/admin/toolbox/toolbox-utils";
@@ -75,6 +76,21 @@ export default async function RegionUtilitiesPage({
         ))}
       </div>
 
+      {/* New multi-category importer — drop the scraper's wide CSV here
+          to upsert every category for this region in one pass with
+          city_id resolution. */}
+      <BatchImportPanel
+        region={{
+          id: region.id,
+          display_name: region.display_name,
+          city: region.city,
+          province: region.province,
+          country: region.country,
+        }}
+      />
+
+      {/* Legacy per-category importer — kept for the narrow refresh case
+          (one category at a time from a per-category file). */}
       <CsvImport regionId={region.id} />
 
       <section>

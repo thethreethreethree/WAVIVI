@@ -69,15 +69,24 @@ function chunkCsv(csv: string, chunkSize: number): string[] {
 
 /** Admin batch utility import — mirrors the place batch-city-import:
  *  pick a region → parse the CSV preview locally → run ensure-cities
- *  once → fire chunked applies → show a per-category result panel. */
+ *  once → fire chunked applies → show a per-category result panel.
+ *
+ *  When `lockedRegionId` is supplied (inline embed on
+ *  /admin/toolbox/[regionId]), the region picker is hidden and the
+ *  import always runs against that region. Standalone use on
+ *  /admin/batch-utility-import omits the prop and shows the picker. */
 export function BatchUtilityImportClient({
   regions,
+  lockedRegionId,
 }: {
   regions: RegionOption[];
+  lockedRegionId?: string;
 }) {
   const [pending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [regionId, setRegionId] = useState(regions[0]?.id ?? "");
+  const [regionId, setRegionId] = useState(
+    lockedRegionId ?? regions[0]?.id ?? "",
+  );
   const [csv, setCsv] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [progressLine, setProgressLine] = useState<string | null>(null);
@@ -216,21 +225,23 @@ export function BatchUtilityImportClient({
       {/* Region picker + file input */}
       <div className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-border">
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1">
-            <span className="text-xs font-bold text-muted">Region</span>
-            <select
-              value={regionId}
-              onChange={(e) => setRegionId(e.target.value)}
-              className="admin-input min-w-[220px]"
-            >
-              {regions.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.display_name} ·{" "}
-                  {[r.city, r.province, r.country].filter(Boolean).join(", ")}
-                </option>
-              ))}
-            </select>
-          </label>
+          {!lockedRegionId && (
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-bold text-muted">Region</span>
+              <select
+                value={regionId}
+                onChange={(e) => setRegionId(e.target.value)}
+                className="admin-input min-w-[220px]"
+              >
+                {regions.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.display_name} ·{" "}
+                    {[r.city, r.province, r.country].filter(Boolean).join(", ")}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="flex flex-col gap-1">
             <span className="text-xs font-bold text-muted">Utility CSV</span>
             <input
