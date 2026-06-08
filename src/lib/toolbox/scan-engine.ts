@@ -80,21 +80,80 @@ export async function scanRegionCategory(
   const jobId = job.id;
 
   try {
-    const places = await provider.fetchPlaces({
-      category,
-      latitude: region.latitude,
-      longitude: region.longitude,
-      radiusKm: region.radius_km,
-    });
-    await logLine(
-      supabase,
-      jobId,
-      "info",
-      `Fetched ${places.length} ${category} place(s) via ${provider.name}`,
-    );
+    // Per-city scan when cities have their own geo. The region.radius_km
+    // is capped at 200 km in migration 0003, and a single circle from the
+    // region centre can't cover a long region like Palawan (~400 km
+    // N–S). Iterating each city's centre+radius means the union covers
+    // the whole region accurately. Cities without geo set are ignored;
+    // if NO city has geo we fall back to the original region-centre
+    // scan so legacy regions still work.
+    const { data: cityRows } = await supabase
+      .from("cities")
+      .select("id, name, latitude, longitude, radius_km")
+      .eq("region_id", regionId)
+      .not("latitude", "is", null)
+      .not("longitude", "is", null)
+      .not("radius_km", "is", null);
+    const scanCircles =
+      (cityRows ?? [])
+        .filter(
+          (c) => c.latitude != null && c.longitude != null && c.radius_km != null,
+        )
+        .map((c) => ({
+          name: c.name,
+          latitude: c.latitude as number,
+          longitude: c.longitude as number,
+          radiusKm: c.radius_km as number,
+        }));
+
+    const placesPool: Awaited<ReturnType<typeof provider.fetchPlaces>> = [];
+    if (scanCircles.length === 0) {
+      // Legacy path — one circle from region centre.
+      const places = await provider.fetchPlaces({
+        category,
+        latitude: region.latitude,
+        longitude: region.longitude,
+        radiusKm: region.radius_km,
+      });
+      placesPool.push(...places);
+      await logLine(
+        supabase,
+        jobId,
+        "info",
+        `Fetched ${places.length} ${category} place(s) via ${provider.name} (region-circle fallback — no cities with geo set)`,
+      );
+    } else {
+      for (let i = 0; i < scanCircles.length; i++) {
+        const c = scanCircles[i];
+        const places = await provider.fetchPlaces({
+          category,
+          latitude: c.latitude,
+          longitude: c.longitude,
+          radiusKm: c.radiusKm,
+        });
+        placesPool.push(...places);
+        await logLine(
+          supabase,
+          jobId,
+          "info",
+          `Fetched ${places.length} ${category} place(s) around ${c.name} (${c.radiusKm} km) via ${provider.name}`,
+        );
+        // Be polite to OSM between city scans, same as the inter-category
+        // throttle in scanRegion. Skipped after the final city.
+        if (i < scanCircles.length - 1) {
+          await new Promise((r) => setTimeout(r, SCAN_THROTTLE_MS));
+        }
+      }
+      await logLine(
+        supabase,
+        jobId,
+        "info",
+        `Pooled ${placesPool.length} ${category} place(s) across ${scanCircles.length} city circle(s) — deduping next.`,
+      );
+    }
 
     const normalized = dedupeUtilities(
-      places.map((p) => normalizePlace(p, category)),
+      placesPool.map((p) => normalizePlace(p, category)),
     );
 
     const rows: UtilityInsert[] = normalized.map((n) => {
@@ -138,7 +197,7 @@ export async function scanRegionCategory(
       .update({
         status: "completed",
         completed_at: new Date().toISOString(),
-        total_found: places.length,
+        total_found: placesPool.length,
         total_saved: saved,
       })
       .eq("id", jobId);
@@ -149,7 +208,7 @@ export async function scanRegionCategory(
       `Saved ${saved} ${category} utility record(s)`,
     );
 
-    return { category, found: places.length, saved };
+    return { category, found: placesPool.length, saved };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await supabase
