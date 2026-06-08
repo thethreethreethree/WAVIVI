@@ -25,7 +25,11 @@ export default async function RegionCitiesPage({
       supabase.from("regions").select("*").eq("id", regionId).single(),
       supabase
         .from("cities")
-        .select("id, region_id, slug, name, created_at")
+        // Select * so the geo columns added in migration 0057
+        // (latitude / longitude / radius_km) flow through to CitiesList.
+        // The earlier explicit column list shipped before 0057 and made
+        // every row render "geo: not set" forever even after Save.
+        .select("*")
         .eq("region_id", regionId)
         .order("name", { ascending: true }),
       supabase
