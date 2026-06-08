@@ -80,12 +80,24 @@ export default async function ToolboxPage() {
             Manage scan regions, utility pins, and the discovery engine.
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Link
             href="/admin/regions"
             className="rounded-full bg-glow px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
           >
             Manage Regions ›
+          </Link>
+          <Link
+            href="/admin/batch-utility-import"
+            className="rounded-full bg-sunset px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+          >
+            Batch import ›
+          </Link>
+          <Link
+            href="/admin/toolbox/categories"
+            className="rounded-full px-3 py-1.5 text-xs font-bold text-glow ring-1 ring-border hover:bg-glow/10"
+          >
+            Categories ›
           </Link>
           <Link
             href="/admin/stays"
