@@ -107,48 +107,56 @@ export async function scanRegionCategory(
         }));
 
     const placesPool: Awaited<ReturnType<typeof provider.fetchPlaces>> = [];
-    if (scanCircles.length === 0) {
-      // Legacy path — one circle from region centre.
+
+    // Per-city circles first (when cities have geo). Tight, accurate
+    // coverage around populated towns.
+    for (let i = 0; i < scanCircles.length; i++) {
+      const c = scanCircles[i];
       const places = await provider.fetchPlaces({
         category,
-        latitude: region.latitude,
-        longitude: region.longitude,
-        radiusKm: region.radius_km,
+        latitude: c.latitude,
+        longitude: c.longitude,
+        radiusKm: c.radiusKm,
       });
       placesPool.push(...places);
       await logLine(
         supabase,
         jobId,
         "info",
-        `Fetched ${places.length} ${category} place(s) via ${provider.name} (region-circle fallback — no cities with geo set)`,
+        `Fetched ${places.length} ${category} place(s) around ${c.name} (${c.radiusKm} km) via ${provider.name}`,
       );
-    } else {
-      for (let i = 0; i < scanCircles.length; i++) {
-        const c = scanCircles[i];
-        const places = await provider.fetchPlaces({
-          category,
-          latitude: c.latitude,
-          longitude: c.longitude,
-          radiusKm: c.radiusKm,
-        });
-        placesPool.push(...places);
-        await logLine(
-          supabase,
-          jobId,
-          "info",
-          `Fetched ${places.length} ${category} place(s) around ${c.name} (${c.radiusKm} km) via ${provider.name}`,
-        );
-        // Be polite to OSM between city scans, same as the inter-category
-        // throttle in scanRegion. Skipped after the final city.
-        if (i < scanCircles.length - 1) {
-          await new Promise((r) => setTimeout(r, SCAN_THROTTLE_MS));
-        }
-      }
+      // Same throttle between every OSM call, mirrors the inter-category
+      // delay in scanRegion. Always runs (the region pass below is also
+      // an OSM call so we throttle into it too).
+      await new Promise((r) => setTimeout(r, SCAN_THROTTLE_MS));
+    }
+
+    // Region-centre pass — captures the in-between-towns and outside-
+    // city utilities the per-city circles miss. Palawan is the canonical
+    // case: 7 cities × 25 km circles can't cover the 350 km of coastline
+    // between them; one 100 km circle from the region centre does. Always
+    // runs (even when scanCircles is empty — that's the legacy path),
+    // and dedupeUtilities collapses overlap against the per-city pool by
+    // (source, source_ref).
+    const regionPlaces = await provider.fetchPlaces({
+      category,
+      latitude: region.latitude,
+      longitude: region.longitude,
+      radiusKm: region.radius_km,
+    });
+    placesPool.push(...regionPlaces);
+    await logLine(
+      supabase,
+      jobId,
+      "info",
+      `Fetched ${regionPlaces.length} ${category} place(s) around region centre (${region.radius_km} km) via ${provider.name}`,
+    );
+    if (scanCircles.length > 0) {
       await logLine(
         supabase,
         jobId,
         "info",
-        `Pooled ${placesPool.length} ${category} place(s) across ${scanCircles.length} city circle(s) — deduping next.`,
+        `Pooled ${placesPool.length} ${category} place(s) across ${scanCircles.length} city circle(s) + region centre — deduping next.`,
       );
     }
 
