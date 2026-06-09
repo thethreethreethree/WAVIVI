@@ -19,7 +19,7 @@ import { dismissNotificationAction } from "./actions";
  */
 export function NotificationRow({ row }: { row: RowShape }) {
   const [pending, startTransition] = useTransition();
-  const { emoji, text, href } = renderFor(row);
+  const { iconSrc, text, href } = renderFor(row);
 
   function dismiss(e: React.MouseEvent) {
     e.preventDefault();
@@ -31,8 +31,17 @@ export function NotificationRow({ row }: { row: RowShape }) {
 
   const Inner = (
     <>
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-lg">
-        {emoji}
+      {/* Painted brand icon for each notification type. Referenced as
+          a /icons/rustic/ path; ThemeImgSwap retargets it to sketch /
+          journal automatically when those themes are active. */}
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-elevated">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={iconSrc}
+          alt=""
+          aria-hidden
+          className="h-6 w-6 object-contain"
+        />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm text-foreground">{text}</span>
@@ -75,12 +84,26 @@ export function NotificationRow({ row }: { row: RowShape }) {
   );
 }
 
-/** Map a notification row to its rendered (emoji, text, href). New
+/** Painted brand-icon path for each notification type. Centralised
+ *  so the renderFor switch stays scannable and we have a single place
+ *  to swap art when a new theme variant lands. Always reference the
+ *  /icons/rustic/ path — ThemeImgSwap retargets to sketch / journal. */
+const ICON = {
+  chat: "/icons/rustic/01_chat_bubble.png",
+  mention: "/icons/rustic/bell.png",
+  celebrate: "/icons/rustic/23_success.png",
+  note: "/icons/rustic/edit_pencil.png",
+  pin: "/icons/rustic/01_map_pin.png",
+  spark: "/icons/rustic/compass_ring.png",
+  generic: "/icons/rustic/bell.png",
+} as const;
+
+/** Map a notification row to its rendered (iconSrc, text, href). New
  *  types: add a case here and the matching server-side trigger
  *  elsewhere. Unknown types fall through to a generic shape so an
  *  older client doesn't crash on a server that ships a new kind. */
 function renderFor(row: RowShape): {
-  emoji: string;
+  iconSrc: string;
   text: string;
   href: string | null;
 } {
@@ -95,7 +118,7 @@ function renderFor(row: RowShape): {
         ? `${actorName} in ${groupName}: ${truncate(snippet, 80)}`
         : `${actorName} sent a message in ${groupName}`;
       return {
-        emoji: "💬",
+        iconSrc: ICON.chat,
         text,
         href: groupId ? `/meet/${groupId}/chat` : null,
       };
@@ -105,7 +128,7 @@ function renderFor(row: RowShape): {
       const groupName = pickString(p, "group_name") ?? "a group";
       const groupId = pickString(p, "group_id");
       return {
-        emoji: "📣",
+        iconSrc: ICON.mention,
         text: `${actorName} mentioned you in ${groupName}.`,
         href: groupId ? `/meet/${groupId}/chat` : null,
       };
@@ -115,7 +138,7 @@ function renderFor(row: RowShape): {
       const actorName = pickString(p, "actor_name") ?? "Someone";
       const eventId = pickString(p, "event_id");
       return {
-        emoji: "🎉",
+        iconSrc: ICON.celebrate,
         text: `${actorName} invited you to ${eventName}.`,
         href: eventId ? `/events/${eventId}` : null,
       };
@@ -124,7 +147,7 @@ function renderFor(row: RowShape): {
       const actorName = pickString(p, "actor_name") ?? "Someone";
       const actorHandle = pickString(p, "actor_handle");
       return {
-        emoji: "📝",
+        iconSrc: ICON.note,
         text: `${actorName} left a note on your profile.`,
         href: actorHandle ? `/u/${actorHandle}` : "/profile",
       };
@@ -133,7 +156,7 @@ function renderFor(row: RowShape): {
       const actorName = pickString(p, "actor_name") ?? "A traveler";
       const regionName = pickString(p, "region_name") ?? "your region";
       return {
-        emoji: "📍",
+        iconSrc: ICON.pin,
         text: `${actorName} just arrived in ${regionName}.`,
         href: "/tools/map",
       };
@@ -141,7 +164,7 @@ function renderFor(row: RowShape): {
     case "susen_recommendation": {
       const regionName = pickString(p, "region_name") ?? "your region";
       return {
-        emoji: "✨",
+        iconSrc: ICON.spark,
         text: `Susen has fresh picks for ${regionName}.`,
         href: "/susen",
       };
@@ -149,7 +172,7 @@ function renderFor(row: RowShape): {
     default: {
       // Unknown future type — surface generically rather than crash.
       return {
-        emoji: "🔔",
+        iconSrc: ICON.generic,
         text: "You have a new notification.",
         href: null,
       };
