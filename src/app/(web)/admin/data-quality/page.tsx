@@ -13,6 +13,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { RegionRow } from "@/types/supabase";
 
 export const dynamic = "force-dynamic";
+// Bulk Apply / Ignore from the Classification Quality section runs as a
+// server action invoked from this page, so it inherits this route's
+// maxDuration. Default Vercel hobby is 10s — when an admin selects all
+// ~thousand utility suspects at once the chunked parallel updates fit
+// well under 300s even with cold connections.
+export const maxDuration = 300;
 
 /**
  * Admin Data Quality audit — surfaces rows in `stays`, `restaurants`, and
