@@ -66,16 +66,15 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
           aria-label="Back"
           className="wc-frame wc-frame-orange-white flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-glow"
         >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            className="h-5 w-5"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
+          {/* Painted back arrow — ThemeImgSwap retargets the rustic
+              path to sketch / journal as needed. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/rustic/back_arrow.png"
+            alt=""
+            aria-hidden
+            className="h-5 w-5 object-contain"
+          />
         </Link>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold uppercase tracking-wide text-glow">
@@ -168,7 +167,16 @@ async function ActivitiesAndPlaces({ plan }: { plan: TravelPlanRow }) {
 
   return (
     <section>
-      <h2 className="text-base font-bold">📍 Things to do</h2>
+      <h2 className="flex items-center gap-2 text-base font-bold">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/icons/rustic/01_map_pin.png"
+          alt=""
+          aria-hidden
+          className="h-5 w-5 object-contain"
+        />
+        Things to do
+      </h2>
       <p className="mt-1 text-xs text-muted">
         Top picks for {city ? `${city}, ` : ""}{country}.
       </p>
@@ -192,9 +200,13 @@ async function ActivitiesAndPlaces({ plan }: { plan: TravelPlanRow }) {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <span className="text-3xl" aria-hidden>
-                    🏠
-                  </span>
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src="/icons/rustic/home.png"
+                    alt=""
+                    aria-hidden
+                    className="h-10 w-10 object-contain"
+                  />
                 )}
               </span>
             </div>
