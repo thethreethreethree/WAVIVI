@@ -575,7 +575,23 @@ export function ToolboxMap({
           </div>
         )}
 
-        {totalCount === 0 && !loading && (
+        {/* No-region persistent banner. Without this, the map sits
+            empty after the one-shot mount toast disappears and the
+            user has no idea what to do. Sits ABOVE the existing
+            "no utilities match" message so the region case wins. */}
+        {!region && !loading && (
+          <div className="pointer-events-none absolute inset-x-4 top-1/2 z-[600] mx-auto max-w-sm -translate-y-1/2 rounded-2xl bg-foreground/92 px-4 py-4 text-center shadow-card">
+            <p className="text-sm font-bold text-background">
+              Pick a region from the globe at the top
+            </p>
+            <p className="mt-1 text-xs text-background/80">
+              Once you pick a region, this map fills with ATMs, laundry,
+              pharmacies, and the other 18+ traveler tools nearby.
+            </p>
+          </div>
+        )}
+
+        {region && totalCount === 0 && !loading && (
           <div className="absolute inset-x-4 bottom-24 z-[600] mx-auto max-w-sm rounded-xl bg-foreground/90 px-4 py-3 text-center text-sm text-background">
             No utilities match this filter yet. Try &ldquo;All&rdquo;.
           </div>
