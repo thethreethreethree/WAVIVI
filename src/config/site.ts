@@ -3,7 +3,7 @@ import { publicEnv } from "@/lib/env";
 /** Global site/app metadata. */
 export const siteConfig = {
   name: "Wondavu",
-  tagline: "Find your people, wherever you wonder.",
+  tagline: "MEET. VIBE. MOVE.",
   description:
     "A live social map for travelers — discover nearby travelers, join group chats, find events, and feel the vibe of every place.",
   url: publicEnv.siteUrl,

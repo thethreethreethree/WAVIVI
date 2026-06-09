@@ -38,8 +38,11 @@ export default async function Home() {
             <span className="text-sunset">Vibe.</span>
             <span>&nbsp;Move.</span>
           </h1>
+          {/* Second clause of the official slogan
+              ("MEET. VIBE. MOVE, and Be Free To Wonder What's NEXT!")
+              — completes the brand line under the headline above. */}
           <p className="wc-underline relative mt-1 text-2xl font-bold text-foreground">
-            Find your people, wherever you wonder.
+            Be free to wonder what&apos;s next.
           </p>
         </div>
 

@@ -108,12 +108,12 @@ export default function WelcomePage() {
             Meet. Vibe. Move.
           </p>
 
-          {/* Value props — the standalone "Find your people, wherever
-              you wonder." tagline used to live here as its own <p>.
-              Rolled into the first pill's body so the hero stack reads
-              tighter and the brand promise lands inside the most
-              prominent illustrated element instead of as a separate
-              line that competed with the motto above it. */}
+          {/* Value props — the standalone tagline used to live here as
+              its own <p>, then got rolled into the first pill's body
+              so the hero stack reads tighter and the brand promise
+              lands inside the most prominent illustrated element
+              instead of as a separate line that competed with the
+              motto above it. The current motto is "MEET. VIBE. MOVE." */}
           <ul className="mt-9 flex w-full flex-col gap-3 text-left">
             {FEATURES.map((f) => (
               <li

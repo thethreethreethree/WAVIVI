@@ -8,7 +8,7 @@
  * Usage:
  *   <DisplayText>Wondavu</DisplayText>
  *   <JournalText>Day three. The water is so clear it doesn't look real.</JournalText>
- *   <QuoteText>&quot;Find your people, wherever you wonder.&quot;</QuoteText>
+ *   <QuoteText>&quot;MEET. VIBE. MOVE.&quot;</QuoteText>
  *   <Heading level={1}>Page Title</Heading>
  *   <BodyText>Standard paragraph text.</BodyText>
  *   <Caption>Posted 2h ago</Caption>
