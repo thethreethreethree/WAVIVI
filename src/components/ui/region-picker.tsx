@@ -7,7 +7,9 @@ import type { CurrentCity } from "@/lib/cities/current";
 import type { RegionRow } from "@/lib/regions/current";
 
 import { useThemeContext } from "@/components/ui/theme-context";
+import { topPicksFor } from "@/config/top-picks";
 import { themedIconPath } from "@/lib/theme/cookie";
+import { normaliseForMatch } from "@/lib/utils/text-match";
 
 /** Globe button + bottom-sheet picker. Selecting a region writes the
  *  `wv-region` cookie via a Server Action and refreshes every list.
@@ -346,12 +348,66 @@ export function RegionPicker({
                 {currentId == null && <span className="text-glow">✓</span>}
               </button>
 
-              {groups.map(([country, rows]) => (
-                <section key={country} className="mt-2">
-                  <h3 className="px-4 pb-1 pt-2 text-xs font-bold uppercase tracking-wider text-muted">
-                    {country}
-                  </h3>
-                  <ul>
+              {groups.map(([country, rows]) => {
+                // Top Picks pill row — curated, well-known destinations
+                // for this country. Each pill resolves against the
+                // country's actual region rows; unresolved picks are
+                // hidden entirely (no "coming soon" placeholders).
+                // Lookup is keyed on the loose-match normalisation of
+                // r.city (e.g. "El Nido") with display_name as a
+                // fallback so "El Nido, Palawan" still resolves.
+                const picks = topPicksFor(country)
+                  .map((name) => {
+                    const norm = normaliseForMatch(name);
+                    const match = rows.find(
+                      (r) =>
+                        normaliseForMatch(r.city) === norm ||
+                        normaliseForMatch(r.display_name) === norm,
+                    );
+                    return match ? { name, regionId: match.id } : null;
+                  })
+                  .filter(
+                    (x): x is { name: string; regionId: string } => x !== null,
+                  );
+
+                return (
+                  <section key={country} className="mt-2">
+                    <h3 className="px-4 pb-1 pt-2 text-xs font-bold uppercase tracking-wider text-muted">
+                      {country}
+                    </h3>
+                    {picks.length > 0 && (
+                      <>
+                        <div
+                          className="flex flex-wrap gap-2 px-4 pt-1"
+                          aria-label={`Top picks in ${country}`}
+                        >
+                          {picks.map((p) => (
+                            <button
+                              key={p.regionId}
+                              type="button"
+                              disabled={pending}
+                              onClick={() => chooseWholeRegion(p.regionId)}
+                              className={`wc-frame wc-frame-sunset shrink-0 rounded-full px-4 py-1.5 text-sm font-bold text-white shadow-card transition active:scale-95 ${
+                                p.regionId === currentId
+                                  ? "ring-2 ring-foreground/40"
+                                  : ""
+                              }`}
+                            >
+                              {p.name}
+                            </button>
+                          ))}
+                        </div>
+                        {/* Soft divider between pill row and the full
+                            region list. Hand-drawn chevron mirrors the
+                            mockup. */}
+                        <div className="my-1 flex items-center justify-center text-muted/60">
+                          <span aria-hidden className="text-base">
+                            ⌄
+                          </span>
+                        </div>
+                      </>
+                    )}
+                    <ul>
                     {rows.map((r) => {
                       const regionChosen = r.id === currentId;
                       // Cities are cached the moment ensureCitiesFor()
@@ -438,7 +494,8 @@ export function RegionPicker({
                     })}
                   </ul>
                 </section>
-              ))}
+                );
+              })}
 
               {filtered.length === 0 && (
                 <p className="px-4 py-6 text-center text-base text-muted">
