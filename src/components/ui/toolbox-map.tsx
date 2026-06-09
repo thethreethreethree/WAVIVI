@@ -174,6 +174,7 @@ export function ToolboxMap({
   initialRegion,
   initialRegionLabel,
   initialCityIds,
+  initialCityLabel,
 }: {
   initialCategory?: CategoryId;
   initialRegion?: string;
@@ -185,6 +186,10 @@ export function ToolboxMap({
    *  the map runs city-priority scoping (utilities are clamped to each
    *  city's circle on the server). Empty / undefined = whole region. */
   initialCityIds?: string[];
+  /** Pre-joined display string for the pinned cities (e.g.
+   *  "El Nido · Coron"). When non-null, the header shows
+   *  "City: <names>" instead of "Region: <region>". */
+  initialCityLabel?: string | null;
 }) {
   const router = useRouter();
   const [active, setActive] = useState<CategoryId | "all">(
@@ -485,15 +490,18 @@ export function ToolboxMap({
           </div>
         </div>
 
-        {/* Region row — driven by the global wv-region cookie; tap the
-            globe in the top bar to change. */}
+        {/* Scope row — driven by the global wv-region + wv-cities cookies;
+            tap the globe in the top bar to change. City wins over region
+            in the label so a pinned city reads as the active scope. */}
         <div className="relative flex items-center gap-2.5">
           <span className="shrink-0 text-xs font-bold text-white">
-            📍 Region
+            📍 {initialCityLabel ? "City" : "Region"}
           </span>
           <div className="wc-frame wc-frame-white relative min-w-0 flex-1 rounded-xl">
             <span className="block truncate px-3 py-1.5 text-xs font-bold text-white">
-              {initialRegionLabel ?? "Everywhere — pick a region in the top bar"}
+              {initialCityLabel ??
+                initialRegionLabel ??
+                "Everywhere — pick a region in the top bar"}
             </span>
           </div>
           <span className="shrink-0 text-[11px] font-semibold text-white/80">
