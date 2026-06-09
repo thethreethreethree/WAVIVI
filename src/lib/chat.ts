@@ -198,14 +198,15 @@ export async function listPublicChatGroups(
     // countries land here as "Philippines", DB rows might be
     // "philippines" / "PH" depending on who created them.
     query = query.ilike("destination_country", region.country);
-    if (region.city) {
-      // Allow either an exact city match OR a null destination_city
-      // (country-wide groups). PostgREST OR syntax: comma-separated
-      // alternatives, each in `column.operator.value` form.
-      query = query.or(
-        `destination_city.is.null,destination_city.ilike.${region.city}`,
-      );
-    }
+    // City matching is done in app code below — see [normaliseCity].
+    // Why not PostgREST: `.or()` strings pack values raw, so any
+    // space / punctuation in a city name ("El Nido" → space) is
+    // fragile, and a single leading-period typo on a row
+    // (".El Nido", which an admin actually shipped) made the filter
+    // miss the row even though humans clearly want it. Pulling the
+    // filter into JS lets us normalise both sides (lowercase + strip
+    // anything that isn't a letter/digit) so case, whitespace, and
+    // stray punctuation can't sabotage the match.
   }
 
   const { data } = await query;
@@ -221,7 +222,7 @@ export async function listPublicChatGroups(
     featured: boolean;
     chat_group_members?: Array<{ count: number }>;
   };
-  const groups = ((data as unknown as Row[] | null) ?? []).map((g) => ({
+  const raw = ((data as unknown as Row[] | null) ?? []).map((g) => ({
     id: g.id,
     name: g.name,
     description: g.description,
@@ -233,8 +234,28 @@ export async function listPublicChatGroups(
     member_count: g.chat_group_members?.[0]?.count ?? 0,
   }));
 
+  /** Lowercase + strip everything that isn't a-z0-9. "El Nido",
+   *  "EL Nido", ".El Nido", " el-nido " all collapse to "elnido". */
+  function normaliseCity(s: string | null | undefined): string {
+    if (!s) return "";
+    return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  }
+
+  const groups = region?.city
+    ? raw.filter((g) => {
+        // Country-wide groups (no destination_city) belong in every
+        // city of that country — keep them when a city is picked.
+        if (g.destination_city == null) return true;
+        return (
+          normaliseCity(g.destination_city) === normaliseCity(region.city)
+        );
+      })
+    : raw;
+
   // Fetch the preview avatars for every group in one query — most-recent
-  // joiners first, capped to ~3 per group on the client side.
+  // joiners first, capped to ~3 per group on the client side. Only the
+  // post-city-filter set, so an "Everywhere" pick doesn't pay the
+  // member fetch for groups that won't render.
   const ids = groups.map((g) => g.id);
   if (ids.length === 0) {
     return groups.map((g) => ({ ...g, preview_avatars: [] }));
