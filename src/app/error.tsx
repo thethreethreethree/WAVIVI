@@ -21,9 +21,17 @@ export default function Error({
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-6 py-20 text-center">
-      <span className="text-4xl" aria-hidden>
-        🧭
-      </span>
+      {/* Painted compass — every unhandled exception lands here, so
+          the brand glyph matters. ThemeImgSwap auto-targets the
+          sketch / journal variants when those themes are active. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/icons/rustic/07_compass_ring.png"
+        alt=""
+        aria-hidden
+        className="h-12 w-12 object-contain"
+      />
+      <span className="sr-only">🧭</span>
       <h1 className="mt-3 text-xl font-semibold tracking-tight">
         Something went off-course
       </h1>
