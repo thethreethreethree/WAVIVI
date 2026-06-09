@@ -103,11 +103,10 @@ function BackpackGlyph({ className }: { className?: string }) {
    every theme (light, cute, sketch, orange). Inline width/height
    guarantee sizing even if cached CSS is stale.
 
-   Categories added after the 2026-06-08 expansion (pharmacy, massage_spa,
-   gym_fitness, …) don't have dedicated PNG art yet — they fall back to
-   `/icons/map/map_default.png` if present, or the SVG line icon from the
-   <Icon> component. Drop hand-painted PNGs into /icons/map/ as you have
-   them and they'll start rendering automatically. */
+   Categories without dedicated PNG art fall back to
+   `/icons/map/map_default.png` if present, or the SVG line icon from
+   the <Icon> component. Drop hand-painted PNGs into /icons/map/ as you
+   have them and they'll start rendering automatically. */
 const MAP_ICON_BY_CATEGORY: Partial<Record<CategoryId, string>> = {
   atm: "/icons/map/map_atm.png",
   market: "/icons/map/map_market.png",
@@ -121,6 +120,19 @@ const MAP_ICON_BY_CATEGORY: Partial<Record<CategoryId, string>> = {
   police: "/icons/map/map_police.png",
   embassy: "/icons/map/map_embassy.png",
   laundry: "/icons/map/map_laundry.png",
+  // 2026-06-09 expansion — painted map markers for the 9 new tool
+  // categories (file copied into /public/icons/map/ matching the
+  // CategoryId so the lookup is regex-greppable). `pharmacy` was
+  // already shipped earlier but never wired — fixed at the same pass.
+  pharmacy: "/icons/map/map_pharmacy.png",
+  massage_spa: "/icons/map/map_massage_spa.png",
+  gym_fitness: "/icons/map/map_gym_fitness.png",
+  convenience_store: "/icons/map/map_convenience_store.png",
+  luggage_storage: "/icons/map/map_luggage_storage.png",
+  motorbike_rental: "/icons/map/map_motorbike_rental.png",
+  petrol_station: "/icons/map/map_petrol_station.png",
+  tourist_info: "/icons/map/map_tourist_info.png",
+  coworking_space: "/icons/map/map_coworking_space.png",
 };
 const FALLBACK_MAP_ICON = "/icons/map/map_default.png";
 const CATEGORY_GLYPH: Record<CategoryId, string> = Object.fromEntries(
