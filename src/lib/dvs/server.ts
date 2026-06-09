@@ -283,3 +283,82 @@ export async function loadDvsFromFollowing(
     .returns<JoinedRow[]>();
   return (data ?? []).map(toDisplay);
 }
+
+/* ── Phase 3 — reactions + comments loaders ────────────────────────── */
+
+/** Compact display shape for one comment row, joined with its author
+ *  profile so the thread renders without a second query per comment. */
+export interface DvsCommentDisplay {
+  id: string;
+  shareId: string;
+  authorId: string;
+  authorUsername: string;
+  authorDisplayName: string;
+  authorAvatarUrl: string | null;
+  body: string;
+  createdAt: string;
+}
+
+/** Resolve which of the given share ids the viewer has already
+ *  liked. Returns an empty Set when the viewer is signed-out. Used
+ *  by the feed pages to hydrate the heart-button initial state per
+ *  card without N+1 lookups. */
+export async function loadViewerLikedShareIds(
+  viewerId: string | null,
+  shareIds: string[],
+): Promise<Set<string>> {
+  if (!viewerId || shareIds.length === 0) return new Set();
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("dvs_reactions")
+    .select("share_id")
+    .eq("user_id", viewerId)
+    .in("share_id", shareIds);
+  return new Set((data ?? []).map((r) => r.share_id));
+}
+
+/** Load the comments thread for one share, oldest-first (chat-style
+ *  reading order). Joins the author profile so the thread renders
+ *  without per-row lookups. */
+export async function loadDvsComments(
+  shareId: string,
+  limit = 100,
+): Promise<DvsCommentDisplay[]> {
+  const supabase = await createClient();
+  type Row = {
+    id: string;
+    share_id: string;
+    author_id: string;
+    body: string;
+    created_at: string;
+    author: {
+      id: string;
+      username: string;
+      display_name: string;
+      avatar_url: string | null;
+    } | null;
+  };
+  const { data } = await supabase
+    .from("dvs_comments")
+    .select(
+      `
+      id, share_id, author_id, body, created_at,
+      author:profiles!dvs_comments_author_id_fkey(id, username, display_name, avatar_url)
+    `,
+    )
+    .eq("active", true)
+    .eq("share_id", shareId)
+    .order("created_at", { ascending: true })
+    .limit(limit)
+    .returns<Row[]>();
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    shareId: r.share_id,
+    authorId: r.author_id,
+    authorUsername: r.author?.username ?? "traveler",
+    authorDisplayName: r.author?.display_name ?? "Traveler",
+    authorAvatarUrl: r.author?.avatar_url ?? null,
+    body: r.body,
+    createdAt: r.created_at,
+  }));
+}

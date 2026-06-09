@@ -385,6 +385,48 @@ export type DvsShareInsert = {
 
 export type DvsShareUpdate = Partial<Omit<DvsShareInsert, "id" | "author_id">>;
 
+/* ── DVS reactions (migration 0063) ──────────────────────────────────── */
+
+/** One like by one user on one share. No separate id — composite PK
+ *  on (share_id, user_id) makes "has this user liked this share" a
+ *  direct lookup. */
+export type DvsReactionRow = {
+  share_id: string;
+  user_id: string;
+  created_at: string;
+};
+
+export type DvsReactionInsert = {
+  share_id: string;
+  user_id: string;
+};
+
+export type DvsReactionUpdate = never;
+
+/* ── DVS comments (migration 0064) ───────────────────────────────────── */
+
+export type DvsCommentRow = {
+  id: string;
+  share_id: string;
+  author_id: string;
+  body: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DvsCommentInsert = {
+  id?: string;
+  share_id: string;
+  author_id: string;
+  body: string;
+  active?: boolean;
+};
+
+export type DvsCommentUpdate = Partial<
+  Omit<DvsCommentInsert, "id" | "share_id" | "author_id">
+>;
+
 /* ── Notifications (migration 0055) ──────────────────────────────────── */
 
 /** Stable label distinguishing notification kinds. The UI switches on
@@ -1480,6 +1522,16 @@ export type Database = {
         DvsShareRow,
         DvsShareInsert,
         DvsShareUpdate
+      >;
+      dvs_reactions: TableShape<
+        DvsReactionRow,
+        DvsReactionInsert,
+        DvsReactionUpdate
+      >;
+      dvs_comments: TableShape<
+        DvsCommentRow,
+        DvsCommentInsert,
+        DvsCommentUpdate
       >;
       notifications: TableShape<
         NotificationRow,

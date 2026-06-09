@@ -184,3 +184,115 @@ export async function createDvsShare(
   revalidatePath(`/u/${user.id}`);
   return { ok: true, id: data.id };
 }
+
+/* ── Phase 3 — reactions + comments ────────────────────────────────── */
+
+export type DvsToggleLikeResult =
+  | { ok: true; liked: boolean }
+  | { ok: false; error: string };
+
+/** Toggle the current user's like on a share. Two-step: try to insert,
+ *  swallow a 23505 unique_violation as "already liked" and fall back
+ *  to a delete. Keeps the call idempotent end-to-end so a double-tap
+ *  doesn't desync the optimistic UI. */
+export async function toggleDvsLike(
+  shareId: string,
+): Promise<DvsToggleLikeResult> {
+  if (!shareId) return { ok: false, error: "Missing share id." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Sign in to react." };
+
+  // Try the insert first. If it fails with 23505 the user already
+  // liked — treat the tap as an un-like.
+  const insertRes = await supabase
+    .from("dvs_reactions")
+    .insert({ share_id: shareId, user_id: user.id });
+
+  if (insertRes.error) {
+    if (insertRes.error.code === "23505") {
+      const { error: delErr } = await supabase
+        .from("dvs_reactions")
+        .delete()
+        .eq("share_id", shareId)
+        .eq("user_id", user.id);
+      if (delErr) return { ok: false, error: delErr.message };
+      revalidatePath("/feed");
+      revalidatePath("/profile");
+      return { ok: true, liked: false };
+    }
+    return { ok: false, error: insertRes.error.message };
+  }
+
+  revalidatePath("/feed");
+  revalidatePath("/profile");
+  return { ok: true, liked: true };
+}
+
+export type DvsCommentActionResult =
+  | { ok: true; id: string }
+  | { ok: false; error: string };
+
+/** Add a comment under a share. Validates body length here so the
+ *  client can show an inline error before the DB constraint fires. */
+export async function addDvsComment(
+  shareId: string,
+  body: string,
+): Promise<DvsCommentActionResult> {
+  if (!shareId) return { ok: false, error: "Missing share id." };
+  const trimmed = body.trim();
+  if (trimmed.length === 0) return { ok: false, error: "Write something first." };
+  if (trimmed.length > 500) {
+    return { ok: false, error: "Comment must be 500 characters or fewer." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Sign in to comment." };
+
+  const { data, error } = await supabase
+    .from("dvs_comments")
+    .insert({
+      share_id: shareId,
+      author_id: user.id,
+      body: trimmed,
+    })
+    .select("id")
+    .single();
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/feed");
+  revalidatePath("/profile");
+  return { ok: true, id: data.id };
+}
+
+/** Soft-delete a comment. Author OR admin only; the DB RLS policy
+ *  enforces it, this just returns a friendly error when the update
+ *  affects no rows. */
+export async function deleteDvsComment(
+  commentId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!commentId) return { ok: false, error: "Missing comment id." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Sign in to manage your comments." };
+
+  const { error } = await supabase
+    .from("dvs_comments")
+    .update({ active: false })
+    .eq("id", commentId)
+    .eq("author_id", user.id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/feed");
+  revalidatePath("/profile");
+  return { ok: true };
+}

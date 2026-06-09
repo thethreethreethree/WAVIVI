@@ -8,6 +8,7 @@ import {
   loadDvsFromFollowing,
   loadDvsNow,
   loadDvsTodaysBest,
+  loadViewerLikedShareIds,
 } from "@/lib/dvs/server";
 import { getCurrentProfile } from "@/lib/profiles";
 
@@ -52,6 +53,19 @@ export default async function FeedPage() {
     destShares.length +
     followingShares.length;
 
+  // Hydrate the viewer's liked set in one batch so every card's heart
+  // button can render with the right initial state without an N+1
+  // round-trip. Dedup ids across sections (NOW + BEST often overlap)
+  // so the IN clause stays small.
+  const allShareIds = Array.from(
+    new Set(
+      [...nowShares, ...bestShares, ...destShares, ...followingShares].map(
+        (s) => s.id,
+      ),
+    ),
+  );
+  const viewerLikedIds = await loadViewerLikedShareIds(userId, allShareIds);
+
   return (
     <div className="relative flex flex-1 flex-col gap-6 px-4 pb-10 pt-[max(3rem,calc(env(safe-area-inset-top)+1.25rem))]">
       <header className="flex items-start justify-between gap-3">
@@ -89,6 +103,10 @@ export default async function FeedPage() {
         subtitle="People currently traveling — last hour"
         shares={nowShares}
         emptyState="Nothing in the last hour. Come back soon — or share your own."
+        viewerId={userId}
+        viewerUsername={profile?.username ?? null}
+        viewerAvatarUrl={profile?.avatar_url ?? null}
+        viewerLikedIds={viewerLikedIds}
       />
 
       <DvsFeedSection
@@ -97,6 +115,10 @@ export default async function FeedPage() {
         subtitle="Highest-vibe shares from today"
         shares={bestShares}
         emptyState="No shares today yet."
+        viewerId={userId}
+        viewerUsername={profile?.username ?? null}
+        viewerAvatarUrl={profile?.avatar_url ?? null}
+        viewerLikedIds={viewerLikedIds}
       />
 
       <DvsFeedSection
@@ -106,6 +128,10 @@ export default async function FeedPage() {
         shares={destShares}
         hideWhenEmpty
         emptyState="Add a destination in your travel plans to see live tips from there."
+        viewerId={userId}
+        viewerUsername={profile?.username ?? null}
+        viewerAvatarUrl={profile?.avatar_url ?? null}
+        viewerLikedIds={viewerLikedIds}
       />
 
       <DvsFeedSection
@@ -115,6 +141,10 @@ export default async function FeedPage() {
         shares={followingShares}
         hideWhenEmpty
         emptyState="Join a group chat to see shares from fellow travelers here."
+        viewerId={userId}
+        viewerUsername={profile?.username ?? null}
+        viewerAvatarUrl={profile?.avatar_url ?? null}
+        viewerLikedIds={viewerLikedIds}
       />
 
       {/* Bottom safety net — only shows when literally zero shares

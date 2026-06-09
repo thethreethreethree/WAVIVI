@@ -2,29 +2,53 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 
+import { toggleDvsLike } from "@/lib/dvs/actions";
 import type { DvsShareDisplay } from "@/lib/dvs/types";
 
+import { DvsCommentsThread } from "./dvs-comments-thread";
+
 /**
- * Daily Vibe Share card — progressive disclosure.
+ * Daily Vibe Share card — progressive disclosure with live engagement.
  *
  * COLLAPSED (default):
  *   • Author chip (avatar + handle + relative time)
  *   • Photo (or painted brand fallback when null) with caption overlay
  *   • Vibe rating + location + engagement counters
- *   • "Tap to see all details ▼"
+ *   • Heart (live toggle) · Comments badge · Tap-to-expand button
  *
  * EXPANDED:
  *   • Same header + photo
  *   • All five answers stacked: vibe, location, tip, costs, Q&A
- *   • "Collapse ▲"
+ *   • Comments thread (lazy-loaded on first expand)
  *
  * The collapsed state stays tight (one screenful) so the feed scrolls
  * fast; expanded is the deep-dive view per the DVS spec.
+ *
+ * Engagement state (viewerLiked) is hydrated from the server via a
+ * one-shot batch lookup at the page level, then maintained locally
+ * with optimistic UI on every toggle so the heart feels instant.
  */
-export function DvsCard({ share }: { share: DvsShareDisplay }) {
+export function DvsCard({
+  share,
+  viewerId = null,
+  viewerUsername = null,
+  viewerAvatarUrl = null,
+  viewerLiked = false,
+}: {
+  share: DvsShareDisplay;
+  /** Signed-in viewer id, or null for anonymous viewers. */
+  viewerId?: string | null;
+  viewerUsername?: string | null;
+  viewerAvatarUrl?: string | null;
+  /** Whether the signed-in viewer has already liked this share. */
+  viewerLiked?: boolean;
+}) {
   const [expanded, setExpanded] = useState(false);
+  const [liked, setLiked] = useState(viewerLiked);
+  const [likeCount, setLikeCount] = useState(share.likeCount);
+  const [pending, startTransition] = useTransition();
 
   const fullLocation = [share.locationLabel, share.cityLabel, share.regionLabel]
     .filter(Boolean)
@@ -36,6 +60,30 @@ export function DvsCard({ share }: { share: DvsShareDisplay }) {
     share.costActivity != null;
 
   const hasQa = Boolean(share.qaQuestion && share.qaAnswer);
+
+  function onToggleLike() {
+    if (!viewerId) {
+      // Anonymous — bounce to /login via a normal Link in the future.
+      // For now, no-op so the page doesn't navigate from a heart tap.
+      return;
+    }
+    // Optimistic flip — snap back if the server says no.
+    const nextLiked = !liked;
+    setLiked(nextLiked);
+    setLikeCount((c) => Math.max(0, c + (nextLiked ? 1 : -1)));
+    startTransition(async () => {
+      const res = await toggleDvsLike(share.id);
+      if (!res.ok) {
+        setLiked(!nextLiked);
+        setLikeCount((c) => Math.max(0, c + (nextLiked ? -1 : 1)));
+      } else if (res.liked !== nextLiked) {
+        // Server disagrees with our optimistic guess (e.g. user had
+        // already liked from another device). Sync to truth.
+        setLiked(res.liked);
+        setLikeCount(share.likeCount + (res.liked ? 1 : 0));
+      }
+    });
+  }
 
   return (
     <article className="wc-frame relative flex flex-col rounded-2xl bg-surface p-3 shadow-card">
@@ -111,10 +159,32 @@ export function DvsCard({ share }: { share: DvsShareDisplay }) {
       </button>
 
       {/* Engagement row */}
-      <div className="mt-2 flex items-center gap-3 text-xs font-bold text-muted">
-        <span>❤ {formatCount(share.likeCount)}</span>
-        <span>💬 {formatCount(share.commentCount)}</span>
-        <span>↗ {formatCount(share.shareCount)}</span>
+      <div className="mt-2 flex items-center gap-3 text-xs font-bold">
+        <button
+          type="button"
+          onClick={onToggleLike}
+          disabled={pending || !viewerId}
+          aria-pressed={liked}
+          aria-label={liked ? "Unlike" : "Like"}
+          className={`flex items-center gap-1 transition-transform active:scale-90 disabled:opacity-50 ${
+            liked ? "text-heat" : "text-muted"
+          }`}
+        >
+          <span aria-hidden>{liked ? "❤" : "🤍"}</span>
+          {formatCount(likeCount)}
+        </button>
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="flex items-center gap-1 text-muted"
+        >
+          <span aria-hidden>💬</span>
+          {formatCount(share.commentCount)}
+        </button>
+        <span className="flex items-center gap-1 text-muted">
+          <span aria-hidden>↗</span>
+          {formatCount(share.shareCount)}
+        </span>
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
@@ -124,9 +194,7 @@ export function DvsCard({ share }: { share: DvsShareDisplay }) {
         </button>
       </div>
 
-      {/* Expanded body — all 5 answers. Built as a static section
-          rather than absolute-positioned drawer so it pushes the next
-          card down (matches the spec's "grow from center" intent). */}
+      {/* Expanded body — all 5 answers + comments thread. */}
       {expanded && (
         <div className="mt-3 flex flex-col gap-3 text-sm">
           <Section icon="🎈" label="Vibe today">
@@ -181,6 +249,16 @@ export function DvsCard({ share }: { share: DvsShareDisplay }) {
               </p>
             </Section>
           )}
+
+          {/* Lazy comments thread — mounted on expand so its
+              /api/dvs/[shareId]/comments fetch only fires for cards
+              the user actually opens. */}
+          <DvsCommentsThread
+            shareId={share.id}
+            viewerId={viewerId}
+            viewerUsername={viewerUsername}
+            viewerAvatarUrl={viewerAvatarUrl}
+          />
         </div>
       )}
     </article>

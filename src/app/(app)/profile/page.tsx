@@ -12,7 +12,11 @@ import {
   InstagramProfileBadge,
   InstagramShowcase,
 } from "@/features/instagram";
-import { hasSharedToday, loadAuthorDvsShares } from "@/lib/dvs/server";
+import {
+  hasSharedToday,
+  loadAuthorDvsShares,
+  loadViewerLikedShareIds,
+} from "@/lib/dvs/server";
 import { getCurrentProfile } from "@/lib/profiles";
 import { travelerNotes } from "@/lib/travejor/account";
 
@@ -70,6 +74,13 @@ export default async function MyProfilePage() {
     loadAuthorDvsShares(profile.id, 20),
     hasSharedToday(profile.id),
   ]);
+  // Hydrate the heart state for the viewer's own shares (yes, you
+  // can like your own DVS — same affordance as Instagram). One
+  // batch lookup per profile load.
+  const viewerLikedIds = await loadViewerLikedShareIds(
+    profile.id,
+    dvsShares.map((s) => s.id),
+  );
 
   // Aggregate visited countries: explicit list, plus home_country fallback
   // so newcomers without a list still see at least one flag.
@@ -242,7 +253,13 @@ export default async function MyProfilePage() {
           )}
         </div>
         {dvsShares.length > 0 ? (
-          <DvsList shares={dvsShares} />
+          <DvsList
+            shares={dvsShares}
+            viewerId={profile.id}
+            viewerUsername={profile.username}
+            viewerAvatarUrl={profile.avatar_url}
+            viewerLikedIds={viewerLikedIds}
+          />
         ) : (
           <div className="wc-frame rounded-2xl p-4 text-center text-sm text-muted">
             No vibe shares yet.{" "}
