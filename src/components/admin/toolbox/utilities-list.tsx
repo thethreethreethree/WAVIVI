@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { ChannelIcon } from "@/components/admin/channel-icon";
 import { Icon } from "@/components/ui/icon";
 import { CATEGORY_BY_ID, TOOLBOX_CATEGORIES } from "@/lib/toolbox/categories";
 import type { UtilityCategory, UtilityRow } from "@/types/supabase";
@@ -16,14 +17,16 @@ const CROWD_STYLE: Record<string, string> = {
   high: "bg-heat/15 text-heat",
 };
 
-/** Contact / social channels an admin can filter and inspect by. */
+/** Contact / social channels an admin can filter and inspect by.
+ *  Painted-brand glyph path where we have the asset, emoji where we
+ *  don't yet. `ChannelIcon` picks the right renderer. */
 const CHANNELS = [
-  { key: "instagram", label: "IG", icon: "📷" },
-  { key: "facebook", label: "FB", icon: "📘" },
-  { key: "whatsapp", label: "WhatsApp", icon: "💬" },
-  { key: "email", label: "Email", icon: "✉️" },
-  { key: "phone", label: "Phone", icon: "📞" },
-  { key: "website", label: "Website", icon: "🌐" },
+  { key: "instagram", label: "IG",       icon: "/icons/rustic/instagram_badge.png" },
+  { key: "facebook",  label: "FB",       icon: "📘" }, // needs painted facebook glyph
+  { key: "whatsapp",  label: "WhatsApp", icon: "/icons/rustic/01_chat_bubble.png" },
+  { key: "email",     label: "Email",    icon: "/icons/rustic/mail.png" },
+  { key: "phone",     label: "Phone",    icon: "📞" }, // needs painted phone glyph
+  { key: "website",   label: "Website",  icon: "/icons/rustic/globe.png" },
 ] as const;
 
 type ChannelKey = (typeof CHANNELS)[number]["key"];
@@ -142,7 +145,7 @@ export function UtilitiesList({ utilities }: { utilities: UtilityRow[] }) {
                   : "text-muted ring-1 ring-border hover:text-foreground"
               }`}
             >
-              <span aria-hidden>{ch.icon}</span>
+              <ChannelIcon src={ch.icon} />
               {ch.label}
             </button>
           );
@@ -234,7 +237,7 @@ export function UtilitiesList({ utilities }: { utilities: UtilityRow[] }) {
                       title={ch.label}
                       className="rounded-full bg-border px-1.5 py-0.5 text-[10px] font-bold text-foreground"
                     >
-                      {ch.icon} {ch.label}
+                      <ChannelIcon src={ch.icon} /> {ch.label}
                     </span>
                   ))}
                 </span>
