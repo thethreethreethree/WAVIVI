@@ -575,7 +575,13 @@ export function ToolboxMap({
 
         {nearby !== null && (
           <div className="absolute left-1/2 top-4 z-[600] flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-glow px-4 py-2.5 text-sm font-bold text-white shadow-lg">
-            <span>📍</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/rustic/01_map_pin.png"
+              alt=""
+              aria-hidden
+              className="h-4 w-4 object-contain"
+            />
             <span>
               {nearby
                 ? `${nearby} ${nearby === 1 ? "spot" : "spots"} within 5 km`
@@ -838,9 +844,16 @@ function UtilityCard({
             <button
               type="button"
               onClick={() => setShowReport((s) => !s)}
-              className="wc-frame wc-frame-orange rounded-full px-3 py-2 text-xs font-bold text-glow active:scale-[0.98]"
+              className="wc-frame wc-frame-orange flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold text-glow active:scale-[0.98]"
             >
-              ⚠️ Report
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/icons/rustic/24_warning.png"
+                alt=""
+                aria-hidden
+                className="h-3.5 w-3.5 object-contain"
+              />
+              Report
             </button>
           </div>
 
