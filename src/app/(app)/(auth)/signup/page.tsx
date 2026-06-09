@@ -33,7 +33,7 @@ export default async function SignupPage({
     <div className="pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
       <h1 className="mb-1 text-3xl font-bold">Join Wondavu</h1>
       <p className="mb-5 text-lg text-muted">
-        Create an account to find your people on the map.
+        Create an account and see where&apos;s the vibe!
       </p>
       <AuthForm mode="signup" next={next} />
     </div>
