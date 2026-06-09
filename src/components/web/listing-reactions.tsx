@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 
+/** Painted-asset path per reaction. /icons/rustic/ is the canonical
+ *  reference; ThemeImgSwap retargets sketch / journal automatically. */
 const REACTIONS = [
-  { id: "love", emoji: "❤️", label: "Love this" },
-  { id: "want", emoji: "🌟", label: "Want to go" },
-  { id: "been", emoji: "✓", label: "Been there" },
+  { id: "love", icon: "/icons/rustic/heart_save.png", label: "Love this" },
+  { id: "want", icon: "/icons/rustic/star.png",      label: "Want to go" },
+  { id: "been", icon: "/icons/rustic/check.png",     label: "Been there" },
 ];
 
 /** Engagement reactions on the listing detail page (local-only). */
@@ -27,7 +29,13 @@ export function ListingReactions() {
                 : "bg-surface text-muted ring-1 ring-border hover:text-foreground"
             }`}
           >
-            <span aria-hidden>{r.emoji}</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={r.icon}
+              alt=""
+              aria-hidden
+              className="h-4 w-4 object-contain"
+            />
             {r.label}
           </button>
         );
