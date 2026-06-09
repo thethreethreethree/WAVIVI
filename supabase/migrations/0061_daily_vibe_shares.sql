@@ -79,8 +79,18 @@ create table if not exists public.daily_vibe_shares (
 -- One share per author per UTC day. PARTIAL on active=true so a user
 -- who deletes (soft-archives) today's share can post a replacement
 -- the same day without bumping into the constraint.
+--
+-- Why the cast goes through `AT TIME ZONE 'UTC'` first:
+-- `timestamptz::date` depends on the session's timezone setting, so
+-- Postgres marks it STABLE — and index expressions must be IMMUTABLE.
+-- `(created_at AT TIME ZONE 'UTC')` returns a plain `timestamp` (no
+-- timezone), and `timestamp::date` IS immutable. Same calendar-day
+-- semantics; no functional change.
 create unique index if not exists daily_vibe_shares_one_per_day
-  on public.daily_vibe_shares (author_id, (created_at::date))
+  on public.daily_vibe_shares (
+    author_id,
+    ((created_at at time zone 'UTC')::date)
+  )
   where active = true;
 
 -- Feed scans — global newest-first.
