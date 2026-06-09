@@ -100,11 +100,13 @@ export async function detectRegionFromInput(
 const BASELINE_PER_TABLE = 8;
 const SEARCH_LIMIT = 12;
 
-/** Which place table a row came from — used server-side to build the
- *  per-source detail page URL (/stay/{id}, /eat/{id}, /todo/{id}).
- *  Excluded from the JSON we ship to the model (the model doesn't
- *  need UUIDs, and they'd waste tokens). */
-export type InventorySource = "stay" | "eat" | "todo";
+/** Which table a row came from — used server-side to build the
+ *  per-source detail page URL (/stay/{id}, /eat/{id}, /todo/{id})
+ *  or, for traveler utilities, the filtered map URL
+ *  (/tools/map?category={category}). Excluded from the JSON we ship
+ *  to the model (the model doesn't need UUIDs, and they'd waste
+ *  tokens). */
+export type InventorySource = "stay" | "eat" | "todo" | "tool";
 
 export interface InventoryItem {
   name: string;
@@ -178,16 +180,27 @@ export interface SusenInventory {
   stays: InventoryItem[];
   restaurants: InventoryItem[];
   experiences: InventoryItem[];
+  /** Traveler tools / utilities — laundry, ATMs, pharmacies, etc.
+   *  Same shape as the other cohorts so the formatter / linkify
+   *  treat them uniformly; only the `source` tag differs (it points
+   *  at the toolbox map URL instead of a detail page). */
+  utilities: InventoryItem[];
   /** Rows that directly match the traveller's current query (may be empty
    *  when the message has no searchable keyword, e.g. "hey"). */
   matches: {
     stays: InventoryItem[];
     restaurants: InventoryItem[];
     experiences: InventoryItem[];
+    utilities: InventoryItem[];
   };
-  /** True active counts in the region. Lets Susen answer "how many
-   *  restaurants?" accurately instead of guessing from the sample. */
-  totals: { stays: number; restaurants: number; experiences: number };
+  /** True counts in the region. Lets Susen answer "how many laundry?"
+   *  accurately instead of guessing from the sample. */
+  totals: {
+    stays: number;
+    restaurants: number;
+    experiences: number;
+    utilities: number;
+  };
 }
 
 interface CityLookup {
@@ -200,8 +213,9 @@ const EMPTY_INVENTORY: SusenInventory = {
   stays: [],
   restaurants: [],
   experiences: [],
-  matches: { stays: [], restaurants: [], experiences: [] },
-  totals: { stays: 0, restaurants: 0, experiences: 0 },
+  utilities: [],
+  matches: { stays: [], restaurants: [], experiences: [], utilities: [] },
+  totals: { stays: 0, restaurants: 0, experiences: 0, utilities: 0 },
 };
 
 /** Words that carry no retrieval signal — dropped before searching so a
@@ -237,6 +251,59 @@ const SYNONYMS: Record<string, string[]> = {
   hostels: ["hostel"], hotels: ["hotel"], resorts: ["resort"],
   diving: ["dive"], snorkeling: ["snorkel"], snorkelling: ["snorkel"],
   hikes: ["hike"], hiking: ["hike"], tours: ["tour"], trekking: ["hike"],
+  // --- Traveler tools / utilities. These map a natural intent word
+  // onto the `category` enum slug used by traveler_utilities, so the
+  // ILIKE search hits real rows (e.g. "where's a laundry?" → match on
+  // category="laundry"; "any pharmacy near me?" → category="pharmacy").
+  // The name search runs in parallel against the row's `name`, so a
+  // venue like "El Nido Laundry Shop" surfaces even when the user
+  // misspells the category word.
+  laundry: ["laundry"], laundromat: ["laundry"], wash: ["laundry"],
+  cleaner: ["laundry"], cleaners: ["laundry"],
+  atm: ["atm"], cash: ["atm"], withdraw: ["atm"],
+  bank: ["bank"], banking: ["bank"],
+  exchange: ["currency_exchange"], currency: ["currency_exchange"],
+  forex: ["currency_exchange"], moneychanger: ["currency_exchange"],
+  pharmacy: ["pharmacy"], pharmacies: ["pharmacy"], drugstore: ["pharmacy"],
+  medicine: ["pharmacy"], medication: ["pharmacy"],
+  clinic: ["medical_clinic"], clinics: ["medical_clinic"],
+  hospital: ["medical_clinic"], hospitals: ["medical_clinic"],
+  doctor: ["medical_clinic"], dentist: ["medical_clinic"], medical: ["medical_clinic"],
+  spa: ["massage_spa"], spas: ["massage_spa"],
+  massage: ["massage_spa"], massages: ["massage_spa"],
+  reflexology: ["massage_spa"], wellness: ["massage_spa"],
+  gym: ["gym_fitness"], gyms: ["gym_fitness"], fitness: ["gym_fitness"],
+  workout: ["gym_fitness"], yoga: ["gym_fitness"],
+  wifi: ["public_wifi"], "wi-fi": ["public_wifi"], internet: ["public_wifi"],
+  sim: ["sim_card"], simcard: ["sim_card"], "sim-card": ["sim_card"],
+  prepaid: ["sim_card"], mobile: ["sim_card"], telco: ["sim_card"],
+  convenience: ["convenience_store"], mart: ["convenience_store"],
+  store: ["convenience_store"], grocery: ["convenience_store"],
+  supermarket: ["convenience_store"], market: ["convenience_store"],
+  "7-eleven": ["convenience_store"], seveneleven: ["convenience_store"],
+  bathroom: ["bathroom"], bathrooms: ["bathroom"], toilet: ["bathroom"],
+  toilets: ["bathroom"], restroom: ["bathroom"], washroom: ["bathroom"],
+  luggage: ["luggage_storage"], storage: ["luggage_storage"],
+  locker: ["luggage_storage"], lockers: ["luggage_storage"], bagdrop: ["luggage_storage"],
+  bus: ["transportation"], buses: ["transportation"], terminal: ["transportation"],
+  ferry: ["transportation"], ferries: ["transportation"], port: ["transportation"],
+  station: ["transportation"], transport: ["transportation"], taxi: ["transportation"],
+  jeepney: ["transportation"], tricycle: ["transportation"],
+  scooter: ["motorbike_rental"], scooters: ["motorbike_rental"],
+  motorbike: ["motorbike_rental"], motorbikes: ["motorbike_rental"],
+  motorcycle: ["motorbike_rental"], rental: ["motorbike_rental"],
+  rentals: ["motorbike_rental"], rent: ["motorbike_rental"],
+  petrol: ["petrol_station"], petron: ["petrol_station"], gas: ["petrol_station"],
+  fuel: ["petrol_station"], "petrol-station": ["petrol_station"],
+  police: ["police"], cops: ["police"], pnp: ["police"],
+  embassy: ["embassy"], embassies: ["embassy"], consulate: ["embassy"],
+  consulates: ["embassy"],
+  postoffice: ["post_office"], post: ["post_office"], mail: ["post_office"],
+  shipping: ["post_office"],
+  tourist: ["tourist_info"], "tourist-info": ["tourist_info"],
+  tourism: ["tourist_info"], info: ["tourist_info"],
+  coworking: ["coworking_space"], "co-working": ["coworking_space"],
+  cowork: ["coworking_space"], deskspace: ["coworking_space"],
 };
 
 /** Pull searchable keywords out of the traveller's message: lowercase,
@@ -349,6 +416,35 @@ export async function loadSusenInventory(
     "id, name, cuisine, rating, review_count, rank_score, city_id, address";
   const EXP_COLS =
     "id, name, activity_type, rating, review_count, rank_score, city_id, address";
+  // Utilities have no `active` column (every row in traveler_utilities is
+  // live), and the "category" enum slug IS its category field — no
+  // separate cuisine/stay_type column to project. Same select shape so
+  // the rest of the pipeline (project, dedup, format) is uniform.
+  const UTIL_COLS =
+    "id, name, category, rating, review_count, rank_score, city_id, address";
+
+  // Utilities don't have .eq("active", true) — separate builders so the
+  // existing baseline/search helpers stay untouched.
+  const utilBaseline = supabase
+    .from("traveler_utilities")
+    .select(UTIL_COLS)
+    .eq("region_id", regionId)
+    .order("rank_score", { ascending: false, nullsFirst: false })
+    .limit(BASELINE_PER_TABLE);
+  const utilSearchExpr = buildSearchExpr(keywords, "category");
+  const utilSearch = utilSearchExpr
+    ? supabase
+        .from("traveler_utilities")
+        .select(UTIL_COLS)
+        .eq("region_id", regionId)
+        .or(utilSearchExpr)
+        .order("rank_score", { ascending: false, nullsFirst: false })
+        .limit(SEARCH_LIMIT)
+    : Promise.resolve({ data: [] as RawRow[] });
+  const utilCount = supabase
+    .from("traveler_utilities")
+    .select("id", { count: "exact", head: true })
+    .eq("region_id", regionId);
 
   try {
     const [
@@ -357,12 +453,15 @@ export async function loadSusenInventory(
       staysBase,
       restBase,
       expBase,
+      utilBase,
       staysMatch,
       restMatch,
       expMatch,
+      utilMatch,
       staysCount,
       restCount,
       expCount,
+      utilCountRes,
     ] = await Promise.all([
       supabase
         .from("regions")
@@ -377,23 +476,28 @@ export async function loadSusenInventory(
       baseline("stays", STAY_COLS),
       baseline("restaurants", REST_COLS),
       baseline("experiences", EXP_COLS),
+      utilBaseline,
       search("stays", STAY_COLS, "stay_type"),
       search("restaurants", REST_COLS, "cuisine"),
       search("experiences", EXP_COLS, "activity_type"),
+      utilSearch,
       count("stays"),
       count("restaurants"),
       count("experiences"),
+      utilCount,
     ]);
 
     const cityName = indexCities(citiesRes.data);
 
     // Map a category column name to the place-page route prefix —
     // single source of truth so adding a new place table later only
-    // requires editing this map.
+    // requires editing this map. "category" → "tool" routes to the
+    // filtered toolbox map (utilities don't have detail pages).
     const SOURCE_BY_CATEGORY_COL: Record<string, InventorySource> = {
       stay_type: "stay",
       cuisine: "eat",
       activity_type: "todo",
+      category: "tool",
     };
 
     const project = (r: RawRow, categoryCol: string): InventoryItem => ({
@@ -417,11 +521,14 @@ export async function loadSusenInventory(
     const matchRest = projectAll(restMatch, "cuisine");
     const matchStays = projectAll(staysMatch, "stay_type");
     const matchExp = projectAll(expMatch, "activity_type");
+    const matchUtil = projectAll(utilMatch, "category");
 
     // Drop baseline rows already shown as a direct match, so we don't
     // spend tokens listing the same venue twice.
     const matchedNames = new Set(
-      [...matchRest, ...matchStays, ...matchExp].map((i) => i.name),
+      [...matchRest, ...matchStays, ...matchExp, ...matchUtil].map(
+        (i) => i.name,
+      ),
     );
     const dropDupes = (items: InventoryItem[]) =>
       items.filter((i) => !matchedNames.has(i.name));
@@ -431,11 +538,18 @@ export async function loadSusenInventory(
       stays: dropDupes(projectAll(staysBase, "stay_type")),
       restaurants: dropDupes(projectAll(restBase, "cuisine")),
       experiences: dropDupes(projectAll(expBase, "activity_type")),
-      matches: { stays: matchStays, restaurants: matchRest, experiences: matchExp },
+      utilities: dropDupes(projectAll(utilBase, "category")),
+      matches: {
+        stays: matchStays,
+        restaurants: matchRest,
+        experiences: matchExp,
+        utilities: matchUtil,
+      },
       totals: {
         stays: staysCount.count ?? 0,
         restaurants: restCount.count ?? 0,
         experiences: expCount.count ?? 0,
+        utilities: utilCountRes.count ?? 0,
       },
     };
   } catch (err) {
@@ -469,9 +583,13 @@ export function formatInventoryForPrompt(inv: SusenInventory): {
   const matchTotal =
     inv.matches.stays.length +
     inv.matches.restaurants.length +
-    inv.matches.experiences.length;
+    inv.matches.experiences.length +
+    inv.matches.utilities.length;
   const baseTotal =
-    inv.stays.length + inv.restaurants.length + inv.experiences.length;
+    inv.stays.length +
+    inv.restaurants.length +
+    inv.experiences.length +
+    inv.utilities.length;
   if (matchTotal === 0 && baseTotal === 0) return { stable: "", matches: "" };
 
   // Compact JSON — DeepSeek handles JSON in system prompts well and the
@@ -509,7 +627,10 @@ TOP PICKS — PLACES TO EAT (showing ${inv.restaurants.length} of ${inv.totals.r
 ${stringifyTopPicks(inv.restaurants)}
 
 TOP PICKS — THINGS TO DO (showing ${inv.experiences.length} of ${inv.totals.experiences} total):
-${stringifyTopPicks(inv.experiences)}`;
+${stringifyTopPicks(inv.experiences)}
+
+TOP PICKS — TRAVELER TOOLS (showing ${inv.utilities.length} of ${inv.totals.utilities} total — laundry, ATMs, pharmacies, clinics, transport, SIM cards, and 15+ other categories; "category" is the enum slug like "laundry" / "pharmacy" / "atm"):
+${stringifyTopPicks(inv.utilities)}`;
 
   let matches = "";
   if (matchTotal > 0) {
@@ -521,7 +642,7 @@ ${stringifyTopPicks(inv.experiences)}`;
     )}${section("PLACES TO STAY", inv.matches.stays)}${section(
       "THINGS TO DO",
       inv.matches.experiences,
-    )}`;
+    )}${section("TRAVELER TOOLS", inv.matches.utilities)}`;
   }
 
   return { stable, matches };

@@ -35,9 +35,11 @@ export function flattenInventory(inv: SusenInventory): InventoryItem[] {
     ...inv.matches.stays,
     ...inv.matches.restaurants,
     ...inv.matches.experiences,
+    ...inv.matches.utilities,
     ...inv.stays,
     ...inv.restaurants,
     ...inv.experiences,
+    ...inv.utilities,
   ];
 }
 
@@ -97,7 +99,13 @@ export function linkifyReply(
     const match = re.exec(out);
     if (!match) continue;
     const matchedAs = match[0]; // preserve original casing
-    const href = `/${item.source}/${item.id}`;
+    // Utilities don't have detail pages — link to the filtered
+    // toolbox map for the venue's category instead. Places (stay /
+    // eat / todo) still resolve to /stay/<id> / /eat/<id> / /todo/<id>.
+    const href =
+      item.source === "tool"
+        ? `/tools/map?category=${encodeURIComponent(item.category)}`
+        : `/${item.source}/${item.id}`;
     const replacement = `[${matchedAs}](${href})`;
     out = out.slice(0, match.index) + replacement + out.slice(match.index + matchedAs.length);
     linkedNames.add(key);
