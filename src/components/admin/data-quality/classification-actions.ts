@@ -5,7 +5,11 @@ import { revalidatePath } from "next/cache";
 import type { ClassificationSource } from "@/lib/data-quality/classification-audit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/toolbox/admin";
-import type { ExperienceUpdate, StayType } from "@/types/supabase";
+import type {
+  ExperienceUpdate,
+  StayType,
+  UtilityCategory,
+} from "@/types/supabase";
 
 export interface ClassificationActionResult {
   ok: boolean;
@@ -52,6 +56,18 @@ export async function applyClassification(
     const { error } = await supabase
       .from("restaurants")
       .update({ cuisine: proposed, admin_edited: true })
+      .eq("id", id);
+    if (error) return { ok: false, error: error.message };
+  } else if (source === "utilities") {
+    // The audit's `proposed` is a CategoryId; the Supabase typed
+    // client expects the UtilityCategory string literal so we assert
+    // through the server-action boundary where the union is erased.
+    const { error } = await supabase
+      .from("traveler_utilities")
+      .update({
+        category: proposed as UtilityCategory,
+        admin_edited: true,
+      })
       .eq("id", id);
     if (error) return { ok: false, error: error.message };
   } else {
@@ -155,8 +171,12 @@ export async function ignoreClassification(
   if (auth) return auth;
 
   const supabase = createAdminClient();
+  // The source labels (stays/restaurants/experiences) match table
+  // names 1:1, but "utilities" maps to the `traveler_utilities` table
+  // — translate before issuing the update.
+  const table = source === "utilities" ? "traveler_utilities" : source;
   const { error } = await supabase
-    .from(source)
+    .from(table)
     .update({ admin_edited: true })
     .eq("id", id);
   if (error) return { ok: false, error: error.message };

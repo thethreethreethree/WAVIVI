@@ -11,13 +11,25 @@ const SECTION_LABEL: Record<ClassificationSource, string> = {
   stays: "Stays",
   restaurants: "Restaurants",
   experiences: "Experiences",
+  utilities: "Utilities",
 };
 
 const SECTION_ANCHOR: Record<ClassificationSource, string> = {
   stays: "class-stays",
   restaurants: "class-restaurants",
   experiences: "class-experiences",
+  utilities: "class-utilities",
 };
+
+/** Single source-of-truth ordering — picker buttons, summary tiles,
+ *  and the rendered sub-sections all iterate this so adding a fifth
+ *  source means one line, not three. */
+const SOURCES: readonly ClassificationSource[] = [
+  "stays",
+  "restaurants",
+  "experiences",
+  "utilities",
+] as const;
 
 /** Server component — runs the cross-table audit, groups suspects by
  *  source, and renders three sub-sections under the existing
@@ -43,6 +55,7 @@ export async function ClassificationSection() {
     stays: [],
     restaurants: [],
     experiences: [],
+    utilities: [],
   };
   for (const s of suspects) bySource[s.source].push(s);
 
@@ -68,7 +81,7 @@ export async function ClassificationSection() {
         {/* Per-source jump buttons mirror the page-level ones so admins
             can dive straight into the table they care about. */}
         <div className="mt-3 flex flex-wrap gap-2">
-          {(["stays", "restaurants", "experiences"] as const).map((src) => (
+          {SOURCES.map((src) => (
             <a
               key={src}
               href={`#${SECTION_ANCHOR[src]}`}
@@ -84,7 +97,10 @@ export async function ClassificationSection() {
         <p className="text-xs font-bold uppercase tracking-wider text-white/80">
           Summary
         </p>
-        <div className="mt-3 grid grid-cols-5 gap-2 text-center">
+        {/* 6 stat tiles — 2 totals + 4 per-source counts. grid-cols-3 on
+            mobile so 6 cells render as a tidy 3×2 instead of a cramped
+            single row. */}
+        <div className="mt-3 grid grid-cols-3 gap-2 text-center sm:grid-cols-6">
           <div>
             <p className="text-lg font-bold">{total}</p>
             <p className="text-[10px] text-white/85">Suspects total</p>
@@ -93,22 +109,16 @@ export async function ClassificationSection() {
             <p className="text-lg font-bold">{highCount}</p>
             <p className="text-[10px] text-white/85">High confidence</p>
           </div>
-          <div>
-            <p className="text-lg font-bold">{bySource.stays.length}</p>
-            <p className="text-[10px] text-white/85">Stays</p>
-          </div>
-          <div>
-            <p className="text-lg font-bold">{bySource.restaurants.length}</p>
-            <p className="text-[10px] text-white/85">Restaurants</p>
-          </div>
-          <div>
-            <p className="text-lg font-bold">{bySource.experiences.length}</p>
-            <p className="text-[10px] text-white/85">Experiences</p>
-          </div>
+          {SOURCES.map((src) => (
+            <div key={src}>
+              <p className="text-lg font-bold">{bySource[src].length}</p>
+              <p className="text-[10px] text-white/85">{SECTION_LABEL[src]}</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {(["stays", "restaurants", "experiences"] as const).map((src) => (
+      {SOURCES.map((src) => (
         <ClassificationGroupClient
           key={src}
           source={src}

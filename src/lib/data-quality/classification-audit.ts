@@ -7,11 +7,16 @@ import {
 import { classifyCuisine } from "@/lib/restaurants/csv-import";
 import { classifyStayFromText } from "@/lib/stays/classify";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { classifyUtilityFromText } from "@/lib/toolbox/classify-utility";
 
 /** Source table the suspect came from. The admin UI uses this to
  *  route the Apply action to the right server endpoint and to label
  *  the section heading. */
-export type ClassificationSource = "stays" | "restaurants" | "experiences";
+export type ClassificationSource =
+  | "stays"
+  | "restaurants"
+  | "experiences"
+  | "utilities";
 
 export interface ClassificationSuspect {
   source: ClassificationSource;
@@ -51,28 +56,39 @@ export async function loadClassificationSuspects(): Promise<
   const supabase = createAdminClient();
   const out: ClassificationSuspect[] = [];
 
-  const [staysRes, restaurantsRes, experiencesRes] = await Promise.all([
-    supabase
-      .from("stays")
-      .select("id, name, region_id, description, stay_type, admin_edited")
-      .eq("active", true)
-      .eq("admin_edited", false)
-      .order("name", { ascending: true }),
-    supabase
-      .from("restaurants")
-      .select("id, name, region_id, description, cuisine, admin_edited")
-      .eq("active", true)
-      .eq("admin_edited", false)
-      .order("name", { ascending: true }),
-    supabase
-      .from("experiences")
-      .select(
-        "id, name, region_id, description, activity_type, category, admin_edited",
-      )
-      .eq("active", true)
-      .eq("admin_edited", false)
-      .order("name", { ascending: true }),
-  ]);
+  const [staysRes, restaurantsRes, experiencesRes, utilitiesRes] =
+    await Promise.all([
+      supabase
+        .from("stays")
+        .select("id, name, region_id, description, stay_type, admin_edited")
+        .eq("active", true)
+        .eq("admin_edited", false)
+        .order("name", { ascending: true }),
+      supabase
+        .from("restaurants")
+        .select("id, name, region_id, description, cuisine, admin_edited")
+        .eq("active", true)
+        .eq("admin_edited", false)
+        .order("name", { ascending: true }),
+      supabase
+        .from("experiences")
+        .select(
+          "id, name, region_id, description, activity_type, category, admin_edited",
+        )
+        .eq("active", true)
+        .eq("admin_edited", false)
+        .order("name", { ascending: true }),
+      // Utilities don't carry an `active` column — every row in
+      // traveler_utilities is currently considered live. We do still
+      // exclude `admin_edited=true` so a one-time Apply/Ignore decision
+      // permanently drops the row from this audit, same as the other
+      // three sources.
+      supabase
+        .from("traveler_utilities")
+        .select("id, name, region_id, description, category, admin_edited")
+        .eq("admin_edited", false)
+        .order("name", { ascending: true }),
+    ]);
 
   for (const s of staysRes.data ?? []) {
     const guess = classifyStayFromText(s.name, s.description);
@@ -146,6 +162,26 @@ export async function loadClassificationSuspects(): Promise<
         ? `name/description matches "${proposedType}" keywords`
         : `category should be "${proposedCategory}" given the activity type`,
       proposedCategory: catDiffers ? proposedCategory : undefined,
+    });
+  }
+
+  // Utilities — same shape as stays. Re-derive the category from the
+  // name + description and surface rows whose stored category differs.
+  // We skip rows where the classifier has no opinion (no keyword hits)
+  // because the audit can't propose a better label in that case.
+  for (const u of utilitiesRes.data ?? []) {
+    const guess = classifyUtilityFromText(u.name, u.description);
+    if (!guess) continue;
+    if (guess.proposed === u.category) continue;
+    out.push({
+      source: "utilities",
+      id: u.id,
+      name: u.name,
+      region_id: u.region_id,
+      current: u.category,
+      proposed: guess.proposed,
+      confidence: guess.confidence,
+      reason: guess.reason,
     });
   }
 

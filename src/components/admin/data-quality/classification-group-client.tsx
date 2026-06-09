@@ -19,6 +19,7 @@ const ADMIN_ROUTE: Record<ClassificationSource, string> = {
   stays: "/admin/stays",
   restaurants: "/admin/eat",
   experiences: "/admin/experiences",
+  utilities: "/admin/toolbox",
 };
 
 /** One source's section of the classification audit — header,
