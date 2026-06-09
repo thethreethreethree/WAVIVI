@@ -123,31 +123,58 @@ export default async function FeedPage() {
         viewerLikedIds={viewerLikedIds}
       />
 
-      <DvsFeedSection
-        icon="📍"
-        title="Your destinations"
-        subtitle="Travelers in places you're planning"
-        shares={destShares}
-        hideWhenEmpty
-        emptyState="Add a destination in your travel plans to see live tips from there."
-        viewerId={userId}
-        viewerUsername={profile?.username ?? null}
-        viewerAvatarUrl={profile?.avatar_url ?? null}
-        viewerLikedIds={viewerLikedIds}
-      />
+      {/* YOUR DESTINATIONS + FOLLOWING used to vanish entirely when
+          empty (hideWhenEmpty), which made the page look stub-like
+          for a cold user. Now they stay visible with an actionable
+          hint pointing at the surface that would populate them. The
+          sections only render at all for signed-in users — signed-out
+          viewers see NOW + TODAY'S BEST and a sign-up prompt below. */}
+      {userId && (
+        <>
+          <DvsFeedSection
+            icon="📍"
+            title="Your destinations"
+            subtitle="Travelers in places you're planning"
+            shares={destShares}
+            emptyState={
+              <>
+                Add a destination in your{" "}
+                <Link
+                  href="/where-to-next"
+                  className="font-bold text-glow underline"
+                >
+                  travel plans
+                </Link>{" "}
+                to see live tips from there.
+              </>
+            }
+            viewerId={userId}
+            viewerUsername={profile?.username ?? null}
+            viewerAvatarUrl={profile?.avatar_url ?? null}
+            viewerLikedIds={viewerLikedIds}
+          />
 
-      <DvsFeedSection
-        icon="👥"
-        title="Following"
-        subtitle="People in your travel groups"
-        shares={followingShares}
-        hideWhenEmpty
-        emptyState="Join a group chat to see shares from fellow travelers here."
-        viewerId={userId}
-        viewerUsername={profile?.username ?? null}
-        viewerAvatarUrl={profile?.avatar_url ?? null}
-        viewerLikedIds={viewerLikedIds}
-      />
+          <DvsFeedSection
+            icon="👥"
+            title="Following"
+            subtitle="People in your travel groups"
+            shares={followingShares}
+            emptyState={
+              <>
+                Join a{" "}
+                <Link href="/meet" className="font-bold text-glow underline">
+                  group chat
+                </Link>{" "}
+                to see shares from fellow travelers here.
+              </>
+            }
+            viewerId={userId}
+            viewerUsername={profile?.username ?? null}
+            viewerAvatarUrl={profile?.avatar_url ?? null}
+            viewerLikedIds={viewerLikedIds}
+          />
+        </>
+      )}
 
       {/* Bottom safety net — only shows when literally zero shares
           exist anywhere. Keeps a brand-new install from looking dead. */}

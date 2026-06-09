@@ -154,13 +154,21 @@ export function DvsCompose({
 
       {/* Q2 — Where + photo */}
       <FormSection title="📍 Where were you?">
-        <p className="text-xs text-muted">
-          {initialCityLabel
-            ? `City: ${initialCityLabel}`
-            : initialRegionLabel
-              ? `Region: ${initialRegionLabel}`
-              : "Pick a region in the top bar to tag your share."}
-        </p>
+        {initialCityLabel ? (
+          <p className="text-xs text-muted">City: {initialCityLabel}</p>
+        ) : initialRegionLabel ? (
+          <p className="text-xs text-muted">Region: {initialRegionLabel}</p>
+        ) : (
+          // No region cookie set. Surface the constraint loudly so the
+          // user knows submit is gated until they fix it — used to be
+          // a soft hint that didn't actually block submission, so
+          // un-tagged shares were leaking into the feed where no one
+          // could discover them.
+          <p className="rounded-lg bg-heat/10 px-3 py-2 text-xs font-bold text-heat">
+            Pick a region from the globe at the top before sharing so
+            your vibe shows up in the right feed.
+          </p>
+        )}
         <input
           type="text"
           value={locationLabel}
@@ -273,7 +281,11 @@ export function DvsCompose({
       <button
         type="button"
         onClick={submit}
-        disabled={pending || uploadingPhoto}
+        // Gate submission on having a region too — an un-tagged share
+        // can't be discovered via /feed's region/city scoping, so
+        // letting one through is worse UX than blocking the click.
+        // The Q2 banner above tells the user why submit is greyed out.
+        disabled={pending || uploadingPhoto || !initialRegionId}
         className="rounded-full bg-sunset px-5 py-3 text-sm font-bold text-white shadow-card active:scale-95 disabled:opacity-50"
       >
         {pending ? "Sharing…" : "Share today's vibe →"}

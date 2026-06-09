@@ -63,8 +63,10 @@ export function DvsCard({
 
   function onToggleLike() {
     if (!viewerId) {
-      // Anonymous — bounce to /login via a normal Link in the future.
-      // For now, no-op so the page doesn't navigate from a heart tap.
+      // Anonymous viewer — the heart renders as a Link to /login below.
+      // This handler shouldn't fire for them, but the guard stays as a
+      // belt-and-suspenders defence so we don't hit toggleDvsLike with
+      // no session and surface a misleading "Sign in to react" error.
       return;
     }
     // Optimistic flip — snap back if the server says no.
@@ -160,19 +162,33 @@ export function DvsCard({
 
       {/* Engagement row */}
       <div className="mt-2 flex items-center gap-3 text-xs font-bold">
-        <button
-          type="button"
-          onClick={onToggleLike}
-          disabled={pending || !viewerId}
-          aria-pressed={liked}
-          aria-label={liked ? "Unlike" : "Like"}
-          className={`flex items-center gap-1 transition-transform active:scale-90 disabled:opacity-50 ${
-            liked ? "text-heat" : "text-muted"
-          }`}
-        >
-          <span aria-hidden>{liked ? "❤" : "🤍"}</span>
-          {formatCount(likeCount)}
-        </button>
+        {viewerId ? (
+          <button
+            type="button"
+            onClick={onToggleLike}
+            disabled={pending}
+            aria-pressed={liked}
+            aria-label={liked ? "Unlike" : "Like"}
+            className={`flex items-center gap-1 transition-transform active:scale-90 disabled:opacity-50 ${
+              liked ? "text-heat" : "text-muted"
+            }`}
+          >
+            <span aria-hidden>{liked ? "❤" : "🤍"}</span>
+            {formatCount(likeCount)}
+          </button>
+        ) : (
+          // Signed-out viewers used to see a silent no-op heart. Now
+          // it routes them to /login with a returnTo so they land
+          // back on the feed and can like the share they wanted to.
+          <Link
+            href={`/login?next=${encodeURIComponent("/feed")}`}
+            aria-label="Sign in to react"
+            className="flex items-center gap-1 text-muted transition-transform active:scale-90"
+          >
+            <span aria-hidden>🤍</span>
+            {formatCount(likeCount)}
+          </Link>
+        )}
         <button
           type="button"
           onClick={() => setExpanded(true)}
