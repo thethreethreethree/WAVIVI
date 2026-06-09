@@ -6,6 +6,7 @@ import {
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { ClassificationGroupClient } from "./classification-group-client";
+import { ExportUtilitiesCsvButton } from "./export-button";
 
 const SECTION_LABEL: Record<ClassificationSource, string> = {
   stays: "Stays",
@@ -61,37 +62,51 @@ export async function ClassificationSection() {
 
   const total = suspects.length;
   const highCount = suspects.filter((s) => s.confidence === "high").length;
+  const utilCount = bySource.utilities.length;
+
+  // Server-stamped date so the download filename is stable across the
+  // server→client boundary (no Date.now() in client code).
+  const dateLabel = new Date().toISOString().slice(0, 10);
 
   return (
     <section className="flex flex-col gap-4">
-      <header>
-        <h2 className="text-lg font-bold tracking-tight">
-          Classification quality
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Rows whose stored category disagrees with what the name +
-          description suggests (e.g. a stay labelled <code>hotel</code> whose
-          name contains <code>Hostel</code>, a restaurant tagged as Filipino
-          whose name contains <code>Sushi</code>). Hand-curated rows
-          (<code>admin_edited</code>) are excluded. <strong>Apply</strong>{" "}
-          rewrites the label and locks the row from re-import overwrites;{" "}
-          <strong>Ignore</strong> keeps the current label and locks the row
-          too — either way it stops showing up in this audit.
-        </p>
-        {/* Per-source jump buttons mirror the page-level ones so admins
-            can dive straight into the table they care about. */}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {SOURCES.map((src) => (
-            <a
-              key={src}
-              href={`#${SECTION_ANCHOR[src]}`}
-              className="rounded-full bg-foreground/10 px-3 py-1.5 text-xs font-bold text-foreground hover:bg-foreground/15"
-            >
-              ↓ {SECTION_LABEL[src]} ({bySource[src].length})
-            </a>
-          ))}
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-lg font-bold tracking-tight">
+            Classification quality
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Rows whose stored category disagrees with what the name +
+            description suggests (e.g. a stay labelled <code>hotel</code>{" "}
+            whose name contains <code>Hostel</code>, a restaurant tagged as
+            Filipino whose name contains <code>Sushi</code>). Hand-curated
+            rows (<code>admin_edited</code>) are excluded.{" "}
+            <strong>Apply</strong> rewrites the label and locks the row from
+            re-import overwrites; <strong>Ignore</strong> keeps the current
+            label and locks the row too — either way it stops showing up in
+            this audit.
+          </p>
         </div>
+        {/* Utilities-only export — separate file from the Photo Quality
+            export above, scoped to the rows flagged by the audit. Round-
+            trips through /admin/batch-utility-import in the same 18-col
+            wide CSV the scraper produces. */}
+        {utilCount > 0 && <ExportUtilitiesCsvButton dateLabel={dateLabel} />}
       </header>
+
+      {/* Per-source jump buttons mirror the page-level ones so admins
+          can dive straight into the table they care about. */}
+      <div className="flex flex-wrap gap-2">
+        {SOURCES.map((src) => (
+          <a
+            key={src}
+            href={`#${SECTION_ANCHOR[src]}`}
+            className="rounded-full bg-foreground/10 px-3 py-1.5 text-xs font-bold text-foreground hover:bg-foreground/15"
+          >
+            ↓ {SECTION_LABEL[src]} ({bySource[src].length})
+          </a>
+        ))}
+      </div>
 
       <div className="rounded-2xl bg-cool p-4 text-white shadow-card">
         <p className="text-xs font-bold uppercase tracking-wider text-white/80">

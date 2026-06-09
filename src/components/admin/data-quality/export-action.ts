@@ -1,8 +1,10 @@
 "use server";
 
+import { loadClassificationSuspects } from "@/lib/data-quality/classification-audit";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { CATEGORY_BY_ID, type CategoryId } from "@/lib/toolbox/categories";
 import { requireAdmin } from "@/lib/toolbox/admin";
-import type { StayType } from "@/types/supabase";
+import type { StayType, UtilityCategory } from "@/types/supabase";
 
 import { SUSPECT_FILTER } from "./shared";
 
@@ -234,6 +236,103 @@ export async function exportDataQualityCsv(): Promise<ExportResult> {
   }
   for (const e of (experiencesRes.data ?? []) as CommonRow[]) {
     allRows.push(commonExport(e, "Experience"));
+  }
+
+  const lines = [HEADER.join(","), ...allRows.map(rowToCsvLine)];
+  return { ok: true, csv: lines.join("\n"), rowCount: allRows.length };
+}
+
+/** Separate utility export — shipped as a sibling action so the admin
+ *  can pull the classification-flagged utilities into the same wide
+ *  CSV shape (re-importable through /admin/batch-utility-import) without
+ *  mixing them into the places file.
+ *
+ *  Set semantics: ONLY rows the classification audit flagged
+ *  (`loadClassificationSuspects()` filtered to source='utilities').
+ *  Already-decided rows (`admin_edited=true`) are excluded upstream by
+ *  the audit, matching the visible Utilities sub-section on the page. */
+export async function exportUtilitiesCsv(): Promise<ExportResult> {
+  const { isAdmin } = await requireAdmin();
+  if (!isAdmin) return { ok: false, error: "Not authorised." };
+
+  const suspects = await loadClassificationSuspects();
+  const utilIds = suspects
+    .filter((s) => s.source === "utilities")
+    .map((s) => s.id);
+
+  if (utilIds.length === 0) {
+    return { ok: true, csv: HEADER.join(","), rowCount: 0 };
+  }
+
+  const supabase = createAdminClient();
+  const [utilRes, citiesRes] = await Promise.all([
+    supabase
+      .from("traveler_utilities")
+      .select(
+        "id, name, rating, review_count, phone, whatsapp, instagram, facebook, address, website, description, latitude, longitude, google_maps_url, photo_url, city_id, category",
+      )
+      .in("id", utilIds)
+      .order("name", { ascending: true }),
+    supabase.from("cities").select("id, name"),
+  ]);
+
+  if (utilRes.error) {
+    return { ok: false, error: utilRes.error.message };
+  }
+
+  const cityNameById = new Map<string, string>();
+  for (const c of (citiesRes.data ?? []) as { id: string; name: string }[]) {
+    cityNameById.set(c.id, c.name);
+  }
+
+  type UtilExportRow = {
+    id: string;
+    name: string;
+    rating: number | null;
+    review_count: number;
+    phone: string | null;
+    whatsapp: string | null;
+    instagram: string | null;
+    facebook: string | null;
+    address: string | null;
+    website: string | null;
+    description: string | null;
+    latitude: number;
+    longitude: number;
+    google_maps_url: string;
+    photo_url: string | null;
+    city_id: string | null;
+    category: UtilityCategory;
+  };
+
+  const allRows: ExportRow[] = [];
+  for (const u of (utilRes.data ?? []) as UtilExportRow[]) {
+    // Industry = the canonical category label that round-trips through
+    // routeUtilityRow on re-import. Falls back to the raw category id
+    // if the row is on the legacy `market` enum that's no longer in
+    // TOOLBOX_CATEGORIES.
+    const cat = CATEGORY_BY_ID[u.category as CategoryId];
+    const industry = cat?.label ?? u.category;
+    allRows.push({
+      title: u.name,
+      rating: u.rating,
+      reviews: u.review_count ?? 0,
+      phone: u.phone,
+      whatsapp: u.whatsapp,
+      instagram: u.instagram,
+      facebook: u.facebook,
+      industry,
+      address: u.address,
+      website: u.website,
+      image: u.photo_url,
+      amenities: [],
+      pitch: u.description,
+      latitude: u.latitude,
+      longitude: u.longitude,
+      googleMapsLink: u.google_maps_url,
+      sourceQuery: "",
+      city: u.city_id ? cityNameById.get(u.city_id) ?? null : null,
+    });
   }
 
   const lines = [HEADER.join(","), ...allRows.map(rowToCsvLine)];
