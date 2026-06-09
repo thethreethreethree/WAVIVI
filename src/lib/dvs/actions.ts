@@ -17,6 +17,34 @@ export type DvsPhotoUploadResult =
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB — matches the bucket cap.
 
+/** Translate a raw Supabase Storage error message into something a
+ *  traveler can actually act on. Keeps the original as a fallback so
+ *  a brand-new failure mode isn't swallowed into silence. */
+function friendlyUploadError(raw: string): string {
+  const m = raw.toLowerCase();
+  if (m.includes("payload too large") || m.includes("413")) {
+    return "Image is too large — maximum is 5 MB. Try a smaller photo.";
+  }
+  if (m.includes("mime") || m.includes("content type")) {
+    return "That file type isn't supported. Use JPG, PNG, WebP, or GIF.";
+  }
+  if (m.includes("duplicate") || m.includes("already exists")) {
+    return "Couldn't upload — try again in a moment.";
+  }
+  if (
+    m.includes("permission") ||
+    m.includes("unauthorized") ||
+    m.includes("not authorized") ||
+    m.includes("rls")
+  ) {
+    return "Sign-in expired. Refresh the page and try again.";
+  }
+  if (m.includes("network") || m.includes("fetch")) {
+    return "Network hiccup. Check your connection and try again.";
+  }
+  return "Couldn't upload the photo. Try a different one.";
+}
+
 /**
  * Upload a single DVS photo to the dvs-photos bucket and return its
  * public URL. The caller (the compose form) stores the URL on the
@@ -58,7 +86,13 @@ export async function uploadDvsPhoto(
   const { error: uploadErr } = await supabase.storage
     .from("dvs-photos")
     .upload(path, file, { contentType: file.type, upsert: false });
-  if (uploadErr) return { ok: false, error: uploadErr.message };
+  if (uploadErr) {
+    // Map common Supabase Storage failure modes to friendly copy
+    // before falling back to the raw error string. Smoke test caught
+    // the raw message ("413 Request entity too large", PostgREST
+    // jargon, etc.) leaking into the composer UI.
+    return { ok: false, error: friendlyUploadError(uploadErr.message) };
+  }
 
   const {
     data: { publicUrl },

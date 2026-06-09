@@ -91,10 +91,17 @@ export default async function MyProfilePage() {
       ? [profile.home_country]
       : [];
 
-  // Recent notes the community has left for / about this user.
-  // (Real `traveler_notes` table is a separate P1 — for now this is a
-  // friendly empty-state preview using the mock feed.)
-  const noteCount = travelerNotes.length;
+  // Traveler-notes table is a separate P1 — for now the preview tile
+  // below is a teaser. Until the real table ships, the count is 0;
+  // surfacing a non-zero mock count implied strangers had left notes
+  // when none had. The mock-feed copy lives at /notes for browsing
+  // while the actual notes-about-you stream is built.
+  void travelerNotes;
+  // Typed as number (not literal 0) so the singular/plural ternary in
+  // the JSX below isn't narrowed away as "always plural" — once the
+  // real traveler-notes table ships, this becomes a count from the DB
+  // and the TS narrowing on the literal would break the same JSX.
+  const noteCount: number = 0;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -149,8 +156,12 @@ export default async function MyProfilePage() {
             </div>
           )}
         </div>
-        <h2 className="mt-3 text-xl font-bold">{profile.display_name}</h2>
-        <p className="mt-0.5 text-sm text-muted">@{profile.username}</p>
+        <h2 className="mt-3 max-w-[18rem] truncate text-xl font-bold">
+          {profile.display_name}
+        </h2>
+        <p className="mt-0.5 max-w-[18rem] truncate text-sm text-muted">
+          @{profile.username}
+        </p>
 
         <span className="wc-frame wc-frame-ghost mt-2 rounded-full px-3 py-1 text-xs font-semibold text-glow">
           {STATUS_LABEL[profile.traveler_status] ?? "Exploring"}
@@ -298,7 +309,9 @@ export default async function MyProfilePage() {
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-semibold">
-              {noteCount} note{noteCount === 1 ? "" : "s"} from fellow travelers
+              {noteCount > 0
+                ? `${noteCount} note${noteCount === 1 ? "" : "s"} from fellow travelers`
+                : "Notes from fellow travelers"}
             </span>
             <span className="block text-xs text-muted">
               Community-written notes build real, traveler-to-traveler trust.
