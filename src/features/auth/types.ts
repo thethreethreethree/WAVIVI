@@ -31,3 +31,11 @@ export const PASSWORD_RULE_HINT =
 
 /** Friendly translation of the Supabase Auth verbose password error. */
 export const PASSWORD_RULE_ERROR = `Password must have ${PASSWORD_RULE_HINT.replace(/^At least /, "")}`;
+
+/** Username validation rule — kept in sync with the server check in
+ *  `signUp` (src/features/auth/actions.ts) which rejects anything
+ *  outside /^[a-z0-9_]{3,24}$/. Surfaced under the field so users
+ *  don't fail validation silently and only learn the constraint AFTER
+ *  hitting submit. */
+export const USERNAME_RULE_HINT =
+  "3–24 characters: lowercase letters, numbers, underscores.";

@@ -9,6 +9,7 @@ import {
   type AuthState,
   initialAuthState,
   PASSWORD_RULE_HINT,
+  USERNAME_RULE_HINT,
 } from "@/features/auth/types";
 
 type Mode = "login" | "signup";
@@ -62,6 +63,11 @@ export function AuthForm({
             placeholder="alexrivera"
             autoComplete="username"
             defaultValue={state.values?.username ?? ""}
+            // Surface the rule UP FRONT so users don't fail the server
+            // check silently — the regex (/^[a-z0-9_]{3,24}$/) rejects
+            // anything with capitals / hyphens / dots, and learning
+            // that AFTER submit feels like an arbitrary error.
+            hint={USERNAME_RULE_HINT}
           />
         </>
       )}
@@ -92,9 +98,26 @@ export function AuthForm({
         </p>
       )}
       {state.message && (
-        <p className="text-base text-cool" role="status">
-          {state.message}
-        </p>
+        // After a successful signup the server returns
+        //   "Check your inbox to confirm your email, then sign in."
+        // The old UI just showed that string and stranded the user on
+        // the signup page wondering what to do next. The CTA below
+        // sends them straight to /login (or /login?next=… when one
+        // was supplied) so they're never stuck after the success.
+        <div
+          className="flex flex-col gap-2 rounded-lg bg-cool/10 px-4 py-3 ring-1 ring-cool/30"
+          role="status"
+        >
+          <p className="text-base text-cool">{state.message}</p>
+          {mode === "signup" && (
+            <Link
+              href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
+              className="self-start rounded-full bg-cool px-4 py-1.5 text-sm font-bold text-white hover:opacity-90"
+            >
+              Go to sign in →
+            </Link>
+          )}
+        </div>
       )}
 
       <button

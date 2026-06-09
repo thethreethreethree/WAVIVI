@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { SusenAvatar } from "@/components/ui/susen-avatar";
 import { useThemeContext } from "@/components/ui/theme-context";
+import { createClient } from "@/lib/supabase/client";
 import { themedIconPath } from "@/lib/theme/cookie";
 
 interface Tab {
@@ -13,6 +15,11 @@ interface Tab {
   icon: React.ReactNode;
   /** Cute V2 watercolor icon — shown in Cute Mode in place of the SVG. */
   image?: string;
+  /** When true, the tab needs an authenticated session. Signed-out
+   *  taps route to /login?next=<href> instead of landing on the
+   *  protected page and bouncing through the server redirect, AND
+   *  the icon renders muted so the affordance reads correctly. */
+  requiresAuth?: boolean;
 }
 
 const TABS: Tab[] = [
@@ -51,6 +58,7 @@ const TABS: Tab[] = [
       </>
     ),
     image: "/icons/rustic/nav_profile.png",
+    requiresAuth: true,
   },
 ];
 
@@ -63,6 +71,30 @@ const HIDDEN_PREFIXES = ["/login", "/signup", "/auth", "/admin"];
 export function BottomNav() {
   const pathname = usePathname();
   const theme = useThemeContext();
+  // Auth state hydrates async on mount — null = unknown, true/false
+  // once we've heard back. We don't render the muted style until the
+  // answer is known so signed-in users don't see a flicker.
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!cancelled) setIsAuthed(Boolean(data.session));
+      })
+      .catch(() => {
+        if (!cancelled) setIsAuthed(false);
+      });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!cancelled) setIsAuthed(Boolean(session));
+    });
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
 
   if (HIDDEN_PREFIXES.some((p) => pathname.startsWith(p))) return null;
 
@@ -71,6 +103,17 @@ export function BottomNav() {
     return p === "/" ? pathname === "/" : pathname.startsWith(p);
   };
   const susenActive = pathname.startsWith("/susen");
+  /** Resolve a tab's href accounting for auth-gated routes — signed-out
+   *  taps on Profile / Susen go straight to /login with a return-to
+   *  pointing back at the original tab so post-login they land where
+   *  they meant to. */
+  const resolveHref = (href: string, requiresAuth: boolean | undefined) => {
+    if (requiresAuth && isAuthed === false) {
+      const next = href.split("?")[0];
+      return `/login?next=${encodeURIComponent(next)}`;
+    }
+    return href;
+  };
 
   // Crisp SVG in Light/Dark; watercolor PNG in Cute/Orange. Both render —
   // CSS (.tj-line / .tj-paint) shows only the active theme's version.
@@ -105,14 +148,17 @@ export function BottomNav() {
 
   const tab = (t: Tab) => {
     const active = isActive(t.href);
+    const needsAuth = t.requiresAuth && isAuthed === false;
     return (
       <li key={t.href}>
         <Link
-          href={t.href}
-          aria-label={t.label}
+          href={resolveHref(t.href, t.requiresAuth)}
+          aria-label={
+            needsAuth ? `${t.label} — sign in required` : t.label
+          }
           aria-current={active ? "page" : undefined}
           className={`flex h-15 w-15 items-center justify-center ${
-            active ? "text-glow" : "text-glow/75"
+            active ? "text-glow" : needsAuth ? "text-glow/40" : "text-glow/75"
           }`}
         >
           {iconSvg(t)}
@@ -128,13 +174,19 @@ export function BottomNav() {
       >
         {TABS.slice(0, 2).map(tab)}
 
-        {/* Susen — centre action, same footprint as the other tabs. */}
+        {/* Susen — centre action, same footprint as the other tabs.
+            Auth-gated like Profile: signed-out taps route to /login
+            with a return-to back to /susen. */}
         <li>
           <Link
-            href="/susen"
-            aria-label="Ask Susen"
+            href={resolveHref("/susen", true)}
+            aria-label={
+              isAuthed === false ? "Ask Susen — sign in required" : "Ask Susen"
+            }
             aria-current={susenActive ? "page" : undefined}
-            className="flex h-15 w-15 items-center justify-center"
+            className={`flex h-15 w-15 items-center justify-center ${
+              isAuthed === false ? "opacity-60" : ""
+            }`}
           >
             <SusenAvatar
               className={`h-15 w-15 shadow-card ring-2 ring-surface ${
