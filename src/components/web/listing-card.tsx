@@ -50,7 +50,13 @@ export function ListingCard({ listing }: { listing: WebListing }) {
           {listing.category}
         </p>
         <p className="mt-1 flex items-center gap-1 text-xs text-muted">
-          <span aria-hidden>📍</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/rustic/01_map_pin.png"
+            alt=""
+            aria-hidden
+            className="h-3 w-3 object-contain"
+          />
           {listing.location}
         </p>
 

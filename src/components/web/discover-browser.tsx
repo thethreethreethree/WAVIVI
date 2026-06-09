@@ -158,9 +158,13 @@ export function DiscoverBrowser({
               </p>
               <div className="mt-6 max-w-md">
                 <div className="flex items-center gap-2 rounded-full border-2 border-border bg-surface p-1.5 pl-5 shadow-card">
-                  <span className="text-muted" aria-hidden>
-                    🔍
-                  </span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/icons/rustic/search.png"
+                    alt=""
+                    aria-hidden
+                    className="h-4 w-4 shrink-0 object-contain"
+                  />
                   <input
                     value={query}
                     onChange={(e) => {
@@ -192,8 +196,15 @@ export function DiscoverBrowser({
                   travelers exploring now
                 </p>
               </div>
-              <div className="glass absolute -right-3 top-6 rounded-full px-3.5 py-1.5 text-xs font-extrabold">
-                🌍 60+ cities
+              <div className="glass absolute -right-3 top-6 flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-extrabold">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/icons/rustic/globe.png"
+                  alt=""
+                  aria-hidden
+                  className="h-3.5 w-3.5 object-contain"
+                />
+                60+ cities
               </div>
             </div>
           </div>
