@@ -316,6 +316,75 @@ export type FeedPostInsert = {
 
 export type FeedPostUpdate = Partial<Omit<FeedPostInsert, "id">>;
 
+/* ── Daily Vibe Share (migration 0061) ───────────────────────────────── */
+
+/** One traveler's 5-question daily share. Mirrors the Daily Vibe Share
+ *  spec — see docs/NEW_ICONS_NEEDED.md context + the DVS docx for the
+ *  field-by-field rationale. */
+export type DvsShareRow = {
+  id: string;
+  author_id: string;
+  /** Q1: 1-5 emoji rating. */
+  vibe_rating: number;
+  /** Q1: caption, ≤200 chars. */
+  caption: string;
+  /** Q2: where (FK to regions). Null when share isn't tied to a
+   *  region (rare — most shares should at least have one). */
+  region_id: string | null;
+  city_id: string | null;
+  /** Q2: free-form spot within the city, e.g. "Kayangan Lake". */
+  location_label: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  /** Q2: optional photo URL — dvs-photos bucket on Supabase Storage. */
+  photo_url: string | null;
+  /** Q3: tip, ≤300 chars (~3 sentences). */
+  tip: string | null;
+  /** Q4: real costs in `cost_currency`. */
+  cost_meal: number | null;
+  cost_hotel: number | null;
+  cost_activity: number | null;
+  /** Q4: ISO 4217 code (USD / PHP / etc.). */
+  cost_currency: string | null;
+  /** Q5: question / answer pair. */
+  qa_question: string | null;
+  qa_answer: string | null;
+  /** Engagement counters — denormalised, kept honest by triggers when
+   *  the real reactions / comments tables land in Phase 3. */
+  like_count: number;
+  comment_count: number;
+  share_count: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DvsShareInsert = {
+  id?: string;
+  author_id: string;
+  vibe_rating: number;
+  caption: string;
+  region_id?: string | null;
+  city_id?: string | null;
+  location_label?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  photo_url?: string | null;
+  tip?: string | null;
+  cost_meal?: number | null;
+  cost_hotel?: number | null;
+  cost_activity?: number | null;
+  cost_currency?: string | null;
+  qa_question?: string | null;
+  qa_answer?: string | null;
+  like_count?: number;
+  comment_count?: number;
+  share_count?: number;
+  active?: boolean;
+};
+
+export type DvsShareUpdate = Partial<Omit<DvsShareInsert, "id" | "author_id">>;
+
 /* ── Notifications (migration 0055) ──────────────────────────────────── */
 
 /** Stable label distinguishing notification kinds. The UI switches on
@@ -1407,6 +1476,11 @@ export type Database = {
       regions: TableShape<RegionRow, RegionInsert, RegionUpdate>;
       cities: TableShape<CityRow, CityInsert, CityUpdate>;
       feed_posts: TableShape<FeedPostRow, FeedPostInsert, FeedPostUpdate>;
+      daily_vibe_shares: TableShape<
+        DvsShareRow,
+        DvsShareInsert,
+        DvsShareUpdate
+      >;
       notifications: TableShape<
         NotificationRow,
         NotificationInsert,

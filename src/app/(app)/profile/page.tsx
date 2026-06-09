@@ -5,13 +5,14 @@ import { redirect } from "next/navigation";
 
 import { CountryFlags } from "@/components/ui/country-flags";
 import { Icon } from "@/components/ui/icon";
+import { DvsList } from "@/features/dvs/dvs-list";
 import { flagImage } from "@/lib/travejor/account";
 import {
   InstagramConnectCard,
-  InstagramFeed,
   InstagramProfileBadge,
   InstagramShowcase,
 } from "@/features/instagram";
+import { hasSharedToday, loadAuthorDvsShares } from "@/lib/dvs/server";
 import { getCurrentProfile } from "@/lib/profiles";
 import { travelerNotes } from "@/lib/travejor/account";
 
@@ -59,12 +60,16 @@ export default async function MyProfilePage() {
     profile.instagram_post_thumbnails,
     "feat",
   );
-  const feedPosts = buildPosts(
-    profile.instagram_feed_urls,
-    profile.instagram_feed_thumbnails,
-    "feed",
-  );
-  const hasAnyPosts = featuredPosts.length + feedPosts.length > 0;
+  const hasAnyPosts = featuredPosts.length > 0;
+
+  // Daily Vibe Share — the new community feed concept (Phase 1).
+  // Replaces the old Instagram-pulled "Travel Feed" section below.
+  // Load the user's own recent shares + whether they've posted today
+  // (drives the CTA).
+  const [dvsShares, sharedToday] = await Promise.all([
+    loadAuthorDvsShares(profile.id, 20),
+    hasSharedToday(profile.id),
+  ]);
 
   // Aggregate visited countries: explicit list, plus home_country fallback
   // so newcomers without a list still see at least one flag.
@@ -221,29 +226,36 @@ export default async function MyProfilePage() {
         </div>
       </section>
 
-      {/* Travel Feed — its own list in the DB (instagram_feed_urls). */}
-      {profile.instagram_username && (
-        <section className="mt-6 px-5 pb-2">
-          <h3 className="mb-3 text-base font-bold">Travel Feed</h3>
-          {feedPosts.length > 0 ? (
-            <InstagramFeed
-              posts={feedPosts}
-              username={profile.instagram_username}
-            />
-          ) : (
-            <p className="wc-frame rounded-2xl p-4 text-center text-sm text-muted">
-              Add Travel Feed posts in{" "}
-              <Link
-                href="/profile/edit#travel-posts"
-                className="text-glow underline"
-              >
-                Edit Profile
-              </Link>
-              .
-            </p>
+      {/* Daily Vibe Share — your own shares stream (replaces the
+          old Instagram-pulled "Travel Feed"). Always renders, even
+          without Instagram connected: DVS is Wondavu-native. */}
+      <section className="mt-6 px-5 pb-2">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="text-base font-bold">Daily Vibe Shares</h3>
+          {!sharedToday && (
+            <Link
+              href="/profile/share-vibe"
+              className="rounded-full bg-sunset px-4 py-1.5 text-xs font-bold text-white shadow-card active:scale-95"
+            >
+              + Share today&apos;s vibe
+            </Link>
           )}
-        </section>
-      )}
+        </div>
+        {dvsShares.length > 0 ? (
+          <DvsList shares={dvsShares} />
+        ) : (
+          <div className="wc-frame rounded-2xl p-4 text-center text-sm text-muted">
+            No vibe shares yet.{" "}
+            <Link
+              href="/profile/share-vibe"
+              className="font-bold text-glow underline"
+            >
+              Share your first one
+            </Link>{" "}
+            — five quick questions, helps the next traveler who lands here.
+          </div>
+        )}
+      </section>
 
       {/* Traveler notes — preview pointing at the full feed. Becomes a
           real `notes about you` list when traveler_notes ships. */}
