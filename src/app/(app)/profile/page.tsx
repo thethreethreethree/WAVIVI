@@ -9,6 +9,7 @@ import { DvsList } from "@/features/dvs/dvs-list";
 import { flagImage } from "@/lib/travejor/account";
 import {
   InstagramConnectCard,
+  InstagramDmVerifyCard,
   InstagramProfileBadge,
   InstagramShowcase,
 } from "@/features/instagram";
@@ -214,6 +215,11 @@ export default async function MyProfilePage() {
             initialUsername={profile.instagram_username ?? ""}
             initialVerified={profile.instagram_verified}
           />
+          {/* DM-based verification — webhook-driven, far more reliable
+              than scraping the public profile for the bio token.
+              Hidden once the user is verified so we don't push them
+              through it again. */}
+          {!profile.instagram_verified && <InstagramDmVerifyCard />}
           {featuredPosts.length > 0 && (
             <div>
               <h3 className="mb-3 text-base font-bold">

@@ -427,6 +427,31 @@ export type DvsCommentUpdate = Partial<
   Omit<DvsCommentInsert, "id" | "share_id" | "author_id">
 >;
 
+/* ── IG DM verification pending (migration 0065) ─────────────────────── */
+
+export type IgDmVerifyPendingRow = {
+  token: string;
+  user_id: string;
+  used_at: string | null;
+  used_by_ig_username: string | null;
+  used_by_ig_user_id: string | null;
+  expires_at: string;
+  created_at: string;
+};
+
+export type IgDmVerifyPendingInsert = {
+  token: string;
+  user_id: string;
+  used_at?: string | null;
+  used_by_ig_username?: string | null;
+  used_by_ig_user_id?: string | null;
+  expires_at?: string;
+};
+
+export type IgDmVerifyPendingUpdate = Partial<
+  Omit<IgDmVerifyPendingInsert, "token" | "user_id">
+>;
+
 /* ── Notifications (migration 0055) ──────────────────────────────────── */
 
 /** Stable label distinguishing notification kinds. The UI switches on
@@ -1532,6 +1557,11 @@ export type Database = {
         DvsCommentRow,
         DvsCommentInsert,
         DvsCommentUpdate
+      >;
+      ig_dm_verify_pending: TableShape<
+        IgDmVerifyPendingRow,
+        IgDmVerifyPendingInsert,
+        IgDmVerifyPendingUpdate
       >;
       notifications: TableShape<
         NotificationRow,

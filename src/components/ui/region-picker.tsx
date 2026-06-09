@@ -197,15 +197,30 @@ export function RegionPicker({
   // Group the filtered list by country so 50+ regions stay readable.
   // Country order = first appearance in the alphabetised input. Within a
   // group, display_name order is already alphabetised by the API.
+  //
+  // 2026-06-09 fix: a normalised key (lowercase + trim) collapses
+  // case / whitespace variants like "Philippines" / "philippines" /
+  // " Philippines " into the same group. Otherwise the picker showed
+  // "Philippines" with only the two perfectly-cased rows and split the
+  // rest off into separate groups — exactly the "only 2 PH regions"
+  // bug the user reported on signup. Display label uses the first-
+  // seen casing so admins still see "Philippines" rather than
+  // "philippines".
   const groups = useMemo(() => {
-    const map = new Map<string, RegionRow[]>();
+    const map = new Map<string, { label: string; rows: RegionRow[] }>();
     for (const r of filtered) {
-      const k = r.country ?? "Other";
-      const arr = map.get(k) ?? [];
-      arr.push(r);
-      map.set(k, arr);
+      const raw = r.country?.trim() || "Other";
+      const key = raw.toLowerCase();
+      const existing = map.get(key);
+      if (existing) {
+        existing.rows.push(r);
+      } else {
+        map.set(key, { label: raw, rows: [r] });
+      }
     }
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    return Array.from(map.values())
+      .map((g) => [g.label, g.rows] as const)
+      .sort((a, b) => a[0].localeCompare(b[0]));
   }, [filtered]);
 
   function chooseWholeRegion(id: string) {

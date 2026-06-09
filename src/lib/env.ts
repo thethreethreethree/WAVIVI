@@ -81,6 +81,17 @@ export const serverEnv = {
   /** Shared secret the Worker checks (header: x-wavivi-proxy-secret).
    *  Empty string skips the header — useful for an open Worker in dev. */
   instagramProxySecret: process.env.INSTAGRAM_PROXY_SECRET ?? "",
+  /** Instagram DM verification — the brand IG handle users send
+   *  the token to. Surfaced in the UI ("DM @wondavu_official ..."). */
+  instagramBrandHandle: process.env.INSTAGRAM_BRAND_HANDLE ?? "",
+  /** Random opaque string we pick + paste into the Meta App webhook
+   *  setup. Meta echoes it back on the GET verification handshake;
+   *  we compare and return the challenge only when it matches. */
+  instagramWebhookVerifyToken:
+    process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN ?? "",
+  /** Meta App Secret — used to verify the X-Hub-Signature-256 HMAC
+   *  on every incoming POST so we don't accept spoofed events. */
+  instagramAppSecret: process.env.INSTAGRAM_APP_SECRET ?? "",
   /** Shared secret the Partner Collection extension sends to
    *  /api/admin/stays/ingest (header: Authorization: Bearer <token>).
    *  Empty string disables ingestion. */
