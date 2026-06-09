@@ -12,10 +12,8 @@ import {
   InstagramProfileBadge,
   InstagramShowcase,
 } from "@/features/instagram";
-import { postShortcode } from "@/features/instagram/validation";
 import { getCurrentProfile } from "@/lib/profiles";
 import { travelerNotes } from "@/lib/travejor/account";
-import { photo } from "@/lib/travejor/photo";
 
 export const metadata: Metadata = { title: "My Profile" };
 
@@ -48,8 +46,12 @@ export default async function MyProfilePage() {
     return (urls ?? []).map((url, i) => ({
       id: `${myUsername}-${prefix}-${i}`,
       url,
-      image:
-        thumbs?.[i] || photo(postShortcode(url) ?? url, 300, 300),
+      // Use the stored Instagram CDN thumbnail when available; pass
+      // null otherwise so InstagramThumb renders its brand gradient
+      // fallback. Used to default to a picsum.photos placeholder, but
+      // those got rate-limited by Vercel's image optimizer and
+      // rendered as broken images for fresh web visitors.
+      image: thumbs?.[i] ?? null,
     }));
   }
   const featuredPosts = buildPosts(

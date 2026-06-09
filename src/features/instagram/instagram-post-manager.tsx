@@ -9,8 +9,7 @@ import {
 } from "@/features/instagram/actions";
 import { InstagramIcon } from "@/features/instagram/instagram-icon";
 import type { InstagramPost } from "@/features/instagram/types";
-import { isValidPostUrl, postShortcode } from "@/features/instagram/validation";
-import { photo } from "@/lib/travejor/photo";
+import { isValidPostUrl } from "@/features/instagram/validation";
 
 /** Each list (Featured / Feed) holds at most 6 posts. */
 const MAX_POSTS = 6;
@@ -74,7 +73,12 @@ export function InstagramPostManager({
       {
         id: crypto.randomUUID(),
         url,
-        image: photo(postShortcode(url) ?? url, 240, 240),
+        // No thumbnail yet — Pull-from-Instagram fills this on demand,
+        // and InstagramThumb renders the brand gradient fallback in
+        // the meantime. Used to seed picsum.photos here but those got
+        // rate-limited by Vercel's optimizer and broke fresh web
+        // visits.
+        image: null,
       },
     ];
     setPosts(next);
@@ -109,7 +113,10 @@ export function InstagramPostManager({
       const next = res.urls.map((url, i) => ({
         id: `ig-${i}`,
         url,
-        image: photo(postShortcode(url) ?? url, 240, 240),
+        // Pull-from-Instagram returned URLs only (no thumbnails in
+        // this code path) — InstagramThumb will render the gradient
+        // fallback until a real CDN thumb is stored alongside.
+        image: null,
       }));
       setPosts(next);
       setSaved(true);

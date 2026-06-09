@@ -1,6 +1,4 @@
-import Image from "next/image";
-
-import { InstagramIcon } from "@/features/instagram/instagram-icon";
+import { InstagramThumb } from "@/features/instagram/instagram-thumb";
 import type { InstagramPost } from "@/features/instagram/types";
 
 /**
@@ -9,6 +7,11 @@ import type { InstagramPost } from "@/features/instagram/types";
  * Preview cards (not live embeds) are the default: they load fast on weak
  * hostel WiFi and store no media. For true embeds, swap in `InstagramEmbed`.
  * Capped at 6 per the performance rules.
+ *
+ * Thumbnail rendering goes through `InstagramThumb` so missing /
+ * broken-source tiles fall back to a self-contained brand gradient
+ * instead of the broken-image icon (was a regression caused by
+ * picsum.photos rate-limiting Vercel's image optimizer).
  */
 export function InstagramShowcase({ posts }: { posts: InstagramPost[] }) {
   const shown = posts.slice(0, 6);
@@ -24,20 +27,12 @@ export function InstagramShowcase({ posts }: { posts: InstagramPost[] }) {
           rel="noopener noreferrer"
           className="wc-frame group relative aspect-square rounded-xl p-1.5"
         >
-          {/* Crisp, undistorted photo inside the painted frame */}
           <span className="relative block h-full w-full overflow-hidden rounded-lg">
-            <Image
+            <InstagramThumb
               src={post.image}
               alt="Instagram travel moment"
-              fill
-              loading="lazy"
-              sizes="120px"
-              className="object-cover transition-transform group-hover:scale-105"
+              badgeSize="h-4 w-4"
             />
-            <span className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
-            <span className="absolute right-1.5 top-1.5 text-white">
-              <InstagramIcon className="h-4 w-4" />
-            </span>
           </span>
         </a>
       ))}

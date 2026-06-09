@@ -1,6 +1,4 @@
-import Image from "next/image";
-
-import { InstagramIcon } from "@/features/instagram/instagram-icon";
+import { InstagramThumb } from "@/features/instagram/instagram-thumb";
 import type { InstagramPost } from "@/features/instagram/types";
 
 /**
@@ -9,6 +7,11 @@ import type { InstagramPost } from "@/features/instagram/types";
  * Horizontal scroll-snap keeps the profile compact: one post in focus at a
  * time, swipe for the next. Same Instagram source as the showcase grid;
  * lightweight preview cards keep it fast on weak data.
+ *
+ * Thumbnail rendering goes through `InstagramThumb` so a missing or
+ * broken source falls back to a brand gradient instead of the
+ * broken-image icon (regression that was hiding behind picsum.photos
+ * placeholders rate-limited by Vercel's optimizer).
  */
 export function InstagramFeed({
   posts,
@@ -38,26 +41,18 @@ export function InstagramFeed({
           rel="noopener noreferrer"
           className="wc-frame group relative w-[78%] shrink-0 snap-center rounded-2xl p-2"
         >
-          {/* Crisp, undistorted photo inside the painted frame */}
           <span className="relative block overflow-hidden rounded-xl">
             <span className="relative block aspect-[4/5] w-full">
-              <Image
+              <InstagramThumb
                 src={post.image}
                 alt="Instagram travel post"
-                fill
-                loading="lazy"
-                sizes="340px"
-                className="object-cover transition-transform group-hover:scale-105"
+                badgeSize="h-5 w-5"
               />
-            </span>
-            <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/15" />
-            <span className="absolute right-3 top-3 text-white">
-              <InstagramIcon className="h-5 w-5" />
-            </span>
-            <span className="absolute bottom-3 left-3 flex items-center gap-1.5 text-sm font-bold text-white">
-              @{username}
-              <span className="text-xs font-medium text-white/80">
-                · View on Instagram
+              <span className="absolute bottom-3 left-3 flex items-center gap-1.5 text-sm font-bold text-white">
+                @{username}
+                <span className="text-xs font-medium text-white/80">
+                  · View on Instagram
+                </span>
               </span>
             </span>
           </span>

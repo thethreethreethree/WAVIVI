@@ -2,8 +2,12 @@
 export interface InstagramPost {
   id: string;
   url: string;
-  /** Lightweight preview thumbnail (placeholder until a live preview API). */
-  image: string;
+  /** Real Instagram CDN thumbnail (set by Pull-from-Instagram), or
+   *  null when no thumbnail has been fetched yet. The render layer
+   *  (`InstagramThumb`) draws a brand gradient fallback when this is
+   *  null or fails to load — see the 2026-06-09 fix for the prior
+   *  picsum.photos placeholder breaking on Vercel's image optimizer. */
+  image: string | null;
 }
 
 /** A traveler's linked Instagram identity. */
