@@ -190,39 +190,58 @@ export async function RecsRail() {
     if (live.length > 0) forYou = live;
   }
 
+  // When the rail is showing the El Nido fallback (no explicit region
+  // picker selection), label it honestly so a Tokyo-based user doesn't
+  // see "Recommended for you" with Filipino hostels under it. Cheap,
+  // explicit, and the cards underneath stay live.
+  const showingFallback = explicitRegionId == null && forYou === staticForYou
+    ? false
+    : explicitRegionId == null;
+
   return (
-    <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {forYou.map((card) => (
-        <Link
-          key={card.id}
-          href={card.href}
-          className="group w-44 shrink-0"
-        >
-          <div className="wc-frame relative h-36 w-44 rounded-2xl p-1.5 transition active:scale-[0.98]">
-            <span className="relative block h-full w-full overflow-hidden rounded-xl">
-              <CardImage
-                src={card.image}
-                alt={card.name}
-                fill
-                sizes="176px"
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              <span
-                className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent"
-                aria-hidden
-              />
-              <span className="absolute bottom-2 left-2.5 right-2.5 text-white">
-                <span className="block truncate text-base font-bold drop-shadow">
-                  {card.name}
-                </span>
-                <span className="block truncate text-sm opacity-90">
-                  {card.category}
+    <div className="flex flex-col gap-2">
+      {showingFallback && effectiveRegion?.display_name && (
+        <p className="px-1 text-xs font-medium text-muted">
+          Showing top picks from{" "}
+          <span className="font-bold text-foreground">
+            {effectiveRegion.display_name}
+          </span>{" "}
+          — tap the globe at the top to personalise.
+        </p>
+      )}
+      <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {forYou.map((card) => (
+          <Link
+            key={card.id}
+            href={card.href}
+            className="group w-44 shrink-0"
+          >
+            <div className="wc-frame relative h-36 w-44 rounded-2xl p-1.5 transition active:scale-[0.98]">
+              <span className="relative block h-full w-full overflow-hidden rounded-xl">
+                <CardImage
+                  src={card.image}
+                  alt={card.name}
+                  fill
+                  sizes="176px"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <span
+                  className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent"
+                  aria-hidden
+                />
+                <span className="absolute bottom-2 left-2.5 right-2.5 text-white">
+                  <span className="block truncate text-base font-bold drop-shadow">
+                    {card.name}
+                  </span>
+                  <span className="block truncate text-sm opacity-90">
+                    {card.category}
+                  </span>
                 </span>
               </span>
-            </span>
-          </div>
-        </Link>
-      ))}
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

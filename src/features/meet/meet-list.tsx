@@ -100,7 +100,9 @@ export function MeetList({ groups }: { groups: PublicChatGroup[] }) {
         ))}
         {visible.length === 0 && (
           <p className="py-10 text-center text-sm text-muted">
-            No groups in {active} yet.
+            {groups.length === 0
+              ? "No groups in this region yet. Tap the globe at the top to try a different region, or start one yourself."
+              : `No groups in ${active} yet — try the All filter above.`}
           </p>
         )}
       </ul>

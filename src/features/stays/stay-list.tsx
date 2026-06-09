@@ -298,8 +298,8 @@ export function StayList({
 
       {stays.length === 0 ? (
         <p className="px-5 py-10 text-center text-sm text-muted">
-          No stays in the system yet. Admins can add listings from the
-          Partners hub.
+          No stays in this region yet. Tap the globe at the top to try a
+          different region, or check back soon.
         </p>
       ) : (
         <ul className="flex flex-col gap-4 px-5 pb-8 pt-2">
