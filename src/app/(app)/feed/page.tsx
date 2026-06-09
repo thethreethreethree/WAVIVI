@@ -83,17 +83,19 @@ export default async function FeedPage() {
       {userId && !sharedToday && (
         <Link
           href="/profile/share-vibe"
-          className="wc-frame flex items-center justify-between rounded-2xl bg-sunset px-4 py-3 text-white shadow-card active:scale-[0.99]"
+          className="wc-frame wc-frame-sunset flex items-center justify-between rounded-2xl px-4 py-3 text-white shadow-card active:scale-[0.99]"
         >
           <span>
-            <span className="block text-sm font-bold">
+            <span className="block text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">
               + Share today&apos;s vibe
             </span>
-            <span className="block text-[11px] font-medium text-white/85">
+            <span className="block text-[11px] font-medium text-white/95 drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">
               Five quick questions — tips help the next traveler.
             </span>
           </span>
-          <span className="text-lg">›</span>
+          <span className="text-lg drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">
+            ›
+          </span>
         </Link>
       )}
 
