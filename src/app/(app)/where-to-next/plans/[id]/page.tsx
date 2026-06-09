@@ -125,30 +125,45 @@ export default async function PlanDetailPage({ params }: { params: Params }) {
 
 async function ActivitiesAndPlaces({ plan }: { plan: TravelPlanRow }) {
   // We don't have a `stays.country` column yet (region_id is region-keyed),
-  // so the simplest "places in your destination" pick is to match on
-  // address ILIKE %city% / %country%. Cheap, good enough for an MVP
-  // recommendation strip.
+  // so the simplest "places in your destination" pick is substring matching
+  // on the address field against the plan's country / city.
+  //
+  // We deliberately do NOT do this via `.or("address.ilike.%${city}%")` —
+  // PostgREST's `.or()` parser packs the rhs raw, so any SQL wildcard
+  // (`%`, `_`), comma, paren, or `\` in a user-entered destination
+  // could either corrupt the filter or smuggle a wildcard. We also
+  // can't trust an admin not to enter a city as "St-Étienne, France" —
+  // that comma alone breaks the filter syntax. JS-side filtering on a
+  // bounded pre-fetch dodges every one of those cases.
   const country = plan.destinations[0]?.country ?? plan.destination_countries[0];
   const city = plan.destinations[0]?.city ?? null;
   if (!country) return null;
 
   const supabase = createAdminClient();
-  let query = supabase
+  const { data } = await supabase
     .from("stays")
     .select("id, name, photo_url, stay_type, address, rating, backpack_rating")
     .eq("active", true)
+    .not("address", "is", null)
     .order("rank_score", { ascending: false, nullsFirst: false })
-    .limit(6);
-  query = query.or(
-    [
-      `address.ilike.%${country}%`,
-      city ? `address.ilike.%${city}%` : null,
-    ]
-      .filter(Boolean)
-      .join(","),
-  );
-  const { data } = await query;
-  const picks = data ?? [];
+    // Pre-fetch pool sized so even a country with sparse address matches
+    // still returns ≥6 picks after the JS filter. ~200 is a few KB and a
+    // single round-trip.
+    .limit(200);
+
+  const countryNeedle = country.toLowerCase();
+  const cityNeedle = city?.toLowerCase() ?? null;
+  const picks = (data ?? [])
+    .filter((r) => {
+      const a = (r.address ?? "").toLowerCase();
+      // OR semantics (mirrors the prior intent): either the country
+      // or — when the plan has one — the city appears in the address.
+      return (
+        a.includes(countryNeedle) ||
+        (cityNeedle !== null && a.includes(cityNeedle))
+      );
+    })
+    .slice(0, 6);
   if (picks.length === 0) return null;
 
   return (

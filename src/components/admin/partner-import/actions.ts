@@ -79,7 +79,12 @@ export async function applyPartnerImport(
       .select("id, name, address");
     const map = new Map<string, NameMatchRow[]>();
     for (const r of (data ?? []) as NameMatchRow[]) {
-      const key = r.name.toLowerCase().trim().replace(/\s+/g, " ");
+      // Match key MUST agree with `titleNorm` in
+      // src/components/admin/partner-import/csv.ts. Stripping
+      // punctuation + whitespace defeats the silent-skip case where
+      // an admin's existing row has a stray leading "." and the CSV
+      // doesn't — same shape as the El Nido groups bug.
+      const key = r.name.toLowerCase().replace(/[^a-z0-9]/g, "");
       const list = map.get(key) ?? [];
       list.push(r);
       map.set(key, list);

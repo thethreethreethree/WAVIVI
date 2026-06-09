@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import type { AdminChatGroup } from "@/lib/chat";
+import { normaliseForMatch } from "@/lib/utils/text-match";
 
 type PartnerHit = {
   type: "stay" | "restaurant" | "experience" | "event";
@@ -106,12 +107,16 @@ export function GroupEditor({
         setRegions(list);
         // Pre-select the region whose city + country match the saved
         // values, so editing an existing group lands on the right row.
+        // Loose-match (lowercase + strip non-alphanumeric) so a row
+        // saved with stray punctuation like ".El Nido" still snaps
+        // back to the El Nido region picker entry — same
+        // normalisation as listPublicChatGroups.
+        const wantCity = normaliseForMatch(group?.destination_city);
+        const wantCountry = normaliseForMatch(group?.destination_country);
         const existing = list.find(
           (r) =>
-            (r.city ?? "").toLowerCase() ===
-              (group?.destination_city ?? "").toLowerCase() &&
-            (r.country ?? "").toLowerCase() ===
-              (group?.destination_country ?? "").toLowerCase(),
+            normaliseForMatch(r.city) === wantCity &&
+            normaliseForMatch(r.country) === wantCountry,
         );
         if (existing) setRegionId(existing.id);
       })

@@ -2,6 +2,7 @@ import "server-only";
 
 import type { RegionRow } from "@/lib/regions/current";
 import { createClient } from "@/lib/supabase/server";
+import { normaliseForMatch } from "@/lib/utils/text-match";
 
 export interface ChatGroup {
   id: string;
@@ -194,19 +195,19 @@ export async function listPublicChatGroups(
     .order("created_at", { ascending: false });
 
   if (region?.country) {
-    // .ilike with no wildcards is case-insensitive equality. Region
-    // countries land here as "Philippines", DB rows might be
-    // "philippines" / "PH" depending on who created them.
+    // ilike (no wildcards) is case-insensitive equality. Cheap, gets
+    // us to a small candidate set; the country/city match below
+    // tightens it with the loose-match normalisation so stray
+    // punctuation / whitespace can't sabotage the filter.
     query = query.ilike("destination_country", region.country);
-    // City matching is done in app code below — see [normaliseCity].
-    // Why not PostgREST: `.or()` strings pack values raw, so any
-    // space / punctuation in a city name ("El Nido" → space) is
-    // fragile, and a single leading-period typo on a row
+    // Country AND city matching are done in app code below using
+    // normaliseForMatch. PostgREST `.or()` strings pack values raw,
+    // so any space / punctuation in a city name ("El Nido" → space)
+    // is fragile, and a single leading-period typo on a row
     // (".El Nido", which an admin actually shipped) made the filter
     // miss the row even though humans clearly want it. Pulling the
-    // filter into JS lets us normalise both sides (lowercase + strip
-    // anything that isn't a letter/digit) so case, whitespace, and
-    // stray punctuation can't sabotage the match.
+    // filter into JS lets us normalise both sides so case,
+    // whitespace, and stray punctuation can't sabotage the match.
   }
 
   const { data } = await query;
@@ -234,23 +235,29 @@ export async function listPublicChatGroups(
     member_count: g.chat_group_members?.[0]?.count ?? 0,
   }));
 
-  /** Lowercase + strip everything that isn't a-z0-9. "El Nido",
-   *  "EL Nido", ".El Nido", " el-nido " all collapse to "elnido". */
-  function normaliseCity(s: string | null | undefined): string {
-    if (!s) return "";
-    return s.toLowerCase().replace(/[^a-z0-9]/g, "");
-  }
+  // Apply the same loose-match to country AND city. The country pass
+  // is belt-and-suspenders against an admin who typed ".Philippines"
+  // or " philippines  " on a row — ilike above would still miss those.
+  const wantCountry = region?.country
+    ? normaliseForMatch(region.country)
+    : null;
+  const wantCity = region?.city ? normaliseForMatch(region.city) : null;
 
-  const groups = region?.city
-    ? raw.filter((g) => {
-        // Country-wide groups (no destination_city) belong in every
-        // city of that country — keep them when a city is picked.
-        if (g.destination_city == null) return true;
-        return (
-          normaliseCity(g.destination_city) === normaliseCity(region.city)
-        );
-      })
-    : raw;
+  const groups = raw.filter((g) => {
+    if (
+      wantCountry &&
+      normaliseForMatch(g.destination_country) !== wantCountry
+    ) {
+      return false;
+    }
+    if (wantCity) {
+      // Country-wide groups (no destination_city) belong in every
+      // city of that country — keep them when a city is picked.
+      if (g.destination_city == null) return true;
+      return normaliseForMatch(g.destination_city) === wantCity;
+    }
+    return true;
+  });
 
   // Fetch the preview avatars for every group in one query — most-recent
   // joiners first, capped to ~3 per group on the client side. Only the

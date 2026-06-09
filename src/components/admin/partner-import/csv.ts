@@ -284,7 +284,12 @@ export function parsePartnerCsv(input: string): ParseSummary {
       lineNumber,
       source,
       titleRaw: title,
-      titleNorm: title.toLowerCase().trim().replace(/\s+/g, " "),
+      // Match key for the partner-import name index. Strips punctuation
+      // + whitespace so an existing DB row named ".Joe's Pizza" still
+      // resolves when the CSV ships "Joe's Pizza" / "Joes Pizza" /
+      // "JOES PIZZA". Must agree with the keying in
+      // src/components/admin/partner-import/actions.ts::getNameIndex.
+      titleNorm: title.toLowerCase().replace(/[^a-z0-9]/g, ""),
       addressNorm: address ? address.toLowerCase() : null,
       updates,
     });

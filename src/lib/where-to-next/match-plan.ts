@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normaliseForMatch } from "@/lib/utils/text-match";
 import {
   AUTO_INVITE_THRESHOLD,
   type MatchScore,
@@ -121,19 +122,31 @@ async function findExistingChat(
   const country = fmtCountry(plan);
   const themes = plan.vibe_tags.length > 0 ? plan.vibe_tags : null;
 
+  // ilike (no wildcards) is case-insensitive equality — "philippines"
+  // ilike "Philippines" matches, "PH" still won't (we'd need to
+  // normalise both sides for that, but country abbreviations aren't
+  // a real risk here because fmtCountry already returns the long form).
   let query = supabase
     .from("chat_groups")
-    .select("id, name, window_start, window_end, theme_tags")
-    .eq("destination_country", country)
+    .select("id, name, window_start, window_end, theme_tags, destination_country")
+    .ilike("destination_country", country)
     .eq("is_auto_generated", true);
   if (themes && themes.length > 0) {
     query = query.overlaps("theme_tags", themes);
   }
   const { data } = await query.limit(20);
   if (!data || data.length === 0) return null;
+  // Belt-and-suspenders: also accept rows whose country normalises to
+  // the same form as the plan's country. Catches an admin who typed
+  // ".Philippines" or "philippines " on an old auto-generated row.
+  const wantCountry = normaliseForMatch(country);
+  const eligible = data.filter(
+    (c) => normaliseForMatch(c.destination_country) === wantCountry,
+  );
+  if (eligible.length === 0) return null;
 
   // Filter for window overlap in JS (cheaper than a daterange GIST setup).
-  const fit = data.find((c) => {
+  const fit = eligible.find((c) => {
     if (!c.window_start || !c.window_end) return false;
     return c.window_start <= plan.end_date && c.window_end >= plan.start_date;
   });
