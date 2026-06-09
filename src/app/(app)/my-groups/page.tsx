@@ -71,9 +71,13 @@ export default async function MyGroupsPage() {
                         aria-hidden
                       />
                     ) : (
-                      <span className="text-xl" aria-hidden>
-                        💬
-                      </span>
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src="/icons/rustic/01_chat_bubble.png"
+                        alt=""
+                        aria-hidden
+                        className="h-7 w-7 object-contain"
+                      />
                     )}
                   </span>
 

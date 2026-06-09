@@ -402,7 +402,13 @@ function NavView() {
       {needsCompassGrant && heading == null && (
         <div className="mx-4 mt-2 flex items-center justify-between gap-3 rounded-2xl bg-surface/95 px-4 py-3 text-sm font-semibold shadow-card ring-1 ring-border">
           <span className="flex items-center gap-2 text-foreground">
-            <span aria-hidden className="text-xl leading-none">🧭</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/rustic/07_compass_ring.png"
+              alt=""
+              aria-hidden
+              className="h-5 w-5 shrink-0 object-contain"
+            />
             <span>Enable the compass so the arrow knows which way you&apos;re facing.</span>
           </span>
           <button

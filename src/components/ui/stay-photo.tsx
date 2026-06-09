@@ -5,14 +5,20 @@ import { useState } from "react";
 import { photoThumb } from "@/lib/utils/images";
 
 /**
- * Photo thumbnail that swaps to a 🏠 emoji if the remote image fails.
- * Google's lh3.googleusercontent.com URLs 403 on hotlinks unless we send
- * no referrer, so we set referrerPolicy explicitly.
+ * Photo thumbnail that swaps to the painted brand home icon if the
+ * remote image fails. Google's lh3.googleusercontent.com URLs 403 on
+ * hotlinks unless we send no referrer, so we set referrerPolicy
+ * explicitly.
  *
  * `width` requests a downsized image from hosts that support it (see
  * photoThumb) — defaults to a cover-sized 800px. Images lazy-load and decode
  * off the main thread, and fade in over a shimmer skeleton so long lists
  * stay responsive and don't pop in abruptly.
+ *
+ * `emojiSize` is a legacy prop — kept for back-compat but now controls
+ * the painted-icon size via Tailwind text-class → ignored for the
+ * <img> (which uses its own h/w). When callers stop passing it, the
+ * default applies.
  */
 export function StayPhoto({
   src,
@@ -27,6 +33,7 @@ export function StayPhoto({
   emojiSize?: string;
   width?: number;
 }) {
+  void emojiSize;
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -35,9 +42,14 @@ export function StayPhoto({
       <span
         className={`flex h-full w-full items-center justify-center bg-background ${className ?? ""}`}
       >
-        <span className={emojiSize} aria-hidden>
-          🏠
-        </span>
+        {/* Painted brand fallback — ThemeImgSwap retargets sketch / journal. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/icons/rustic/home.png"
+          alt=""
+          aria-hidden
+          className="h-1/2 w-1/2 object-contain opacity-70"
+        />
       </span>
     );
   }

@@ -55,9 +55,13 @@ export default async function PartnerHomePage() {
 
       {owned.length === 0 ? (
         <section className="rounded-2xl bg-surface p-6 text-center shadow-card ring-1 ring-border">
-          <span className="text-3xl" aria-hidden>
-            🏠
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/rustic/home.png"
+            alt=""
+            aria-hidden
+            className="mx-auto h-10 w-10 object-contain"
+          />
           <h2 className="mt-3 text-lg font-bold">
             No listings linked to this account yet.
           </h2>
@@ -86,8 +90,14 @@ export default async function PartnerHomePage() {
                   className="h-36 w-full object-cover"
                 />
               ) : (
-                <div className="flex h-36 w-full items-center justify-center bg-background text-4xl">
-                  🏠
+                <div className="flex h-36 w-full items-center justify-center bg-background">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/icons/rustic/home.png"
+                    alt=""
+                    aria-hidden
+                    className="h-14 w-14 object-contain opacity-70"
+                  />
                 </div>
               )}
               <div className="p-4">

@@ -224,9 +224,19 @@ function SavedItemCard({
           onClick={onToggleFavorite}
           disabled={pending}
           aria-label={item.favorite ? "Unfavourite" : "Favourite"}
-          className="shrink-0 text-xl"
+          className="shrink-0"
         >
-          {item.favorite ? "⭐" : "☆"}
+          {/* Painted star — fades back when not favourited so the
+              same asset reads as both states without a second PNG. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/rustic/star.png"
+            alt=""
+            aria-hidden
+            className={`h-6 w-6 object-contain transition-opacity ${
+              item.favorite ? "opacity-100" : "opacity-30"
+            }`}
+          />
         </button>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold">{item.name}</p>

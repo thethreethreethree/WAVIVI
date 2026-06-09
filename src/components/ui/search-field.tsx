@@ -19,18 +19,15 @@ export function SearchField({
           : "wc-frame bg-transparent"
       }`}
     >
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        className="h-5 w-5 text-muted"
+      {/* Painted search glyph — ThemeImgSwap retargets to sketch /
+          journal automatically. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/icons/rustic/search.png"
+        alt=""
         aria-hidden
-      >
-        <circle cx="11" cy="11" r="7" />
-        <path d="M21 21l-4.3-4.3" />
-      </svg>
+        className="h-5 w-5 shrink-0 object-contain"
+      />
       <input
         type="search"
         placeholder={placeholder}

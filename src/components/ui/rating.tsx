@@ -16,11 +16,16 @@ export function Rating({
       </span>
       {favourite && (
         <span
-          className="flex h-5 w-5 items-center justify-center rounded-full
-                     bg-glow text-[10px] text-white"
+          className="flex h-5 w-5 items-center justify-center rounded-full bg-glow"
           title="Traveler favourite"
         >
-          👍
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/rustic/thumbs_up_orange.png"
+            alt=""
+            aria-hidden
+            className="h-3.5 w-3.5 object-contain"
+          />
         </span>
       )}
     </span>

@@ -89,8 +89,26 @@ export default async function ListingDetailPage({
               <span className="font-bold text-foreground">
                 <span className="text-glow">★</span> {listing.rating.toFixed(1)}
               </span>
-              <span>💬 {listing.reviews.toLocaleString()} reviews</span>
-              <span>📍 {listing.location}</span>
+              <span className="inline-flex items-center gap-1">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/icons/rustic/01_chat_bubble.png"
+                  alt=""
+                  aria-hidden
+                  className="h-3.5 w-3.5 object-contain"
+                />
+                {listing.reviews.toLocaleString()} reviews
+              </span>
+              <span className="inline-flex items-center gap-1">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/icons/rustic/01_map_pin.png"
+                  alt=""
+                  aria-hidden
+                  className="h-3.5 w-3.5 object-contain"
+                />
+                {listing.location}
+              </span>
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {listing.tags.map((t) => (

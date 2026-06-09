@@ -371,9 +371,13 @@ export function GroupEditor({
             aria-live="polite"
             className="flex items-start gap-2 border-b border-heat/20 bg-heat/10 px-4 py-3"
           >
-            <span aria-hidden className="mt-0.5 text-base">
-              ⚠️
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/rustic/24_warning.png"
+              alt=""
+              aria-hidden
+              className="mt-0.5 h-4 w-4 shrink-0 object-contain"
+            />
             <p className="flex-1 text-sm font-semibold text-heat">{error}</p>
             <button
               type="button"

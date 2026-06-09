@@ -199,8 +199,14 @@ function GroupCard({ group }: { group: PublicChatGroup }) {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <span className="flex h-full w-full items-center justify-center text-xs font-bold text-glow">
-                        🌍
+                      <span className="flex h-full w-full items-center justify-center bg-surface text-glow">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src="/icons/rustic/globe.png"
+                          alt=""
+                          aria-hidden
+                          className="h-3/5 w-3/5 object-contain"
+                        />
                       </span>
                     )}
                   </span>

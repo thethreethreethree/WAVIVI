@@ -234,9 +234,15 @@ export default async function DataQualityPage() {
                     ) : (
                       <span
                         aria-hidden
-                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-border text-xl"
+                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-border"
                       >
-                        🚫
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src="/icons/rustic/close_x.png"
+                          alt=""
+                          aria-hidden
+                          className="h-6 w-6 object-contain opacity-70"
+                        />
                       </span>
                     )}
                     <span className="min-w-0 flex-1">
