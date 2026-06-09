@@ -136,3 +136,150 @@ export async function hasSharedToday(authorId: string): Promise<boolean> {
     .gte("created_at", todayStart.toISOString());
   return (count ?? 0) > 0;
 }
+
+/* ── Phase 2 — sectioned /feed loaders ─────────────────────────────── */
+
+/** Build a Date at the start of "N hours ago" — used by the NOW
+ *  section so the cutoff stays consistent across calls in a request. */
+function hoursAgoIso(hours: number): string {
+  const t = new Date();
+  t.setTime(t.getTime() - hours * 3600 * 1000);
+  return t.toISOString();
+}
+
+/** Build a Date at the UTC start-of-today — used by the TODAY'S BEST
+ *  section so the window matches the one-share-per-UTC-day rule. */
+function startOfUtcTodayIso(): string {
+  const t = new Date();
+  t.setUTCHours(0, 0, 0, 0);
+  return t.toISOString();
+}
+
+/** 🔥 NOW — shares posted within the last hour. Newest first.
+ *  Used by the top section of /feed to surface real-time activity. */
+export async function loadDvsNow(limit = 12): Promise<DvsShareDisplay[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("daily_vibe_shares")
+    .select(SELECT_WITH_JOINS)
+    .eq("active", true)
+    .gte("created_at", hoursAgoIso(1))
+    .order("created_at", { ascending: false })
+    .limit(limit)
+    .returns<JoinedRow[]>();
+  return (data ?? []).map(toDisplay);
+}
+
+/** ⭐ TODAY'S BEST — today's shares sorted by engagement weight then
+ *  vibe rating. Engagement counters are zero until Phase 3 ships the
+ *  reactions/comments tables, so today the sort falls through to
+ *  vibe_rating + recency — which still surfaces a useful "best of"
+ *  pass over the day's shares. */
+export async function loadDvsTodaysBest(
+  limit = 12,
+): Promise<DvsShareDisplay[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("daily_vibe_shares")
+    .select(SELECT_WITH_JOINS)
+    .eq("active", true)
+    .gte("created_at", startOfUtcTodayIso())
+    // PostgREST chains .order calls into the SQL ORDER BY in
+    // declaration order, so each successive call is a secondary key.
+    .order("like_count", { ascending: false })
+    .order("comment_count", { ascending: false })
+    .order("share_count", { ascending: false })
+    .order("vibe_rating", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit)
+    .returns<JoinedRow[]>();
+  return (data ?? []).map(toDisplay);
+}
+
+/** 📍 YOUR DESTINATIONS — shares from regions the user is planning to
+ *  visit. Pulls the user's active+upcoming travel plans, extracts the
+ *  set of destination countries, then loads DVS shares from any region
+ *  whose country matches.
+ *
+ *  Why country-level: travel_plans.destinations stores city as
+ *  free-form text (no FK), so country is the only column we can match
+ *  against regions.country reliably. A future pass can tighten to city
+ *  once we wire the city_id back-resolver. */
+export async function loadDvsForUserDestinations(
+  userId: string,
+  limit = 20,
+): Promise<DvsShareDisplay[]> {
+  const supabase = await createClient();
+
+  const { data: plans } = await supabase
+    .from("travel_plans")
+    .select("destination_countries, status")
+    .eq("user_id", userId)
+    .in("status", ["upcoming", "active"]);
+
+  const countries = new Set<string>();
+  for (const p of plans ?? []) {
+    for (const c of p.destination_countries ?? []) countries.add(c);
+  }
+  if (countries.size === 0) return [];
+
+  // Resolve countries → region IDs. We can't filter directly on
+  // regions.country from the shares table (PostgREST has no join
+  // filter), so do it as a two-step.
+  const { data: regions } = await supabase
+    .from("regions")
+    .select("id, country")
+    .in("country", Array.from(countries));
+  const regionIds = (regions ?? []).map((r) => r.id);
+  if (regionIds.length === 0) return [];
+
+  const { data } = await supabase
+    .from("daily_vibe_shares")
+    .select(SELECT_WITH_JOINS)
+    .eq("active", true)
+    .in("region_id", regionIds)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+    .returns<JoinedRow[]>();
+  return (data ?? []).map(toDisplay);
+}
+
+/** 👥 FOLLOWING — shares from travelers the user shares a group chat
+ *  with. The DVS spec promises a "matched group + connections" feed;
+ *  group co-membership is the strongest social signal we have today.
+ *  Excludes the user's own shares (those already render in
+ *  YOUR DESTINATIONS / NOW / TODAY'S BEST if they qualify). */
+export async function loadDvsFromFollowing(
+  userId: string,
+  limit = 20,
+): Promise<DvsShareDisplay[]> {
+  const supabase = await createClient();
+
+  // Step 1: the user's groups.
+  const { data: myGroups } = await supabase
+    .from("chat_group_members")
+    .select("group_id")
+    .eq("user_id", userId);
+  const groupIds = (myGroups ?? []).map((g) => g.group_id);
+  if (groupIds.length === 0) return [];
+
+  // Step 2: every member of those groups (minus the user).
+  const { data: coMembers } = await supabase
+    .from("chat_group_members")
+    .select("user_id")
+    .in("group_id", groupIds);
+  const peerIds = Array.from(
+    new Set((coMembers ?? []).map((m) => m.user_id)),
+  ).filter((id) => id !== userId);
+  if (peerIds.length === 0) return [];
+
+  const { data } = await supabase
+    .from("daily_vibe_shares")
+    .select(SELECT_WITH_JOINS)
+    .eq("active", true)
+    .in("author_id", peerIds)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+    .returns<JoinedRow[]>();
+  return (data ?? []).map(toDisplay);
+}
