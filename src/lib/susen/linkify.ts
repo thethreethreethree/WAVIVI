@@ -36,10 +36,14 @@ export function flattenInventory(inv: SusenInventory): InventoryItem[] {
     ...inv.matches.restaurants,
     ...inv.matches.experiences,
     ...inv.matches.utilities,
+    ...inv.matches.events,
+    ...inv.matches.groups,
     ...inv.stays,
     ...inv.restaurants,
     ...inv.experiences,
     ...inv.utilities,
+    ...inv.events,
+    ...inv.groups,
   ];
 }
 

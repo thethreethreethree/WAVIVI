@@ -101,12 +101,24 @@ const BASELINE_PER_TABLE = 8;
 const SEARCH_LIMIT = 12;
 
 /** Which table a row came from — used server-side to build the
- *  per-source detail page URL (/stay/{id}, /eat/{id}, /todo/{id})
- *  or, for traveler utilities, the filtered map URL
- *  (/tools/map?category={category}). Excluded from the JSON we ship
- *  to the model (the model doesn't need UUIDs, and they'd waste
- *  tokens). */
-export type InventorySource = "stay" | "eat" | "todo" | "tool";
+ *  per-source detail page URL:
+ *    stay   → /stay/{id}
+ *    eat    → /eat/{id}
+ *    todo   → /todo/{id}
+ *    tool   → /tools/map?category={category}   (utilities; no detail page)
+ *    meet   → /meet/{id}                       (chat group)
+ *    events → /events/{id}
+ *  Excluded from the JSON we ship to the model (the model doesn't
+ *  need UUIDs, and they'd waste tokens). Daily Vibe Share rows ride
+ *  in a separate cohort with their own richer shape — see
+ *  [[VibeShareSummary]] below. */
+export type InventorySource =
+  | "stay"
+  | "eat"
+  | "todo"
+  | "tool"
+  | "meet"
+  | "events";
 
 export interface InventoryItem {
   name: string;
@@ -174,6 +186,26 @@ export function toMatchItem(item: InventoryItem): {
   };
 }
 
+/** Rich shape for Daily Vibe Share rows — caption + practical fields
+ *  (tip, costs, Q&A). Doesn't fit the InventoryItem mold because
+ *  there's no stable "name" / "category" — the caption IS the
+ *  signal. Lives in its own cohort with its own prompt block. */
+export interface VibeShareSummary {
+  caption: string;
+  vibeRating: number;
+  tip: string | null;
+  costMeal: number | null;
+  costHotel: number | null;
+  costActivity: number | null;
+  costCurrency: string | null;
+  qaQuestion: string | null;
+  qaAnswer: string | null;
+  locationLabel: string | null;
+  cityName: string | null;
+  authorUsername: string;
+  createdAt: string;
+}
+
 export interface SusenInventory {
   regionName: string | null;
   /** Small top-rated baseline per table (general questions / cross-sell). */
@@ -185,6 +217,15 @@ export interface SusenInventory {
    *  treat them uniformly; only the `source` tag differs (it points
    *  at the toolbox map URL instead of a detail page). */
   utilities: InventoryItem[];
+  /** Meet Up chat groups whose destination matches the region. */
+  groups: InventoryItem[];
+  /** Events Nearby — region-scoped. */
+  events: InventoryItem[];
+  /** Recent Daily Vibe Shares from the region. Their richer shape
+   *  (tip + costs + Q&A) means the model can quote real traveler
+   *  intel — "Sara shared 2 hours ago: ₱200 laundry on the main road"
+   *  — instead of generic suggestions. */
+  vibes: VibeShareSummary[];
   /** Rows that directly match the traveller's current query (may be empty
    *  when the message has no searchable keyword, e.g. "hey"). */
   matches: {
@@ -192,14 +233,20 @@ export interface SusenInventory {
     restaurants: InventoryItem[];
     experiences: InventoryItem[];
     utilities: InventoryItem[];
+    groups: InventoryItem[];
+    events: InventoryItem[];
+    vibes: VibeShareSummary[];
   };
   /** True counts in the region. Lets Susen answer "how many laundry?"
-   *  accurately instead of guessing from the sample. */
+   *  / "any events tonight?" accurately instead of guessing. */
   totals: {
     stays: number;
     restaurants: number;
     experiences: number;
     utilities: number;
+    groups: number;
+    events: number;
+    vibes: number;
   };
 }
 
@@ -214,8 +261,27 @@ const EMPTY_INVENTORY: SusenInventory = {
   restaurants: [],
   experiences: [],
   utilities: [],
-  matches: { stays: [], restaurants: [], experiences: [], utilities: [] },
-  totals: { stays: 0, restaurants: 0, experiences: 0, utilities: 0 },
+  groups: [],
+  events: [],
+  vibes: [],
+  matches: {
+    stays: [],
+    restaurants: [],
+    experiences: [],
+    utilities: [],
+    groups: [],
+    events: [],
+    vibes: [],
+  },
+  totals: {
+    stays: 0,
+    restaurants: 0,
+    experiences: 0,
+    utilities: 0,
+    groups: 0,
+    events: 0,
+    vibes: 0,
+  },
 };
 
 /** Words that carry no retrieval signal — dropped before searching so a
@@ -304,6 +370,33 @@ const SYNONYMS: Record<string, string[]> = {
   tourism: ["tourist_info"], info: ["tourist_info"],
   coworking: ["coworking_space"], "co-working": ["coworking_space"],
   cowork: ["coworking_space"], deskspace: ["coworking_space"],
+  // --- Meet Up (chat groups). Words travelers use when they want
+  // to find or join a group chat. Matched against chat_groups.name
+  // + chat_groups.category. The categories used in admin land are
+  // free-text labels (Wellness / Nightlife / Foodies / Adventure /
+  // Coworking / etc.), so the synonym targets are also free text —
+  // they ride the name-ILIKE path, not an enum.
+  group: ["group"], groups: ["group"], chat: ["chat"], chats: ["chat"],
+  meetup: ["meetup"], meetups: ["meetup"], meeting: ["meet"],
+  crew: ["crew"], people: ["meet"], travelers: ["meet"],
+  community: ["community"], buddies: ["meet"],
+  // --- Events nearby (events table). Same idea — free-text categories
+  // ("Festival", "Music", "Workshop", "Foodie"), so the synonyms feed
+  // the name/category ILIKE search.
+  event: ["event"], events: ["event"], festival: ["festival"],
+  festivals: ["festival"], party: ["party"], parties: ["party"],
+  concert: ["concert"], concerts: ["concert"], gig: ["gig"], gigs: ["gig"],
+  show: ["show"], shows: ["show"], workshop: ["workshop"],
+  workshops: ["workshop"], music: ["music"], live: ["live"],
+  // --- Daily Vibe Shares. These tend to be intent words about
+  // "what travelers are saying" / "real costs" / "tips" — keywords
+  // travelers use when they want crowd-sourced info, not lists.
+  // Matched against caption + tip + qa_question + qa_answer.
+  vibe: ["vibe"], vibes: ["vibe"], tip: ["tip"], tips: ["tip"],
+  advice: ["advice"], share: ["share"], shares: ["share"],
+  cost: ["cost"], costs: ["cost"], budget: ["budget"],
+  expensive: ["cost"], cheap: ["budget"], price: ["cost"],
+  prices: ["cost"], spending: ["cost"],
 };
 
 /** Pull searchable keywords out of the traveller's message: lowercase,
@@ -446,28 +539,184 @@ export async function loadSusenInventory(
     .select("id", { count: "exact", head: true })
     .eq("region_id", regionId);
 
+  // --- Events ---------------------------------------------------------
+  // events has region_id + active, so the existing baseline/search/count
+  // builders are a perfect fit. Builders below for parity with the
+  // utility block (the typed table-name constraint on the existing
+  // helpers makes parameterised reuse awkward).
+  const EVENT_COLS =
+    "id, name, category, rating, review_count, rank_score, address, when_text";
+  // Project events rows into the same RawRow shape the existing
+  // pipeline expects — `category` already exists as the column, but
+  // we re-emit it as `category` so the project function can read it
+  // through the same `r[categoryCol]` lookup as the other tables.
+  // We also stuff `when_text` into the `address` field for display so
+  // Susen sees "Saturday 8pm — Tartas Beach Bar" instead of just the
+  // street. Cheap, no extra columns added downstream.
+  const eventBaseline = baseline("events", EVENT_COLS);
+  const eventSearch = search("events", EVENT_COLS, "category");
+  const eventCount = count("events");
+
+  // --- Chat groups (Meet Up) ----------------------------------------
+  // chat_groups has no region_id FK; the destination is stored as
+  // free-text `destination_country` / `destination_city`. Resolve the
+  // region's country once and ilike against it (PostgREST ilike with
+  // no wildcards is case-insensitive equality — "Philippines" matches
+  // "philippines"). City further narrows when set.
+  const GROUP_COLS =
+    "id, name, category, destination_city, destination_country, place_address";
+  // `name` becomes the InventoryItem.name, `category` becomes the
+  // category, destination_city becomes the InventoryItem.city, and
+  // place_address (or the country itself when null) goes into address.
+  // chat_groups has no rank_score; sort by featured DESC then created.
+  type GroupRaw = {
+    id: string;
+    name: string;
+    category: string | null;
+    destination_city: string | null;
+    destination_country: string | null;
+    place_address: string | null;
+    featured?: boolean;
+  };
+
+  // --- Daily Vibe Shares --------------------------------------------
+  // region-scoped, active=true, ordered newest-first. We join the
+  // author profile inline so the prompt block can name the traveler.
+  // No baseline/search split here — every share is interesting context
+  // (caption + tip + costs + Q&A), and the cohort is small so we just
+  // ship the top recent set.
+  const VIBE_COLS = `
+    id, vibe_rating, caption, location_label, tip,
+    cost_meal, cost_hotel, cost_activity, cost_currency,
+    qa_question, qa_answer, created_at, city_id,
+    author:profiles!daily_vibe_shares_author_id_fkey(username)
+  `;
+  type VibeRaw = {
+    id: string;
+    vibe_rating: number;
+    caption: string;
+    location_label: string | null;
+    tip: string | null;
+    cost_meal: number | null;
+    cost_hotel: number | null;
+    cost_activity: number | null;
+    cost_currency: string | null;
+    qa_question: string | null;
+    qa_answer: string | null;
+    created_at: string;
+    city_id: string | null;
+    author: { username: string } | null;
+  };
+  // 12 most recent shares + a search pass when keywords are present.
+  // The search hits caption / tip / qa_* via a manually-built or expr
+  // (the standard buildSearchExpr only targets two cols).
+  const vibeBaseline = supabase
+    .from("daily_vibe_shares")
+    .select(VIBE_COLS)
+    .eq("active", true)
+    .eq("region_id", regionId)
+    .order("created_at", { ascending: false })
+    .limit(BASELINE_PER_TABLE);
+  const vibeSearch =
+    keywords.length > 0
+      ? supabase
+          .from("daily_vibe_shares")
+          .select(VIBE_COLS)
+          .eq("active", true)
+          .eq("region_id", regionId)
+          .or(
+            keywords
+              .flatMap((k) => [
+                `caption.ilike.%${k}%`,
+                `tip.ilike.%${k}%`,
+                `qa_question.ilike.%${k}%`,
+                `qa_answer.ilike.%${k}%`,
+                `location_label.ilike.%${k}%`,
+              ])
+              .join(","),
+          )
+          .order("created_at", { ascending: false })
+          .limit(SEARCH_LIMIT)
+      : Promise.resolve({ data: [] as VibeRaw[] });
+  const vibeCount = supabase
+    .from("daily_vibe_shares")
+    .select("id", { count: "exact", head: true })
+    .eq("active", true)
+    .eq("region_id", regionId);
+
   try {
+    // Pull the region's country first — the chat_groups filter needs
+    // it (chat_groups has no region_id FK; destination is free text).
+    // We add it to the same regionRes call so the Promise.all stays
+    // a single round-trip instead of growing a sequential prelude.
+    const regionMeta = await supabase
+      .from("regions")
+      .select("display_name, country, city")
+      .eq("id", regionId)
+      .maybeSingle<{
+        display_name: string;
+        country: string | null;
+        city: string | null;
+      }>();
+
+    // Build the chat_groups queries now that we know the destination
+    // country. ilike without wildcards = case-insensitive equality so
+    // "Philippines" matches "philippines".
+    const groupBaseline = regionMeta.data?.country
+      ? supabase
+          .from("chat_groups")
+          .select(GROUP_COLS)
+          .eq("archived", false)
+          .ilike("destination_country", regionMeta.data.country)
+          .order("featured", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(BASELINE_PER_TABLE)
+      : Promise.resolve({ data: [] as GroupRaw[] });
+    const groupSearchExpr = buildSearchExpr(keywords, "category");
+    const groupSearch =
+      groupSearchExpr && regionMeta.data?.country
+        ? supabase
+            .from("chat_groups")
+            .select(GROUP_COLS)
+            .eq("archived", false)
+            .ilike("destination_country", regionMeta.data.country)
+            .or(groupSearchExpr)
+            .order("featured", { ascending: false })
+            .order("created_at", { ascending: false })
+            .limit(SEARCH_LIMIT)
+        : Promise.resolve({ data: [] as GroupRaw[] });
+    const groupCount = regionMeta.data?.country
+      ? supabase
+          .from("chat_groups")
+          .select("id", { count: "exact", head: true })
+          .eq("archived", false)
+          .ilike("destination_country", regionMeta.data.country)
+      : Promise.resolve({ count: 0 });
+
     const [
-      regionRes,
       citiesRes,
       staysBase,
       restBase,
       expBase,
       utilBase,
+      eventBase,
+      groupBase,
+      vibeBase,
       staysMatch,
       restMatch,
       expMatch,
       utilMatch,
+      eventMatch,
+      groupMatch,
+      vibeMatch,
       staysCount,
       restCount,
       expCount,
       utilCountRes,
+      eventCountRes,
+      groupCountRes,
+      vibeCountRes,
     ] = await Promise.all([
-      supabase
-        .from("regions")
-        .select("display_name")
-        .eq("id", regionId)
-        .maybeSingle<{ display_name: string }>(),
       supabase
         .from("cities")
         .select("id, name")
@@ -477,22 +726,34 @@ export async function loadSusenInventory(
       baseline("restaurants", REST_COLS),
       baseline("experiences", EXP_COLS),
       utilBaseline,
+      eventBaseline,
+      groupBaseline,
+      vibeBaseline,
       search("stays", STAY_COLS, "stay_type"),
       search("restaurants", REST_COLS, "cuisine"),
       search("experiences", EXP_COLS, "activity_type"),
       utilSearch,
+      eventSearch,
+      groupSearch,
+      vibeSearch,
       count("stays"),
       count("restaurants"),
       count("experiences"),
       utilCount,
+      eventCount,
+      groupCount,
+      vibeCount,
     ]);
+    const regionRes = regionMeta;
 
     const cityName = indexCities(citiesRes.data);
 
     // Map a category column name to the place-page route prefix —
     // single source of truth so adding a new place table later only
-    // requires editing this map. "category" → "tool" routes to the
-    // filtered toolbox map (utilities don't have detail pages).
+    // requires editing this map. "category" → "tool" by default
+    // (utilities are the most common consumer of that column name);
+    // events + groups override the source after project() returns
+    // since they all share the literal "category" column name.
     const SOURCE_BY_CATEGORY_COL: Record<string, InventorySource> = {
       stay_type: "stay",
       cuisine: "eat",
@@ -523,12 +784,71 @@ export async function loadSusenInventory(
     const matchExp = projectAll(expMatch, "activity_type");
     const matchUtil = projectAll(utilMatch, "category");
 
+    // Events share the "category" column name with utilities but
+    // route to /events/<id>. After projectAll runs, overwrite the
+    // source tag on every row.
+    const projectEvents = (res: { data: unknown }): InventoryItem[] =>
+      projectAll(res, "category").map((i) => ({ ...i, source: "events" }));
+    const matchEvents = projectEvents(eventMatch);
+    const eventBaseProjected = projectEvents(eventBase);
+
+    // Chat groups carry destination_city / destination_country / a
+    // free-text category, and there's no rating data. Project them
+    // by hand so the shape lines up with InventoryItem but the URL
+    // routes to /meet/<id>.
+    const projectGroups = (res: { data: unknown }): InventoryItem[] => {
+      const rows = (res.data as GroupRaw[] | null) ?? [];
+      return rows.map((r) => ({
+        id: r.id,
+        source: "meet" as const,
+        name: r.name,
+        category: r.category ?? "Meet Up",
+        rating: null,
+        reviews: 0,
+        rank: 0,
+        city: r.destination_city,
+        address: r.place_address ?? r.destination_country ?? null,
+      }));
+    };
+    const matchGroups = projectGroups(groupMatch);
+    const groupBaseProjected = projectGroups(groupBase);
+
+    // Daily Vibe Shares — separate shape (VibeShareSummary), no
+    // InventoryItem projection. Renders into its own prompt block.
+    const projectVibes = (res: { data: unknown }): VibeShareSummary[] => {
+      const rows = (res.data as VibeRaw[] | null) ?? [];
+      return rows.map((r) => ({
+        caption: r.caption,
+        vibeRating: r.vibe_rating,
+        tip: r.tip,
+        costMeal: r.cost_meal,
+        costHotel: r.cost_hotel,
+        costActivity: r.cost_activity,
+        costCurrency: r.cost_currency,
+        qaQuestion: r.qa_question,
+        qaAnswer: r.qa_answer,
+        locationLabel: r.location_label,
+        cityName: r.city_id ? cityName.get(r.city_id) ?? null : null,
+        authorUsername: r.author?.username ?? "traveler",
+        createdAt: r.created_at,
+      }));
+    };
+    const matchVibes = projectVibes(vibeMatch);
+    const vibeBaseProjected = projectVibes(vibeBase);
+
     // Drop baseline rows already shown as a direct match, so we don't
-    // spend tokens listing the same venue twice.
+    // spend tokens listing the same venue twice. Vibes don't dedup
+    // (each share is unique enough; the caption text wouldn't collide
+    // even if the row id did).
     const matchedNames = new Set(
-      [...matchRest, ...matchStays, ...matchExp, ...matchUtil].map(
-        (i) => i.name,
-      ),
+      [
+        ...matchRest,
+        ...matchStays,
+        ...matchExp,
+        ...matchUtil,
+        ...matchEvents,
+        ...matchGroups,
+      ].map((i) => i.name),
     );
     const dropDupes = (items: InventoryItem[]) =>
       items.filter((i) => !matchedNames.has(i.name));
@@ -539,17 +859,26 @@ export async function loadSusenInventory(
       restaurants: dropDupes(projectAll(restBase, "cuisine")),
       experiences: dropDupes(projectAll(expBase, "activity_type")),
       utilities: dropDupes(projectAll(utilBase, "category")),
+      events: dropDupes(eventBaseProjected),
+      groups: dropDupes(groupBaseProjected),
+      vibes: vibeBaseProjected,
       matches: {
         stays: matchStays,
         restaurants: matchRest,
         experiences: matchExp,
         utilities: matchUtil,
+        events: matchEvents,
+        groups: matchGroups,
+        vibes: matchVibes,
       },
       totals: {
         stays: staysCount.count ?? 0,
         restaurants: restCount.count ?? 0,
         experiences: expCount.count ?? 0,
         utilities: utilCountRes.count ?? 0,
+        events: eventCountRes.count ?? 0,
+        groups: groupCountRes.count ?? 0,
+        vibes: vibeCountRes.count ?? 0,
       },
     };
   } catch (err) {
@@ -576,6 +905,42 @@ export async function loadSusenInventory(
  *  If both halves are empty the inventory load probably failed; the
  *  route handler skips both and the model behaves like the original
  *  prompt-only setup. */
+/** Compact JSON for a vibe-share row. Strips fields that are null
+ *  so the prompt stays tight (a share with no Q&A doesn't burn
+ *  tokens on `qa_question: null`). */
+function stringifyVibes(items: VibeShareSummary[]): string {
+  return items
+    .map((v) => {
+      const obj: Record<string, unknown> = {
+        author: v.authorUsername,
+        vibe: v.vibeRating,
+        caption: v.caption,
+        when: v.createdAt,
+      };
+      if (v.locationLabel) obj.location = v.locationLabel;
+      if (v.cityName) obj.city = v.cityName;
+      if (v.tip) obj.tip = v.tip;
+      if (
+        v.costMeal != null ||
+        v.costHotel != null ||
+        v.costActivity != null
+      ) {
+        obj.costs = {
+          meal: v.costMeal,
+          hotel: v.costHotel,
+          activity: v.costActivity,
+          currency: v.costCurrency,
+        };
+      }
+      if (v.qaQuestion && v.qaAnswer) {
+        obj.q = v.qaQuestion;
+        obj.a = v.qaAnswer;
+      }
+      return JSON.stringify(obj);
+    })
+    .join("\n");
+}
+
 export function formatInventoryForPrompt(inv: SusenInventory): {
   stable: string;
   matches: string;
@@ -584,12 +949,18 @@ export function formatInventoryForPrompt(inv: SusenInventory): {
     inv.matches.stays.length +
     inv.matches.restaurants.length +
     inv.matches.experiences.length +
-    inv.matches.utilities.length;
+    inv.matches.utilities.length +
+    inv.matches.events.length +
+    inv.matches.groups.length +
+    inv.matches.vibes.length;
   const baseTotal =
     inv.stays.length +
     inv.restaurants.length +
     inv.experiences.length +
-    inv.utilities.length;
+    inv.utilities.length +
+    inv.events.length +
+    inv.groups.length +
+    inv.vibes.length;
   if (matchTotal === 0 && baseTotal === 0) return { stable: "", matches: "" };
 
   // Compact JSON — DeepSeek handles JSON in system prompts well and the
@@ -630,7 +1001,16 @@ TOP PICKS — THINGS TO DO (showing ${inv.experiences.length} of ${inv.totals.ex
 ${stringifyTopPicks(inv.experiences)}
 
 TOP PICKS — TRAVELER TOOLS (showing ${inv.utilities.length} of ${inv.totals.utilities} total — laundry, ATMs, pharmacies, clinics, transport, SIM cards, and 15+ other categories; "category" is the enum slug like "laundry" / "pharmacy" / "atm"):
-${stringifyTopPicks(inv.utilities)}`;
+${stringifyTopPicks(inv.utilities)}
+
+TOP PICKS — EVENTS NEARBY (showing ${inv.events.length} of ${inv.totals.events} total; "category" is the event kind, e.g. "Music", "Festival"):
+${stringifyTopPicks(inv.events)}
+
+TOP PICKS — MEET UP GROUPS (showing ${inv.groups.length} of ${inv.totals.groups} total — active chat groups whose destination matches this region; "category" is the group's vibe label like "Wellness", "Foodies", "Nightlife"):
+${stringifyTopPicks(inv.groups)}
+
+DAILY VIBE SHARES — RECENT TRAVELER POSTS (showing ${inv.vibes.length} of ${inv.totals.vibes} total). These are real travelers' 5-question shares: caption + tip + real costs + Q&A. Quote them when relevant ("Sara shared 2h ago: '<tip>'"). Costs in cost_currency (ISO code). vibe_rating is 1-5.
+${stringifyVibes(inv.vibes)}`;
 
   let matches = "";
   if (matchTotal > 0) {
@@ -642,7 +1022,14 @@ ${stringifyTopPicks(inv.utilities)}`;
     )}${section("PLACES TO STAY", inv.matches.stays)}${section(
       "THINGS TO DO",
       inv.matches.experiences,
-    )}${section("TRAVELER TOOLS", inv.matches.utilities)}`;
+    )}${section("TRAVELER TOOLS", inv.matches.utilities)}${section(
+      "EVENTS NEARBY",
+      inv.matches.events,
+    )}${section("MEET UP GROUPS", inv.matches.groups)}${
+      inv.matches.vibes.length > 0
+        ? `\nMATCHING VIBE SHARES (real traveler tips matching this query):\n${stringifyVibes(inv.matches.vibes)}`
+        : ""
+    }`;
   }
 
   return { stable, matches };
