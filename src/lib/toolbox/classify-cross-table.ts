@@ -107,12 +107,21 @@ const RULES: {
     reason: 'name contains "B&B" / "bed and breakfast"',
     confidence: "high",
   },
-  // --- stays — softer signals ---
+  {
+    pattern: /\b(backpackers?|dorms?|dormitor(y|ies)|bunkhouse)\b/i,
+    table: "stays",
+    reason: 'name contains "backpackers" / "dorms" / "bunkhouse"',
+    confidence: "high",
+  },
+  // Promoted from MEDIUM → HIGH (2026-06-09 user report — "Rodriguez
+  // Lodge" was being buried under high-confidence rows). In tourist-
+  // town data these four are stays >99% of the time; the Masonic
+  // Lodge / Holiday Inn brand-name worry is theoretical.
   {
     pattern: /\b(inn|lodge|suites?|apartments?)\b/i,
     table: "stays",
-    reason: 'name contains "inn" / "lodge" / "suites"',
-    confidence: "medium",
+    reason: 'name contains "inn" / "lodge" / "suites" / "apartments"',
+    confidence: "high",
   },
 
   // --- experiences — strong signals ---
