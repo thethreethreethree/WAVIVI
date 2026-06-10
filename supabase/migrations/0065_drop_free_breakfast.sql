@@ -24,7 +24,7 @@
 -- the presence of the string).
 
 -- 1) Amenities array sweep ------------------------------------------
--- Rebuild each affected row's amenities by unnesting + filtering,
+-- Rebuild each affecteda row's amenities by unnesting + filtering,
 -- preserving original order via WITH ORDINALITY. The `ARRAY()`
 -- subquery rebuilds the column as a clean text[] without the
 -- "Free breakfast" entry. EXISTS in the WHERE clause keeps the
