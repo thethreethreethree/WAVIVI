@@ -56,46 +56,128 @@ export async function loadClassificationSuspects(): Promise<
   const supabase = createAdminClient();
   const out: ClassificationSuspect[] = [];
 
-  const [staysRes, restaurantsRes, experiencesRes, utilitiesRes] =
+  // Pagination — Supabase enforces db-max-rows (1,000 by default)
+  // server-side, so a single big .range() is silently capped. See
+  // cross-table-audit.ts for the full discovery story
+  // (2026-06-10 debug probe).
+  const PAGE_SIZE = 1000;
+  const MAX_OFFSET = 100_000;
+
+  // Generic paginator. Re-runs the same select with successive
+  // .range() windows until a short page comes back (or we hit the
+  // safety brake). Returns the concatenated rows. The fetch chain
+  // is per-table because each table's select shape differs; can't
+  // be hoisted further without losing type safety on the returned
+  // rows.
+  async function paginate<T>(
+    runOne: (offset: number, end: number) => Promise<{ data: T[] | null; error: { message: string } | null }>,
+  ): Promise<T[]> {
+    const all: T[] = [];
+    for (let offset = 0; offset <= MAX_OFFSET; offset += PAGE_SIZE) {
+      const res = await runOne(offset, offset + PAGE_SIZE - 1);
+      if (res.error) throw new Error(res.error.message);
+      const page = res.data ?? [];
+      all.push(...page);
+      if (page.length < PAGE_SIZE) break;
+    }
+    return all;
+  }
+
+  type StayPick = {
+    id: string;
+    name: string;
+    region_id: string | null;
+    description: string | null;
+    stay_type: string;
+    admin_edited: boolean;
+  };
+  type RestPick = {
+    id: string;
+    name: string;
+    region_id: string | null;
+    description: string | null;
+    cuisine: string | null;
+    admin_edited: boolean;
+  };
+  type ExpPick = {
+    id: string;
+    name: string;
+    region_id: string | null;
+    description: string | null;
+    activity_type: string;
+    category: string | null;
+    admin_edited: boolean;
+  };
+  type UtilPick = {
+    id: string;
+    name: string;
+    region_id: string | null;
+    description: string | null;
+    category: string;
+    admin_edited: boolean;
+  };
+
+  const [staysRows, restaurantsRows, experiencesRows, utilitiesRows] =
     await Promise.all([
-      supabase
-        .from("stays")
-        .select("id, name, region_id, description, stay_type, admin_edited")
-        .eq("active", true)
-        .eq("admin_edited", false)
-        .order("name", { ascending: true })
-        .range(0, 49999),
-      supabase
-        .from("restaurants")
-        .select("id, name, region_id, description, cuisine, admin_edited")
-        .eq("active", true)
-        .eq("admin_edited", false)
-        .order("name", { ascending: true })
-        .range(0, 49999),
-      supabase
-        .from("experiences")
-        .select(
-          "id, name, region_id, description, activity_type, category, admin_edited",
-        )
-        .eq("active", true)
-        .eq("admin_edited", false)
-        .order("name", { ascending: true })
-        .range(0, 49999),
+      paginate<StayPick>(async (from, to) => {
+        const res = await supabase
+          .from("stays")
+          .select("id, name, region_id, description, stay_type, admin_edited")
+          .eq("active", true)
+          .eq("admin_edited", false)
+          .order("name", { ascending: true })
+          .range(from, to)
+          .returns<StayPick[]>();
+        return { data: res.data, error: res.error };
+      }),
+      paginate<RestPick>(async (from, to) => {
+        const res = await supabase
+          .from("restaurants")
+          .select("id, name, region_id, description, cuisine, admin_edited")
+          .eq("active", true)
+          .eq("admin_edited", false)
+          .order("name", { ascending: true })
+          .range(from, to)
+          .returns<RestPick[]>();
+        return { data: res.data, error: res.error };
+      }),
+      paginate<ExpPick>(async (from, to) => {
+        const res = await supabase
+          .from("experiences")
+          .select(
+            "id, name, region_id, description, activity_type, category, admin_edited",
+          )
+          .eq("active", true)
+          .eq("admin_edited", false)
+          .order("name", { ascending: true })
+          .range(from, to)
+          .returns<ExpPick[]>();
+        return { data: res.data, error: res.error };
+      }),
       // Utilities don't carry an `active` column — every row in
-      // traveler_utilities is currently considered live. We do still
-      // exclude `admin_edited=true` so a one-time Apply/Ignore decision
-      // permanently drops the row from this audit, same as the other
-      // three sources.
-      // Utilities — see cross-table-audit.ts for the .range() rationale.
-      // PostgREST's default 1k cap silently truncates audits in regions
-      // with thousands of utilities; the explicit ceiling lifts that.
-      supabase
-        .from("traveler_utilities")
-        .select("id, name, region_id, description, category, admin_edited")
-        .eq("admin_edited", false)
-        .order("name", { ascending: true })
-        .range(0, 49999),
+      // traveler_utilities is currently considered live. The
+      // admin_edited filter still applies for idempotence.
+      paginate<UtilPick>(async (from, to) => {
+        const res = await supabase
+          .from("traveler_utilities")
+          .select(
+            "id, name, region_id, description, category, admin_edited",
+          )
+          .eq("admin_edited", false)
+          .order("name", { ascending: true })
+          .range(from, to)
+          .returns<UtilPick[]>();
+        return { data: res.data, error: res.error };
+      }),
     ]);
+
+  // Wrap the paginated row arrays in the same .data shape the
+  // original Promise.all destructure expected, so downstream loops
+  // don't have to change.
+  const staysRes = { data: staysRows };
+  const restaurantsRes = { data: restaurantsRows };
+  const experiencesRes = { data: experiencesRows };
+  const utilitiesRes = { data: utilitiesRows };
 
   for (const s of staysRes.data ?? []) {
     const guess = classifyStayFromText(s.name, s.description);

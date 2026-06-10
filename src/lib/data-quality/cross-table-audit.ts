@@ -44,18 +44,43 @@ export async function loadCrossTableUtilitySuspects(): Promise<
   CrossTableUtilitySuspect[]
 > {
   const supabase = createAdminClient();
-  // .range(0, 49999) — Supabase PostgREST's default page cap is 1,000
-  // rows. Without an explicit range the query silently truncates,
-  // and audits on a region with >1,000 unedited utilities never see
-  // the rows past that point. 50k is a generous ceiling that covers
-  // a worst-case nationwide ingest; tighten if memory becomes a
-  // concern (unlikely — the per-row payload is ~200 bytes).
-  const { data } = await supabase
-    .from("traveler_utilities")
-    .select("id, name, region_id, category, description, admin_edited")
-    .eq("admin_edited", false)
-    .order("name", { ascending: true })
-    .range(0, 49999);
+  // Pagination, NOT a single big .range() — Supabase has a server-side
+  // db-max-rows cap (1,000 by default) that enforces per-request even
+  // when the client asks for more. A one-shot .select(...).range(0,
+  // 49999) returns only the first 1,000 rows; the user's audit page
+  // showed 0 cross-table suspects because all the bad rows ("Barco El
+  // Nido Hotel", "Rodriguez Lodge", "Focus rooms") sit past the
+  // alphabetical cut-point and never made it into the loader. Found
+  // via /admin/data-quality/debug (2026-06-10). The previous
+  // "fix" of bumping .range(0, 49999) was a non-op for exactly this
+  // reason and is now removed.
+  const PAGE_SIZE = 1000;
+  const rows: {
+    id: string;
+    name: string;
+    region_id: string | null;
+    category: string;
+    description: string | null;
+    admin_edited: boolean;
+  }[] = [];
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const res = await supabase
+      .from("traveler_utilities")
+      .select("id, name, region_id, category, description, admin_edited")
+      .eq("admin_edited", false)
+      .order("name", { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1);
+    if (res.error) throw res.error;
+    const page = res.data ?? [];
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) break;
+    // Safety brake: 100k row hard ceiling. Honest signal if we ever
+    // hit it (means the audit's true population is genuinely huge
+    // and we need a smarter strategy than "fetch everything"). At
+    // ~200 bytes/row that's ~20 MB peak; fine for an admin page.
+    if (offset > 100_000) break;
+  }
+  const data = rows;
 
   const out: CrossTableUtilitySuspect[] = [];
   for (const u of data ?? []) {

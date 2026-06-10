@@ -232,6 +232,24 @@ next time. Don't write a novel — short, structured, scannable.
 
 Entries are reverse-chronological. Each links to a full writeup.
 
+- **2026-06-10 — /admin/data-quality showed 0 suspects — Supabase
+  `db-max-rows` silently capped audit loaders at 1k**
+  [`docs/postmortems/2026-06-10-supabase-default-row-cap.md`](docs/postmortems/2026-06-10-supabase-default-row-cap.md).
+  Symptom: every section of the data-quality dashboard rendered 0
+  even with known-bad rows in the table. 3 patches in a row
+  (detector regex tweak, HIGH-confidence promotion, `.range(0, 49999)`
+  bump) all failed for the same reason: Supabase enforces
+  `db-max-rows` SERVER-SIDE per request, so a one-shot `.select()`
+  with `.range(0, 49999)` silently returns at most 1,000 rows.
+  Found via a debug probe page (`8409996`) that dumped raw counts +
+  surfaced the swallowed error + ran the detector on the actual
+  returned sample — sample 1 alphabetically was numeric / parens
+  prefixes, no Hotel/Restaurant/Lodge in sight. Fix: client-side
+  paginator loop, 1k windows until short page. Lesson encoded:
+  `.range()` is a Range header, not a "give me N rows" instruction;
+  any audit/export walking a table over `db-max-rows` MUST paginate.
+  §2 succeeding-patch-loop rule fired exactly as written.
+
 - **2026-06-05 — Feed videos "won't play" — phantom play button**
   [`docs/postmortems/2026-06-05-feed-video-blob-phantom.md`](docs/postmortems/2026-06-05-feed-video-blob-phantom.md).
   Symptom: tapping the play triangle on `/feed` cards did nothing.
