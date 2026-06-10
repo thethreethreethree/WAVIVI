@@ -6,7 +6,10 @@ import {
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { ClassificationGroupClient } from "./classification-group-client";
-import { ExportUtilitiesCsvButton } from "./export-button";
+import {
+  ExportClassificationPlacesCsvButton,
+  ExportUtilitiesCsvButton,
+} from "./export-button";
 
 const SECTION_LABEL: Record<ClassificationSource, string> = {
   stays: "Stays",
@@ -87,11 +90,22 @@ export async function ClassificationSection() {
             this audit.
           </p>
         </div>
-        {/* Utilities-only export — separate file from the Photo Quality
-            export above, scoped to the rows flagged by the audit. Round-
-            trips through /admin/batch-utility-import in the same 18-col
-            wide CSV the scraper produces. */}
-        {utilCount > 0 && <ExportUtilitiesCsvButton dateLabel={dateLabel} />}
+        {/* Two exports, both in the 18-col scraper wide format so the
+            files round-trip cleanly back through the importers. */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Places — stays/restaurants/experiences flagged by the
+              classification audit. Goes through /admin/batch-city-import.
+              Industry column pre-filled with the audit's proposed label. */}
+          {bySource.stays.length +
+            bySource.restaurants.length +
+            bySource.experiences.length >
+            0 && (
+            <ExportClassificationPlacesCsvButton dateLabel={dateLabel} />
+          )}
+          {/* Utilities flagged by the classification audit. Goes through
+              /admin/batch-utility-import. */}
+          {utilCount > 0 && <ExportUtilitiesCsvButton dateLabel={dateLabel} />}
+        </div>
       </header>
 
       {/* Per-source jump buttons mirror the page-level ones so admins

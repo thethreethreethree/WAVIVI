@@ -2,6 +2,7 @@ import { loadCrossTableUtilitySuspects } from "@/lib/data-quality/cross-table-au
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { CrossTableGroupClient } from "./cross-table-group-client";
+import { ExportWrongTableUtilitiesCsvButton } from "./export-button";
 
 /**
  * Cross-table utility audit — third section on /admin/data-quality.
@@ -47,9 +48,15 @@ export async function CrossTableSection() {
   };
   for (const s of suspects) byTable[s.suspectedTable]++;
 
+  // Server-stamped date for the export filename (YYYY-MM-DD UTC).
+  // Done server-side so the user gets a label tied to the audit they're
+  // looking at, not the moment they click Export.
+  const dateLabel = new Date().toISOString().slice(0, 10);
+
   return (
     <section className="flex flex-col gap-4">
-      <header>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex-1">
         <h2 className="text-lg font-bold tracking-tight">
           Utilities in the wrong table
         </h2>
@@ -73,6 +80,14 @@ export async function CrossTableSection() {
           audit stops nagging — use this when the row genuinely IS a
           utility despite the name (false-positive defence).
         </p>
+        </div>
+        {/* Export button — same 18-col scraper format the other audits
+            use, so the file round-trips through /admin/batch-city-import
+            to seed the destination place table. The originals stay on
+            traveler_utilities until admin uses Remove. */}
+        {total > 0 && (
+          <ExportWrongTableUtilitiesCsvButton dateLabel={dateLabel} />
+        )}
       </header>
 
       <div className="rounded-2xl bg-heat p-4 text-white shadow-card">
