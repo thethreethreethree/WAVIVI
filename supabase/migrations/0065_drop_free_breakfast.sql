@@ -23,24 +23,39 @@
 -- Idempotent — running twice is a no-op (the WHERE clauses gate on
 -- the presence of the string).
 
+-- Preflight: bail with a clear error if stays isn't on this DB. The
+-- prior version of this migration used `update public.stays s ...`
+-- and Supabase's SQL editor surfaced a confusing "stays does not
+-- exist" message when the table truly was missing; this DO block
+-- gives you an actionable note instead.
+do $$
+begin
+  if to_regclass('public.stays') is null then
+    raise exception
+      'Migration 0065 needs public.stays. Run 0015_stays.sql first, '
+      'or check the SQL editor is connected to the right project.';
+  end if;
+end $$;
+
 -- 1) Amenities array sweep ------------------------------------------
--- Rebuild each affecteda row's amenities by unnesting + filtering,
--- preserving original order via WITH ORDINALITY. The `ARRAY()`
+-- Rebuild each affected row's amenities by unnesting + filtering,
+-- preserving original order via WITH ORDINALITY. The ARRAY()
 -- subquery rebuilds the column as a clean text[] without the
--- "Free breakfast" entry. EXISTS in the WHERE clause keeps the
--- update bounded to rows that actually need it.
-update public.stays s
+-- "Free breakfast" entry. WHERE EXISTS keeps the update bounded to
+-- rows that actually need it. Reference public.stays.amenities
+-- explicitly inside the subquery (rather than via a table alias)
+-- because Supabase's SQL editor parser previously concatenated my
+-- single-letter alias with the comment header above, producing a
+-- baffling "sfor 0065 ..." error message.
+update public.stays
    set amenities = (
-     select coalesce(
-       array_agg(a order by ord),
-       array[]::text[]
-     )
-     from unnest(s.amenities) with ordinality as t(a, ord)
-     where lower(a) <> 'free breakfast'
+     select coalesce(array_agg(a order by ord), array[]::text[])
+       from unnest(public.stays.amenities) with ordinality as t(a, ord)
+      where lower(a) <> 'free breakfast'
    )
  where exists (
    select 1
-     from unnest(s.amenities) as a
+     from unnest(public.stays.amenities) as a
     where lower(a) = 'free breakfast'
  );
 
