@@ -44,11 +44,18 @@ export async function loadCrossTableUtilitySuspects(): Promise<
   CrossTableUtilitySuspect[]
 > {
   const supabase = createAdminClient();
+  // .range(0, 49999) — Supabase PostgREST's default page cap is 1,000
+  // rows. Without an explicit range the query silently truncates,
+  // and audits on a region with >1,000 unedited utilities never see
+  // the rows past that point. 50k is a generous ceiling that covers
+  // a worst-case nationwide ingest; tighten if memory becomes a
+  // concern (unlikely — the per-row payload is ~200 bytes).
   const { data } = await supabase
     .from("traveler_utilities")
     .select("id, name, region_id, category, description, admin_edited")
     .eq("admin_edited", false)
-    .order("name", { ascending: true });
+    .order("name", { ascending: true })
+    .range(0, 49999);
 
   const out: CrossTableUtilitySuspect[] = [];
   for (const u of data ?? []) {

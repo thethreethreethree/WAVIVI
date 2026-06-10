@@ -63,13 +63,15 @@ export async function loadClassificationSuspects(): Promise<
         .select("id, name, region_id, description, stay_type, admin_edited")
         .eq("active", true)
         .eq("admin_edited", false)
-        .order("name", { ascending: true }),
+        .order("name", { ascending: true })
+        .range(0, 49999),
       supabase
         .from("restaurants")
         .select("id, name, region_id, description, cuisine, admin_edited")
         .eq("active", true)
         .eq("admin_edited", false)
-        .order("name", { ascending: true }),
+        .order("name", { ascending: true })
+        .range(0, 49999),
       supabase
         .from("experiences")
         .select(
@@ -77,17 +79,22 @@ export async function loadClassificationSuspects(): Promise<
         )
         .eq("active", true)
         .eq("admin_edited", false)
-        .order("name", { ascending: true }),
+        .order("name", { ascending: true })
+        .range(0, 49999),
       // Utilities don't carry an `active` column — every row in
       // traveler_utilities is currently considered live. We do still
       // exclude `admin_edited=true` so a one-time Apply/Ignore decision
       // permanently drops the row from this audit, same as the other
       // three sources.
+      // Utilities — see cross-table-audit.ts for the .range() rationale.
+      // PostgREST's default 1k cap silently truncates audits in regions
+      // with thousands of utilities; the explicit ceiling lifts that.
       supabase
         .from("traveler_utilities")
         .select("id, name, region_id, description, category, admin_edited")
         .eq("admin_edited", false)
-        .order("name", { ascending: true }),
+        .order("name", { ascending: true })
+        .range(0, 49999),
     ]);
 
   for (const s of staysRes.data ?? []) {
