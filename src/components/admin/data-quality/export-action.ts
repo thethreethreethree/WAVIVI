@@ -7,6 +7,15 @@ import { CATEGORY_BY_ID, type CategoryId } from "@/lib/toolbox/categories";
 import { requireAdmin } from "@/lib/toolbox/admin";
 import type { StayType, UtilityCategory } from "@/types/supabase";
 
+import {
+  type BatchExportResult,
+  CSV_HEADER_LINE,
+  EXPORT_BATCH_SIZE,
+  type ExportEntry,
+  type ExportRow,
+  type PrepareResult,
+  rowToCsvLine,
+} from "./csv-format";
 import { SUSPECT_FILTER } from "./shared";
 
 /** Map the classification audit's `proposed` value (a stay_type slug)
@@ -72,92 +81,10 @@ const STAY_TYPE_TO_INDUSTRY: Record<StayType, string> = {
   other: "Other",
 };
 
-/** CSV column order — exact match for the scraper output the user
- *  imports through /admin/batch-utility-import. Header names drive the
- *  parser on both sides, so swapping order is safe; adding columns
- *  isn't (the importer would silently ignore them). */
-const HEADER = [
-  "Title",
-  "Rating",
-  "Reviews",
-  "Phone",
-  "WhatsApp",
-  "Instagram",
-  "Facebook",
-  "Industry",
-  "Address",
-  "Website",
-  "Image",
-  "Amenities",
-  "Pitch",
-  "Latitude",
-  "Longitude",
-  "Google Maps Link",
-  "Source Query",
-  "City",
-];
-
-/** RFC-4180 cell escape: wrap any field with comma / quote / newline in
- *  double quotes, doubling any internal quote. Empty / null → "". */
-function csvCell(v: string | number | null | undefined): string {
-  if (v == null) return "";
-  const s = String(v);
-  if (s.length === 0) return "";
-  if (/[,"\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
-
-/** Type of a single row in the scraper-format export. */
-type ExportRow = {
-  title: string;
-  rating: number | null;
-  reviews: number;
-  phone: string | null;
-  whatsapp: string | null;
-  instagram: string | null;
-  facebook: string | null;
-  industry: string;
-  address: string | null;
-  website: string | null;
-  /** Existing photo_url — even when placeholder/empty. Shown so the
-   *  admin can see what's stored before deciding whether to replace. */
-  image: string | null;
-  amenities: string[];
-  pitch: string | null;
-  latitude: number;
-  longitude: number;
-  googleMapsLink: string;
-  /** Always blank on export — the scraper sets this; we don't store
-   *  it on the row. Kept in the header so importers that key on it
-   *  don't reject the file. */
-  sourceQuery: string;
-  /** Resolved from city_id → cities.name in the export action below.
-   *  Null when the row was never bucketed to a city. */
-  city: string | null;
-};
-
-function rowToCsvLine(r: ExportRow): string {
-  return [
-    csvCell(r.title),
-    csvCell(r.rating),
-    csvCell(r.reviews),
-    csvCell(r.phone),
-    csvCell(r.whatsapp),
-    csvCell(r.instagram),
-    csvCell(r.facebook),
-    csvCell(r.industry),
-    csvCell(r.address),
-    csvCell(r.website),
-    csvCell(r.image),
-    csvCell(r.amenities.join(", ")),
-    csvCell(r.pitch),
-    csvCell(r.latitude),
-    csvCell(r.longitude),
-    csvCell(r.googleMapsLink),
-    csvCell(r.sourceQuery),
-    csvCell(r.city),
-  ].join(",");
-}
+// CSV column order, RFC-4180 cell escape, ExportRow shape, and
+// rowToCsvLine formatter all live in ./csv-format so the client-side
+// batched downloader can emit a byte-identical header without
+// importing from this "use server" module.
 
 export type ExportResult =
   | { ok: true; csv: string; rowCount: number }
@@ -262,7 +189,7 @@ export async function exportDataQualityCsv(): Promise<ExportResult> {
     allRows.push(commonExport(e, "Experience"));
   }
 
-  const lines = [HEADER.join(","), ...allRows.map(rowToCsvLine)];
+  const lines = [CSV_HEADER_LINE, ...allRows.map(rowToCsvLine)];
   return { ok: true, csv: lines.join("\n"), rowCount: allRows.length };
 }
 
@@ -285,7 +212,7 @@ export async function exportUtilitiesCsv(): Promise<ExportResult> {
     .map((s) => s.id);
 
   if (utilIds.length === 0) {
-    return { ok: true, csv: HEADER.join(","), rowCount: 0 };
+    return { ok: true, csv: CSV_HEADER_LINE, rowCount: 0 };
   }
 
   const supabase = createAdminClient();
@@ -359,7 +286,7 @@ export async function exportUtilitiesCsv(): Promise<ExportResult> {
     });
   }
 
-  const lines = [HEADER.join(","), ...allRows.map(rowToCsvLine)];
+  const lines = [CSV_HEADER_LINE, ...allRows.map(rowToCsvLine)];
   return { ok: true, csv: lines.join("\n"), rowCount: allRows.length };
 }
 
@@ -409,7 +336,7 @@ export async function exportClassificationPlacesCsv(): Promise<ExportResult> {
     // exportUtilitiesCsv() above.
   }
   if (byId.size === 0) {
-    return { ok: true, csv: HEADER.join(","), rowCount: 0 };
+    return { ok: true, csv: CSV_HEADER_LINE, rowCount: 0 };
   }
 
   const staysIds: string[] = [];
@@ -495,7 +422,7 @@ export async function exportClassificationPlacesCsv(): Promise<ExportResult> {
     allRows.push(placeToRow(r, meta.industry));
   }
 
-  const lines = [HEADER.join(","), ...allRows.map(rowToCsvLine)];
+  const lines = [CSV_HEADER_LINE, ...allRows.map(rowToCsvLine)];
   return { ok: true, csv: lines.join("\n"), rowCount: allRows.length };
 }
 
@@ -544,7 +471,7 @@ export async function exportWrongTableUtilitiesCsv(): Promise<ExportResult> {
 
   const suspects = await loadCrossTableUtilitySuspects();
   if (suspects.length === 0) {
-    return { ok: true, csv: HEADER.join(","), rowCount: 0 };
+    return { ok: true, csv: CSV_HEADER_LINE, rowCount: 0 };
   }
 
   const idToIndustry = new Map<string, string>();
@@ -619,6 +546,244 @@ export async function exportWrongTableUtilitiesCsv(): Promise<ExportResult> {
     });
   }
 
-  const lines = [HEADER.join(","), ...allRows.map(rowToCsvLine)];
+  const lines = [CSV_HEADER_LINE, ...allRows.map(rowToCsvLine)];
   return { ok: true, csv: lines.join("\n"), rowCount: allRows.length };
+}
+
+/* ── Batched exports — prepare + per-batch fetch ─────────────────────
+ *
+ * Pattern: the prepare action returns a flat ExportEntry[] of
+ * `{ id, industry }` (tiny payload, one round-trip). The client loops
+ * EXPORT_BATCH_SIZE-chunks of those entries into the batch action,
+ * which fetches the full rows for that slice and emits a CSV body
+ * (no header) for the chunk. Client concatenates with one CSV_HEADER_LINE
+ * up top and downloads as one Blob.
+ *
+ * Why: a single one-shot action emitting the whole CSV blew past
+ * Cloudflare's 414 cap on action responses at ~5,000+ rows. Splitting
+ * server-side keeps each response well under the limit while still
+ * producing one file from the admin's perspective.
+ *
+ * The types (ExportEntry / PrepareResult / BatchExportResult) live in
+ * ./csv-format — Next "use server" files cannot export non-function
+ * values without a Turbopack runtime ReferenceError (see memory:
+ * turbopack-use-server-type-reexport).
+ */
+
+export async function prepareClassificationPlacesExportBatched(): Promise<PrepareResult> {
+  const { isAdmin } = await requireAdmin();
+  if (!isAdmin) return { ok: false, error: "Not authorised." };
+  const suspects = await loadClassificationSuspects();
+  const entries: ExportEntry[] = [];
+  for (const s of suspects) {
+    if (s.source === "stays") {
+      entries.push({
+        id: s.id,
+        industry: STAY_TYPE_PROPOSED_TO_INDUSTRY[s.proposed] ?? "Hotel",
+      });
+    } else if (s.source === "restaurants") {
+      entries.push({ id: s.id, industry: "Restaurant" });
+    } else if (s.source === "experiences") {
+      entries.push({ id: s.id, industry: "Tour" });
+    }
+  }
+  return { ok: true, entries };
+}
+
+export async function exportClassificationPlacesBatch(
+  entries: ExportEntry[],
+): Promise<BatchExportResult> {
+  const { isAdmin } = await requireAdmin();
+  if (!isAdmin) return { ok: false, error: "Not authorised." };
+  if (entries.length === 0) return { ok: true, csv: "", rowCount: 0 };
+  if (entries.length > EXPORT_BATCH_SIZE) {
+    return {
+      ok: false,
+      error: `Batch too large (${entries.length}); cap is ${EXPORT_BATCH_SIZE}.`,
+    };
+  }
+
+  const industryById = new Map(entries.map((e) => [e.id, e.industry]));
+  const ids = entries.map((e) => e.id);
+  const supabase = createAdminClient();
+  const placeSelect =
+    "id, name, rating, review_count, phone, whatsapp, instagram, facebook, address, website, amenities, description, latitude, longitude, google_maps_url, photo_url, city_id";
+
+  const [staysRes, restRes, expRes, citiesRes] = await Promise.all([
+    supabase.from("stays").select(placeSelect).in("id", ids),
+    supabase.from("restaurants").select(placeSelect).in("id", ids),
+    supabase.from("experiences").select(placeSelect).in("id", ids),
+    supabase.from("cities").select("id, name"),
+  ]);
+
+  const cityNameById = new Map<string, string>();
+  for (const c of (citiesRes.data ?? []) as { id: string; name: string }[]) {
+    cityNameById.set(c.id, c.name);
+  }
+
+  type PlaceRow = {
+    id: string;
+    name: string;
+    rating: number | null;
+    review_count: number;
+    phone: string | null;
+    whatsapp: string | null;
+    instagram: string | null;
+    facebook: string | null;
+    address: string | null;
+    website: string | null;
+    amenities: string[];
+    description: string | null;
+    latitude: number;
+    longitude: number;
+    google_maps_url: string;
+    photo_url: string | null;
+    city_id: string | null;
+  };
+  function toRow(r: PlaceRow): ExportRow {
+    return {
+      title: r.name,
+      rating: r.rating,
+      reviews: r.review_count ?? 0,
+      phone: r.phone,
+      whatsapp: r.whatsapp,
+      instagram: r.instagram,
+      facebook: r.facebook,
+      industry: industryById.get(r.id) ?? "Other",
+      address: r.address,
+      website: r.website,
+      image: r.photo_url,
+      amenities: r.amenities ?? [],
+      pitch: r.description,
+      latitude: r.latitude,
+      longitude: r.longitude,
+      googleMapsLink: r.google_maps_url,
+      sourceQuery: "",
+      city: r.city_id ? cityNameById.get(r.city_id) ?? null : null,
+    };
+  }
+
+  const lines: string[] = [];
+  for (const r of (staysRes.data ?? []) as PlaceRow[])
+    lines.push(rowToCsvLine(toRow(r)));
+  for (const r of (restRes.data ?? []) as PlaceRow[])
+    lines.push(rowToCsvLine(toRow(r)));
+  for (const r of (expRes.data ?? []) as PlaceRow[])
+    lines.push(rowToCsvLine(toRow(r)));
+  return { ok: true, csv: lines.join("\n"), rowCount: lines.length };
+}
+
+export async function prepareClassificationUtilitiesExportBatched(): Promise<PrepareResult> {
+  const { isAdmin } = await requireAdmin();
+  if (!isAdmin) return { ok: false, error: "Not authorised." };
+  const suspects = await loadClassificationSuspects();
+  const entries: ExportEntry[] = [];
+  for (const s of suspects) {
+    if (s.source !== "utilities") continue;
+    const cat = CATEGORY_BY_ID[s.proposed as CategoryId];
+    entries.push({ id: s.id, industry: cat?.label ?? s.proposed });
+  }
+  return { ok: true, entries };
+}
+
+export async function exportClassificationUtilitiesBatch(
+  entries: ExportEntry[],
+): Promise<BatchExportResult> {
+  return exportUtilitiesBatchInternal(entries);
+}
+
+export async function prepareWrongTableExportBatched(): Promise<PrepareResult> {
+  const { isAdmin } = await requireAdmin();
+  if (!isAdmin) return { ok: false, error: "Not authorised." };
+  const suspects = await loadCrossTableUtilitySuspects();
+  const entries: ExportEntry[] = suspects.map((s) => ({
+    id: s.id,
+    industry: TABLE_TO_INDUSTRY[s.suspectedTable] ?? "Other",
+  }));
+  return { ok: true, entries };
+}
+
+export async function exportWrongTableBatch(
+  entries: ExportEntry[],
+): Promise<BatchExportResult> {
+  return exportUtilitiesBatchInternal(entries);
+}
+
+async function exportUtilitiesBatchInternal(
+  entries: ExportEntry[],
+): Promise<BatchExportResult> {
+  const { isAdmin } = await requireAdmin();
+  if (!isAdmin) return { ok: false, error: "Not authorised." };
+  if (entries.length === 0) return { ok: true, csv: "", rowCount: 0 };
+  if (entries.length > EXPORT_BATCH_SIZE) {
+    return {
+      ok: false,
+      error: `Batch too large (${entries.length}); cap is ${EXPORT_BATCH_SIZE}.`,
+    };
+  }
+
+  const industryById = new Map(entries.map((e) => [e.id, e.industry]));
+  const ids = entries.map((e) => e.id);
+  const supabase = createAdminClient();
+  const [utilRes, citiesRes] = await Promise.all([
+    supabase
+      .from("traveler_utilities")
+      .select(
+        "id, name, rating, review_count, phone, whatsapp, instagram, facebook, address, website, description, latitude, longitude, google_maps_url, photo_url, city_id, category",
+      )
+      .in("id", ids),
+    supabase.from("cities").select("id, name"),
+  ]);
+  if (utilRes.error) return { ok: false, error: utilRes.error.message };
+
+  const cityNameById = new Map<string, string>();
+  for (const c of (citiesRes.data ?? []) as { id: string; name: string }[]) {
+    cityNameById.set(c.id, c.name);
+  }
+
+  type UtilRow = {
+    id: string;
+    name: string;
+    rating: number | null;
+    review_count: number;
+    phone: string | null;
+    whatsapp: string | null;
+    instagram: string | null;
+    facebook: string | null;
+    address: string | null;
+    website: string | null;
+    description: string | null;
+    latitude: number;
+    longitude: number;
+    google_maps_url: string;
+    photo_url: string | null;
+    city_id: string | null;
+    category: UtilityCategory;
+  };
+
+  const lines: string[] = [];
+  for (const u of (utilRes.data ?? []) as UtilRow[]) {
+    const row: ExportRow = {
+      title: u.name,
+      rating: u.rating,
+      reviews: u.review_count ?? 0,
+      phone: u.phone,
+      whatsapp: u.whatsapp,
+      instagram: u.instagram,
+      facebook: u.facebook,
+      industry: industryById.get(u.id) ?? "Other",
+      address: u.address,
+      website: u.website,
+      image: u.photo_url,
+      amenities: [],
+      pitch: u.description,
+      latitude: u.latitude,
+      longitude: u.longitude,
+      googleMapsLink: u.google_maps_url,
+      sourceQuery: "",
+      city: u.city_id ? cityNameById.get(u.city_id) ?? null : null,
+    };
+    lines.push(rowToCsvLine(row));
+  }
+  return { ok: true, csv: lines.join("\n"), rowCount: lines.length };
 }
