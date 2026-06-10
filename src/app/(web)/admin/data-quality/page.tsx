@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { ClassificationSection } from "@/components/admin/data-quality/classification-section";
+import { CrossTableSection } from "@/components/admin/data-quality/cross-table-section";
 import { ExportDataQualityCsvButton } from "@/components/admin/data-quality/export-button";
 import {
   type Source,
@@ -105,11 +106,15 @@ export default async function DataQualityPage() {
       <header>
         <h1 className="text-2xl font-bold tracking-tight">Data quality</h1>
         <p className="mt-1 text-sm text-muted">
-          Two audits live here. <strong>Photo quality</strong> flags rows whose
-          image is missing or a placeholder; <strong>Classification quality</strong>{" "}
-          flags rows whose stored type/cuisine/category disagrees with what the
-          name suggests (e.g. a stay labelled <code>hotel</code> whose name
-          contains <code>Hostel</code>).
+          Three audits live here. <strong>Photo quality</strong> flags rows
+          whose image is missing or a placeholder;{" "}
+          <strong>Classification quality</strong> flags rows whose stored
+          type/cuisine/category disagrees with what the name suggests (e.g. a
+          stay labelled <code>hotel</code> whose name contains{" "}
+          <code>Hostel</code>); <strong>Wrong table</strong> flags utilities
+          whose name strongly suggests they belong in restaurants / stays /
+          experiences instead (e.g. &ldquo;Big Bad Thai Restaurant&rdquo;
+          tagged as <code>bank</code>).
         </p>
         {/* Jump buttons — anchor links straight to each audit's section
             so admins don't have to scroll a long page to get to the
@@ -126,6 +131,12 @@ export default async function DataQualityPage() {
             className="rounded-full bg-cool px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
           >
             ↓ Classification quality
+          </a>
+          <a
+            href="#cross-table-utilities"
+            className="rounded-full bg-heat px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+          >
+            ↓ Wrong table
           </a>
         </div>
       </header>
@@ -278,6 +289,10 @@ export default async function DataQualityPage() {
 
       <section id="classification-quality" className="scroll-mt-20">
         <ClassificationSection />
+      </section>
+
+      <section id="cross-table-utilities" className="scroll-mt-20">
+        <CrossTableSection />
       </section>
     </div>
   );
