@@ -108,6 +108,47 @@ export function CrossTableGroupClient({
     });
   }
 
+  /** One-click remove for every HIGH-confidence suspect. No per-row
+   *  tick required — the detector's HIGH tier carries strong nouns
+   *  ("restaurant", "hotel", "hostel", "dive shop", "lodge") that
+   *  are wrong in `traveler_utilities` >99% of the time. Confirmation
+   *  prompt keeps it from being a one-tap accident. */
+  const highSuspects = useMemo(
+    () => suspects.filter((s) => s.confidence === "high"),
+    [suspects],
+  );
+  function purgeAllHighConfidence(): void {
+    clearStatus();
+    if (highSuspects.length === 0) return;
+    const ok = window.confirm(
+      `Hard-delete ${highSuspects.length} HIGH-confidence suspect(s) from traveler_utilities?\n\n` +
+        "These are rows whose name carries an unambiguous restaurant / stay / experience noun. " +
+        "Action is irreversible — re-ingestion via the matching admin surface is the only way back.",
+    );
+    if (!ok) return;
+    startTransition(async () => {
+      const res = await removeUtilitiesFromTableBatch(
+        highSuspects.map((s) => s.id),
+      );
+      if (res.ok) {
+        setNotice(
+          `Removed ${res.applied} HIGH-confidence row${res.applied === 1 ? "" : "s"}.`,
+        );
+        setSelected(new Set());
+        router.refresh();
+      } else {
+        setError(res.error ?? "Bulk remove failed.");
+        if (res.applied > 0) {
+          setNotice(
+            `Partial: removed ${res.applied}, failed ${res.failed}.`,
+          );
+          setSelected(new Set());
+          router.refresh();
+        }
+      }
+    });
+  }
+
   function rowRemove(s: CrossTableUtilitySuspect): void {
     clearStatus();
     setBusyId(s.id);
@@ -141,6 +182,32 @@ export function CrossTableGroupClient({
 
   return (
     <div className="flex flex-col gap-3">
+      {/* One-click HIGH-confidence purge — separate from the per-row
+          select-all flow so admins can clear the unambiguous pile in
+          one tap without ticking every box. Only renders when there's
+          at least one HIGH suspect; medium tier still requires manual
+          review. */}
+      {highSuspects.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-heat/10 px-3 py-2 ring-1 ring-heat/40">
+          <span className="text-xs font-bold text-heat">
+            One-click cleanup
+          </span>
+          <span className="text-xs text-muted">
+            {highSuspects.length} HIGH-confidence suspect
+            {highSuspects.length === 1 ? "" : "s"} ready — strong nouns in
+            the name (restaurant / hotel / hostel / dive shop / lodge).
+          </span>
+          <button
+            type="button"
+            onClick={purgeAllHighConfidence}
+            disabled={pending}
+            className="ml-auto rounded-full bg-heat px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+          >
+            Remove all {highSuspects.length} HIGH
+          </button>
+        </div>
+      )}
+
       {/* Bulk action bar */}
       <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-surface px-3 py-2 shadow-card ring-1 ring-border">
         <label className="flex items-center gap-2 text-xs font-bold text-muted">

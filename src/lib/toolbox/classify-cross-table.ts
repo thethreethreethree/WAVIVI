@@ -123,6 +123,17 @@ const RULES: {
     reason: 'name contains "inn" / "lodge" / "suites" / "apartments"',
     confidence: "high",
   },
+  // Added 2026-06-09 ("Focus rooms" was slipping past both audits
+  // tagged as Pharmacy). "Rooms" alone is ambiguous — could be a
+  // coworking "focus rooms" / "meeting rooms" venue — so this stays
+  // MEDIUM and the admin reviews per row. The audit list still
+  // surfaces them; bulk-remove just needs an explicit tick.
+  {
+    pattern: /\b(rooms|private\s*rooms|shared\s*rooms|dorm\s*rooms)\b/i,
+    table: "stays",
+    reason: 'name contains "rooms"',
+    confidence: "medium",
+  },
 
   // --- experiences — strong signals ---
   {
