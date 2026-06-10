@@ -70,7 +70,11 @@ export const CANONICAL_AMENITIES = [
   "Paid Wi-Fi",
   "Free parking",
   "Paid parking",
-  "Free breakfast",
+  // "Free breakfast" deliberately omitted — properties routinely
+  // mis-list this on Google Maps when they actually charge for the
+  // meal, and we don't want to ship a false promise on the listing
+  // card. Paid breakfast stays; "breakfast" with no qualifier falls
+  // through to "Paid breakfast" via AMENITY_ALIASES below.
   "Paid breakfast",
   "Indoor pool",
   "Outdoor pool",
@@ -106,8 +110,14 @@ const AMENITY_ALIASES: Record<string, string> = {
   parking: "Free parking",
   "free parking": "Free parking",
   "paid parking": "Paid parking",
+  // "free breakfast" intentionally maps to "Paid breakfast" — the
+  // canonical vocab no longer carries "Free breakfast" (see
+  // CANONICAL_AMENITIES above for the rationale). Importing a row
+  // that claims "Free breakfast" gets downgraded to "Paid breakfast"
+  // so the traveller sees the true picture and the property has to
+  // earn the "free" label via admin curation, not a CSV scrape.
   breakfast: "Paid breakfast",
-  "free breakfast": "Free breakfast",
+  "free breakfast": "Paid breakfast",
   "paid breakfast": "Paid breakfast",
   pool: "Outdoor pool",
   "outdoor pool": "Outdoor pool",
@@ -167,7 +177,9 @@ const AMENITY_ICON_FILENAMES: Record<string, string> = {
   "Paid Wi-Fi": "Paid Wi-Fi.png",
   "Free parking": "Free Parking.png",
   "Paid parking": "Paid Parking.png",
-  "Free breakfast": "Free Breakfast.png",
+  // "Free breakfast" icon mapping intentionally removed alongside the
+  // vocabulary entry above. The Free Breakfast.png asset stays on
+  // disk as a safety net for any row that's still mid-cleanup.
   "Paid breakfast": "Paid Breakfast.png",
   "Indoor pool": "Indoor Pool.png",
   "Outdoor pool": "Outdoor Pool.png",
