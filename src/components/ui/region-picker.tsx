@@ -143,6 +143,29 @@ export function RegionPicker({
     if (currentId) void ensureCitiesFor(currentId);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ensureCitiesFor closes over state setters that don't need to retrigger.
   }, [open, currentId]);
+
+  // Top-Picks city resolution — prefetch cities for every region in
+  // any country that has Top Picks configured. Most Top Picks (El
+  // Nido, Coron, Port Barton, Boracay …) are CITIES under a parent
+  // region rather than standalone regions, so the pill resolver
+  // can't find them until the cities are loaded. Without this the
+  // pill row would only ever show regions whose .city or
+  // .display_name matched the curated name (Siargao is the only one
+  // that does for the Philippines today).
+  //
+  // Scoped to top-pick countries so we don't fan out city fetches
+  // for every region in the picker — the fan-out is bounded by the
+  // length of the curated list, not the size of the regions table.
+  useEffect(() => {
+    if (!open) return;
+    for (const r of regions) {
+      if (topPicksFor(r.country).length === 0) continue;
+      // Fire-and-forget; ensureCitiesFor is internally cached, so
+      // duplicate calls on re-render are a no-op.
+      void ensureCitiesFor(r.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ensureCitiesFor closes over state setters that don't need to retrigger.
+  }, [open, regions]);
   function collapse(): void {
     setExpandedRegionId(null);
   }
@@ -350,25 +373,64 @@ export function RegionPicker({
 
               {groups.map(([country, rows]) => {
                 // Top Picks pill row — curated, well-known destinations
-                // for this country. Each pill resolves against the
-                // country's actual region rows; unresolved picks are
-                // hidden entirely (no "coming soon" placeholders).
-                // Lookup is keyed on the loose-match normalisation of
-                // r.city (e.g. "El Nido") with display_name as a
-                // fallback so "El Nido, Palawan" still resolves.
-                const picks = topPicksFor(country)
-                  .map((name) => {
+                // for this country. Each pill resolves against:
+                //   1) a region whose .city (or .display_name) matches
+                //      the curated name (e.g. "Siargao" → the Siargao
+                //      region row), OR
+                //   2) a CITY under one of the country's regions
+                //      whose .name matches (e.g. "El Nido" → the city
+                //      row under the Palawan region, "Coron" → city
+                //      under Palawan, "Boracay" → city under Aklan).
+                // Pills that don't resolve are hidden — no
+                // "coming soon" placeholders.
+                //
+                // Loose-match (normaliseForMatch) on both sides so
+                // case, leading punctuation, and whitespace warts can't
+                // sabotage the match — same helper protecting the
+                // chat / partner-import flows from data-entry typos.
+                type ResolvedPick = {
+                  name: string;
+                  regionId: string;
+                  /** Set when the pick is a CITY under the region —
+                   *  click routes to (regionId, [cityId]). When null,
+                   *  the pick is the whole region. */
+                  cityId: string | null;
+                };
+                const picks: ResolvedPick[] = topPicksFor(country)
+                  .map((name): ResolvedPick | null => {
                     const norm = normaliseForMatch(name);
-                    const match = rows.find(
+                    // Region-level first.
+                    const regionMatch = rows.find(
                       (r) =>
                         normaliseForMatch(r.city) === norm ||
                         normaliseForMatch(r.display_name) === norm,
                     );
-                    return match ? { name, regionId: match.id } : null;
+                    if (regionMatch) {
+                      return {
+                        name,
+                        regionId: regionMatch.id,
+                        cityId: null,
+                      };
+                    }
+                    // City-level fallback. Walk every region in the
+                    // country and check its lazy-loaded cities.
+                    for (const r of rows) {
+                      const cities = lazyCitiesByRegion[r.id];
+                      if (!cities) continue;
+                      const cityMatch = cities.find(
+                        (c) => normaliseForMatch(c.name) === norm,
+                      );
+                      if (cityMatch) {
+                        return {
+                          name,
+                          regionId: r.id,
+                          cityId: cityMatch.id,
+                        };
+                      }
+                    }
+                    return null;
                   })
-                  .filter(
-                    (x): x is { name: string; regionId: string } => x !== null,
-                  );
+                  .filter((x): x is ResolvedPick => x !== null);
 
                 return (
                   <section key={country} className="mt-2">
@@ -381,21 +443,49 @@ export function RegionPicker({
                           className="flex flex-wrap gap-2 px-4 pt-1"
                           aria-label={`Top picks in ${country}`}
                         >
-                          {picks.map((p) => (
-                            <button
-                              key={p.regionId}
-                              type="button"
-                              disabled={pending}
-                              onClick={() => chooseWholeRegion(p.regionId)}
-                              className={`wc-frame wc-frame-sunset shrink-0 rounded-full px-4 py-1.5 text-sm font-bold text-white shadow-card transition active:scale-95 ${
-                                p.regionId === currentId
-                                  ? "ring-2 ring-foreground/40"
-                                  : ""
-                              }`}
-                            >
-                              {p.name}
-                            </button>
-                          ))}
+                          {picks.map((p) => {
+                            // Active highlight covers BOTH paths:
+                            //  - region-only pick: the region is current
+                            //    and no cities are pinned
+                            //  - city pick: the region matches AND that
+                            //    specific city is in the current pin set
+                            const isActive = p.cityId
+                              ? p.regionId === currentId &&
+                                currentCityIds.includes(p.cityId)
+                              : p.regionId === currentId &&
+                                currentCityIds.length === 0;
+                            return (
+                              <button
+                                key={`${p.regionId}:${p.cityId ?? "all"}`}
+                                type="button"
+                                disabled={pending}
+                                onClick={() => {
+                                  if (p.cityId) {
+                                    // City pill: write region + pin
+                                    // that one city via the same action
+                                    // the "Apply N" path uses.
+                                    startTransition(async () => {
+                                      await setRegionAndCities(p.regionId, [
+                                        p.cityId as string,
+                                      ]);
+                                      setOpen(false);
+                                      setQuery("");
+                                      setExpandedRegionId(null);
+                                    });
+                                  } else {
+                                    chooseWholeRegion(p.regionId);
+                                  }
+                                }}
+                                className={`wc-frame wc-frame-sunset shrink-0 rounded-full px-4 py-1.5 text-sm font-bold text-white shadow-card transition active:scale-95 ${
+                                  isActive
+                                    ? "ring-2 ring-foreground/40"
+                                    : ""
+                                }`}
+                              >
+                                {p.name}
+                              </button>
+                            );
+                          })}
                         </div>
                         {/* Soft divider between pill row and the full
                             region list. Hand-drawn chevron mirrors the
