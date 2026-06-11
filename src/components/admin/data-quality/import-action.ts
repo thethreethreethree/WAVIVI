@@ -184,6 +184,18 @@ function probeHeaders(headers: string[]) {
 export async function applyPhotoCorrectionCsv(
   csvText: string,
 ): Promise<CorrectionResult> {
+  try {
+    return await applyPhotoCorrectionInner(csvText);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[data-quality:applyPhotoCorrectionCsv] threw", err);
+    return emptyResult(`Server error: ${msg}`);
+  }
+}
+
+async function applyPhotoCorrectionInner(
+  csvText: string,
+): Promise<CorrectionResult> {
   const { isAdmin } = await requireAdmin();
   if (!isAdmin) return emptyResult("Not authorised.");
 
@@ -338,6 +350,21 @@ export async function applyPhotoCorrectionCsv(
  *  (cuisine / activity_type) is free-text and doesn't round-trip
  *  through Industry today. */
 export async function applyClassificationCorrectionCsv(
+  csvText: string,
+): Promise<CorrectionResult> {
+  try {
+    return await applyClassificationCorrectionInner(csvText);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(
+      "[data-quality:applyClassificationCorrectionCsv] threw",
+      err,
+    );
+    return emptyResult(`Server error: ${msg}`);
+  }
+}
+
+async function applyClassificationCorrectionInner(
   csvText: string,
 ): Promise<CorrectionResult> {
   const { isAdmin } = await requireAdmin();

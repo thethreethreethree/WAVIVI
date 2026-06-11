@@ -86,11 +86,34 @@ export function CorrectionUploadButton({ mode }: { mode: Mode }) {
     if (!file) return;
     setFileName(file.name);
     startTransition(async () => {
-      const csvText = await file.text();
-      const res = await cfg.action(csvText);
-      setResult(res);
-      // Reset the file input so picking the same file twice re-triggers.
-      if (fileRef.current) fileRef.current.value = "";
+      try {
+        const csvText = await file.text();
+        const res = await cfg.action(csvText);
+        setResult(res);
+      } catch (err) {
+        // Catch otherwise-uncaught server-action throws so the failure
+        // surfaces in the inline panel instead of bouncing to Next's
+        // global error boundary (which only shows a digest in prod).
+        const msg = err instanceof Error ? err.message : String(err);
+        setResult({
+          ok: false,
+          error: `Server action threw: ${msg}`,
+          total: 0,
+          updated: 0,
+          notFound: 0,
+          ambiguous: 0,
+          skipped: 0,
+          failed: 0,
+          rowMessages: [],
+        });
+        // Echo to the browser console too — useful when copy/pasting
+        // into a bug report.
+        console.error("[data-quality:correction-upload] action threw", err);
+      } finally {
+        // Reset the file input so picking the same file twice
+        // re-triggers, even after a failure.
+        if (fileRef.current) fileRef.current.value = "";
+      }
     });
   }
 
