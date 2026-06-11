@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { SusenAvatar } from "@/components/ui/susen-avatar";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   listDevNotes,
   listLiveRules,
@@ -16,6 +17,19 @@ import {
 import { requireAdmin } from "@/lib/toolbox/admin";
 
 import { SusenTuning } from "./SusenTuning";
+
+/** Plain-shaped row for the scope dropdowns — leaves the typed Supabase
+ *  rows on the server side and ships only what the form needs. */
+interface ScopeRegion {
+  id: string;
+  displayName: string;
+  country: string | null;
+}
+interface ScopeCity {
+  id: string;
+  name: string;
+  regionId: string;
+}
 
 /**
  * Susen tuning console (admin-only).
@@ -50,12 +64,51 @@ export default async function AdminSusenPage({
   const activeFilter: ReviewMarker | null =
     sp.filter === "flag" || sp.filter === "fire" ? sp.filter : null;
 
-  const [liveRules, recent, usage, spend] = await Promise.all([
-    listLiveRules(),
-    activeFilter ? listNotesByMarker(activeFilter) : listDevNotes(60),
-    estimateResponseUsage(SAMPLE_REGION),
-    loadUsageSummary(costWindow),
-  ]);
+  // Pull the scope dropdown options alongside the rule data so the
+  // "Create a Rule" form can offer Region/City pickers without a
+  // round-trip back to the server when the admin toggles scope.
+  const supabase = createAdminClient();
+  const [liveRules, recent, usage, spend, regionsRes, citiesRes] =
+    await Promise.all([
+      listLiveRules(),
+      activeFilter ? listNotesByMarker(activeFilter) : listDevNotes(60),
+      estimateResponseUsage(SAMPLE_REGION),
+      loadUsageSummary(costWindow),
+      supabase
+        .from("regions")
+        .select("id, display_name, country")
+        .eq("active", true)
+        .order("display_name", { ascending: true })
+        .returns<
+          { id: string; display_name: string; country: string | null }[]
+        >(),
+      supabase
+        .from("cities")
+        .select("id, name, region_id")
+        .order("name", { ascending: true })
+        .returns<{ id: string; name: string; region_id: string }[]>(),
+    ]);
+
+  const regions: ScopeRegion[] = (regionsRes.data ?? []).map((r) => ({
+    id: r.id,
+    displayName: r.display_name,
+    country: r.country,
+  }));
+  const cities: ScopeCity[] = (citiesRes.data ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    regionId: c.region_id,
+  }));
+  // Distinct country list for the Country-scope dropdown — pulled from
+  // active regions so admins can only target countries they actually
+  // host content for.
+  const countries = Array.from(
+    new Set(
+      regions
+        .map((r) => r.country)
+        .filter((c): c is string => Boolean(c && c.trim().length > 0)),
+    ),
+  ).sort();
   const liveIds = new Set(liveRules.map((r) => r.id));
   const captures = recent.filter((n) => !liveIds.has(n.id));
 
@@ -282,6 +335,9 @@ export default async function AdminSusenPage({
         liveRules={liveRules}
         captures={captures}
         activeFilter={activeFilter}
+        regions={regions}
+        cities={cities}
+        countries={countries}
       />
     </div>
   );

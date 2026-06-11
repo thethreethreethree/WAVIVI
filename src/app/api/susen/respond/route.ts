@@ -9,7 +9,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import type { SusenTurn } from "@/lib/susen/engine";
 import {
-  detectRegionFromInput,
+  detectScopeFromInput,
   formatInventoryForPrompt,
   loadSusenInventory,
 } from "@/lib/susen/inventory";
@@ -18,8 +18,9 @@ import { SUSEN_SYSTEM_PROMPT } from "@/lib/susen/persona";
 import {
   captureAdminTurn,
   detectReviewCommand,
+  hasAnyGuidance,
   isSusenAdmin,
-  loadActiveGuidance,
+  loadGuidanceForScope,
   markPreviousTurn,
 } from "@/lib/susen/tuning";
 import { recordSusenUsage } from "@/lib/susen/usage";
@@ -303,14 +304,27 @@ export async function POST(req: Request) {
   //   2. Fall through to the cookie (`wv-region`).
   //   3. Neither → empty inventory, and the system prompt tells the
   //      model to ASK the user to pick a region instead of guessing.
-  const detectedRegionId = await detectRegionFromInput(input);
+  // Resolve country / region / city in one pass so scope-keyed tuning
+  // rules can be retrieved at the right specificity.
+  const detected = await detectScopeFromInput(input);
+  const detectedRegionId = detected.regionId;
   const effectiveRegionId = detectedRegionId ?? regionId;
   const [inventory, guidance] = await Promise.all([
     // Pass the user's message so retrieval can search the DB for what they
     // actually asked (burgers, vegan, dive shop) instead of dumping the
     // whole catalogue and hoping the model spots it.
     loadSusenInventory(effectiveRegionId, input),
-    loadActiveGuidance(), // live admin tuning — instructions that steer her replies
+    // Scope-aware tuning. General + Country + Region + City rules
+    // fire when they match, with trigger keywords on each rule
+    // gating against the user's query. Order in the returned list is
+    // already general → most-specific, so the model sees specific
+    // overrides last.
+    loadGuidanceForScope({
+      country: detected.country,
+      regionId: effectiveRegionId,
+      cityId: detected.cityId,
+      query: input,
+    }),
   ]);
   // Split the inventory into a STABLE half (TOP PICKS + rules — same
   // bytes every turn in this region) and a DYNAMIC half (BEST MATCHES,
@@ -325,8 +339,14 @@ export async function POST(req: Request) {
   // suffix LAST. Order:
   //   1. SUSEN_SYSTEM_PROMPT      (stable forever)
   //   2. CURRENT REGION           (stable per region)
-  //   3. TOP PICKS + RULES        (stable per region — the big block)
-  //   4. OPERATOR GUIDANCE        (stable per session; rare changes)
+  //   3. OPERATIONAL RULES        (admin tuning — primary source of
+  //                                truth, placed ABOVE inventory so the
+  //                                model treats them as authoritative
+  //                                guidance for interpreting the venues
+  //                                rather than as a footnote at the end.
+  //                                Grouped by scope so the model sees
+  //                                city-specific authority distinctly.)
+  //   4. TOP PICKS + RULES        (stable per region — the big block)
   //   5. BEST MATCHES             (dynamic per turn — only thing that
   //                                breaks the cache, by design)
   // History + user input ride as separate messages, not in system.
@@ -352,12 +372,41 @@ export async function POST(req: Request) {
     systemContent +=
       "\n\nNO REGION SELECTED\nThe traveller has not selected a region yet and their message doesn't mention one I recognise. Ask them which destination they're asking about (or to use the globe button at the top of the screen to pick one). Do NOT invent venues you don't have data for.";
   }
-  if (stableInventoryBlock) systemContent += stableInventoryBlock;
-  if (guidance.length) {
+  // OPERATIONAL RULES — admin-authored tuning. PRIMARY source of truth,
+  // not a refining afterthought: if a rule speaks to the user's
+  // question, base the answer on the rule first and use the inventory
+  // below to fill in supporting detail. The four sub-sections are
+  // ordered general → country → region → city so the model reads the
+  // most-specific guidance LAST (recency-of-attention) while still
+  // having the broader rules in context. The framing is deliberate —
+  // it tells the model these rules outrank its training knowledge for
+  // anything they cover.
+  if (hasAnyGuidance(guidance)) {
     systemContent +=
-      "\n\nOPERATOR GUIDANCE (current instructions from the Wondavu team — follow these; they refine your default behaviour):\n" +
-      guidance.map((g) => `- ${g}`).join("\n");
+      "\n\nOPERATIONAL RULES (AUTHORITATIVE)\n" +
+      "These are hand-authored by the Wondavu team and are the PRIMARY source of truth for the topics they cover. When a rule speaks to the traveller's question, base your answer on the rule — its structure, ordering, named venues, time windows, and recommendations are what you should reproduce. Use the inventory below only to ground specifics the rule references or for topics no rule covers. If a rule conflicts with your general training knowledge, the rule wins.";
+    if (guidance.general.length > 0) {
+      systemContent +=
+        "\n\nGENERAL RULES (apply everywhere):\n" +
+        guidance.general.map((g) => `- ${g}`).join("\n");
+    }
+    if (guidance.country.length > 0) {
+      systemContent +=
+        "\n\nCOUNTRY RULES (apply for this country):\n" +
+        guidance.country.map((g) => `- ${g}`).join("\n");
+    }
+    if (guidance.region.length > 0) {
+      systemContent +=
+        "\n\nREGION RULES (apply for this region):\n" +
+        guidance.region.map((g) => `- ${g}`).join("\n");
+    }
+    if (guidance.city.length > 0) {
+      systemContent +=
+        "\n\nCITY RULES (most specific — these win on conflict):\n" +
+        guidance.city.map((g) => `- ${g}`).join("\n");
+    }
   }
+  if (stableInventoryBlock) systemContent += stableInventoryBlock;
   // STABLE PREFIX ends here. Mark its length now so the diagnostic
   // log can report how many characters / tokens would cache vs not.
   const stablePrefixChars = systemContent.length;

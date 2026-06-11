@@ -64,7 +64,10 @@ export function looksLikeInstruction(text: string): boolean {
   return EXPLICIT_TUNING_PREFIX.test(t) || DIRECTIVE_OPENER.test(t);
 }
 
-/** Active admin instructions (newest first) to inject as live guidance. */
+/** Active admin instructions (newest first) to inject as live guidance.
+ *  Legacy variant kept for any caller that doesn't have scope context;
+ *  the respond route uses {@link loadGuidanceForScope} which filters by
+ *  the resolved country / region / city + the user's query. */
 export async function loadActiveGuidance(limit = 25): Promise<string[]> {
   try {
     const supabase = devNotesClient();
@@ -82,6 +85,137 @@ export async function loadActiveGuidance(limit = 25): Promise<string[]> {
     return [];
   }
 }
+
+/** Scope a guidance load is targeting. Any combination of fields can be
+ *  null — the loader pulls general rules unconditionally and the rest
+ *  by whichever scope columns resolved. */
+export interface GuidanceScope {
+  /** Country name as stored on regions.country (e.g. "Philippines"). */
+  country: string | null;
+  /** Region slug-id (e.g. "el_nido_palawan_philippines"). */
+  regionId: string | null;
+  /** cities.id UUID. */
+  cityId: string | null;
+  /** The user's incoming message — used to filter rules with explicit
+   *  `triggers`. Blank-triggers rules ignore this. */
+  query: string;
+}
+
+/** Guidance grouped by scope so the prompt can label each section with
+ *  its authority level. Inside one scope, newer rules are listed first
+ *  so a freshly authored rule wins on conflict. */
+export interface ScopedGuidance {
+  general: string[];
+  country: string[];
+  region: string[];
+  city: string[];
+}
+
+/** True iff at least one rule fired across any scope — lets the caller
+ *  skip the "OPERATIONAL RULES" prompt block entirely when nothing
+ *  matched (e.g. a global query in a region with zero authored rules). */
+export function hasAnyGuidance(g: ScopedGuidance): boolean {
+  return (
+    g.general.length > 0 ||
+    g.country.length > 0 ||
+    g.region.length > 0 ||
+    g.city.length > 0
+  );
+}
+
+/** Active admin instructions filtered by scope (general + country +
+ *  region + city) and trigger keywords (a rule with non-empty `triggers`
+ *  fires only when the query contains one as a substring; blank
+ *  `triggers` always fire in scope). Returned grouped so callers can
+ *  label each section in the system prompt; within each group, newest
+ *  rules come first. */
+export async function loadGuidanceForScope(
+  scope: GuidanceScope,
+  limit = 40,
+): Promise<ScopedGuidance> {
+  try {
+    const supabase = devNotesClient();
+    // Build the OR filter once. Each predicate is an AND within a single
+    // group; the .or() string joins groups with OR.
+    //   - scope_type=general (no other field has to match)
+    //   - scope_type=country AND country=<value>
+    //   - scope_type=region AND region_id=<value>
+    //   - scope_type=city AND city_id=<value>
+    // PostgREST OR syntax: or="(p1,p2),(p3,p4)" — each group is AND-ed.
+    const orParts: string[] = ["scope_type.eq.general"];
+    if (scope.country) {
+      // Escape commas in the country name for PostgREST OR syntax.
+      const safe = scope.country.replace(/,/g, "");
+      orParts.push(
+        `and(scope_type.eq.country,country.eq.${safe})`,
+      );
+    }
+    if (scope.regionId) {
+      orParts.push(
+        `and(scope_type.eq.region,region_id.eq.${scope.regionId})`,
+      );
+    }
+    if (scope.cityId) {
+      orParts.push(
+        `and(scope_type.eq.city,city_id.eq.${scope.cityId})`,
+      );
+    }
+    const orFilter = orParts.join(",");
+
+    const { data } = await supabase
+      .from("susen_dev_notes")
+      .select("message, scope_type, triggers, created_at")
+      .eq("is_instruction", true)
+      .eq("active", true)
+      .or(orFilter)
+      .limit(limit)
+      .returns<
+        {
+          message: string;
+          scope_type: ScopeType;
+          triggers: string[] | null;
+          created_at: string;
+        }[]
+      >();
+
+    const rows = (data ?? []).filter((r) => r.message);
+    // Trigger gate: a rule with non-empty `triggers` fires only when the
+    // query contains one as a case-insensitive substring. Empty / null
+    // triggers fire unconditionally.
+    const q = scope.query.toLowerCase();
+    const fired = rows.filter((r) => {
+      const trigs = (r.triggers ?? [])
+        .map((t) => (t ?? "").trim().toLowerCase())
+        .filter(Boolean);
+      if (trigs.length === 0) return true;
+      return trigs.some((t) => q.includes(t));
+    });
+
+    // Newer first inside each bucket so a freshly authored rule wins
+    // on conflict against an older same-scope rule.
+    fired.sort((a, b) => b.created_at.localeCompare(a.created_at));
+
+    const grouped: ScopedGuidance = {
+      general: [],
+      country: [],
+      region: [],
+      city: [],
+    };
+    for (const r of fired) {
+      const list = grouped[r.scope_type];
+      if (!list) continue;
+      list.push(r.message);
+    }
+    return grouped;
+  } catch (err) {
+    console.warn("[susen] scoped guidance load failed:", err);
+    return { general: [], country: [], region: [], city: [] };
+  }
+}
+
+/** Scope levels — narrower than the previous string union so the
+ *  validator at the form / DB boundary matches the migration's CHECK. */
+export type ScopeType = "general" | "country" | "region" | "city";
 
 /** DeepSeek's per-response token counts (the fields we persist). */
 export interface SusenTurnUsage {
@@ -155,10 +289,17 @@ export interface SusenDevNote {
   active: boolean;
   applied: boolean;
   tags: string[] | null;
+  /** Scope columns — added by migration 0066. Old rows default to
+   *  'general' with the other three null, so injection behaviour
+   *  matches what was happening pre-migration. */
+  scope_type: ScopeType;
+  country: string | null;
+  city_id: string | null;
+  triggers: string[] | null;
 }
 
 const NOTE_COLS =
-  "id, created_at, author, source, channel, region_id, message, susen_reply, is_instruction, active, applied, tags";
+  "id, created_at, author, source, channel, region_id, message, susen_reply, is_instruction, active, applied, tags, scope_type, country, city_id, triggers";
 
 /** The rules currently steering her replies (is_instruction && active),
  *  newest first. Fetched without a row cap so an older-but-active rule can't
@@ -235,12 +376,50 @@ export async function deleteDevNote(id: string): Promise<{ error: string | null 
   }
 }
 
-/** Hand-write a new live rule from the admin console (skips the chat
- *  detector — an explicit admin action is always treated as a directive). */
-export async function addRule(args: {
+/** Args for {@link addRule}. Scope columns are validated at the form
+ *  layer: country requires `country`, region requires `regionId`, city
+ *  requires both `cityId` and (for the engine's scope-resolution
+ *  fallback) the parent `regionId`. General requires nothing. */
+export interface AddRuleArgs {
   author: string;
   message: string;
-}): Promise<{ note: SusenDevNote | null; error: string | null }> {
+  scope: ScopeType;
+  country?: string | null;
+  regionId?: string | null;
+  cityId?: string | null;
+  /** Optional trigger keywords — blank = always fire in scope. */
+  triggers?: string[] | null;
+}
+
+/** Hand-write a new live rule from the admin console (skips the chat
+ *  detector — an explicit admin action is always treated as a directive).
+ *  Scope columns are persisted so {@link loadGuidanceForScope} can pick
+ *  only the rules matching the user's resolved location at reply time. */
+export async function addRule(
+  args: AddRuleArgs,
+): Promise<{ note: SusenDevNote | null; error: string | null }> {
+  const { scope } = args;
+  // Cheap validation — defence in depth against a form bug shipping a
+  // half-filled rule. The DB CHECK constraint catches scope_type
+  // typos; this catches "city scope with no city_id" before the round
+  // trip.
+  if (scope === "country" && !args.country) {
+    return { note: null, error: "Country scope requires a country name." };
+  }
+  if (scope === "region" && !args.regionId) {
+    return { note: null, error: "Region scope requires a region." };
+  }
+  if (scope === "city" && (!args.cityId || !args.regionId)) {
+    return {
+      note: null,
+      error: "City scope requires a city (and its parent region).",
+    };
+  }
+
+  const cleanTriggers = (args.triggers ?? [])
+    .map((t) => (t ?? "").trim().toLowerCase())
+    .filter((t) => t.length > 0);
+
   try {
     const supabase = devNotesClient();
     const { data, error } = await supabase
@@ -252,6 +431,14 @@ export async function addRule(args: {
         message: args.message,
         is_instruction: true,
         active: true,
+        scope_type: scope,
+        country: scope === "country" || scope === "region" || scope === "city"
+          ? args.country ?? null
+          : null,
+        region_id:
+          scope === "region" || scope === "city" ? args.regionId ?? null : null,
+        city_id: scope === "city" ? args.cityId ?? null : null,
+        triggers: cleanTriggers.length > 0 ? cleanTriggers : null,
       })
       .select(NOTE_COLS)
       .single()

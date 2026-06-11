@@ -22,8 +22,33 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export async function detectRegionFromInput(
   input: string,
 ): Promise<string | null> {
+  const scope = await detectScopeFromInput(input);
+  return scope.regionId;
+}
+
+/** Resolved scope context for a user query — used both to retrieve
+ *  inventory AND to filter the scope-keyed Susen tuning rules. */
+export interface DetectedScope {
+  country: string | null;
+  regionId: string | null;
+  cityId: string | null;
+}
+
+/** Detect country / region / city from free-form user text by
+ *  substring-matching against region display names, region cities,
+ *  region country names, AND every cities-table row.
+ *
+ *  Strategy mirrors {@link detectRegionFromInput} but returns ALL three
+ *  scope axes so the tuning engine can pull rules at the right
+ *  specificity. Longest needles match first so "El Nido, Palawan,
+ *  Philippines" wins over "Philippines" alone. When a city matches,
+ *  the parent region is also resolved so region-scoped rules still
+ *  fire. */
+export async function detectScopeFromInput(
+  input: string,
+): Promise<DetectedScope> {
   const haystack = input.trim().toLowerCase();
-  if (!haystack) return null;
+  if (!haystack) return { country: null, regionId: null, cityId: null };
   const supabase = createAdminClient();
   const [regionsRes, citiesRes] = await Promise.all([
     supabase
@@ -41,31 +66,78 @@ export async function detectRegionFromInput(
       >(),
     supabase
       .from("cities")
-      .select("region_id, name")
-      .returns<{ region_id: string; name: string }[]>(),
+      .select("id, region_id, name")
+      .returns<{ id: string; region_id: string; name: string }[]>(),
   ]);
 
-  type Candidate = { id: string; needle: string };
+  // Build candidates in a single sortable list so the longest match
+  // wins regardless of which axis it came from.
+  type Candidate =
+    | { kind: "region"; regionId: string; country: string | null; needle: string }
+    | {
+        kind: "city";
+        cityId: string;
+        regionId: string;
+        country: string | null;
+        needle: string;
+      }
+    | { kind: "country"; country: string; needle: string };
+
+  const regionCountryById = new Map<string, string | null>();
   const candidates: Candidate[] = [];
+
   for (const r of regionsRes.data ?? []) {
+    regionCountryById.set(r.id, r.country ?? null);
     for (const v of [r.display_name, r.city, r.province]) {
       if (v && v.trim().length >= 3) {
-        candidates.push({ id: r.id, needle: v.toLowerCase() });
+        candidates.push({
+          kind: "region",
+          regionId: r.id,
+          country: r.country ?? null,
+          needle: v.toLowerCase(),
+        });
       }
+    }
+    if (r.country && r.country.trim().length >= 3) {
+      candidates.push({
+        kind: "country",
+        country: r.country,
+        needle: r.country.toLowerCase(),
+      });
     }
   }
   for (const c of citiesRes.data ?? []) {
     if (c.name && c.name.trim().length >= 3) {
-      candidates.push({ id: c.region_id, needle: c.name.toLowerCase() });
+      candidates.push({
+        kind: "city",
+        cityId: c.id,
+        regionId: c.region_id,
+        country: regionCountryById.get(c.region_id) ?? null,
+        needle: c.name.toLowerCase(),
+      });
     }
   }
-  // Longest needles first so "el nido" wins over "el" on a name that
-  // happens to share a short prefix with something else.
   candidates.sort((a, b) => b.needle.length - a.needle.length);
+
+  let cityId: string | null = null;
+  let regionId: string | null = null;
+  let country: string | null = null;
+
   for (const c of candidates) {
-    if (haystack.includes(c.needle)) return c.id;
+    if (!haystack.includes(c.needle)) continue;
+    if (c.kind === "city" && !cityId) {
+      cityId = c.cityId;
+      regionId = regionId ?? c.regionId;
+      country = country ?? c.country;
+    } else if (c.kind === "region" && !regionId) {
+      regionId = c.regionId;
+      country = country ?? c.country;
+    } else if (c.kind === "country" && !country) {
+      country = c.country;
+    }
+    if (cityId && regionId && country) break;
   }
-  return null;
+  return { country, regionId, cityId };
 }
 
 /**
