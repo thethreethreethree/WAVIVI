@@ -79,7 +79,14 @@ export interface ExportRow {
   city: string | null;
 }
 
-/** Serialise one ExportRow as a CSV line (no trailing newline). */
+/** Serialise one ExportRow as a CSV line (no trailing newline).
+ *
+ *  Source Query is synthesized at emit time (see
+ *  `synthesizeSourceQuery` below) when the row didn't carry one — none
+ *  of our four source tables stores `source_query`, so a row from the
+ *  audit only knows its Industry + City. The synthesized value is the
+ *  canonical scraper form (`"hotels in El Nido"`) and routes cleanly
+ *  through the importer's Source-Query rules. */
 export function rowToCsvLine(r: ExportRow): string {
   return [
     csvCell(r.title),
@@ -98,7 +105,7 @@ export function rowToCsvLine(r: ExportRow): string {
     csvCell(r.latitude),
     csvCell(r.longitude),
     csvCell(r.googleMapsLink),
-    csvCell(r.sourceQuery),
+    csvCell(r.sourceQuery || synthesizeSourceQuery(r.industry, r.city)),
     csvCell(r.city),
   ].join(",");
 }
@@ -132,3 +139,84 @@ export type BatchExportResult =
  * boundary forbids non-function exports — `export type { Foo }` from a
  * server-actions file ships a runtime ReferenceError under Turbopack
  * (see memory: turbopack-use-server-type-reexport). */
+
+/** Map an Industry label (the value we pre-fill on every export row)
+ *  to the noun the scraper would have used in its Source Query for the
+ *  same kind of place / utility — so a synthesized
+ *  `"{noun} in {city}"` routes cleanly through both the batch-city and
+ *  batch-utility importers.
+ *
+ *  Why synthesize: `source_query` is NOT a column on stays /
+ *  restaurants / experiences / traveler_utilities — the scraper writes
+ *  it into the CSV but it isn't preserved after ingest. Leaving the
+ *  column blank on export shipped a file that admins had to fill in by
+ *  hand before re-importing. Re-emitting the canonical scraper form
+ *  ("hotels in El Nido", "pharmacies in Coron") preserves the
+ *  round-trip without having to add a column to four tables. */
+const INDUSTRY_TO_SOURCE_QUERY_NOUN: Record<string, string> = {
+  // Stays
+  Hotel: "hotels",
+  Hostel: "hostels",
+  Resort: "resorts",
+  Inn: "inns",
+  Guesthouse: "guesthouses",
+  Apartment: "apartments",
+  Camping: "camping",
+  "Bed & breakfast": "bed and breakfast",
+  // Restaurants
+  Restaurant: "restaurants",
+  Cafe: "cafes",
+  Bar: "bars",
+  Bakery: "bakery",
+  // Experiences
+  Tour: "tours",
+  "Tour Operator": "tour operators",
+  "Diving Center": "dive shops",
+  "Travel Agency": "travel agencies",
+  Snorkeling: "snorkeling",
+  "Island Hopping": "island hopping",
+  Kayaking: "kayak",
+  "Wellness & Spa": "spa",
+  "Yoga Studio": "yoga",
+  // Utilities — singular forms match LABEL_TO_CATEGORY in
+  // industry-router.ts directly; plurals also match for most via the
+  // routeUtilityRow keyword extractor.
+  ATM: "atms",
+  Bank: "banks",
+  "Currency exchange": "currency exchange",
+  "Medical clinic": "medical clinic",
+  Pharmacy: "pharmacies",
+  "Massage spa": "massage spa",
+  "Gym fitness": "gyms",
+  "Public Wi-Fi": "public wifi",
+  "SIM card": "sim card",
+  "Convenience store": "convenience store",
+  Laundry: "laundry",
+  Bathroom: "public restroom",
+  "Luggage storage": "luggage storage",
+  Transportation: "transportation",
+  "Motorbike rental": "scooter rental",
+  Police: "police",
+  Embassy: "embassy",
+  "Petrol station": "gas station",
+  "Post office": "post office",
+  "Tourist info": "tourist information",
+  "Coworking space": "coworking space",
+};
+
+/** Synthesize a scraper-format Source Query for an exported row.
+ *
+ *  Returns `""` when we can't make one (no city or no mapping) — the
+ *  importer treats blank Source Query as "fall back to Industry", which
+ *  is what we already pre-fill, so the row still routes. */
+export function synthesizeSourceQuery(
+  industry: string,
+  city: string | null,
+): string {
+  if (!city) return "";
+  const noun =
+    INDUSTRY_TO_SOURCE_QUERY_NOUN[industry] ??
+    industry.toLowerCase().trim();
+  if (!noun) return "";
+  return `${noun} in ${city}`;
+}
