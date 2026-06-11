@@ -6,6 +6,7 @@ import {
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { ClassificationGroupClient } from "./classification-group-client";
+import { CorrectionUploadButton } from "./correction-upload-button";
 import {
   ExportClassificationPlacesCsvButton,
   ExportUtilitiesCsvButton,
@@ -90,9 +91,13 @@ export async function ClassificationSection() {
             this audit.
           </p>
         </div>
-        {/* Two exports, both in the 18-col scraper wide format so the
-            files round-trip cleanly back through the importers. */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Two exports + the correction-file upload, both in the
+            scraper wide format so the files round-trip cleanly back
+            through the importers. The Correction button is shown
+            unconditionally because admins might be re-uploading from a
+            previous audit's edited file even when the current audit
+            shows zero suspects. */}
+        <div className="flex flex-wrap items-start gap-2">
           {/* Places — stays/restaurants/experiences flagged by the
               classification audit. Goes through /admin/batch-city-import.
               Industry column pre-filled with the audit's proposed label. */}
@@ -105,6 +110,7 @@ export async function ClassificationSection() {
           {/* Utilities flagged by the classification audit. Goes through
               /admin/batch-utility-import. */}
           {utilCount > 0 && <ExportUtilitiesCsvButton dateLabel={dateLabel} />}
+          <CorrectionUploadButton mode="classification" />
         </div>
       </header>
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { ClassificationSection } from "@/components/admin/data-quality/classification-section";
+import { CorrectionUploadButton } from "@/components/admin/data-quality/correction-upload-button";
 import { CrossTableSection } from "@/components/admin/data-quality/cross-table-section";
 import { ExportDataQualityCsvButton } from "@/components/admin/data-quality/export-button";
 import {
@@ -170,9 +171,17 @@ export default async function DataQualityPage() {
               to fix the whole batch at once.
             </p>
           </div>
-          {totalBad > 0 && (
-            <ExportDataQualityCsvButton dateLabel={dateLabel} />
-          )}
+          {/* Export + correction-file round-trip lives side-by-side so
+              the workflow (Export → edit photos → Re-upload) is one
+              visual unit. Correction button is shown unconditionally
+              because admins might be re-uploading from a previous
+              audit's file even when the current audit is empty. */}
+          <div className="flex flex-wrap items-start gap-3">
+            {totalBad > 0 && (
+              <ExportDataQualityCsvButton dateLabel={dateLabel} />
+            )}
+            <CorrectionUploadButton mode="photo" />
+          </div>
         </header>
 
       <div className="rounded-2xl bg-sunset p-4 text-white shadow-card">
