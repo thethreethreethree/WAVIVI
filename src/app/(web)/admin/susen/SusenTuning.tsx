@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import type { SusenFeedbackRow } from "@/lib/susen/feedback";
 import type {
   ReviewMarker,
   ScopeType,
@@ -74,6 +75,38 @@ function ScopeBadge({ note }: { note: SusenDevNote }) {
     >
       {label}
     </span>
+  );
+}
+
+/** Topic + priority chips that surface the conflict-resolution
+ *  context on a rule. Topic chip only renders when set; priority chip
+ *  only renders when it's non-zero (so the common case stays quiet). */
+function TopicPriorityChips({
+  topic,
+  priority,
+}: {
+  topic: string | null;
+  priority: number;
+}) {
+  return (
+    <>
+      {topic ? (
+        <span className="shrink-0 rounded-full bg-cool/15 px-2 py-0.5 text-[10px] font-bold text-cool">
+          topic: {topic}
+        </span>
+      ) : null}
+      {priority !== 0 ? (
+        <span
+          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+            priority > 0
+              ? "bg-sunset/15 text-sunset"
+              : "bg-foreground/10 text-muted"
+          }`}
+        >
+          priority {priority > 0 ? `+${priority}` : priority}
+        </span>
+      ) : null}
+    </>
   );
 }
 
@@ -195,6 +228,7 @@ export function SusenTuning({
   regions,
   cities,
   countries,
+  pendingFeedback,
 }: {
   liveRules: SusenDevNote[];
   captures: SusenDevNote[];
@@ -202,6 +236,7 @@ export function SusenTuning({
   regions: ScopeRegion[];
   cities: ScopeCity[];
   countries: string[];
+  pendingFeedback: SusenFeedbackRow[];
 }) {
   const router = useRouter();
   // Form state — "Create a Rule" panel is hidden until the admin opens
@@ -212,10 +247,19 @@ export function SusenTuning({
   const [regionId, setRegionId] = useState("");
   const [cityId, setCityId] = useState("");
   const [triggersText, setTriggersText] = useState("");
+  const [topic, setTopic] = useState("");
+  const [priority, setPriority] = useState(0);
   const [draft, setDraft] = useState("");
   const [adding, setAdding] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** When set, the Create-a-Rule panel is open AND in "promote" mode:
+   *  submitting POSTs to /api/admin/susen/feedback with this id so the
+   *  feedback row is flipped to status='promoted' and linked to the
+   *  resulting rule. */
+  const [promoteFromFeedbackId, setPromoteFromFeedbackId] = useState<
+    string | null
+  >(null);
 
   // City dropdown filters by selected region — picking El Nido (Region)
   // narrows the City list to El Nido cities only. If the admin picks a
@@ -255,7 +299,61 @@ export function SusenTuning({
     setRegionId("");
     setCityId("");
     setTriggersText("");
+    setTopic("");
+    setPriority(0);
     setDraft("");
+    setPromoteFromFeedbackId(null);
+  }
+
+  /** Pre-fill the Create-a-Rule form from a feedback row and scroll it
+   *  into view. The admin tweaks fields then clicks Create rule (which
+   *  POSTs to the feedback-promotion route instead of the plain rule
+   *  route when promoteFromFeedbackId is set). */
+  function promoteFromFeedback(row: SusenFeedbackRow) {
+    // Derive scope from whichever location field is most specific.
+    const derivedScope: ScopeType = row.city_id
+      ? "city"
+      : row.region_id
+        ? "region"
+        : row.country
+          ? "country"
+          : "general";
+    setScope(derivedScope);
+    setCountry(row.country ?? "");
+    setRegionId(row.region_id ?? "");
+    setCityId(row.city_id ?? "");
+    setTopic(row.topic ?? "");
+    setPriority(0);
+    setTriggersText("");
+    setDraft(row.body);
+    setPromoteFromFeedbackId(row.id);
+    setFormOpen(true);
+    setError(null);
+    // Smooth-scroll to the form so the admin doesn't lose their place.
+    requestAnimationFrame(() => {
+      document
+        .getElementById("create-rule-panel")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  async function rejectFeedback(feedbackId: string) {
+    if (!confirm("Reject this feedback? No rule will be created.")) return;
+    setBusyId(feedbackId);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/susen/feedback", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "reject", feedbackId }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? res.statusText);
+      router.refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
   }
 
   const patch = async (
@@ -338,17 +436,33 @@ export function SusenTuning({
         .split(/[,\n]/)
         .map((t) => t.trim())
         .filter(Boolean);
-      const res = await fetch("/api/admin/susen/notes", {
+      const payload = {
+        message,
+        scope,
+        country: country.trim() || null,
+        regionId: regionId || null,
+        cityId: cityId || null,
+        triggers: triggers.length > 0 ? triggers : null,
+        topic: topic.trim() || null,
+        priority,
+      };
+      // Two endpoints: promote-from-feedback if we're in that flow
+      // (also flips the feedback row's status), otherwise the plain
+      // add-rule endpoint.
+      const url = promoteFromFeedbackId
+        ? "/api/admin/susen/feedback"
+        : "/api/admin/susen/notes";
+      const body = promoteFromFeedbackId
+        ? JSON.stringify({
+            action: "promote",
+            feedbackId: promoteFromFeedbackId,
+            ...payload,
+          })
+        : JSON.stringify(payload);
+      const res = await fetch(url, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          message,
-          scope,
-          country: country.trim() || null,
-          regionId: regionId || null,
-          cityId: cityId || null,
-          triggers: triggers.length > 0 ? triggers : null,
-        }),
+        body,
       });
       if (!res.ok) throw new Error((await res.json()).error ?? res.statusText);
       resetForm();
@@ -369,6 +483,80 @@ export function SusenTuning({
         </p>
       ) : null}
 
+      {/* Pending traveller feedback — review queue.
+          Each row links to the traveller's submitted text + scope
+          context. Promote pre-fills the Create-a-Rule form below
+          (and flips the row to status='promoted' linked to the new
+          rule). Reject marks the row reviewed without creating a rule. */}
+      {pendingFeedback.length > 0 ? (
+        <section className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-border">
+          <h2 className="flex items-center gap-2 text-sm font-bold">
+            Pending traveller feedback
+            <span className="rounded-full bg-heat/15 px-2 py-0.5 text-[10px] font-bold text-heat">
+              awaiting review · {pendingFeedback.length}
+            </span>
+          </h2>
+          <p className="mt-0.5 text-xs text-muted">
+            What travellers told us in-trip. Promote turns the feedback
+            into a scoped rule (you can edit the body before saving);
+            Reject marks it reviewed without changing Susen.
+          </p>
+          <ul className="mt-3 flex flex-col gap-2">
+            {pendingFeedback.map((fb) => {
+              const regionName =
+                fb.region_id
+                  ? regions.find((r) => r.id === fb.region_id)?.displayName
+                  : null;
+              const cityName = fb.city_id
+                ? cities.find((c) => c.id === fb.city_id)?.name
+                : null;
+              const scopeChip =
+                cityName ?? regionName ?? fb.country ?? "Anywhere";
+              return (
+                <li
+                  key={fb.id}
+                  className="rounded-2xl bg-background p-3 ring-1 ring-border"
+                >
+                  <div className="mb-1.5 flex flex-wrap items-center gap-1.5 text-[11px]">
+                    <span className="rounded-full bg-sunset/15 px-2 py-0.5 font-bold text-sunset">
+                      📍 {scopeChip}
+                    </span>
+                    {fb.topic ? (
+                      <span className="rounded-full bg-glow/15 px-2 py-0.5 font-bold text-glow">
+                        {fb.topic}
+                      </span>
+                    ) : null}
+                    <span className="text-muted">
+                      {fb.created_at.slice(0, 10)}
+                    </span>
+                  </div>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                    {fb.body}
+                  </p>
+                  <div className="mt-2 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => rejectFeedback(fb.id)}
+                      disabled={busyId === fb.id}
+                      className="rounded-full bg-foreground/10 px-3 py-1 text-[11px] font-bold text-foreground hover:bg-foreground/15 disabled:opacity-50"
+                    >
+                      {busyId === fb.id ? "…" : "Reject"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => promoteFromFeedback(fb)}
+                      className="rounded-full bg-sunset px-3 py-1 text-[11px] font-bold text-white hover:bg-sunset/90"
+                    >
+                      ↑ Promote to rule
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
+
       {/* Create a Rule — scope-aware authoring panel.
           Collapsed by default so the page reads as "review existing
           rules" first. Each scope picks up a different conditional
@@ -376,7 +564,10 @@ export function SusenTuning({
           Country, region dropdown for Region, region+city for City).
           Triggers are optional keywords that gate which queries
           activate the rule — blank means "always fire in scope". */}
-      <section className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-border">
+      <section
+        id="create-rule-panel"
+        className="scroll-mt-20 rounded-2xl bg-surface p-4 shadow-card ring-1 ring-border"
+      >
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="text-sm font-bold">Create a Rule</h2>
@@ -413,6 +604,14 @@ export function SusenTuning({
 
         {formOpen ? (
           <div className="mt-4 flex flex-col gap-4">
+            {promoteFromFeedbackId ? (
+              <div className="rounded-xl bg-glow/10 px-3 py-2 text-[11px] text-glow ring-1 ring-glow/30">
+                Promoting traveller feedback. Saving creates the rule
+                AND marks the feedback row as promoted (linked to the
+                new rule).
+              </div>
+            ) : null}
+
             {/* Scope picker — 4 radios as pill buttons. */}
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
@@ -543,6 +742,54 @@ export function SusenTuning({
               </p>
             </div>
 
+            {/* Advanced — topic + priority for conflict resolution.
+                Folded into a <details> so the form reads simple by
+                default; the admin only opens this when they have two
+                rules covering the same ground. */}
+            <details className="rounded-xl bg-background p-3 ring-1 ring-border">
+              <summary className="cursor-pointer text-[11px] font-bold uppercase tracking-wider text-muted">
+                Advanced — conflict resolution
+              </summary>
+              <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                <div className="flex-1">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted">
+                    Topic
+                  </label>
+                  <input
+                    type="text"
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    placeholder="e.g. nightlife"
+                    className="mt-1.5 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sunset/40"
+                  />
+                  <p className="mt-1 text-[11px] text-muted">
+                    Rules with the same topic in the same scope conflict.
+                    Only the highest priority survives. Blank = no
+                    conflict (fires alongside everything).
+                  </p>
+                </div>
+                <div className="w-full sm:w-40">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted">
+                    Priority
+                  </label>
+                  <input
+                    type="number"
+                    value={priority}
+                    onChange={(e) =>
+                      setPriority(Number(e.target.value) || 0)
+                    }
+                    min={-100}
+                    max={100}
+                    step={1}
+                    className="mt-1.5 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sunset/40"
+                  />
+                  <p className="mt-1 text-[11px] text-muted">
+                    Higher wins on conflict. Default 0.
+                  </p>
+                </div>
+              </div>
+            </details>
+
             {/* Rule body — the long-form guidance Susen reproduces. */}
             <div>
               <label className="text-[11px] font-bold uppercase tracking-wider text-muted">
@@ -595,6 +842,10 @@ export function SusenTuning({
               >
                 <div className="mb-2 flex flex-wrap items-center gap-1.5">
                   <ScopeBadge note={r} />
+                  <TopicPriorityChips
+                    topic={r.topic}
+                    priority={r.priority}
+                  />
                   <TriggerPills triggers={r.triggers} />
                 </div>
                 <p className="text-sm font-medium whitespace-pre-wrap">

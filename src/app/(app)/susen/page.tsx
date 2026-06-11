@@ -302,12 +302,26 @@ export default function SusenPage() {
           </span>
           <span className="block text-sm text-muted">{SUSEN.tagline}</span>
         </span>
-        <span className="ml-auto flex items-center gap-1.5 rounded-full bg-white/85 px-3 py-1 text-xs font-bold text-cool ring-1 ring-cool/30">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+        <span className="ml-auto flex items-center gap-2">
+          {/* Share-feedback shortcut. Auth-gated route — anon visitors
+              bounce to /login from the page itself. Plain Link so the
+              chat history isn't lost (we restore on return). */}
+          {isAuthed ? (
+            <Link
+              href="/susen/feedback"
+              className="hidden items-center gap-1.5 rounded-full bg-glow/15 px-3 py-1 text-xs font-bold text-glow hover:bg-glow/25 sm:inline-flex"
+              title="Share what you learned from your trip — admins review and may feed it back into Susen's answers."
+            >
+              📝 Share what you learned
+            </Link>
+          ) : null}
+          <span className="flex items-center gap-1.5 rounded-full bg-white/85 px-3 py-1 text-xs font-bold text-cool ring-1 ring-cool/30">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            Online
           </span>
-          Online
         </span>
       </header>
 

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { SusenAvatar } from "@/components/ui/susen-avatar";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { listPendingFeedback } from "@/lib/susen/feedback";
 import {
   listDevNotes,
   listLiveRules,
@@ -68,26 +69,34 @@ export default async function AdminSusenPage({
   // "Create a Rule" form can offer Region/City pickers without a
   // round-trip back to the server when the admin toggles scope.
   const supabase = createAdminClient();
-  const [liveRules, recent, usage, spend, regionsRes, citiesRes] =
-    await Promise.all([
-      listLiveRules(),
-      activeFilter ? listNotesByMarker(activeFilter) : listDevNotes(60),
-      estimateResponseUsage(SAMPLE_REGION),
-      loadUsageSummary(costWindow),
-      supabase
-        .from("regions")
-        .select("id, display_name, country")
-        .eq("active", true)
-        .order("display_name", { ascending: true })
-        .returns<
-          { id: string; display_name: string; country: string | null }[]
-        >(),
-      supabase
-        .from("cities")
-        .select("id, name, region_id")
-        .order("name", { ascending: true })
-        .returns<{ id: string; name: string; region_id: string }[]>(),
-    ]);
+  const [
+    liveRules,
+    recent,
+    usage,
+    spend,
+    regionsRes,
+    citiesRes,
+    pendingFeedback,
+  ] = await Promise.all([
+    listLiveRules(),
+    activeFilter ? listNotesByMarker(activeFilter) : listDevNotes(60),
+    estimateResponseUsage(SAMPLE_REGION),
+    loadUsageSummary(costWindow),
+    supabase
+      .from("regions")
+      .select("id, display_name, country")
+      .eq("active", true)
+      .order("display_name", { ascending: true })
+      .returns<
+        { id: string; display_name: string; country: string | null }[]
+      >(),
+    supabase
+      .from("cities")
+      .select("id, name, region_id")
+      .order("name", { ascending: true })
+      .returns<{ id: string; name: string; region_id: string }[]>(),
+    listPendingFeedback(60),
+  ]);
 
   const regions: ScopeRegion[] = (regionsRes.data ?? []).map((r) => ({
     id: r.id,
@@ -338,6 +347,7 @@ export default async function AdminSusenPage({
         regions={regions}
         cities={cities}
         countries={countries}
+        pendingFeedback={pendingFeedback}
       />
     </div>
   );

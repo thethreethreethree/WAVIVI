@@ -164,7 +164,9 @@ export async function loadGuidanceForScope(
 
     const { data } = await supabase
       .from("susen_dev_notes")
-      .select("message, scope_type, triggers, created_at")
+      .select(
+        "message, scope_type, triggers, created_at, topic, priority",
+      )
       .eq("is_instruction", true)
       .eq("active", true)
       .or(orFilter)
@@ -175,6 +177,8 @@ export async function loadGuidanceForScope(
           scope_type: ScopeType;
           triggers: string[] | null;
           created_at: string;
+          topic: string | null;
+          priority: number;
         }[]
       >();
 
@@ -191,21 +195,63 @@ export async function loadGuidanceForScope(
       return trigs.some((t) => q.includes(t));
     });
 
-    // Newer first inside each bucket so a freshly authored rule wins
-    // on conflict against an older same-scope rule.
-    fired.sort((a, b) => b.created_at.localeCompare(a.created_at));
-
-    const grouped: ScopedGuidance = {
+    // Conflict resolution — within a single scope, rules that share a
+    // topic compete; only the strongest survives. priority desc wins,
+    // ties broken by created_at desc (newest first). Rules with NULL
+    // topic don't conflict with anything and all fire side-by-side.
+    type FiredRow = (typeof fired)[number];
+    const dedupedByScope: Record<ScopeType, FiredRow[]> = {
       general: [],
       country: [],
       region: [],
       city: [],
     };
+    // Group rules by scope + topic for the dedup pass. The bucket key
+    // for topic-less rules is unique per row (its created_at) so they
+    // all pass through.
+    const topicWinners = new Map<string, FiredRow>();
     for (const r of fired) {
-      const list = grouped[r.scope_type];
-      if (!list) continue;
-      list.push(r.message);
+      const topicKey = r.topic && r.topic.trim() ? r.topic.trim().toLowerCase() : null;
+      if (!topicKey) {
+        // No topic → no conflict. Drop it straight into the scope bucket.
+        dedupedByScope[r.scope_type]?.push(r);
+        continue;
+      }
+      const key = `${r.scope_type}::${topicKey}`;
+      const incumbent = topicWinners.get(key);
+      if (!incumbent) {
+        topicWinners.set(key, r);
+        continue;
+      }
+      // Compare priority first, then created_at as the tiebreaker.
+      if (
+        r.priority > incumbent.priority ||
+        (r.priority === incumbent.priority &&
+          r.created_at.localeCompare(incumbent.created_at) > 0)
+      ) {
+        topicWinners.set(key, r);
+      }
     }
+    for (const r of topicWinners.values()) {
+      dedupedByScope[r.scope_type]?.push(r);
+    }
+
+    // Inside each scope's deduped list, sort by priority desc then
+    // newest-first so the strongest rule lands at the top of its
+    // section in the prompt (most-attended position).
+    for (const list of Object.values(dedupedByScope)) {
+      list.sort((a, b) => {
+        if (b.priority !== a.priority) return b.priority - a.priority;
+        return b.created_at.localeCompare(a.created_at);
+      });
+    }
+
+    const grouped: ScopedGuidance = {
+      general: dedupedByScope.general.map((r) => r.message),
+      country: dedupedByScope.country.map((r) => r.message),
+      region: dedupedByScope.region.map((r) => r.message),
+      city: dedupedByScope.city.map((r) => r.message),
+    };
     return grouped;
   } catch (err) {
     console.warn("[susen] scoped guidance load failed:", err);
@@ -296,10 +342,16 @@ export interface SusenDevNote {
   country: string | null;
   city_id: string | null;
   triggers: string[] | null;
+  /** Conflict resolution — added by migration 0067. Within a scope,
+   *  same-topic rules conflict; the engine keeps only the one with the
+   *  highest priority (ties broken by created_at desc). NULL topic =
+   *  no conflict, fires side-by-side with everything. */
+  priority: number;
+  topic: string | null;
 }
 
 const NOTE_COLS =
-  "id, created_at, author, source, channel, region_id, message, susen_reply, is_instruction, active, applied, tags, scope_type, country, city_id, triggers";
+  "id, created_at, author, source, channel, region_id, message, susen_reply, is_instruction, active, applied, tags, scope_type, country, city_id, triggers, priority, topic";
 
 /** The rules currently steering her replies (is_instruction && active),
  *  newest first. Fetched without a row cap so an older-but-active rule can't
@@ -389,6 +441,11 @@ export interface AddRuleArgs {
   cityId?: string | null;
   /** Optional trigger keywords — blank = always fire in scope. */
   triggers?: string[] | null;
+  /** Optional topic for conflict resolution — same-topic rules in the
+   *  same scope conflict and only the strongest survives. */
+  topic?: string | null;
+  /** Conflict-resolution priority; higher wins. Defaults to 0. */
+  priority?: number | null;
 }
 
 /** Hand-write a new live rule from the admin console (skips the chat
@@ -420,6 +477,12 @@ export async function addRule(
     .map((t) => (t ?? "").trim().toLowerCase())
     .filter((t) => t.length > 0);
 
+  const topic = args.topic?.trim() || null;
+  const priority =
+    typeof args.priority === "number" && Number.isFinite(args.priority)
+      ? Math.round(args.priority)
+      : 0;
+
   try {
     const supabase = devNotesClient();
     const { data, error } = await supabase
@@ -439,6 +502,8 @@ export async function addRule(
           scope === "region" || scope === "city" ? args.regionId ?? null : null,
         city_id: scope === "city" ? args.cityId ?? null : null,
         triggers: cleanTriggers.length > 0 ? cleanTriggers : null,
+        topic,
+        priority,
       })
       .select(NOTE_COLS)
       .single()
