@@ -2,15 +2,24 @@
 
 import { useRef, useState, useTransition } from "react";
 
+import { parseCsv } from "@/components/admin/bulk-import/csv";
+
 import type {
   CorrectionResult,
   CorrectionRowMessage,
   CorrectionRowStatus,
 } from "./correction-types";
+import { csvCell } from "./csv-format";
 import {
   applyClassificationCorrectionCsv,
   applyPhotoCorrectionCsv,
 } from "./import-action";
+
+/** How many data rows per server-action call. Kept at 500 so each
+ *  request payload stays well under Next's serverActions.bodySizeLimit
+ *  (and Cloudflare's own caps further upstream). Matches the export
+ *  side's EXPORT_BATCH_SIZE so the round-trip pattern is symmetric. */
+const UPLOAD_CHUNK_ROWS = 500;
 
 type Mode = "photo" | "classification";
 
@@ -75,9 +84,14 @@ export function CorrectionUploadButton({ mode }: { mode: Mode }) {
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<CorrectionResult | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ done: number; total: number }>({
+    done: 0,
+    total: 0,
+  });
 
   function pick() {
     setResult(null);
+    setProgress({ done: 0, total: 0 });
     fileRef.current?.click();
   }
 
@@ -85,19 +99,55 @@ export function CorrectionUploadButton({ mode }: { mode: Mode }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setFileName(file.name);
+    setProgress({ done: 0, total: 0 });
     startTransition(async () => {
       try {
         const csvText = await file.text();
-        const res = await cfg.action(csvText);
-        setResult(res);
+        const chunks = chunkCsvForUpload(csvText, UPLOAD_CHUNK_ROWS);
+        if (chunks.length === 0) {
+          setResult({
+            ok: false,
+            error: "CSV is empty or only contains a header row.",
+            total: 0,
+            updated: 0,
+            notFound: 0,
+            ambiguous: 0,
+            skipped: 0,
+            failed: 0,
+            rowMessages: [],
+          });
+          return;
+        }
+        const totalRows = chunks.reduce((n, c) => n + c.rowCount, 0);
+        setProgress({ done: 0, total: totalRows });
+
+        // Run chunks sequentially — the server actions hit
+        // user-shared name indexes and updates that we don't want
+        // racing against each other.
+        const merged = emptyMerge();
+        let done = 0;
+        for (const ck of chunks) {
+          const res = await cfg.action(ck.csv);
+          mergeInto(merged, res);
+          if (!res.ok) {
+            // A chunk-level error wipes the run; surface it and stop.
+            setResult(merged);
+            return;
+          }
+          done += ck.rowCount;
+          setProgress({ done, total: totalRows });
+        }
+        setResult(merged);
       } catch (err) {
-        // Catch otherwise-uncaught server-action throws so the failure
+        // Catch otherwise-uncaught throws (file-read failures, chunker
+        // bugs, server-action transport failures like the 1 MB body cap
+        // that 413'd before bodySizeLimit was raised) so the failure
         // surfaces in the inline panel instead of bouncing to Next's
         // global error boundary (which only shows a digest in prod).
         const msg = err instanceof Error ? err.message : String(err);
         setResult({
           ok: false,
-          error: `Server action threw: ${msg}`,
+          error: `Upload failed: ${msg}`,
           total: 0,
           updated: 0,
           notFound: 0,
@@ -106,9 +156,7 @@ export function CorrectionUploadButton({ mode }: { mode: Mode }) {
           failed: 0,
           rowMessages: [],
         });
-        // Echo to the browser console too — useful when copy/pasting
-        // into a bug report.
-        console.error("[data-quality:correction-upload] action threw", err);
+        console.error("[data-quality:correction-upload] threw", err);
       } finally {
         // Reset the file input so picking the same file twice
         // re-triggers, even after a failure.
@@ -133,7 +181,11 @@ export function CorrectionUploadButton({ mode }: { mode: Mode }) {
         title={cfg.title}
         className={cfg.classes}
       >
-        {pending ? cfg.runningLabel : cfg.label}
+        {pending
+          ? progress.total > 0
+            ? `${cfg.runningLabel} (${progress.done.toLocaleString()} / ${progress.total.toLocaleString()})`
+            : cfg.runningLabel
+          : cfg.label}
       </button>
 
       {result && (
@@ -209,6 +261,73 @@ function Stat({
       <p className="text-[9px] uppercase tracking-wider text-muted">{label}</p>
     </div>
   );
+}
+
+/** Split a CSV string into chunks of {rowsPerChunk} data rows, each
+ *  prefixed with the original header line. parseCsv handles RFC-4180
+ *  quoting so cells with embedded commas / newlines survive the split
+ *  (a naive split-on-\n would corrupt multi-line cells). Re-emits each
+ *  cell through csvCell so the chunks parse identically on the server
+ *  to the source file. */
+function chunkCsvForUpload(
+  csvText: string,
+  rowsPerChunk: number,
+): { csv: string; rowCount: number }[] {
+  const grid = parseCsv(csvText);
+  if (grid.length < 2) return [];
+  const headerLine = grid[0].map(csvCell).join(",");
+  const chunks: { csv: string; rowCount: number }[] = [];
+  for (let i = 1; i < grid.length; i += rowsPerChunk) {
+    const slice = grid.slice(i, i + rowsPerChunk);
+    // Skip slices that are all empty rows (trailing blank lines).
+    const nonEmpty = slice.filter((row) =>
+      row.some((c) => c != null && c.trim().length > 0),
+    );
+    if (nonEmpty.length === 0) continue;
+    const body = nonEmpty.map((row) => row.map(csvCell).join(",")).join("\n");
+    chunks.push({
+      csv: `${headerLine}\n${body}`,
+      rowCount: nonEmpty.length,
+    });
+  }
+  return chunks;
+}
+
+/** Seed accumulator for merging per-chunk CorrectionResults into one. */
+function emptyMerge(): CorrectionResult {
+  return {
+    ok: true,
+    error: null,
+    total: 0,
+    updated: 0,
+    notFound: 0,
+    ambiguous: 0,
+    skipped: 0,
+    failed: 0,
+    rowMessages: [],
+  };
+}
+
+/** Fold one chunk's result into the running merged result. Cap the
+ *  combined row-messages list at the same ROW_MESSAGE_CAP the server
+ *  applies per chunk, so a 10-chunk upload doesn't produce a 2,000-row
+ *  scrollable panel. */
+const MERGED_ROW_MESSAGE_CAP = 200;
+function mergeInto(acc: CorrectionResult, chunk: CorrectionResult): void {
+  acc.total += chunk.total;
+  acc.updated += chunk.updated;
+  acc.notFound += chunk.notFound;
+  acc.ambiguous += chunk.ambiguous;
+  acc.skipped += chunk.skipped;
+  acc.failed += chunk.failed;
+  if (!chunk.ok) {
+    acc.ok = false;
+    acc.error = chunk.error;
+  }
+  for (const m of chunk.rowMessages) {
+    if (acc.rowMessages.length >= MERGED_ROW_MESSAGE_CAP) break;
+    acc.rowMessages.push(m);
+  }
 }
 
 function RowMessage({ m }: { m: CorrectionRowMessage }) {

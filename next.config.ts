@@ -5,6 +5,18 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Fail the production build on type errors instead of shipping them.
   typescript: { ignoreBuildErrors: false },
+  // Raise the server-actions body cap from the 1 MB default. The
+  // data-quality correction-file upload ships the full scraper-format
+  // CSV (23 cols × hundreds of rows) and quietly 413'd at 1 MB. 4 MB
+  // is well under Vercel's serverless request cap and covers a
+  // single-chunk upload of a few thousand rows; the client also
+  // chunks at 500 rows/call as the real defence, so this is just a
+  // headroom safety net.
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "4mb",
+    },
+  },
   // Placeholder photography hosts (swapped for Supabase Storage in production).
   //
   // `unoptimized` is flipped on in dev so the VS Code embedded "Simple
