@@ -98,11 +98,14 @@ export async function exportDataQualityCsv(): Promise<ExportResult> {
 
   const supabase = createAdminClient();
 
-  // photo_url (singular) — the audit's suspect signal AND what we now
-  // ship in the Image column. city_id — joined to cities.name below
-  // for the City column.
+  // photo_url (singular) — the audit's suspect signal AND what we
+  // ship in the Image column. photo_urls (plural) — the IG gallery,
+  // serialised into the IG_Img_1..6 tail columns. city_id is joined
+  // below to cities.name purely so we can synthesize a scraper-style
+  // Source Query ("hotels in El Nido") — the scraper format itself has
+  // no City column.
   const select =
-    "name, rating, review_count, phone, whatsapp, instagram, facebook, address, website, amenities, description, latitude, longitude, google_maps_url, photo_url, city_id";
+    "name, rating, review_count, phone, whatsapp, instagram, facebook, address, website, amenities, description, latitude, longitude, google_maps_url, photo_url, photo_urls, city_id";
 
   // stay_type is stays-only — selected separately so we can reverse-map to
   // an Industry label. Restaurants and experiences both export with a
@@ -150,6 +153,7 @@ export async function exportDataQualityCsv(): Promise<ExportResult> {
     longitude: number;
     google_maps_url: string;
     photo_url: string | null;
+    photo_urls: string[];
     city_id: string | null;
   };
   type StayRowExt = CommonRow & { stay_type: StayType };
@@ -174,6 +178,7 @@ export async function exportDataQualityCsv(): Promise<ExportResult> {
       googleMapsLink: r.google_maps_url,
       sourceQuery: "",
       city: r.city_id ? cityNameById.get(r.city_id) ?? null : null,
+      igImgs: r.photo_urls ?? [],
     };
   }
 
@@ -283,6 +288,8 @@ export async function exportUtilitiesCsv(): Promise<ExportResult> {
       googleMapsLink: u.google_maps_url,
       sourceQuery: "",
       city: u.city_id ? cityNameById.get(u.city_id) ?? null : null,
+      // traveler_utilities has no IG gallery — IG_Img_1..6 stay blank.
+      igImgs: [],
     });
   }
 
@@ -350,7 +357,7 @@ export async function exportClassificationPlacesCsv(): Promise<ExportResult> {
 
   const supabase = createAdminClient();
   const placeSelect =
-    "id, name, rating, review_count, phone, whatsapp, instagram, facebook, address, website, amenities, description, latitude, longitude, google_maps_url, photo_url, city_id";
+    "id, name, rating, review_count, phone, whatsapp, instagram, facebook, address, website, amenities, description, latitude, longitude, google_maps_url, photo_url, photo_urls, city_id";
 
   const [staysRes, restRes, expRes, citiesRes] = await Promise.all([
     staysIds.length > 0
@@ -402,6 +409,7 @@ export async function exportClassificationPlacesCsv(): Promise<ExportResult> {
       googleMapsLink: r.google_maps_url,
       sourceQuery: "",
       city: r.city_id ? cityNameById.get(r.city_id) ?? null : null,
+      igImgs: r.photo_urls ?? [],
     };
   }
 
@@ -444,6 +452,7 @@ type PlaceRow = {
   longitude: number;
   google_maps_url: string;
   photo_url: string | null;
+  photo_urls: string[];
   city_id: string | null;
 };
 
@@ -543,6 +552,8 @@ export async function exportWrongTableUtilitiesCsv(): Promise<ExportResult> {
       googleMapsLink: u.google_maps_url,
       sourceQuery: "",
       city: u.city_id ? cityNameById.get(u.city_id) ?? null : null,
+      // Utilities don't have IG galleries either.
+      igImgs: [],
     });
   }
 
@@ -607,7 +618,7 @@ export async function exportClassificationPlacesBatch(
   const ids = entries.map((e) => e.id);
   const supabase = createAdminClient();
   const placeSelect =
-    "id, name, rating, review_count, phone, whatsapp, instagram, facebook, address, website, amenities, description, latitude, longitude, google_maps_url, photo_url, city_id";
+    "id, name, rating, review_count, phone, whatsapp, instagram, facebook, address, website, amenities, description, latitude, longitude, google_maps_url, photo_url, photo_urls, city_id";
 
   const [staysRes, restRes, expRes, citiesRes] = await Promise.all([
     supabase.from("stays").select(placeSelect).in("id", ids),
@@ -638,6 +649,7 @@ export async function exportClassificationPlacesBatch(
     longitude: number;
     google_maps_url: string;
     photo_url: string | null;
+    photo_urls: string[];
     city_id: string | null;
   };
   function toRow(r: PlaceRow): ExportRow {
@@ -660,6 +672,7 @@ export async function exportClassificationPlacesBatch(
       googleMapsLink: r.google_maps_url,
       sourceQuery: "",
       city: r.city_id ? cityNameById.get(r.city_id) ?? null : null,
+      igImgs: r.photo_urls ?? [],
     };
   }
 
@@ -782,6 +795,8 @@ async function exportUtilitiesBatchInternal(
       googleMapsLink: u.google_maps_url,
       sourceQuery: "",
       city: u.city_id ? cityNameById.get(u.city_id) ?? null : null,
+      // traveler_utilities has no IG gallery; IG_Img_1..6 stay blank.
+      igImgs: [],
     };
     lines.push(rowToCsvLine(row));
   }

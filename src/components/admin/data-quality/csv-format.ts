@@ -13,8 +13,18 @@
  * would silently ignore them).
  */
 
-/** CSV column order. Identical for places (stays/restaurants/experiences)
- *  and utilities — both importers read the same column set. */
+/** CSV column order — verbatim scraper output (matches
+ *  `coron_palawan (3).xlsx`). 23 columns, NO City column (the city is
+ *  carried via Source Query in the canonical scraper form
+ *  "<noun> in <city>"). IG_Img_1..6 tail-columns mirror the scraper's
+ *  Instagram thumbnail capture and are populated from each row's
+ *  `photo_urls[0..5]` when available.
+ *
+ *  Earlier the export added a City column and dropped IG_Img_1..6;
+ *  user reported the exported file no longer round-tripped cleanly
+ *  through their scraper-compatible pipeline. Reverting to scraper
+ *  layout so the file is import-symmetric: the same shape going out
+ *  as going in. */
 export const CSV_HEADER = [
   "Title",
   "Rating",
@@ -33,8 +43,16 @@ export const CSV_HEADER = [
   "Longitude",
   "Google Maps Link",
   "Source Query",
-  "City",
+  "IG_Img_1",
+  "IG_Img_2",
+  "IG_Img_3",
+  "IG_Img_4",
+  "IG_Img_5",
+  "IG_Img_6",
 ];
+
+/** How many IG_Img_N tail columns the scraper format emits. */
+export const IG_IMG_COLUMN_COUNT = 6;
 
 /** The header row already joined as a CSV line. Useful as the client-
  *  side accumulator's first piece. */
@@ -70,13 +88,22 @@ export interface ExportRow {
   latitude: number;
   longitude: number;
   googleMapsLink: string;
-  /** Always blank on export — the scraper sets this; we don't store
-   *  it on the row. Kept in the header so importers that key on it
-   *  don't reject the file. */
+  /** Pre-supplied scraper query. Usually blank — the serializer
+   *  synthesizes "<noun> in <city>" from `industry` + `city` when this
+   *  is empty. Kept settable for forward-compat with a future stored
+   *  source_query column. */
   sourceQuery: string;
-  /** Resolved from city_id → cities.name in the export action.
-   *  Null when the row was never bucketed to a city. */
+  /** NOT a CSV column — held on the row so the serializer can
+   *  synthesize a Source Query "<noun> in <city>" and so the row
+   *  retains the city context. The scraper format the user round-trips
+   *  through has no City column; the city is recovered downstream by
+   *  parsing Source Query. */
   city: string | null;
+  /** Instagram thumbnails the scraper captures, written into the
+   *  trailing IG_Img_1..6 columns (padded with empty strings to 6 when
+   *  short, truncated to 6 when long). Pulls from the row's `photo_urls`
+   *  array on the source table. */
+  igImgs: string[];
 }
 
 /** Serialise one ExportRow as a CSV line (no trailing newline).
@@ -88,6 +115,13 @@ export interface ExportRow {
  *  canonical scraper form (`"hotels in El Nido"`) and routes cleanly
  *  through the importer's Source-Query rules. */
 export function rowToCsvLine(r: ExportRow): string {
+  // Pad / truncate the IG gallery to exactly IG_IMG_COLUMN_COUNT
+  // columns so every row has the same width and the importer's
+  // header-index lookup doesn't drift.
+  const igCells: string[] = [];
+  for (let i = 0; i < IG_IMG_COLUMN_COUNT; i++) {
+    igCells.push(csvCell(r.igImgs[i] ?? ""));
+  }
   return [
     csvCell(r.title),
     csvCell(r.rating),
@@ -106,7 +140,7 @@ export function rowToCsvLine(r: ExportRow): string {
     csvCell(r.longitude),
     csvCell(r.googleMapsLink),
     csvCell(r.sourceQuery || synthesizeSourceQuery(r.industry, r.city)),
-    csvCell(r.city),
+    ...igCells,
   ].join(",");
 }
 
