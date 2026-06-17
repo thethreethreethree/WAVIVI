@@ -59,16 +59,6 @@ export function ExperiencesList({
     return m;
   }, [cities]);
 
-  // Categories present in the data, with counts, sorted by frequency.
-  const categories = useMemo(() => {
-    const c = new Map<string, number>();
-    for (const e of experiences) {
-      const key = categoryKey(e);
-      c.set(key, (c.get(key) ?? 0) + 1);
-    }
-    return Array.from(c.entries()).sort((a, b) => b[1] - a[1]);
-  }, [experiences]);
-
   const toggleNeed = (key: ChannelKey) =>
     setNeeds((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]));
 
@@ -77,29 +67,78 @@ export function ExperiencesList({
   // and description — those are the fields an admin scans visually when
   // looking for a known venue.
   const q = query.trim().toLowerCase();
+
+  // Per-dimension predicates — each chip's count is rendered from rows
+  // matching every dimension EXCEPT its own. Without this the category
+  // pill counts stay pinned at the global cross-city total when a city
+  // is selected (same bug shape that left "Hostel 16" stuck on
+  // /admin/stays after picking Siquijor).
+  const matchesSearch = (e: ExperienceRow) => {
+    if (!q) return true;
+    const hay = [e.name, e.address, e.description]
+      .filter((v): v is string => Boolean(v))
+      .join(" ")
+      .toLowerCase();
+    return hay.includes(q);
+  };
+  const matchesCategory = (e: ExperienceRow) =>
+    categoryFilter === "all" || categoryKey(e) === categoryFilter;
+  const matchesCity = (e: ExperienceRow) => {
+    if (cityFilter === "all") return true;
+    if (cityFilter === "unset") return e.city_id === null;
+    return e.city_id === cityFilter;
+  };
+  const matchesRating = (e: ExperienceRow) =>
+    (e.backpack_rating ?? 0) >= minRating;
+  const matchesNeeds = (e: ExperienceRow) =>
+    needs.every((k) => hasChannel(e, k));
+
+  const rowsForCityCounts = useMemo(
+    () =>
+      experiences.filter(
+        (e) =>
+          matchesSearch(e) &&
+          matchesCategory(e) &&
+          matchesRating(e) &&
+          matchesNeeds(e),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [experiences, q, categoryFilter, minRating, needs],
+  );
+
+  const { categories, categoryCountsAll } = useMemo(() => {
+    let all = 0;
+    const counts = new Map<string, number>();
+    for (const e of experiences) {
+      if (
+        !matchesSearch(e) ||
+        !matchesCity(e) ||
+        !matchesRating(e) ||
+        !matchesNeeds(e)
+      )
+        continue;
+      all++;
+      const key = categoryKey(e);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    const ordered = Array.from(counts.entries()).sort(
+      (a, b) => b[1] - a[1],
+    );
+    return { categories: ordered, categoryCountsAll: all };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [experiences, q, cityFilter, minRating, needs]);
+
   const visible = useMemo(
     () =>
-      experiences.filter((e) => {
-        if (q) {
-          const hay = [e.name, e.address, e.description]
-            .filter((v): v is string => Boolean(v))
-            .join(" ")
-            .toLowerCase();
-          if (!hay.includes(q)) return false;
-        }
-        if (categoryFilter !== "all" && categoryKey(e) !== categoryFilter)
-          return false;
-        if (cityFilter === "unset" && e.city_id !== null) return false;
-        if (
-          cityFilter !== "all" &&
-          cityFilter !== "unset" &&
-          e.city_id !== cityFilter
-        ) {
-          return false;
-        }
-        if ((e.backpack_rating ?? 0) < minRating) return false;
-        return needs.every((k) => hasChannel(e, k));
-      }),
+      experiences.filter(
+        (e) =>
+          matchesSearch(e) &&
+          matchesCategory(e) &&
+          matchesCity(e) &&
+          matchesRating(e) &&
+          matchesNeeds(e),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [experiences, q, categoryFilter, cityFilter, minRating, needs],
   );
 
@@ -232,20 +271,26 @@ export function ExperiencesList({
         )}
       </div>
 
+      {/* `rows` is pre-filtered by every other dimension so each city's
+          count reflects the current category / search / rating / needs
+          slice instead of the global total. */}
       <CityFilter
         cities={cities}
-        rows={experiences}
+        rows={rowsForCityCounts}
         value={cityFilter}
         onChange={setCityFilter}
       />
 
-      {/* Category filter chips */}
+      {/* Category filter chips. Counts come from the cross-filter pass
+          (every dimension except category) so picking a city drops
+          categories that don't exist there to 0 instead of staying
+          stuck at the cross-city total. */}
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Chip
           active={categoryFilter === "all"}
           onClick={() => setCategoryFilter("all")}
           label="All"
-          count={experiences.length}
+          count={categoryCountsAll}
         />
         {categories.map(([category, count]) => (
           <Chip

@@ -49,24 +49,41 @@ export function UtilitiesList({ utilities }: { utilities: UtilityRow[] }) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const counts = useMemo(() => {
-    const c: Record<string, number> = {};
-    for (const u of utilities) c[u.category] = (c[u.category] ?? 0) + 1;
-    return c;
-  }, [utilities]);
-
   const toggleNeed = (key: ChannelKey) =>
     setNeeds((prev) =>
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
     );
 
+  // Per-dimension predicates so the category chip counts react to the
+  // current rating + needs filters. Without this a "Pharmacy 12" pill
+  // stays pinned at the global total even when the admin sets min
+  // rating 4.5 and only 3 pharmacies meet it — the chip looks like
+  // there's still 12 to triage when really there are 3.
+  const matchesCategory = (u: UtilityRow) =>
+    filter === "all" || u.category === filter;
+  const matchesRating = (u: UtilityRow) =>
+    (u.backpack_rating ?? 0) >= minRating;
+  const matchesNeeds = (u: UtilityRow) =>
+    needs.every((key) => hasChannel(u, key));
+
+  const { counts, countsAll } = useMemo(() => {
+    let all = 0;
+    const c: Record<string, number> = {};
+    for (const u of utilities) {
+      if (!matchesRating(u) || !matchesNeeds(u)) continue;
+      all++;
+      c[u.category] = (c[u.category] ?? 0) + 1;
+    }
+    return { counts: c, countsAll: all };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [utilities, minRating, needs]);
+
   const visible = useMemo(
     () =>
-      utilities.filter((u) => {
-        if (filter !== "all" && u.category !== filter) return false;
-        if ((u.backpack_rating ?? 0) < minRating) return false;
-        return needs.every((key) => hasChannel(u, key));
-      }),
+      utilities.filter(
+        (u) => matchesCategory(u) && matchesRating(u) && matchesNeeds(u),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [utilities, filter, minRating, needs],
   );
 
@@ -100,7 +117,7 @@ export function UtilitiesList({ utilities }: { utilities: UtilityRow[] }) {
           active={filter === "all"}
           onClick={() => setFilter("all")}
           label="All"
-          count={utilities.length}
+          count={countsAll}
         />
         {TOOLBOX_CATEGORIES.map((c) => (
           <Chip

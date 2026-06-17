@@ -62,12 +62,6 @@ export function StaysList({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
 
-  const counts = useMemo(() => {
-    const c: Record<string, number> = {};
-    for (const s of stays) c[s.stay_type] = (c[s.stay_type] ?? 0) + 1;
-    return c;
-  }, [stays]);
-
   // City name lookup, used by every row's inline CityLabel.
   const cityNameById = useMemo(() => {
     const m: Record<string, string> = {};
@@ -82,28 +76,80 @@ export function StaysList({
   // Search matches name + address + description — the fields an admin
   // visually scans when looking for a specific stay.
   const q = query.trim().toLowerCase();
+
+  // Per-dimension predicates. Each chip's count is rendered from rows
+  // that match every dimension EXCEPT its own — so the "Hostel 16"
+  // pill drops to "Hostel 0" when Siquijor is selected, instead of
+  // staying stuck at the global cross-city total. Symmetric on city
+  // chips: "Siquijor 10" recomputes to its hostel count when the
+  // Hostel type is selected.
+  const matchesSearch = (s: StayRow) => {
+    if (!q) return true;
+    const hay = [s.name, s.address, s.description]
+      .filter((v): v is string => Boolean(v))
+      .join(" ")
+      .toLowerCase();
+    return hay.includes(q);
+  };
+  const matchesType = (s: StayRow) =>
+    typeFilter === "all" || s.stay_type === typeFilter;
+  const matchesCity = (s: StayRow) => {
+    if (cityFilter === "all") return true;
+    if (cityFilter === "unset") return s.city_id === null;
+    return s.city_id === cityFilter;
+  };
+  const matchesRating = (s: StayRow) =>
+    (s.backpack_rating ?? 0) >= minRating;
+  const matchesNeeds = (s: StayRow) => needs.every((k) => hasChannel(s, k));
+
+  // Rows the City chips count against — everything except the city
+  // filter itself. Pre-filtered and passed into <CityFilter rows={…}>
+  // so its internal byCityId tally already reflects the type/search/
+  // rating/needs slice.
+  const rowsForCityCounts = useMemo(
+    () =>
+      stays.filter(
+        (s) =>
+          matchesSearch(s) &&
+          matchesType(s) &&
+          matchesRating(s) &&
+          matchesNeeds(s),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [stays, q, typeFilter, minRating, needs],
+  );
+
+  // Type chip counts — everything except the type filter. "All" sums
+  // the buckets to stay consistent with the per-type pills.
+  const { typeCountsAll, typeCountsByType } = useMemo(() => {
+    let all = 0;
+    const byType: Record<string, number> = {};
+    for (const s of stays) {
+      if (
+        !matchesSearch(s) ||
+        !matchesCity(s) ||
+        !matchesRating(s) ||
+        !matchesNeeds(s)
+      )
+        continue;
+      all++;
+      byType[s.stay_type] = (byType[s.stay_type] ?? 0) + 1;
+    }
+    return { typeCountsAll: all, typeCountsByType: byType };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stays, q, cityFilter, minRating, needs]);
+
   const visible = useMemo(
     () =>
-      stays.filter((s) => {
-        if (q) {
-          const hay = [s.name, s.address, s.description]
-            .filter((v): v is string => Boolean(v))
-            .join(" ")
-            .toLowerCase();
-          if (!hay.includes(q)) return false;
-        }
-        if (typeFilter !== "all" && s.stay_type !== typeFilter) return false;
-        if (cityFilter === "unset" && s.city_id !== null) return false;
-        if (
-          cityFilter !== "all" &&
-          cityFilter !== "unset" &&
-          s.city_id !== cityFilter
-        ) {
-          return false;
-        }
-        if ((s.backpack_rating ?? 0) < minRating) return false;
-        return needs.every((k) => hasChannel(s, k));
-      }),
+      stays.filter(
+        (s) =>
+          matchesSearch(s) &&
+          matchesType(s) &&
+          matchesCity(s) &&
+          matchesRating(s) &&
+          matchesNeeds(s),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [stays, q, typeFilter, cityFilter, minRating, needs],
   );
 
@@ -235,21 +281,26 @@ export function StaysList({
         )}
       </div>
 
-      {/* City filter chips */}
+      {/* City filter chips. `rows` is pre-filtered by every other
+          dimension so each city's count reflects the current type /
+          search / rating / needs slice. */}
       <CityFilter
         cities={cities}
-        rows={stays}
+        rows={rowsForCityCounts}
         value={cityFilter}
         onChange={setCityFilter}
       />
 
-      {/* Type filter chips */}
+      {/* Type filter chips. Counts come from the cross-filter pass
+          (every dimension except type itself) so picking Siquijor
+          drops "Hostel 16" to "Hostel 0" if Siquijor has no hostels,
+          instead of staying stuck at the global total. */}
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Chip
           active={typeFilter === "all"}
           onClick={() => setTypeFilter("all")}
           label="All"
-          count={stays.length}
+          count={typeCountsAll}
         />
         {(Object.keys(STAY_TYPE_LABEL) as StayType[]).map((t) => (
           <Chip
@@ -257,7 +308,7 @@ export function StaysList({
             active={typeFilter === t}
             onClick={() => setTypeFilter(t)}
             label={STAY_TYPE_LABEL[t]}
-            count={counts[t] ?? 0}
+            count={typeCountsByType[t] ?? 0}
           />
         ))}
       </div>

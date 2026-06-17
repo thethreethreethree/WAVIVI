@@ -57,45 +57,91 @@ export function RestaurantsList({
     return m;
   }, [cities]);
 
-  // Cuisines present in the data, with counts, sorted by frequency.
-  const cuisines = useMemo(() => {
-    const c = new Map<string, number>();
-    for (const r of restaurants) {
-      const key = r.cuisine || "other";
-      c.set(key, (c.get(key) ?? 0) + 1);
-    }
-    return Array.from(c.entries()).sort((a, b) => b[1] - a[1]);
-  }, [restaurants]);
-
   const toggleNeed = (key: ChannelKey) =>
     setNeeds((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]));
 
   // Lowercased once per render so the filter loop doesn't re-allocate.
   // Search matches name + address + description.
   const q = query.trim().toLowerCase();
+
+  // Per-dimension predicates — each chip's count is rendered from rows
+  // that match every dimension EXCEPT its own. Without this the
+  // cuisine pill counts stay stuck at the global cross-city total when
+  // a city is selected (same bug shape that left "Hostel 16" pinned
+  // on /admin/stays after picking Siquijor).
+  const matchesSearch = (r: RestaurantRow) => {
+    if (!q) return true;
+    const hay = [r.name, r.address, r.description]
+      .filter((v): v is string => Boolean(v))
+      .join(" ")
+      .toLowerCase();
+    return hay.includes(q);
+  };
+  const matchesCuisine = (r: RestaurantRow) =>
+    cuisineFilter === "all" || (r.cuisine || "other") === cuisineFilter;
+  const matchesCity = (r: RestaurantRow) => {
+    if (cityFilter === "all") return true;
+    if (cityFilter === "unset") return r.city_id === null;
+    return r.city_id === cityFilter;
+  };
+  const matchesRating = (r: RestaurantRow) =>
+    (r.backpack_rating ?? 0) >= minRating;
+  const matchesNeeds = (r: RestaurantRow) =>
+    needs.every((k) => hasChannel(r, k));
+
+  // Rows the City chips count against — everything except the city
+  // filter itself. Pre-filtered and passed into <CityFilter rows={…}>
+  // so its internal byCityId tally reflects the cuisine/search/rating/
+  // needs slice.
+  const rowsForCityCounts = useMemo(
+    () =>
+      restaurants.filter(
+        (r) =>
+          matchesSearch(r) &&
+          matchesCuisine(r) &&
+          matchesRating(r) &&
+          matchesNeeds(r),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [restaurants, q, cuisineFilter, minRating, needs],
+  );
+
+  // Cuisine chip counts — present cuisines in the dataset, recomputed
+  // against every dimension except cuisine. Sorted by frequency so the
+  // busiest options surface first in the chip row.
+  const { cuisines, cuisineCountsAll } = useMemo(() => {
+    let all = 0;
+    const counts = new Map<string, number>();
+    for (const r of restaurants) {
+      if (
+        !matchesSearch(r) ||
+        !matchesCity(r) ||
+        !matchesRating(r) ||
+        !matchesNeeds(r)
+      )
+        continue;
+      all++;
+      const key = r.cuisine || "other";
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    const ordered = Array.from(counts.entries()).sort(
+      (a, b) => b[1] - a[1],
+    );
+    return { cuisines: ordered, cuisineCountsAll: all };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restaurants, q, cityFilter, minRating, needs]);
+
   const visible = useMemo(
     () =>
-      restaurants.filter((r) => {
-        if (q) {
-          const hay = [r.name, r.address, r.description]
-            .filter((v): v is string => Boolean(v))
-            .join(" ")
-            .toLowerCase();
-          if (!hay.includes(q)) return false;
-        }
-        if (cuisineFilter !== "all" && (r.cuisine || "other") !== cuisineFilter)
-          return false;
-        if (cityFilter === "unset" && r.city_id !== null) return false;
-        if (
-          cityFilter !== "all" &&
-          cityFilter !== "unset" &&
-          r.city_id !== cityFilter
-        ) {
-          return false;
-        }
-        if ((r.backpack_rating ?? 0) < minRating) return false;
-        return needs.every((k) => hasChannel(r, k));
-      }),
+      restaurants.filter(
+        (r) =>
+          matchesSearch(r) &&
+          matchesCuisine(r) &&
+          matchesCity(r) &&
+          matchesRating(r) &&
+          matchesNeeds(r),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [restaurants, q, cuisineFilter, cityFilter, minRating, needs],
   );
 
@@ -227,20 +273,26 @@ export function RestaurantsList({
         )}
       </div>
 
+      {/* `rows` is pre-filtered by every other dimension so each city's
+          count reflects the current cuisine / search / rating / needs
+          slice instead of the global total. */}
       <CityFilter
         cities={cities}
-        rows={restaurants}
+        rows={rowsForCityCounts}
         value={cityFilter}
         onChange={setCityFilter}
       />
 
-      {/* Cuisine filter chips */}
+      {/* Cuisine filter chips. Counts come from the cross-filter pass
+          (every dimension except cuisine) so picking a city drops
+          cuisines that don't exist there to 0 instead of staying
+          stuck at the cross-city total. */}
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Chip
           active={cuisineFilter === "all"}
           onClick={() => setCuisineFilter("all")}
           label="All"
-          count={restaurants.length}
+          count={cuisineCountsAll}
         />
         {cuisines.map(([cuisine, count]) => (
           <Chip

@@ -21,29 +21,35 @@ export function GroupsList({ groups }: { groups: AdminChatGroup[] }) {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const categories = useMemo(() => {
-    const c = new Map<string, number>();
+  // Per-dimension predicates so the category counts react to the
+  // currently-selected state filter (without this, switching to
+  // "Archived" left the category chips reading the active-group totals).
+  const matchesState = (g: AdminChatGroup) => {
+    if (stateFilter === "featured") return Boolean(g.featured);
+    if (stateFilter === "archived") return Boolean(g.archived);
+    if (stateFilter === "active") return !g.archived;
+    return true;
+  };
+  const matchesCategory = (g: AdminChatGroup) =>
+    categoryFilter === "all" || (g.category || "—") === categoryFilter;
+
+  const { categories, categoryCountsAll } = useMemo(() => {
+    let all = 0;
+    const counts = new Map<string, number>();
     for (const g of groups) {
+      if (!matchesState(g)) continue;
+      all++;
       const key = g.category || "—";
-      c.set(key, (c.get(key) ?? 0) + 1);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
     }
-    return Array.from(c.entries()).sort((a, b) => b[1] - a[1]);
-  }, [groups]);
+    const ordered = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+    return { categories: ordered, categoryCountsAll: all };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groups, stateFilter]);
 
   const visible = useMemo(
-    () =>
-      groups.filter((g) => {
-        if (stateFilter === "featured" && !g.featured) return false;
-        if (stateFilter === "archived" && !g.archived) return false;
-        if (stateFilter === "active" && g.archived) return false;
-        if (
-          categoryFilter !== "all" &&
-          (g.category || "—") !== categoryFilter
-        ) {
-          return false;
-        }
-        return true;
-      }),
+    () => groups.filter((g) => matchesState(g) && matchesCategory(g)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [groups, stateFilter, categoryFilter],
   );
 
@@ -149,7 +155,7 @@ export function GroupsList({ groups }: { groups: AdminChatGroup[] }) {
           active={categoryFilter === "all"}
           onClick={() => setCategoryFilter("all")}
           label="All categories"
-          count={groups.length}
+          count={categoryCountsAll}
         />
         {categories.map(([cat, count]) => (
           <Chip
