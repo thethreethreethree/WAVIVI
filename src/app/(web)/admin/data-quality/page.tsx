@@ -1,9 +1,13 @@
 import Link from "next/link";
 
+import { CityGeoHealthSection } from "@/components/admin/data-quality/city-geo-health-section";
 import { ClassificationSection } from "@/components/admin/data-quality/classification-section";
 import { CorrectionUploadButton } from "@/components/admin/data-quality/correction-upload-button";
 import { CrossTableSection } from "@/components/admin/data-quality/cross-table-section";
+import { DupMapsSection } from "@/components/admin/data-quality/dup-maps-section";
 import { ExportDataQualityCsvButton } from "@/components/admin/data-quality/export-button";
+import { GeofenceDropoutSection } from "@/components/admin/data-quality/geofence-dropout-section";
+import { RegionOrphanSection } from "@/components/admin/data-quality/region-orphan-section";
 import {
   type Source,
   SOURCE_ADMIN_ROUTE,
@@ -107,15 +111,18 @@ export default async function DataQualityPage() {
       <header>
         <h1 className="text-2xl font-bold tracking-tight">Data quality</h1>
         <p className="mt-1 text-sm text-muted">
-          Three audits live here. <strong>Photo quality</strong> flags rows
-          whose image is missing or a placeholder;{" "}
-          <strong>Classification quality</strong> flags rows whose stored
-          type/cuisine/category disagrees with what the name suggests (e.g. a
-          stay labelled <code>hotel</code> whose name contains{" "}
-          <code>Hostel</code>); <strong>Wrong table</strong> flags utilities
-          whose name strongly suggests they belong in restaurants / stays /
-          experiences instead (e.g. &ldquo;Big Bad Thai Restaurant&rdquo;
-          tagged as <code>bank</code>).
+          Seven audits live here.{" "}
+          <strong>Content audits</strong> — Photo quality flags missing
+          / placeholder photos; Classification quality flags
+          type/cuisine/category mismatches with the name; Wrong table
+          flags utilities that belong in restaurants/stays/experiences.{" "}
+          <strong>System-health audits</strong> — Geofence dropout
+          surfaces rows the admin sees but travellers don&apos;t (the
+          city-first geofilter is clamping them); City geo health lists
+          cities missing centre+radius (the upstream cause of most
+          dropouts); Region orphans lists rows with no region_id (with
+          a one-click backfill); Duplicate maps URLs surfaces rows
+          sharing the same Google CID (one venue ingested twice).
         </p>
         {/* Jump buttons — anchor links straight to each audit's section
             so admins don't have to scroll a long page to get to the
@@ -138,6 +145,30 @@ export default async function DataQualityPage() {
             className="rounded-full bg-heat px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
           >
             ↓ Wrong table
+          </a>
+          <a
+            href="#geofence-dropout"
+            className="rounded-full bg-heat px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+          >
+            ↓ Geofence dropout
+          </a>
+          <a
+            href="#city-geo-health"
+            className="rounded-full bg-sunset px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+          >
+            ↓ City geo health
+          </a>
+          <a
+            href="#region-orphans"
+            className="rounded-full bg-cool px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+          >
+            ↓ Region orphans
+          </a>
+          <a
+            href="#dup-maps"
+            className="rounded-full bg-glow px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+          >
+            ↓ Duplicate maps URLs
           </a>
         </div>
       </header>
@@ -302,6 +333,22 @@ export default async function DataQualityPage() {
 
       <section id="cross-table-utilities" className="scroll-mt-20">
         <CrossTableSection />
+      </section>
+
+      <section id="geofence-dropout" className="scroll-mt-20">
+        <GeofenceDropoutSection />
+      </section>
+
+      <section id="city-geo-health" className="scroll-mt-20">
+        <CityGeoHealthSection />
+      </section>
+
+      <section id="region-orphans" className="scroll-mt-20">
+        <RegionOrphanSection />
+      </section>
+
+      <section id="dup-maps" className="scroll-mt-20">
+        <DupMapsSection />
       </section>
     </div>
   );
