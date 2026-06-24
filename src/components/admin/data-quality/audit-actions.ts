@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { applyCityRegionReassignment } from "@/lib/data-quality/city-region-audit";
 import { dedupKeepOne } from "@/lib/data-quality/dup-maps-audit";
 import { applyBackfillableRegionOrphans } from "@/lib/data-quality/region-orphan-audit";
 import { requireAdmin } from "@/lib/toolbox/admin";
@@ -24,6 +25,25 @@ export async function applyRegionOrphanBackfillAction(): Promise<{
     const counts = await applyBackfillableRegionOrphans();
     revalidatePath("/admin/data-quality");
     return { ok: true, error: null, counts };
+  } catch (err) {
+    return { ok: false, error: (err as Error).message };
+  }
+}
+
+export async function applyCityRegionReassignmentAction(
+  cityId: string,
+  newRegionId: string,
+): Promise<{
+  ok: boolean;
+  error: string | null;
+  result?: Awaited<ReturnType<typeof applyCityRegionReassignment>>;
+}> {
+  const { isAdmin } = await requireAdmin();
+  if (!isAdmin) return { ok: false, error: "Not authorised." };
+  try {
+    const result = await applyCityRegionReassignment(cityId, newRegionId);
+    revalidatePath("/admin/data-quality");
+    return { ok: true, error: null, result };
   } catch (err) {
     return { ok: false, error: (err as Error).message };
   }

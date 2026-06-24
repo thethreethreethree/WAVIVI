@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CityGeoHealthSection } from "@/components/admin/data-quality/city-geo-health-section";
+import { CityRegionSection } from "@/components/admin/data-quality/city-region-section";
 import { ClassificationSection } from "@/components/admin/data-quality/classification-section";
 import { CorrectionUploadButton } from "@/components/admin/data-quality/correction-upload-button";
 import { CrossTableSection } from "@/components/admin/data-quality/cross-table-section";
@@ -151,6 +152,12 @@ export default async function DataQualityPage() {
             className="rounded-full bg-heat px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
           >
             ↓ Geofence dropout
+          </a>
+          <a
+            href="#city-region"
+            className="rounded-full bg-glow px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+          >
+            ↓ City→region
           </a>
           <a
             href="#city-geo-health"
@@ -337,6 +344,10 @@ export default async function DataQualityPage() {
 
       <section id="geofence-dropout" className="scroll-mt-20">
         <GeofenceDropoutSection />
+      </section>
+
+      <section id="city-region" className="scroll-mt-20">
+        <CityRegionSection />
       </section>
 
       <section id="city-geo-health" className="scroll-mt-20">
