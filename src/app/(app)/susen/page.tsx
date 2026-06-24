@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { motion } from "motion/react";
 
 import {
@@ -22,6 +23,14 @@ import { SusenAvatar } from "@/components/ui/susen-avatar";
 import { SusenText } from "@/components/ui/susen-text";
 import { createClient } from "@/lib/supabase/client";
 import { useLongPress } from "@/hooks/use-long-press";
+import { setLanguageAction } from "@/lib/i18n/actions";
+import { useLanguage, useT } from "@/lib/i18n/client";
+import {
+  type Language,
+  LANGUAGE_FLAG,
+  LANGUAGE_LABEL,
+  LANGUAGES,
+} from "@/lib/i18n/dictionary";
 import {
   appendSusenLocationAction,
   appendSusenTurnAction,
@@ -32,8 +41,13 @@ import { SUSEN_WELCOME, type SusenTurn, susen } from "@/lib/susen/engine";
 import { SUSEN, SUSEN_QUICK_PROMPTS } from "@/lib/susen/persona";
 
 export default function SusenPage() {
+  const t = useT();
+  // Welcome line is the very first thing the traveller reads — pull
+  // from the dictionary so a Spanish-set user sees "Hola, soy Susen…"
+  // immediately on hydrate, not after a server round-trip.
+  const welcome = t("susen.welcome") || SUSEN_WELCOME;
   const [turns, setTurns] = useState<SusenTurn[]>([
-    { role: "susen", text: SUSEN_WELCOME },
+    { role: "susen", text: welcome },
   ]);
   const [draft, setDraft] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -300,9 +314,16 @@ export default function SusenPage() {
           <span className="block text-base font-bold leading-tight">
             {SUSEN.name}
           </span>
-          <span className="block text-sm text-muted">{SUSEN.tagline}</span>
+          <span className="block text-sm text-muted">
+            {t("susen.tagline")}
+          </span>
         </span>
         <span className="ml-auto flex items-center gap-2">
+          {/* Inline EN/ES toggle next to Online. Authed-only because
+              setLanguageAction writes to profiles.language too — for
+              anon users the /profile/language route is the equivalent
+              after sign-in. */}
+          {isAuthed ? <SusenHeaderLanguageToggle /> : null}
           {/* Share-feedback shortcut. Auth-gated route — anon visitors
               bounce to /login from the page itself. Plain Link so the
               chat history isn't lost (we restore on return). */}
@@ -310,9 +331,9 @@ export default function SusenPage() {
             <Link
               href="/susen/feedback"
               className="hidden items-center gap-1.5 rounded-full bg-glow/15 px-3 py-1 text-xs font-bold text-glow hover:bg-glow/25 sm:inline-flex"
-              title="Share what you learned from your trip — admins review and may feed it back into Susen's answers."
+              title={t("susen.shareWhatYouLearnedTooltip")}
             >
-              📝 Share what you learned
+              {t("susen.shareWhatYouLearned")}
             </Link>
           ) : null}
           <span className="flex items-center gap-1.5 rounded-full bg-white/85 px-3 py-1 text-xs font-bold text-cool ring-1 ring-cool/30">
@@ -320,7 +341,7 @@ export default function SusenPage() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
-            Online
+            {t("common.online")}
           </span>
         </span>
       </header>
@@ -475,13 +496,7 @@ export default function SusenPage() {
           ref={inputRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder={
-            editing
-              ? "Edit your message…"
-              : replyTarget
-                ? "Reply…"
-                : "Ask Susen anything…"
-          }
+          placeholder={t("susen.placeholder")}
           className="wc-frame flex-1 rounded-full bg-white/70 px-4 py-3
                      text-base outline-none placeholder:text-muted"
         />
@@ -533,6 +548,7 @@ function SusenBubble({
    *  without the traveller having to re-type. */
   improveHref?: string | null;
 }) {
+  const t = useT();
   const own = turn.role === "user";
   const longPress = useLongPress(onOpenActions, { delayMs: 450 });
   const quote: ReplyTarget | null = turn.reply_to_snippet
@@ -625,9 +641,9 @@ function SusenBubble({
             href={improveHref}
             prefetch={false}
             className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-muted hover:text-glow"
-            title="Share what you learned so we can refine Susen's answer for this kind of question."
+            title={t("susen.improveTooltip")}
           >
-            📝 Improve this answer
+            {t("susen.improveAnswer")}
           </Link>
         ) : null}
       </div>
@@ -641,16 +657,19 @@ function SusenBubble({
  *  same returnTo as the inline modal so the user lands back on /susen
  *  after auth. */
 function SusenSignupGate() {
+  const t = useT();
   const next = encodeURIComponent("/susen");
   return (
     <div className="flex h-[calc(100dvh-6.75rem)] flex-col items-center justify-center px-6 text-center">
       <SusenAvatar className="h-20 w-20" />
       <h1 className="mt-5 text-2xl font-bold tracking-tight">
-        Sign up to chat with {SUSEN.name}
+        {t("susen.signupGate.heading", { name: SUSEN.name })}
       </h1>
       <p className="mt-2 max-w-xs text-sm text-muted">
-        Meet our {SUSEN.acronym} — {SUSEN.fullName}. Personalised
-        recommendations, plans, and meetups, free.
+        {t("susen.signupGate.body", {
+          acronym: SUSEN.acronym,
+          fullName: SUSEN.fullName,
+        })}
       </p>
       <div className="mt-7 flex w-full max-w-xs flex-col gap-2">
         <Link
@@ -673,5 +692,49 @@ function SusenSignupGate() {
         </Link>
       </div>
     </div>
+  );
+}
+
+/** Tiny EN/ES pill toggle in the Susen chat header. Optimistic — the
+ *  cookie sets immediately so the next reply renders in the chosen
+ *  language on the very next turn (no full reload needed). A router
+ *  refresh runs in the background so subsequent server-rendered
+ *  strings (welcome line on a fresh load, etc.) pick up the change.
+ *  Authed-only because the action ALSO writes profiles.language;
+ *  anon users use /profile/language after sign-in. */
+function SusenHeaderLanguageToggle() {
+  const lang = useLanguage();
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  function toggle(next: Language) {
+    if (next === lang || pending) return;
+    startTransition(async () => {
+      await setLanguageAction(next);
+      router.refresh();
+    });
+  }
+  return (
+    <span
+      className="hidden items-center gap-0.5 rounded-full bg-white/85 p-0.5 text-[10px] font-bold ring-1 ring-border sm:inline-flex"
+      role="group"
+      aria-label="Language"
+    >
+      {LANGUAGES.map((l) => (
+        <button
+          key={l}
+          type="button"
+          onClick={() => toggle(l)}
+          disabled={pending && lang !== l}
+          className={`rounded-full px-2 py-0.5 transition-colors ${
+            l === lang
+              ? "bg-glow text-white"
+              : "text-muted hover:text-foreground"
+          }`}
+          title={LANGUAGE_LABEL[l]}
+        >
+          {LANGUAGE_FLAG[l]} {l.toUpperCase()}
+        </button>
+      ))}
+    </span>
   );
 }

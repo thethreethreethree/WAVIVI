@@ -35,6 +35,16 @@ function currentRegionId(): string | null {
   return m && m[1] ? decodeURIComponent(m[1]) : null;
 }
 
+/** Read the user's preferred language from the wv-language cookie.
+ *  Falls back to 'en' when missing or unrecognised; the server
+ *  re-validates anyway so this is a hint, not the source of truth. */
+function currentLanguage(): string {
+  if (typeof document === "undefined") return "en";
+  const m = document.cookie.match(/(?:^|;\s*)wv-language=([^;]+)/);
+  const raw = m && m[1] ? decodeURIComponent(m[1]) : "en";
+  return raw === "es" ? "es" : "en";
+}
+
 export const apiSusen: SusenEngine = {
   async respond(input: string, history: SusenTurn[]): Promise<SusenReply> {
     const body = JSON.stringify({
@@ -44,6 +54,7 @@ export const apiSusen: SusenEngine = {
       region_id: currentRegionId(),
       author: await currentAuthor(),
       source: "app",
+      language: currentLanguage(),
     });
 
     // 3 attempts, ~5s of coverage — protects against cold-start

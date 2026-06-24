@@ -7,6 +7,8 @@ import { PageTransition } from "@/components/ui/page-transition";
 import { ThemeProvider } from "@/components/ui/theme-context";
 import { ThemeImgSwap } from "@/components/ui/theme-img-swap";
 import { ServiceWorkerRegister } from "@/features/pwa";
+import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
+import { getLanguage } from "@/lib/i18n/server";
 import { getServerTheme } from "@/lib/theme/server";
 
 /** Mobile app shell — phone-width frame + floating bottom nav.
@@ -19,8 +21,12 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const theme = await getServerTheme();
+  const [theme, language] = await Promise.all([
+    getServerTheme(),
+    getLanguage(),
+  ]);
   return (
+    <LanguageProvider language={language}>
     <ThemeProvider theme={theme}>
       <div className="font-hand-app bg-border/40 font-[family-name:var(--font-hand)]">
         <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-hidden bg-background pb-[6.75rem] shadow-sm">
@@ -44,5 +50,6 @@ export default async function AppLayout({
         <DesignEditor />
       </div>
     </ThemeProvider>
+    </LanguageProvider>
   );
 }

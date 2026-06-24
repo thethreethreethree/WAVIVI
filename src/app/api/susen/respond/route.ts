@@ -8,6 +8,7 @@ import {
 } from "@/lib/rate-limit/check";
 import { createClient } from "@/lib/supabase/server";
 import type { SusenTurn } from "@/lib/susen/engine";
+import { getLanguage } from "@/lib/i18n/server";
 import {
   detectScopeFromInput,
   formatInventoryForPrompt,
@@ -55,6 +56,11 @@ interface SusenRequestBody {
   region_id?: unknown;
   author?: unknown;
   source?: unknown;
+  /** Two-letter language hint from the wv-language cookie ("en" |
+   *  "es"). When absent we re-resolve via getLanguage() (cookie +
+   *  profile fallback). The server is the source of truth; the body
+   *  hint is just a cheaper path on the happy case. */
+  language?: unknown;
 }
 
 /** OpenAI-style chat message — DeepSeek consumes the same wire format. */
@@ -251,6 +257,14 @@ export async function POST(req: Request) {
   const regionId = RAW_REGION_RE.test(rawRegionId) ? rawRegionId : null;
   const author = typeof body.author === "string" ? body.author : null;
   const source = typeof body.source === "string" ? body.source : null;
+  // Language resolution — trust the body hint when it's a known
+  // code, otherwise fall back to the server-side cookie/profile path
+  // so a tampered body can't bypass the user's setting.
+  const langHint =
+    typeof body.language === "string" && (body.language === "en" || body.language === "es")
+      ? (body.language as "en" | "es")
+      : null;
+  const language = langHint ?? (await getLanguage());
 
   if (!input) {
     return NextResponse.json(
@@ -351,6 +365,20 @@ export async function POST(req: Request) {
   //                                breaks the cache, by design)
   // History + user input ride as separate messages, not in system.
   let systemContent = SUSEN_SYSTEM_PROMPT;
+  // LANGUAGE — sits between persona and CURRENT REGION so the model
+  // reads it before any region/inventory context. "es" gets a longer
+  // directive than "en" because the default training behaviour is to
+  // mirror the user's language, but we want the choice locked to the
+  // resolved preference regardless of which language the user types
+  // in (e.g. a Spanish-set user asks in English; she still replies
+  // in Spanish — that's the whole point of the preference).
+  if (language === "es") {
+    systemContent +=
+      "\n\nLANGUAGE\nReply in Spanish (Castilian). This is the traveller's chosen language and overrides whatever language they type in this turn. Place names + venue names from the inventory stay in their original form. Tone stays warm and traveller-friendly — match the existing English persona, just in Spanish.";
+  } else {
+    systemContent +=
+      "\n\nLANGUAGE\nReply in English. This is the traveller's chosen language.";
+  }
   if (effectiveRegionId) {
     // JSON.stringify escapes quotes / newlines / control chars inside the
     // interpolated strings, so even if an admin types a region display
