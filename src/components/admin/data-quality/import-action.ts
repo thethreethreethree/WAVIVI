@@ -2,6 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 
+import {
+  applyBucketImport,
+  ensureCitiesForRegion,
+  type ImportBucket,
+} from "@/components/admin/batch-city-import/actions";
+import { splitCityCsv } from "@/components/admin/batch-city-import/csv-router";
 import { parseCsv } from "@/components/admin/bulk-import/csv";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CATEGORY_BY_ID, type CategoryId } from "@/lib/toolbox/categories";
@@ -12,6 +18,7 @@ import type { StayType } from "@/types/supabase";
 import type {
   CorrectionResult,
   CorrectionRowMessage,
+  WrongTableCorrectionResult,
 } from "./correction-types";
 
 /**
@@ -536,4 +543,145 @@ async function applyClassificationCorrectionInner(
 
 function pushMessage(arr: CorrectionRowMessage[], m: CorrectionRowMessage) {
   if (arr.length < ROW_MESSAGE_CAP) arr.push(m);
+}
+
+/* ── Wrong-Table Correction File upload ─────────────────────────────
+ *
+ * The Wrong-Table audit lists `traveler_utilities` rows whose name
+ * suggests they belong in stays / restaurants / experiences instead
+ * (e.g. "Big Bad Thai Restaurant" tagged as Bank). The Export button
+ * already ships a 23-col scraper-format CSV with Industry pre-filled
+ * to "Hotel" / "Restaurant" / "Tour" so the row routes to the right
+ * destination bucket.
+ *
+ * This action closes the round-trip: admin re-uploads the (possibly
+ * edited) CSV scoped to one region, the server splits by bucket via
+ * the existing batch-city-import path, ensures cities, and INSERTs
+ * the destination rows. The source utility rows are NOT auto-removed —
+ * the existing Remove buttons on the Wrong-Table section handle that
+ * side of the migration as a deliberate two-step (re-import is
+ * mechanical, delete wants a human glance).
+ *
+ * Re-uses splitCityCsv + applyBucketImport so the dedup / upsert
+ * semantics match every other ingest path; no parallel insert logic.
+ */
+
+const WRONG_TABLE_CHUNK_ROWS = 500;
+
+export async function applyWrongTableCorrectionCsv(
+  csvText: string,
+  regionId: string,
+): Promise<WrongTableCorrectionResult> {
+  const empty: WrongTableCorrectionResult = {
+    ok: false,
+    error: null,
+    regionId,
+    buckets: {
+      stays: { parsed: 0, added: 0, updated: 0, skipped: 0 },
+      restaurants: { parsed: 0, added: 0, updated: 0, skipped: 0 },
+      experiences: { parsed: 0, added: 0, updated: 0, skipped: 0 },
+    },
+    rowErrors: [],
+  };
+  try {
+    const { isAdmin } = await requireAdmin();
+    if (!isAdmin) return { ...empty, error: "Not authorised." };
+    if (!regionId || !regionId.trim()) {
+      return { ...empty, error: "Pick a region first." };
+    }
+    if (!csvText || !csvText.trim()) {
+      return { ...empty, error: "CSV is empty." };
+    }
+
+    // 1) Split the whole upload into per-bucket sub-CSVs and collect
+    //    every distinct City cell across the file.
+    const split = splitCityCsv(csvText);
+    if (split.headerError) {
+      return { ...empty, error: split.headerError };
+    }
+
+    // 2) Pre-warm cities for the target region so every row carries
+    //    the right city_id. ensureCitiesForRegion is idempotent.
+    const cityRes = await ensureCitiesForRegion(regionId, split.cityNames);
+    if (!cityRes.ok) {
+      return { ...empty, error: cityRes.error };
+    }
+    const cityIdMap = cityRes.cityIdMap;
+
+    const result: WrongTableCorrectionResult = {
+      ...empty,
+      ok: true,
+      buckets: {
+        stays: { parsed: 0, added: 0, updated: 0, skipped: 0 },
+        restaurants: { parsed: 0, added: 0, updated: 0, skipped: 0 },
+        experiences: { parsed: 0, added: 0, updated: 0, skipped: 0 },
+      },
+    };
+
+    // 3) Chunk each bucket's sub-CSV at 500 rows/call and pump
+    //    through applyBucketImport. Sequential per bucket so the
+    //    engine's dedup/upsert doesn't race with itself.
+    const buckets: { bucket: ImportBucket; csv: string | null }[] = [
+      { bucket: "stays", csv: split.stays },
+      { bucket: "restaurants", csv: split.restaurants },
+      { bucket: "experiences", csv: split.experiences },
+    ];
+    for (const { bucket, csv } of buckets) {
+      if (!csv || !csv.trim()) continue;
+      const chunks = chunkSubCsv(csv, WRONG_TABLE_CHUNK_ROWS);
+      for (const chunkCsv of chunks) {
+        const r = await applyBucketImport(
+          regionId,
+          chunkCsv,
+          bucket,
+          // skipPhotoMirror = true. We're moving rows the admin has
+          // ALREADY been working with — the photo_url they already
+          // carry is fine to copy straight in; no need to round-trip
+          // through the mirror job on this path.
+          true,
+          cityIdMap,
+        );
+        if (!r.ok || !r.result) {
+          // Surface the first hard error and stop; partial progress
+          // is fine to re-run because applyBucketImport upserts.
+          return { ...empty, error: r.error ?? "Bucket import failed." };
+        }
+        result.buckets[bucket].parsed += r.result.parsed;
+        result.buckets[bucket].added += r.result.added;
+        result.buckets[bucket].updated += r.result.updated;
+        result.buckets[bucket].skipped += r.result.skipped;
+        if (r.result.errors && r.result.errors.length > 0) {
+          for (const e of r.result.errors) {
+            if (result.rowErrors.length >= 50) break;
+            result.rowErrors.push(e);
+          }
+        }
+      }
+    }
+
+    revalidatePath("/admin/data-quality");
+    return result;
+  } catch (err) {
+    return { ...empty, error: (err as Error).message };
+  }
+}
+
+/** Split one bucket sub-CSV into row-chunks each prefixed by the
+ *  original header line. Same RFC-4180-safe shape as the place
+ *  correction uploads — parseCsv → grid → re-emit each chunk via
+ *  the bulk-import emitter is overkill here because splitCityCsv
+ *  already produced quoted output; a naive line split works for
+ *  the well-formed CSV it returns. */
+function chunkSubCsv(csv: string, rowsPerChunk: number): string[] {
+  const lines = csv.split(/\r?\n/);
+  if (lines.length === 0) return [];
+  const header = lines[0];
+  const body = lines.slice(1).filter((l) => l.trim().length > 0);
+  if (body.length === 0) return [];
+  const out: string[] = [];
+  for (let i = 0; i < body.length; i += rowsPerChunk) {
+    const slice = body.slice(i, i + rowsPerChunk);
+    out.push(`${header}\n${slice.join("\n")}`);
+  }
+  return out;
 }

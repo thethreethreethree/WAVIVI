@@ -35,3 +35,19 @@ export interface CorrectionResult {
    *  the full file. */
   rowMessages: CorrectionRowMessage[];
 }
+
+/** Per-bucket destination summary for the Wrong-Table correction flow. */
+export type WrongTableBucket = "stays" | "restaurants" | "experiences";
+
+export interface WrongTableCorrectionResult {
+  ok: boolean;
+  error: string | null;
+  regionId: string | null;
+  /** Per-bucket aggregated counts so the UI can render a small summary. */
+  buckets: Record<
+    WrongTableBucket,
+    { parsed: number; added: number; updated: number; skipped: number }
+  >;
+  /** First handful of row-level parse errors surfaced from the engines. */
+  rowErrors: string[];
+}

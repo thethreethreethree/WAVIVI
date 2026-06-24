@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import { CrossTableGroupClient } from "./cross-table-group-client";
 import { ExportWrongTableUtilitiesCsvButton } from "./export-button";
+import { WrongTableCorrectionButton } from "./wrong-table-correction-button";
 
 /**
  * Cross-table utility audit — third section on /admin/data-quality.
@@ -25,10 +26,23 @@ import { ExportWrongTableUtilitiesCsvButton } from "./export-button";
  */
 export async function CrossTableSection() {
   const supabase = createAdminClient();
-  const [suspects, regionsRes] = await Promise.all([
+  const [suspects, regionsRes, activeRegionsRes] = await Promise.all([
     loadCrossTableUtilitySuspects(),
     supabase.from("regions").select("id, display_name"),
+    // Active-only list for the Wrong-Table correction upload's
+    // target-region dropdown — admins shouldn't re-import into an
+    // inactive region by accident.
+    supabase
+      .from("regions")
+      .select("id, display_name")
+      .eq("active", true)
+      .order("display_name", { ascending: true })
+      .returns<{ id: string; display_name: string }[]>(),
   ]);
+  const activeRegions = (activeRegionsRes.data ?? []).map((r) => ({
+    id: r.id,
+    displayName: r.display_name,
+  }));
 
   // Plain object for the server→client boundary.
   const regionLabel: Record<string, string> = {};
@@ -81,13 +95,17 @@ export async function CrossTableSection() {
           utility despite the name (false-positive defence).
         </p>
         </div>
-        {/* Export button — same 18-col scraper format the other audits
-            use, so the file round-trips through /admin/batch-city-import
-            to seed the destination place table. The originals stay on
-            traveler_utilities until admin uses Remove. */}
-        {total > 0 && (
-          <ExportWrongTableUtilitiesCsvButton dateLabel={dateLabel} />
-        )}
+        {/* Export + Correction-file round-trip lives side-by-side so
+            the workflow (Export → edit → Re-upload) reads as one
+            unit. The Correction button stays visible even when the
+            current audit is empty — admins may be re-uploading from
+            a previously-exported file. */}
+        <div className="flex flex-wrap items-start gap-2">
+          {total > 0 && (
+            <ExportWrongTableUtilitiesCsvButton dateLabel={dateLabel} />
+          )}
+          <WrongTableCorrectionButton regions={activeRegions} />
+        </div>
       </header>
 
       <div className="rounded-2xl bg-heat p-4 text-white shadow-card">
