@@ -17,7 +17,19 @@ import { SusenFeedbackForm } from "./SusenFeedbackForm";
  */
 export const dynamic = "force-dynamic";
 
-export default async function SusenFeedbackPage() {
+export default async function SusenFeedbackPage({
+  searchParams,
+}: {
+  // q = the user's question, a = Susen's reply, turnId = optional
+  // susen_messages row id for lineage. Passed in when the "Improve
+  // this answer" link on a Susen reply opens this page. Plain
+  // searchParams since the values are short text.
+  searchParams: Promise<{
+    q?: string;
+    a?: string;
+    turnId?: string;
+  }>;
+}) {
   // Sign-in gate — anonymous submissions would let anyone seed the
   // admin review queue and burn the team's time.
   const supabase = await createClient();
@@ -27,6 +39,14 @@ export default async function SusenFeedbackPage() {
   if (!user) {
     redirect("/login?next=/susen/feedback");
   }
+  const sp = await searchParams;
+  const prefill = (sp.q ?? "").trim() || (sp.a ?? "").trim()
+    ? {
+        question: (sp.q ?? "").trim(),
+        answer: (sp.a ?? "").trim(),
+        turnId: (sp.turnId ?? "").trim() || null,
+      }
+    : null;
 
   // Pull the same scope dropdown options the admin form uses so the
   // traveller can scope their feedback to the city they actually saw.
@@ -71,7 +91,11 @@ export default async function SusenFeedbackPage() {
           relevant.
         </p>
       </header>
-      <SusenFeedbackForm regions={regions} cities={cities} />
+      <SusenFeedbackForm
+        regions={regions}
+        cities={cities}
+        prefill={prefill}
+      />
     </div>
   );
 }

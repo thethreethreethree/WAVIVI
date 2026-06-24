@@ -332,6 +332,29 @@ export default function SusenPage() {
       >
         {turns.map((turn, i) => {
           const turnKey = turn.id ?? `idx:${i}`;
+          // "Improve this answer" target: the most recent user turn
+          // BEFORE this Susen turn. Pre-fills the feedback form with
+          // the question/answer pair so the traveller doesn't have to
+          // re-type context.
+          const prevUserText: string | null =
+            turn.role === "susen"
+              ? (() => {
+                  for (let j = i - 1; j >= 0; j--) {
+                    if (turns[j].role === "user" && turns[j].text)
+                      return turns[j].text;
+                  }
+                  return null;
+                })()
+              : null;
+          const improveHref =
+            turn.role === "susen" && isAuthed && turn.text
+              ? `/susen/feedback?` +
+                new URLSearchParams({
+                  q: prevUserText ?? "",
+                  a: turn.text,
+                  ...(turn.id ? { turnId: turn.id } : {}),
+                }).toString()
+              : null;
           return (
             <SusenBubble
               key={turnKey}
@@ -362,6 +385,7 @@ export default function SusenPage() {
                   ? () => scrollToTurn(turn.reply_to_id!)
                   : undefined
               }
+              improveHref={improveHref}
             />
           );
         })}
@@ -491,6 +515,7 @@ function SusenBubble({
   onReply,
   onEdit,
   onQuoteTap,
+  improveHref,
 }: {
   turn: SusenTurn;
   registerRef: (el: HTMLDivElement | null) => void;
@@ -502,6 +527,11 @@ function SusenBubble({
   onReply: () => void;
   onEdit: () => void;
   onQuoteTap?: () => void;
+  /** Inline "Improve this answer" link rendered below Susen's
+   *  bubbles only (own=false). Pre-fills /susen/feedback with the
+   *  Q/A pair so the feedback pipeline gets context-rich submissions
+   *  without the traveller having to re-type. */
+  improveHref?: string | null;
 }) {
   const own = turn.role === "user";
   const longPress = useLongPress(onOpenActions, { delayMs: 450 });
@@ -587,6 +617,19 @@ function SusenBubble({
             edited
           </span>
         )}
+        {/* Improve-this-answer footer on Susen's bubbles only. Wrapped
+            in an aria-label tooltip; small + ghost-styled so it
+            doesn't compete with the bubble itself. */}
+        {!own && improveHref ? (
+          <Link
+            href={improveHref}
+            prefetch={false}
+            className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-muted hover:text-glow"
+            title="Share what you learned so we can refine Susen's answer for this kind of question."
+          >
+            📝 Improve this answer
+          </Link>
+        ) : null}
       </div>
     </div>
   );

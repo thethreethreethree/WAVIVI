@@ -15,20 +15,49 @@ interface City {
 
 const MAX_BODY = 4000;
 
+interface FeedbackPrefill {
+  question: string;
+  answer: string;
+  turnId: string | null;
+}
+
+/** Build the textarea seed from an "Improve this answer" prefill. The
+ *  block sits at the top so admins reviewing the queue can see the
+ *  original Q/A pair the traveller was reacting to; the traveller's
+ *  own correction is appended below the marker line. */
+function buildPrefillBody(p: FeedbackPrefill): string {
+  const parts: string[] = [];
+  if (p.question)
+    parts.push(`Question I asked: "${p.question}"`);
+  if (p.answer)
+    parts.push(`Susen replied: "${p.answer}"`);
+  parts.push(""); // blank line separating context from the correction
+  parts.push("What I learned / want to suggest:");
+  parts.push("");
+  return parts.join("\n");
+}
+
 /** In-trip feedback form. Pure client; POSTs to /api/susen/feedback
  *  which enforces auth + RLS. On success the form clears and a small
- *  thank-you panel renders so the traveller can keep submitting. */
+ *  thank-you panel renders so the traveller can keep submitting.
+ *  Accepts an optional `prefill` so the "Improve this answer" deep
+ *  link from a Susen reply seeds the body with Q/A context. */
 export function SusenFeedbackForm({
   regions,
   cities,
+  prefill,
 }: {
   regions: Region[];
   cities: City[];
+  prefill?: FeedbackPrefill | null;
 }) {
   const [regionId, setRegionId] = useState("");
   const [cityId, setCityId] = useState("");
   const [topic, setTopic] = useState("");
-  const [body, setBody] = useState("");
+  // Seed body from the deep-link Q/A when present; the cursor lands
+  // after the "What I learned" header so the traveller can type
+  // straight into the correction line.
+  const [body, setBody] = useState(prefill ? buildPrefillBody(prefill) : "");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [thanksId, setThanksId] = useState<string | null>(null);
@@ -108,6 +137,13 @@ export function SusenFeedbackForm({
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl bg-surface p-5 shadow-card ring-1 ring-border">
+      {prefill ? (
+        <div className="rounded-xl bg-glow/10 px-3 py-2 text-xs ring-1 ring-glow/30">
+          You&apos;re improving a specific answer from Susen — the
+          question and her reply are below. Tell us what she got wrong
+          or what she missed, and we&apos;ll refine her for next time.
+        </div>
+      ) : null}
       {error ? (
         <p className="rounded-xl bg-heat/10 px-3 py-2 text-xs font-medium text-heat">
           {error}
