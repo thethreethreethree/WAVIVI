@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import { StayList, type StayPicker } from "@/features/stays/stay-list";
 import { getCurrentCities } from "@/lib/cities/current";
+import { applyPlaceTranslations } from "@/lib/i18n/place-translations";
+import { getLanguage } from "@/lib/i18n/server";
 import { getCurrentRegion } from "@/lib/regions/current";
 import { withinRegionRadius } from "@/lib/regions/within-radius";
 import { createClient } from "@/lib/supabase/server";
@@ -41,11 +43,17 @@ export default async function StayPage() {
   const { data } = await query;
   // Drop venues the ingest tagged with this region but that sit outside
   // the relevant city or region centre+radius.
-  const stays = withinRegionRadius(
+  const filteredStays = withinRegionRadius(
     (data ?? []) as StayRow[],
     region,
     regionCities,
   );
+  // Phase-3 i18n overlay — when the user picked ES (or any future
+  // non-English locale), swap name + description for cached
+  // translations. No-op for English; gracefully falls back to source
+  // strings for rows the translator hasn't reached yet.
+  const language = await getLanguage();
+  const stays = await applyPlaceTranslations(filteredStays, "stays", language);
 
   // Latest pickers per stay → small avatar stack on each list card.
   const pickersByStay: Record<string, StayPicker[]> = {};

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import { RestaurantList } from "@/features/restaurants/restaurant-list";
 import { getCurrentCities } from "@/lib/cities/current";
+import { applyPlaceTranslations } from "@/lib/i18n/place-translations";
+import { getLanguage } from "@/lib/i18n/server";
 import { getCurrentRegion } from "@/lib/regions/current";
 import { withinRegionRadius } from "@/lib/regions/within-radius";
 import { createClient } from "@/lib/supabase/server";
@@ -33,10 +35,16 @@ export default async function EatPage() {
   const { data } = await query;
   // Drop venues outside the relevant city or region centre+radius
   // (see /stay for the why).
-  const restaurants = withinRegionRadius(
+  const filtered = withinRegionRadius(
     (data ?? []) as RestaurantRow[],
     region,
     regionCities,
+  );
+  const language = await getLanguage();
+  const restaurants = await applyPlaceTranslations(
+    filtered,
+    "restaurants",
+    language,
   );
   return <RestaurantList restaurants={restaurants} />;
 }

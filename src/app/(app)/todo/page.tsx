@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import { ExperienceList } from "@/features/experiences/experience-list";
 import { getCurrentCities } from "@/lib/cities/current";
+import { applyPlaceTranslations } from "@/lib/i18n/place-translations";
+import { getLanguage } from "@/lib/i18n/server";
 import { getCurrentRegion } from "@/lib/regions/current";
 import { withinRegionRadius } from "@/lib/regions/within-radius";
 import { createClient } from "@/lib/supabase/server";
@@ -36,10 +38,16 @@ export default async function TodoPage() {
   const { data } = await query;
   // Drop venues outside the relevant city or region centre+radius
   // (see /stay for the why).
-  const experiences = withinRegionRadius(
+  const filtered = withinRegionRadius(
     (data ?? []) as ExperienceRow[],
     region,
     regionCities,
+  );
+  const language = await getLanguage();
+  const experiences = await applyPlaceTranslations(
+    filtered,
+    "experiences",
+    language,
   );
   return <ExperienceList experiences={experiences} />;
 }
