@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { CountryFlags } from "@/components/ui/country-flags";
 import { Icon } from "@/components/ui/icon";
 import { DvsList } from "@/features/dvs/dvs-list";
+import { getTranslator } from "@/lib/i18n/server";
 import { flagImage } from "@/lib/travejor/account";
 import {
   InstagramConnectCard,
@@ -32,7 +33,10 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default async function MyProfilePage() {
-  const profile = await getCurrentProfile();
+  const [profile, t] = await Promise.all([
+    getCurrentProfile(),
+    getTranslator(),
+  ]);
 
   // Not signed in (or no profile row) — send them to log in.
   if (!profile) redirect("/login");
@@ -107,12 +111,14 @@ export default async function MyProfilePage() {
     <div className="flex flex-1 flex-col">
       <header className="flex items-center px-5 pb-2 pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
         <span className="w-12" />
-        <h1 className="flex-1 text-center text-lg font-bold">My Profile</h1>
+        <h1 className="flex-1 text-center text-lg font-bold">
+          {t("profile.myProfile")}
+        </h1>
         {/* profile-gear-button — Journal-scoped CSS in globals.css drops
             the ring + scales the gear. Rustic + Sketch keep ring + h-10. */}
         <Link
           href="/settings"
-          aria-label="Settings"
+          aria-label={t("profile.settings")}
           className="profile-gear-button flex h-12 w-12 items-center justify-center rounded-full bg-[#fdf4e2] ring-2 ring-[#3d1f06]/55 shadow-[0_2px_8px_-2px_rgba(120,70,30,0.30)] text-foreground transition-transform active:scale-90"
         >
           <Icon name="settings" className="h-10 w-10" />

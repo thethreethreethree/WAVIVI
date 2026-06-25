@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 
 import { ScreenHeader } from "@/components/ui/screen-header";
+import { t } from "@/lib/i18n/server";
 
 export const metadata: Metadata = { title: "Blocked travelers" };
 
-export default function BlockedPage() {
+export default async function BlockedPage() {
   return (
     <div className="flex flex-1 flex-col">
-      <ScreenHeader title="Blocked travelers" back="/settings" />
+      <ScreenHeader title={await t("profile.blocked")} back="/settings" />
       <div className="flex flex-col gap-5 px-5 pb-8 pt-2">
         <p className="text-base text-muted">
           Travelers you block can&rsquo;t see your profile, message you, or

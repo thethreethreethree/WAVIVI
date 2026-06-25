@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { MeetUserSearch } from "@/features/meet/meet-user-search";
+import { useT } from "@/lib/i18n/client";
 import type { PublicChatGroup } from "@/lib/chat";
 import { categoryMeta as metaFor } from "@/lib/travejor/group-meta";
 import { getGroup } from "@/lib/travejor/groups";
@@ -19,6 +20,7 @@ import { getGroup } from "@/lib/travejor/groups";
  * cover (or a fallback) and the destination city as the "distance" line.
  */
 export function MeetList({ groups }: { groups: PublicChatGroup[] }) {
+  const t = useT();
   const [active, setActive] = useState<string>("All");
 
   const categories = useMemo(() => {
@@ -36,7 +38,7 @@ export function MeetList({ groups }: { groups: PublicChatGroup[] }) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <ScreenHeader title="Meet Travelers" accent />
+      <ScreenHeader title={t("nav.meetTravelers")} accent />
 
       {/* Find a specific traveler — by Wondavu @username, Instagram
           handle, or WhatsApp number. */}

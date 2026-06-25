@@ -69,9 +69,93 @@ export const DICTIONARY = {
     whereToStay: { en: "Where to Stay", es: "Dónde quedarse" },
     whereToEat: { en: "Where to Eat", es: "Dónde comer" },
     whatToDo: { en: "What to Do", es: "Qué hacer" },
+    thingsToDo: { en: "Things to Do", es: "Qué hacer" },
     toolbox: { en: "Toolbox", es: "Caja de herramientas" },
     events: { en: "Events", es: "Eventos" },
+    eventsNearby: { en: "Events Nearby", es: "Eventos cercanos" },
+    meetTravelers: { en: "Meet Travelers", es: "Conoce viajeros" },
     susen: { en: "Susen", es: "Susen" },
+    // BottomNav aria labels (icons-only nav, screen-readers
+    // pronounce these).
+    home: { en: "Home", es: "Inicio" },
+    tools: { en: "Tools", es: "Herramientas" },
+    askSusen: { en: "Ask Susen", es: "Pregúntale a Susen" },
+    signInRequired: {
+      en: "{label} — sign in required",
+      es: "{label} — necesitas iniciar sesión",
+    },
+    settings: { en: "Settings", es: "Ajustes" },
+    notifications: { en: "Notifications", es: "Notificaciones" },
+    myGroups: { en: "My Groups", es: "Mis grupos" },
+    findGroups: { en: "Find Groups", es: "Buscar grupos" },
+  },
+
+  // Discover-screen feature labels (also used as filter / type chip
+  // headers across the app).
+  features: {
+    stays: { en: "Stays", es: "Alojamientos" },
+    restaurants: { en: "Restaurants", es: "Restaurantes" },
+    experiences: { en: "Experiences", es: "Experiencias" },
+    utilities: { en: "Utilities", es: "Servicios" },
+    minRating: { en: "Min rating", es: "Calificación mínima" },
+    type: { en: "Type", es: "Tipo" },
+    filter: { en: "Filter", es: "Filtro" },
+    searchPlaceholder: {
+      en: "Search by name, address, or description…",
+      es: "Buscar por nombre, dirección o descripción…",
+    },
+    whatsNearMe: { en: "What's near me", es: "Cerca de mí" },
+    topPick: { en: "Top pick", es: "Recomendado" },
+    featured: { en: "Featured", es: "Destacado" },
+    reviews: { en: "{count} reviews", es: "{count} reseñas" },
+  },
+
+  // Profile / settings — high-traffic strings on the post-auth side.
+  profile: {
+    heading: { en: "Profile", es: "Perfil" },
+    myProfile: { en: "My Profile", es: "Mi perfil" },
+    editProfile: { en: "Edit profile", es: "Editar perfil" },
+    settings: { en: "Settings", es: "Ajustes" },
+    language: { en: "Language", es: "Idioma" },
+    notifications: { en: "Notifications", es: "Notificaciones" },
+    privacy: { en: "Privacy", es: "Privacidad" },
+    linkedAccounts: { en: "Linked accounts", es: "Cuentas vinculadas" },
+    deleteAccount: { en: "Delete account", es: "Eliminar cuenta" },
+    blocked: { en: "Blocked travelers", es: "Viajeros bloqueados" },
+    verification: { en: "Verification", es: "Verificación" },
+  },
+
+  // Settings page — section headers + every row label so the whole
+  // menu lists in the right language.
+  settings: {
+    sectionAccount: { en: "Account", es: "Cuenta" },
+    sectionSafety: { en: "Safety & Trust", es: "Seguridad y confianza" },
+    sectionPreferences: { en: "Preferences", es: "Preferencias" },
+    sectionAbout: { en: "About", es: "Acerca de" },
+    sectionAppearance: { en: "Appearance", es: "Apariencia" },
+    rowEditProfile: { en: "Edit profile", es: "Editar perfil" },
+    rowVerification: { en: "Verification", es: "Verificación" },
+    rowLinkedAccounts: { en: "Linked accounts", es: "Cuentas vinculadas" },
+    rowTravelerNotes: { en: "Traveler notes", es: "Notas de viajeros" },
+    rowBlockedTravelers: { en: "Blocked travelers", es: "Viajeros bloqueados" },
+    rowReportProblem: { en: "Report a problem", es: "Reportar un problema" },
+    rowSafetyTips: { en: "Safety tips", es: "Consejos de seguridad" },
+    rowNotifications: { en: "Notifications", es: "Notificaciones" },
+    rowPrivacy: { en: "Privacy", es: "Privacidad" },
+    rowLanguage: { en: "Language", es: "Idioma" },
+    rowHelpSupport: { en: "Help & support", es: "Ayuda y soporte" },
+    rowPrivacyPolicy: { en: "Privacy policy", es: "Política de privacidad" },
+    rowAppVersion: { en: "App version", es: "Versión de la app" },
+    adminConsole: { en: "Admin Console", es: "Consola de administración" },
+    adminConsoleHint: {
+      en: "Switch to the Wondavu management app",
+      es: "Cambiar a la app de gestión de Wondavu",
+    },
+    dangerZone: { en: "Danger zone", es: "Zona peligrosa" },
+    deleteAccountHint: {
+      en: "30-day grace window before permanent removal.",
+      es: "30 días de gracia antes de la eliminación permanente.",
+    },
   },
 
   // Susen — assistant surface. The welcome line + quick prompts are
@@ -130,7 +214,25 @@ export const DICTIONARY = {
   // Auth — sign in / sign up modals + pages. Small, high-traffic copy.
   auth: {
     signInHeading: { en: "Welcome back", es: "Bienvenido de nuevo" },
+    signInSubtitle: {
+      en: "Sign in to pick up where you left off.",
+      es: "Inicia sesión para retomar donde lo dejaste.",
+    },
+    adminSignInHeading: { en: "Admin sign-in", es: "Acceso de administrador" },
+    adminSignInSubtitle: {
+      en: "Sign in with your Wondavu admin account.",
+      es: "Inicia sesión con tu cuenta de administrador de Wondavu.",
+    },
     signUpHeading: { en: "Create your account", es: "Crea tu cuenta" },
+    signUpSubtitle: {
+      en: "Set up your Wondavu account in under a minute.",
+      es: "Configura tu cuenta de Wondavu en menos de un minuto.",
+    },
+    joinHeading: { en: "Join Wondavu", es: "Únete a Wondavu" },
+    joinSubtitle: {
+      en: "Create an account and see where's the vibe!",
+      es: "¡Crea una cuenta y descubre dónde está la onda!",
+    },
     email: { en: "Email", es: "Correo electrónico" },
     password: { en: "Password", es: "Contraseña" },
     continueWithGoogle: {

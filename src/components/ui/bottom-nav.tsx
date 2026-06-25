@@ -6,12 +6,16 @@ import { useEffect, useState } from "react";
 
 import { SusenAvatar } from "@/components/ui/susen-avatar";
 import { useThemeContext } from "@/components/ui/theme-context";
+import { useT } from "@/lib/i18n/client";
 import { createClient } from "@/lib/supabase/client";
 import { themedIconPath } from "@/lib/theme/cookie";
 
 interface Tab {
   href: string;
-  label: string;
+  /** Dictionary key used by useT() for the aria-label — visually the
+   *  tab is icon-only, but screen-readers + sign-in-required tooltip
+   *  pronounce this. */
+  labelKey: string;
   icon: React.ReactNode;
   /** Cute V2 watercolor icon — shown in Cute Mode in place of the SVG. */
   image?: string;
@@ -27,19 +31,19 @@ const TABS: Tab[] = [
     // `?app=1` keeps desktop visitors on the mobile app home instead
     // of being redirected to /discover by the proxy.
     href: "/?app=1",
-    label: "Home",
+    labelKey: "nav.home",
     icon: <path d="M3 11l9-8 9 8M5 10v10h14V10M9 20v-6h6v6" />,
     image: "/icons/rustic/nav_home.png",
   },
   {
     href: "/tools",
-    label: "Tools",
+    labelKey: "nav.tools",
     icon: <path d="M4 7h16v13H4zM9 7V4h6v3M4 12h16" />,
     image: "/icons/rustic/nav_tools.png",
   },
   {
     href: "/feed",
-    label: "Feed",
+    labelKey: "nav.feed",
     icon: (
       <>
         <rect x="3" y="3" width="18" height="18" rx="3" />
@@ -50,7 +54,7 @@ const TABS: Tab[] = [
   },
   {
     href: "/profile",
-    label: "Profile",
+    labelKey: "nav.profile",
     icon: (
       <>
         <circle cx="12" cy="8" r="4" />
@@ -71,6 +75,7 @@ const HIDDEN_PREFIXES = ["/login", "/signup", "/auth", "/admin"];
 export function BottomNav() {
   const pathname = usePathname();
   const theme = useThemeContext();
+  const t = useT();
   // Auth state hydrates async on mount — null = unknown, true/false
   // once we've heard back. We don't render the muted style until the
   // answer is known so signed-in users don't see a flicker.
@@ -146,22 +151,23 @@ export function BottomNav() {
     </>
   );
 
-  const tab = (t: Tab) => {
-    const active = isActive(t.href);
-    const needsAuth = t.requiresAuth && isAuthed === false;
+  const tab = (tab: Tab) => {
+    const active = isActive(tab.href);
+    const needsAuth = tab.requiresAuth && isAuthed === false;
+    const label = t(tab.labelKey);
     return (
-      <li key={t.href}>
+      <li key={tab.href}>
         <Link
-          href={resolveHref(t.href, t.requiresAuth)}
+          href={resolveHref(tab.href, tab.requiresAuth)}
           aria-label={
-            needsAuth ? `${t.label} — sign in required` : t.label
+            needsAuth ? t("nav.signInRequired", { label }) : label
           }
           aria-current={active ? "page" : undefined}
           className={`flex h-15 w-15 items-center justify-center ${
             active ? "text-glow" : needsAuth ? "text-glow/40" : "text-glow/75"
           }`}
         >
-          {iconSvg(t)}
+          {iconSvg(tab)}
         </Link>
       </li>
     );
@@ -181,7 +187,9 @@ export function BottomNav() {
           <Link
             href={resolveHref("/susen", true)}
             aria-label={
-              isAuthed === false ? "Ask Susen — sign in required" : "Ask Susen"
+              isAuthed === false
+                ? t("nav.signInRequired", { label: t("nav.askSusen") })
+                : t("nav.askSusen")
             }
             aria-current={susenActive ? "page" : undefined}
             className={`flex h-15 w-15 items-center justify-center ${

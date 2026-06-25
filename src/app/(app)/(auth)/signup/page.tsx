@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { AuthForm } from "@/features/auth";
 import { isConfigured } from "@/lib/env";
+import { getTranslator } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Create account" };
@@ -29,12 +30,11 @@ export default async function SignupPage({
     if (user) redirect(next ?? "/profile");
   }
 
+  const t = await getTranslator();
   return (
     <div className="pt-[max(3rem,calc(env(safe-area-inset-top)+2rem))]">
-      <h1 className="mb-1 text-3xl font-bold">Join Wondavu</h1>
-      <p className="mb-5 text-lg text-muted">
-        Create an account and see where&apos;s the vibe!
-      </p>
+      <h1 className="mb-1 text-3xl font-bold">{t("auth.joinHeading")}</h1>
+      <p className="mb-5 text-lg text-muted">{t("auth.joinSubtitle")}</p>
       <AuthForm mode="signup" next={next} />
     </div>
   );

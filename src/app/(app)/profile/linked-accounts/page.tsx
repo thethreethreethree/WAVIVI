@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { ScreenHeader } from "@/components/ui/screen-header";
+import { t } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Linked accounts" };
@@ -27,7 +28,7 @@ export default async function LinkedAccountsPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <ScreenHeader title="Linked accounts" back="/settings" />
+      <ScreenHeader title={await t("profile.linkedAccounts")} back="/settings" />
       <div className="flex flex-col gap-3 px-5 pb-8 pt-2">
         <p className="text-base text-muted">
           Manage the accounts and channels linked to your Wondavu profile.

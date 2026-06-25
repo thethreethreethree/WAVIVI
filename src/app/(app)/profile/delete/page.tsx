@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { ScreenHeader } from "@/components/ui/screen-header";
+import { t } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 import { DeleteAccountForm } from "./delete-account-form";
@@ -35,7 +36,7 @@ export default async function DeleteAccountPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <ScreenHeader title="Delete account" back="/settings" />
+      <ScreenHeader title={await t("profile.deleteAccount")} back="/settings" />
       <div className="flex flex-col gap-5 px-5 pb-8 pt-2">
         <div className="rounded-2xl bg-heat/10 p-4 ring-1 ring-heat/30">
           <h2 className="text-base font-bold text-heat">

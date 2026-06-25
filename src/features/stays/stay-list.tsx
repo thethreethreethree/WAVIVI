@@ -9,6 +9,7 @@ import { ScreenHeader } from "@/components/ui/screen-header";
 import { SearchField } from "@/components/ui/search-field";
 import { StayPhoto } from "@/components/ui/stay-photo";
 import { useStickyState } from "@/hooks/use-sticky-state";
+import { useT } from "@/lib/i18n/client";
 import { flagImage } from "@/lib/travejor/account";
 import { photoThumb } from "@/lib/utils/images";
 import { preloadImage, preloadImages } from "@/lib/utils/preload-images";
@@ -83,6 +84,7 @@ export function StayList({
   stays: StayRow[];
   pickersByStay?: Record<string, StayPicker[]>;
 }) {
+  const t = useT();
   const [query, setQuery] = useStickyState("stay:q", "");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [minRating, setMinRating] = useStickyState("stay:minRating", 0);
@@ -159,7 +161,7 @@ export function StayList({
 
   return (
     <div className="flex flex-1 flex-col">
-      <ScreenHeader title="Where to Stay" />
+      <ScreenHeader title={t("nav.whereToStay")} />
 
       <div className="flex flex-col gap-2 px-5 pb-2 pt-4">
         <SearchField

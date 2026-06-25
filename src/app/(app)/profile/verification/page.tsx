@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { ScreenHeader } from "@/components/ui/screen-header";
+import { t } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Verification" };
@@ -25,7 +26,7 @@ export default async function VerificationPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <ScreenHeader title="Verification" back="/settings" />
+      <ScreenHeader title={await t("profile.verification")} back="/settings" />
       <div className="flex flex-col gap-5 px-5 pb-8 pt-2">
         <p className="text-base text-muted">
           Verified travelers earn a trust badge and unlock priority placement in

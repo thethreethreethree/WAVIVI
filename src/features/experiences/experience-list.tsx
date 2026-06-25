@@ -9,6 +9,7 @@ import { ScreenHeader } from "@/components/ui/screen-header";
 import { SearchField } from "@/components/ui/search-field";
 import { StayPhoto } from "@/components/ui/stay-photo";
 import { useStickyState } from "@/hooks/use-sticky-state";
+import { useT } from "@/lib/i18n/client";
 import {
   SCOOTER_KMH,
   WALK_KMH,
@@ -125,6 +126,7 @@ function relevanceScore(e: ExperienceRow, qLower: string): number {
  * near me" geolocation, sortable by proximity.
  */
 export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }) {
+  const t = useT();
   const [query, setQuery] = useStickyState("exp:q", "");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [minRating, setMinRating] = useStickyState("exp:minRating", 0);
@@ -229,7 +231,7 @@ export function ExperienceList({ experiences }: { experiences: ExperienceRow[] }
 
   return (
     <div className="flex flex-1 flex-col">
-      <ScreenHeader title="Things to Do" />
+      <ScreenHeader title={t("nav.thingsToDo")} />
 
       <div className="flex flex-col gap-2 px-5 pb-2 pt-4">
         <SearchField

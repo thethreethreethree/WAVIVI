@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { StayPhoto } from "@/components/ui/stay-photo";
 import { useStickyState } from "@/hooks/use-sticky-state";
+import { useT } from "@/lib/i18n/client";
 import type { EventRow } from "@/types/supabase";
 
 type DayBucket = "morning" | "midday" | "nighttime";
@@ -37,6 +38,7 @@ function eventRelevance(e: EventRow, qLower: string): number {
 }
 
 export function EventsList({ events }: { events: EventRow[] }) {
+  const t = useT();
   const [query, setQuery] = useStickyState("events:q", "");
   const [bucket, setBucket] = useStickyState<"all" | DayBucket>(
     "events:bucket",
@@ -87,7 +89,7 @@ export function EventsList({ events }: { events: EventRow[] }) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <ScreenHeader title="Events Nearby" accent />
+      <ScreenHeader title={t("nav.eventsNearby")} accent />
 
       <div className="flex flex-col gap-2 px-5 pb-2 pt-3">
         <input
